@@ -9,6 +9,7 @@ import Player from "./pages/Player";
 import Alarm from "./pages/Alarm";
 import Library from "./pages/Library";
 import Dashboard from "./pages/Dashboard";
+import SoundStudio from "./pages/SoundStudio";
 import OnboardingModal, { useOnboarding } from "./components/OnboardingModal";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/player" component={Player} />
+      <Route path="/studio" component={SoundStudio} />
       <Route path="/alarm" component={Alarm} />
       <Route path="/library" component={Library} />
       <Route path="/dashboard" component={Dashboard} />
