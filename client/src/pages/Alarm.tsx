@@ -4,12 +4,29 @@
  * Bioluminescent Depth theme
  */
 import { useState, useEffect } from "react";
-import { Plus, AlarmClock, Trash2, Edit3, Bell, BellOff, Waves, Sunrise, Zap, Lock, BellRing, ShieldCheck } from "lucide-react";
+import { Plus, AlarmClock, Trash2, Edit3, Bell, BellOff, Waves, Sunrise, Zap, Lock, BellRing, ShieldCheck, Layers } from "lucide-react";
 import Layout from "@/components/Layout";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useAlarmNotifications } from "@/hooks/useAlarmNotifications";
+
+// ─── Custom Studio Mix presets (read from localStorage) ──────────────────────────────
+const CUSTOM_PRESETS_KEY = "rih_custom_presets";
+
+interface SavedStudioMix {
+  id: string;
+  name: string;
+  settings: { frequencyHz?: number; musicMode?: string; natureSound?: string };
+}
+
+function loadSavedMixes(): SavedStudioMix[] {
+  try {
+    return JSON.parse(localStorage.getItem(CUSTOM_PRESETS_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
 
 interface Alarm {
   id: string;
@@ -20,6 +37,8 @@ interface Alarm {
   days: number[];
   enabled: boolean;
   fadeInMinutes: number;
+  studioMixId?: string;  // if set, use Studio Mix instead of single frequency
+  studioMixName?: string;
 }
 
 const WAKE_SEQUENCES = [
@@ -80,7 +99,16 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit }: {
 
           {/* Frequency + Sequence badges */}
           <div className="flex flex-wrap gap-2">
-            {freq && (
+            {alarm.studioMixId ? (
+              <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{
+                background: 'rgba(139,92,246,0.15)',
+                color: '#8B5CF6',
+                fontFamily: 'DM Sans, sans-serif',
+              }}>
+                <Layers size={9} />
+                {alarm.studioMixName || 'Studio Mix'}
+              </span>
+            ) : freq && (
               <span className="text-xs px-2 py-0.5 rounded-full" style={{
                 background: `${freq.color}15`,
                 color: freq.color,
@@ -136,6 +164,9 @@ function CreateAlarmModal({ onClose, onSave }: { onClose: () => void; onSave: (a
   const [selectedSeq, setSelectedSeq] = useState("gentle");
   const [selectedDays, setSelectedDays] = useState([1, 2, 3, 4, 5]);
   const [fadeIn, setFadeIn] = useState(5);
+  const [soundMode, setSoundMode] = useState<"frequency" | "studio">("frequency");
+  const [selectedMixId, setSelectedMixId] = useState<string | null>(null);
+  const savedMixes = loadSavedMixes();
 
   const toggleDay = (d: number) => {
     setSelectedDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
@@ -146,10 +177,13 @@ function CreateAlarmModal({ onClose, onSave }: { onClose: () => void; onSave: (a
       toast("Please select at least one day");
       return;
     }
+    const selectedMix = savedMixes.find(m => m.id === selectedMixId);
     onSave({
       id: Date.now().toString(),
       time, label, frequencyId: selectedFreq, sequenceId: selectedSeq,
       days: selectedDays, enabled: true, fadeInMinutes: fadeIn,
+      studioMixId: soundMode === "studio" && selectedMixId ? selectedMixId : undefined,
+      studioMixName: soundMode === "studio" && selectedMix ? selectedMix.name : undefined,
     });
     onClose();
     toast("✓ Healing alarm set — your morning ritual awaits");
@@ -227,24 +261,90 @@ function CreateAlarmModal({ onClose, onSave }: { onClose: () => void; onSave: (a
           </div>
         </div>
 
-        {/* Frequency */}
+        {/* Sound Source Toggle */}
         <div className="mb-5">
           <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-            Healing Frequency
+            Wake Sound
           </label>
-          <div className="grid grid-cols-2 gap-2">
-            {FREQUENCIES.filter(f => !f.isPremium).map(f => (
-              <button key={f.id} onClick={() => setSelectedFreq(f.id)}
-                className="p-3 rounded-xl text-left transition-all duration-200"
-                style={{
-                  background: selectedFreq === f.id ? `${f.color}18` : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${selectedFreq === f.id ? f.color + '40' : 'rgba(255,255,255,0.06)'}`,
-                }}>
-                <div className="font-mono-brand text-sm font-bold" style={{ color: f.color }}>{f.hz}Hz</div>
-                <div className="text-xs mt-0.5" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>{f.name}</div>
-              </button>
-            ))}
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={() => setSoundMode("frequency")}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200"
+              style={{
+                background: soundMode === "frequency" ? 'rgba(0,212,170,0.15)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${soundMode === "frequency" ? 'rgba(0,212,170,0.4)' : 'rgba(255,255,255,0.06)'}`,
+                color: soundMode === "frequency" ? '#00D4AA' : '#6B7A99',
+                fontFamily: 'DM Sans, sans-serif',
+              }}
+            >
+              <Waves size={14} /> Single Frequency
+            </button>
+            <button
+              onClick={() => setSoundMode("studio")}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200"
+              style={{
+                background: soundMode === "studio" ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${soundMode === "studio" ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.06)'}`,
+                color: soundMode === "studio" ? '#8B5CF6' : '#6B7A99',
+                fontFamily: 'DM Sans, sans-serif',
+              }}
+            >
+              <Layers size={14} /> Studio Mix
+            </button>
           </div>
+
+          {soundMode === "frequency" ? (
+            <div className="grid grid-cols-2 gap-2">
+              {FREQUENCIES.filter(f => !f.isPremium).map(f => (
+                <button key={f.id} onClick={() => setSelectedFreq(f.id)}
+                  className="p-3 rounded-xl text-left transition-all duration-200"
+                  style={{
+                    background: selectedFreq === f.id ? `${f.color}18` : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${selectedFreq === f.id ? f.color + '40' : 'rgba(255,255,255,0.06)'}`,
+                  }}>
+                  <div className="font-mono-brand text-sm font-bold" style={{ color: f.color }}>{f.hz}Hz</div>
+                  <div className="text-xs mt-0.5" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>{f.name}</div>
+                </button>
+              ))}
+            </div>
+          ) : savedMixes.length > 0 ? (
+            <div className="space-y-2">
+              {savedMixes.map(mix => (
+                <button
+                  key={mix.id}
+                  onClick={() => setSelectedMixId(mix.id)}
+                  className="w-full p-3 rounded-xl text-left flex items-center gap-3 transition-all duration-200"
+                  style={{
+                    background: selectedMixId === mix.id ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${selectedMixId === mix.id ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.06)'}`,
+                  }}
+                >
+                  <Layers size={16} style={{ color: '#8B5CF6', flexShrink: 0 }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>{mix.name}</div>
+                    <div className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                      {mix.settings.frequencyHz}Hz · {mix.settings.musicMode} · {mix.settings.natureSound}
+                    </div>
+                  </div>
+                  {selectedMixId === mix.id && (
+                    <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#8B5CF6' }}>
+                      <div className="w-2 h-2 rounded-full bg-white" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div
+              className="p-4 rounded-xl text-center"
+              style={{ background: 'rgba(139,92,246,0.06)', border: '1px dashed rgba(139,92,246,0.2)' }}
+            >
+              <Layers size={20} style={{ color: '#8B5CF6', margin: '0 auto 8px' }} />
+              <p className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                No saved mixes yet. Go to <strong style={{ color: '#8B5CF6' }}>Sound Studio</strong> and tap <strong style={{ color: '#8B5CF6' }}>Save Mix</strong> to create one.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Wake Sequence */}

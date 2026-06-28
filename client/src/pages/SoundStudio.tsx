@@ -5,11 +5,34 @@
  * Bioluminescent Depth theme
  */
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Play, Pause, Volume2, Sliders, Music, Waves, Wind, Flame, TreePine, CloudRain, Minus, Moon, X, Timer } from "lucide-react";
+import { Play, Pause, Volume2, Sliders, Music, Waves, Wind, Flame, TreePine, CloudRain, Minus, Moon, X, Timer, Save, Trash2, Wind as BreathIcon } from "lucide-react";
 import Layout from "@/components/Layout";
-import { useSoundStudio, STUDIO_PRESETS, type NatureSound, type MusicMode } from "@/hooks/useSoundStudio";
+import { useSoundStudio, STUDIO_PRESETS, type NatureSound, type MusicMode, type StudioState } from "@/hooks/useSoundStudio";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
+import BreathingGuide from "@/components/BreathingGuide";
+
+// ─── Custom preset persistence key ───────────────────────────────────────────
+const CUSTOM_PRESETS_KEY = "rih_custom_presets";
+
+interface CustomPreset {
+  id: string;
+  name: string;
+  createdAt: number;
+  settings: Partial<StudioState>;
+}
+
+function loadCustomPresets(): CustomPreset[] {
+  try {
+    return JSON.parse(localStorage.getItem(CUSTOM_PRESETS_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomPresets(presets: CustomPreset[]) {
+  localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(presets));
+}
 
 // ─── Sleep Timer options ──────────────────────────────────────────────────────
 const SLEEP_DURATIONS = [
@@ -271,6 +294,56 @@ export default function SoundStudio() {
     return () => { if (timerIntervalRef.current) clearInterval(timerIntervalRef.current); };
   }, []);
 
+  // ── Custom preset state ────────────────────────────────────────────────────
+  const [customPresets, setCustomPresets] = useState<CustomPreset[]>(loadCustomPresets);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [newPresetName, setNewPresetName] = useState("");
+  const [showBreathing, setShowBreathing] = useState(false);
+
+  const saveCurrentMix = useCallback(() => {
+    const name = newPresetName.trim() || `My Mix ${customPresets.length + 1}`;
+    const preset: CustomPreset = {
+      id: `custom_${Date.now()}`,
+      name,
+      createdAt: Date.now(),
+      settings: {
+        frequencyHz: state.frequencyHz,
+        musicMode: state.musicMode,
+        natureSound: state.natureSound,
+        frequencyVolume: state.frequencyVolume,
+        musicVolume: state.musicVolume,
+        natureVolume: state.natureVolume,
+        masterVolume: state.masterVolume,
+      },
+    };
+    const updated = [...customPresets, preset];
+    setCustomPresets(updated);
+    saveCustomPresets(updated);
+    setSaveModalOpen(false);
+    setNewPresetName("");
+    toast(`✦ Mix saved: "${name}"`);
+  }, [newPresetName, customPresets, state]);
+
+  const deleteCustomPreset = useCallback((id: string) => {
+    const updated = customPresets.filter(p => p.id !== id);
+    setCustomPresets(updated);
+    saveCustomPresets(updated);
+    toast("Custom preset removed");
+  }, [customPresets]);
+
+  const applyCustomPreset = useCallback((preset: CustomPreset) => {
+    const s = preset.settings;
+    if (s.frequencyHz !== undefined) setFrequency(s.frequencyHz);
+    if (s.musicMode !== undefined) setMusicMode(s.musicMode);
+    if (s.natureSound !== undefined) setNatureSound(s.natureSound);
+    if (s.frequencyVolume !== undefined) setLayerVolume("frequency", s.frequencyVolume);
+    if (s.musicVolume !== undefined) setLayerVolume("music", s.musicVolume);
+    if (s.natureVolume !== undefined) setLayerVolume("nature", s.natureVolume);
+    if (s.masterVolume !== undefined) setLayerVolume("master", s.masterVolume);
+    setActivePreset(`custom_${preset.id}`);
+    toast(`✦ Loaded: "${preset.name}"`);
+  }, [setFrequency, setMusicMode, setNatureSound, setLayerVolume]);
+
   const selectedFreq = FREQ_OPTIONS.find(f => f.hz === state.frequencyHz) || FREQ_OPTIONS[4];
 
   const applyPreset = useCallback((presetId: string) => {
@@ -359,9 +432,29 @@ export default function SoundStudio() {
 
         {/* Presets */}
         <div className="px-6 mb-6">
-          <div className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
-            Presets
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>Presets</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowBreathing(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+                style={{ background: "rgba(0,212,170,0.08)", border: "1px solid rgba(0,212,170,0.2)", color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}
+              >
+                <BreathIcon size={12} />
+                Breathe
+              </button>
+              <button
+                onClick={() => setSaveModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+                style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)", color: "#8B5CF6", fontFamily: "DM Sans, sans-serif" }}
+              >
+                <Save size={12} />
+                Save Mix
+              </button>
+            </div>
           </div>
+
+          {/* Built-in presets */}
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {STUDIO_PRESETS.map(preset => (
               <button
@@ -375,21 +468,55 @@ export default function SoundStudio() {
                 }}
               >
                 <span style={{ fontSize: "1.2rem" }}>{preset.icon}</span>
-                <span
-                  className="text-xs font-semibold"
-                  style={{ color: activePreset === preset.id ? "#E8EDF5" : "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}
-                >
+                <span className="text-xs font-semibold" style={{ color: activePreset === preset.id ? "#E8EDF5" : "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
                   {preset.name}
                 </span>
-                <span
-                  className="text-[10px] leading-tight"
-                  style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}
-                >
+                <span className="text-[10px] leading-tight" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>
                   {preset.description}
                 </span>
               </button>
             ))}
           </div>
+
+          {/* Custom presets */}
+          {customPresets.length > 0 && (
+            <div className="mt-3">
+              <div className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>My Mixes</div>
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {customPresets.map(preset => (
+                  <div
+                    key={preset.id}
+                    className="flex-shrink-0 flex flex-col items-start gap-1 px-3 py-2.5 rounded-xl"
+                    style={{
+                      background: activePreset === `custom_${preset.id}` ? "rgba(139,92,246,0.15)" : "rgba(255,255,255,0.03)",
+                      border: `1px solid ${activePreset === `custom_${preset.id}` ? "rgba(139,92,246,0.4)" : "rgba(255,255,255,0.06)"}`,
+                      minWidth: "110px",
+                    }}
+                  >
+                    <div className="flex items-center justify-between w-full gap-2">
+                      <button onClick={() => applyCustomPreset(preset)} className="flex-1 text-left">
+                        <span className="text-xs font-semibold" style={{ color: activePreset === `custom_${preset.id}` ? "#E8EDF5" : "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
+                          {preset.name}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => deleteCustomPreset(preset.id)}
+                        className="w-5 h-5 flex items-center justify-center rounded transition-colors"
+                        style={{ color: "#4A5568" }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#EF4444"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#4A5568"; }}
+                      >
+                        <Trash2 size={10} />
+                      </button>
+                    </div>
+                    <span className="text-[9px]" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>
+                      {FREQ_OPTIONS.find(f => f.hz === preset.settings.frequencyHz)?.name || `${preset.settings.frequencyHz}Hz`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Frequency selector */}
@@ -681,6 +808,66 @@ export default function SoundStudio() {
             </div>
           )}
         </div>
+
+        {/* Save Mix Modal */}
+        {saveModalOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center px-4"
+            style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
+          >
+            <div
+              className="w-full max-w-xs rounded-2xl p-6"
+              style={{ background: "#12152A", border: "1px solid rgba(139,92,246,0.25)" }}
+            >
+              <h3 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "1.3rem", fontWeight: 600, color: "#E8EDF5", marginBottom: "4px" }}>
+                Save Current Mix
+              </h3>
+              <p className="text-xs mb-4" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                {state.frequencyHz}Hz · {MUSIC_MODES.find(m => m.id === state.musicMode)?.label} · {NATURE_SOUNDS.find(n => n.id === state.natureSound)?.label}
+              </p>
+              <input
+                type="text"
+                value={newPresetName}
+                onChange={e => setNewPresetName(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && saveCurrentMix()}
+                placeholder={`My Mix ${customPresets.length + 1}`}
+                autoFocus
+                className="w-full px-4 py-2.5 rounded-xl text-sm mb-4"
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(139,92,246,0.3)",
+                  color: "#E8EDF5",
+                  fontFamily: "DM Sans, sans-serif",
+                  outline: "none",
+                }}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setSaveModalOpen(false); setNewPresetName(""); }}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200"
+                  style={{ background: "rgba(255,255,255,0.05)", color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveCurrentMix}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200"
+                  style={{ background: "linear-gradient(135deg, #8B5CF6, #6D28D9)", color: "#fff", fontFamily: "DM Sans, sans-serif" }}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Breathing Guide Overlay */}
+        {showBreathing && (
+          <BreathingGuide
+            onClose={() => setShowBreathing(false)}
+            accentColor={selectedFreq.color}
+          />
+        )}
 
         {/* How it works info */}
         <div
