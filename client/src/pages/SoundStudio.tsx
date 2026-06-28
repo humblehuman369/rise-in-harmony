@@ -5,11 +5,19 @@
  * Bioluminescent Depth theme
  */
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Play, Pause, Volume2, Sliders, Music, Waves, Wind, Flame, TreePine, CloudRain, Minus, Plus } from "lucide-react";
+import { Play, Pause, Volume2, Sliders, Music, Waves, Wind, Flame, TreePine, CloudRain, Minus, Moon, X, Timer } from "lucide-react";
 import Layout from "@/components/Layout";
 import { useSoundStudio, STUDIO_PRESETS, type NatureSound, type MusicMode } from "@/hooks/useSoundStudio";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
+
+// ─── Sleep Timer options ──────────────────────────────────────────────────────
+const SLEEP_DURATIONS = [
+  { label: "15 min", minutes: 15 },
+  { label: "30 min", minutes: 30 },
+  { label: "45 min", minutes: 45 },
+  { label: "60 min", minutes: 60 },
+];
 
 // ─── Frequency options ────────────────────────────────────────────────────────
 const FREQ_OPTIONS = [
@@ -183,6 +191,85 @@ function LayerFader({
 export default function SoundStudio() {
   const { state, toggle, setLayerVolume, setFrequency, setMusicMode, setNatureSound } = useSoundStudio();
   const [activePreset, setActivePreset] = useState<string | null>(null);
+
+  // ── Sleep Timer state ──────────────────────────────────────────────────────
+  const [timerActive, setTimerActive] = useState(false);
+  const [timerTotalSec, setTimerTotalSec] = useState(0);   // total duration in seconds
+  const [timerRemainSec, setTimerRemainSec] = useState(0); // seconds remaining
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const originalMasterRef = useRef<number>(0.8); // saved master volume before fade
+
+  /** Format seconds as MM:SS */
+  const formatTime = (sec: number) => {
+    const m = Math.floor(sec / 60).toString().padStart(2, "0");
+    const s = (sec % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
+  /** Fraction of timer elapsed (0 → 1) */
+  const timerProgress = timerTotalSec > 0 ? 1 - timerRemainSec / timerTotalSec : 0;
+
+  /** Start the sleep timer for `minutes` minutes */
+  const startTimer = useCallback((minutes: number) => {
+    // Clear any existing timer
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+
+    const totalSec = minutes * 60;
+    originalMasterRef.current = state.masterVolume;
+    setTimerTotalSec(totalSec);
+    setTimerRemainSec(totalSec);
+    setTimerActive(true);
+
+    // Start playing if not already
+    if (!state.isPlaying) toggle();
+
+    toast(`🌙 Sleep timer set for ${minutes} minutes — fading out gently`);
+
+    timerIntervalRef.current = setInterval(() => {
+      setTimerRemainSec(prev => {
+        const next = prev - 1;
+        if (next <= 0) {
+          // Timer complete — stop audio
+          clearInterval(timerIntervalRef.current!);
+          timerIntervalRef.current = null;
+          setTimerActive(false);
+          setTimerTotalSec(0);
+          setLayerVolume("master", 0);
+          // Restore volume after a brief pause so next session starts normally
+          setTimeout(() => {
+            setLayerVolume("master", originalMasterRef.current);
+            toggle(); // stop playback
+          }, 800);
+          toast("🌙 Sleep timer complete — sweet dreams");
+          return 0;
+        }
+        // Gradually reduce master volume in the final 25% of the timer
+        const fadeStartSec = totalSec * 0.25;
+        if (next <= fadeStartSec) {
+          const fadeFraction = next / fadeStartSec; // 1 → 0
+          setLayerVolume("master", originalMasterRef.current * fadeFraction);
+        }
+        return next;
+      });
+    }, 1000);
+  }, [state.masterVolume, state.isPlaying, toggle, setLayerVolume]);
+
+  /** Cancel the sleep timer */
+  const cancelTimer = useCallback(() => {
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    timerIntervalRef.current = null;
+    setTimerActive(false);
+    setTimerTotalSec(0);
+    setTimerRemainSec(0);
+    // Restore original master volume
+    setLayerVolume("master", originalMasterRef.current);
+    toast("Sleep timer cancelled");
+  }, [setLayerVolume]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => { if (timerIntervalRef.current) clearInterval(timerIntervalRef.current); };
+  }, []);
 
   const selectedFreq = FREQ_OPTIONS.find(f => f.hz === state.frequencyHz) || FREQ_OPTIONS[4];
 
@@ -487,6 +574,112 @@ export default function SoundStudio() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Sleep Timer */}
+        <div className="px-6 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Moon size={13} style={{ color: "#6B7A99" }} />
+            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+              Sleep Timer
+            </span>
+          </div>
+
+          {timerActive ? (
+            /* Active timer display */
+            <div
+              className="rounded-2xl p-5"
+              style={{
+                background: "linear-gradient(135deg, #0D0F1E, #12152A)",
+                border: "1px solid rgba(139,92,246,0.25)",
+                boxShadow: "0 0 30px rgba(139,92,246,0.08)",
+              }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)" }}
+                  >
+                    <Moon size={18} style={{ color: "#8B5CF6" }} />
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold" style={{ color: "#8B5CF6", fontFamily: "DM Sans, sans-serif" }}>
+                      Fading out
+                    </div>
+                    <div
+                      className="text-2xl font-bold font-mono-brand"
+                      style={{ color: "#E8EDF5", letterSpacing: "0.05em" }}
+                    >
+                      {formatTime(timerRemainSec)}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={cancelTimer}
+                  className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95"
+                  style={{ background: "rgba(255,255,255,0.06)", color: "#6B7A99" }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Progress arc bar */}
+              <div className="relative h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000"
+                  style={{
+                    width: `${timerProgress * 100}%`,
+                    background: timerProgress > 0.75
+                      ? "linear-gradient(90deg, #8B5CF6, #EC4899)"
+                      : "linear-gradient(90deg, #8B5CF6, #A78BFA)",
+                    boxShadow: "0 0 8px rgba(139,92,246,0.6)",
+                  }}
+                />
+              </div>
+
+              {/* Fade indicator */}
+              {timerRemainSec <= timerTotalSec * 0.25 && (
+                <div className="mt-3 text-xs text-center" style={{ color: "#8B5CF6", fontFamily: "DM Sans, sans-serif" }}>
+                  ✦ Volume fading gently…
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Timer selection buttons */
+            <div
+              className="rounded-2xl p-5"
+              style={{
+                background: "linear-gradient(135deg, #0D0F1E, #12152A)",
+                border: "1px solid rgba(255,255,255,0.06)",
+              }}
+            >
+              <p className="text-xs mb-4" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                Set a timer to gradually fade the master volume to zero — perfect for falling asleep to healing tones.
+              </p>
+              <div className="grid grid-cols-4 gap-2">
+                {SLEEP_DURATIONS.map(({ label, minutes }) => (
+                  <button
+                    key={minutes}
+                    onClick={() => startTimer(minutes)}
+                    className="flex flex-col items-center gap-1.5 py-4 rounded-xl transition-all duration-200 active:scale-95"
+                    style={{
+                      background: "rgba(139,92,246,0.08)",
+                      border: "1px solid rgba(139,92,246,0.2)",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(139,92,246,0.18)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(139,92,246,0.45)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(139,92,246,0.08)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(139,92,246,0.2)"; }}
+                  >
+                    <Timer size={16} style={{ color: "#8B5CF6" }} />
+                    <span className="text-sm font-bold" style={{ color: "#E8EDF5", fontFamily: "DM Sans, sans-serif" }}>
+                      {minutes}
+                    </span>
+                    <span className="text-[10px]" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>min</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* How it works info */}
