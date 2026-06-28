@@ -11,6 +11,7 @@ import { useSoundStudio, STUDIO_PRESETS, type NatureSound, type MusicMode, type 
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import BreathingGuide from "@/components/BreathingGuide";
+import SessionJournal from "@/components/SessionJournal";
 
 // ─── Custom preset persistence key ───────────────────────────────────────────
 const CUSTOM_PRESETS_KEY = "rih_custom_presets";
@@ -215,6 +216,24 @@ export default function SoundStudio() {
   const { state, toggle, setLayerVolume, setFrequency, setMusicMode, setNatureSound } = useSoundStudio();
   const [activePreset, setActivePreset] = useState<string | null>(null);
 
+  // ── Session Journal state ──────────────────────────────────────────────────
+  const [showJournal, setShowJournal] = useState(false);
+  const sessionStartRef = useRef<number | null>(null);
+
+  // Track session start/stop to calculate duration for journal
+  const handleToggle = useCallback(() => {
+    if (!state.isPlaying) {
+      // Starting
+      sessionStartRef.current = Date.now();
+    } else {
+      // Stopping — prompt journal if session was > 30 seconds
+      const elapsed = sessionStartRef.current ? (Date.now() - sessionStartRef.current) / 1000 : 0;
+      if (elapsed > 30) setShowJournal(true);
+      sessionStartRef.current = null;
+    }
+    toggle();
+  }, [state.isPlaying, toggle]);
+
   // ── Sleep Timer state ──────────────────────────────────────────────────────
   const [timerActive, setTimerActive] = useState(false);
   const [timerTotalSec, setTimerTotalSec] = useState(0);   // total duration in seconds
@@ -264,6 +283,7 @@ export default function SoundStudio() {
             toggle(); // stop playback
           }, 800);
           toast("🌙 Sleep timer complete — sweet dreams");
+          setShowJournal(true);
           return 0;
         }
         // Gradually reduce master volume in the final 25% of the timer
@@ -345,6 +365,9 @@ export default function SoundStudio() {
   }, [setFrequency, setMusicMode, setNatureSound, setLayerVolume]);
 
   const selectedFreq = FREQ_OPTIONS.find(f => f.hz === state.frequencyHz) || FREQ_OPTIONS[4];
+  const sessionDurationMin = sessionStartRef.current
+    ? Math.max(1, Math.round((Date.now() - sessionStartRef.current) / 60000))
+    : timerTotalSec > 0 ? Math.round(timerTotalSec / 60) : 5;
 
   const applyPreset = useCallback((presetId: string) => {
     const preset = STUDIO_PRESETS.find(p => p.id === presetId);
@@ -411,7 +434,7 @@ export default function SoundStudio() {
                 </div>
               </div>
               <button
-                onClick={toggle}
+                onClick={handleToggle}
                 className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95"
                 style={{
                   background: state.isPlaying
@@ -866,6 +889,16 @@ export default function SoundStudio() {
           <BreathingGuide
             onClose={() => setShowBreathing(false)}
             accentColor={selectedFreq.color}
+          />
+        )}
+
+        {/* Session Journal */}
+        {showJournal && (
+          <SessionJournal
+            frequencyHz={state.frequencyHz}
+            frequencyName={selectedFreq.name}
+            durationMinutes={sessionDurationMin}
+            onClose={() => setShowJournal(false)}
           />
         )}
 

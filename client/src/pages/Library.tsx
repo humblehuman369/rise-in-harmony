@@ -8,6 +8,7 @@ import { Play, Pause, Lock, Search, Filter } from "lucide-react";
 import Layout from "@/components/Layout";
 import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFrequencyPlayer";
 import { toast } from "sonner";
+import PremiumPaywall from "@/components/PremiumPaywall";
 
 const CATEGORIES = ["all", "solfeggio", "binaural", "chakra"] as const;
 type Category = typeof CATEGORIES[number];
@@ -100,12 +101,11 @@ export default function Library() {
   const { isPlaying, currentFrequency, togglePlay } = useFrequencyPlayer();
   const [activeCategory, setActiveCategory] = useState<Category>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [paywallFreq, setPaywallFreq] = useState<Frequency | null>(null);
 
   const handlePlay = (freq: Frequency) => {
     if (freq.isPremium) {
-      toast("✦ Premium frequency — upgrade to unlock all 12+ healing tones", {
-        action: { label: "Upgrade — $7.99/mo", onClick: () => toast("Premium subscription coming soon!") },
-      });
+      setPaywallFreq(freq);
       return;
     }
     togglePlay(freq);
@@ -250,7 +250,7 @@ export default function Library() {
             Get access to all {premiumCount} premium frequencies, unlimited alarms, offline downloads, and Chakra awakening sequences.
           </div>
           <button
-            onClick={() => toast("Premium subscription — $7.99/month or $49.99/year. Coming soon!")}
+            onClick={() => setPaywallFreq({ id: 'cta', hz: 0, name: 'Full Library', isPremium: true } as Frequency)}
             className="text-sm font-semibold px-5 py-2.5 rounded-full transition-all duration-200"
             style={{
               background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
@@ -261,6 +261,15 @@ export default function Library() {
           </button>
         </div>
       </div>
+
+      {/* Premium Paywall Modal */}
+      {paywallFreq && (
+        <PremiumPaywall
+          triggerFrequencyHz={paywallFreq.hz || undefined}
+          triggerFrequencyName={paywallFreq.name}
+          onClose={() => setPaywallFreq(null)}
+        />
+      )}
     </Layout>
   );
 }

@@ -10,6 +10,7 @@ import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFreq
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import ChakraSequence from "@/components/ChakraSequence";
+import PremiumPaywall from "@/components/PremiumPaywall";
 
 function FrequencyVisualizer({ isPlaying, color, hz }: { isPlaying: boolean; color: string; hz: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -110,6 +111,7 @@ export default function Player() {
   const [isMuted, setIsMuted] = useState(false);
   const [prevVolume, setPrevVolume] = useState(0.6);
   const [showChakra, setShowChakra] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const selected = FREQUENCIES[selectedIndex];
 
@@ -118,9 +120,7 @@ export default function Player() {
 
   const handleToggle = () => {
     if (selected.isPremium && selected.id !== currentFrequency?.id) {
-      toast("✦ Premium frequency — upgrade to unlock all 12+ healing tones", {
-        action: { label: "Upgrade", onClick: () => toast("Premium subscription coming soon!") },
-      });
+      setShowPaywall(true);
       return;
     }
     togglePlay(selected);
@@ -142,6 +142,13 @@ export default function Player() {
   return (
     <Layout>
       {showChakra && <ChakraSequence onClose={() => setShowChakra(false)} />}
+      {showPaywall && (
+        <PremiumPaywall
+          triggerFrequencyHz={selected.hz}
+          triggerFrequencyName={selected.name}
+          onClose={() => setShowPaywall(false)}
+        />
+      )}
       <div className="min-h-screen flex flex-col" style={{ background: '#0A0B14' }}>
         {/* Header */}
         <div className="px-6 pt-8 pb-4 flex items-start justify-between">
@@ -333,7 +340,8 @@ export default function Player() {
                     key={f.id}
                     onClick={() => {
                       if (f.isPremium) {
-                        toast("✦ Premium — upgrade to unlock");
+                        setSelectedIndex(i); // allow selection for preview
+                        setShowPaywall(true);
                         return;
                       }
                       setSelectedIndex(i);

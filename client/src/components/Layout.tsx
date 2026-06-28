@@ -126,20 +126,60 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* Mobile bottom tab bar */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 flex items-center justify-around px-2 py-2"
+      <nav
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 flex items-center justify-around"
         style={{
-          background: 'rgba(17, 20, 42, 0.95)',
-          backdropFilter: 'blur(20px)',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
-        }}>
+          background: 'rgba(13, 15, 30, 0.97)',
+          backdropFilter: 'blur(24px)',
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          boxShadow: '0 -8px 32px rgba(0,0,0,0.4)',
+        }}
+      >
         {navItems.map(({ href, icon: Icon, label }) => {
           const active = location === href;
           return (
             <Link key={href} href={href}>
-              <div className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200"
-                style={active ? { color: '#00D4AA' } : { color: '#6B7A99' }}>
-                <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
-                <span className="text-[10px] font-medium" style={{ fontFamily: 'DM Sans, sans-serif' }}>{label}</span>
+              <div
+                className="relative flex flex-col items-center gap-0.5 px-2 py-3 transition-all duration-200"
+                style={{ minWidth: '52px' }}
+              >
+                {/* Active top indicator */}
+                {active && (
+                  <div
+                    className="absolute top-0 left-1/2 -translate-x-1/2 rounded-full"
+                    style={{
+                      width: '24px',
+                      height: '2px',
+                      background: 'linear-gradient(90deg, #00D4AA, #8B5CF6)',
+                      boxShadow: '0 0 8px rgba(0,212,170,0.6)',
+                    }}
+                  />
+                )}
+                {/* Icon with glow when active */}
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200"
+                  style={active ? {
+                    background: 'rgba(0,212,170,0.12)',
+                    boxShadow: '0 0 12px rgba(0,212,170,0.2)',
+                  } : {}}
+                >
+                  <Icon
+                    size={18}
+                    strokeWidth={active ? 2.5 : 1.8}
+                    style={{ color: active ? '#00D4AA' : '#6B7A99' }}
+                  />
+                </div>
+                <span
+                  className="text-[9px] font-semibold"
+                  style={{
+                    fontFamily: 'DM Sans, sans-serif',
+                    color: active ? '#00D4AA' : '#4A5568',
+                    letterSpacing: '0.03em',
+                  }}
+                >
+                  {label}
+                </span>
               </div>
             </Link>
           );

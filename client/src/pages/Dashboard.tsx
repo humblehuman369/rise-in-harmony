@@ -3,14 +3,15 @@
  * Streak tracking, session history, frequency usage, mood trends
  * Bioluminescent Depth theme
  */
-import { useState } from "react";
-import { Flame, Clock, Waves, TrendingUp, Calendar, Award, BarChart3, Target } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Flame, Clock, Waves, TrendingUp, Calendar, Award, BarChart3, Target, BookOpen } from "lucide-react";
 import Layout from "@/components/Layout";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { loadJournalEntries } from "@/components/SessionJournal";
 
-// Mock data for demo
-const WEEKLY_SESSIONS = [
+// Fallback demo data (shown when no journal entries exist yet)
+const DEMO_WEEKLY_SESSIONS = [
   { day: "Mon", minutes: 12, sessions: 2 },
   { day: "Tue", minutes: 8, sessions: 1 },
   { day: "Wed", minutes: 20, sessions: 3 },
@@ -20,31 +21,8 @@ const WEEKLY_SESSIONS = [
   { day: "Sun", minutes: 30, sessions: 3 },
 ];
 
-const MOOD_DATA = [
-  { day: "Mon", mood: 6 },
-  { day: "Tue", mood: 7 },
-  { day: "Wed", mood: 8 },
-  { day: "Thu", mood: 7 },
-  { day: "Fri", mood: 9 },
-  { day: "Sat", mood: 8 },
-  { day: "Sun", mood: 9 },
-];
-
-const RECENT_SESSIONS = [
-  { freq: "432hz", duration: 12, time: "Today, 6:30 AM", mood: "Calm" },
-  { freq: "528hz", duration: 8, time: "Yesterday, 6:45 AM", mood: "Energized" },
-  { freq: "binaural-alpha", duration: 20, time: "2 days ago, 7:00 AM", mood: "Focused" },
-  { freq: "396hz", duration: 5, time: "3 days ago, 6:30 AM", mood: "Grounded" },
-];
-
-const FREQ_USAGE = [
-  { id: "432hz", sessions: 18, minutes: 216 },
-  { id: "528hz", sessions: 12, minutes: 96 },
-  { id: "binaural-alpha", sessions: 8, minutes: 160 },
-  { id: "396hz", sessions: 5, minutes: 25 },
-];
-
-const STREAK_DAYS = [true, true, true, true, true, true, false, true, true, true, true, true, true, true, false, false, true, true, true, true, true, true, true, true, true, true, true, true];
+const MOOD_LABELS: Record<number, string> = { 1: "Difficult", 2: "Low", 3: "Neutral", 4: "Good", 5: "Radiant" };
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function StatCard({ icon: Icon, label, value, sub, color }: {
   icon: React.ElementType;
@@ -84,8 +62,75 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<"week" | "month">("week");
 
+  // Load real journal entries
+  const journalEntries = useMemo(() => loadJournalEntries(), []);
+  const hasRealData = journalEntries.length > 0;
+
+  // Build mood chart from journal (last 7 days)
+  const moodData = useMemo(() => {
+    const now = Date.now();
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(now - (6 - i) * 86400000);
+      return { day: DAY_NAMES[d.getDay()], date: d.toDateString(), moods: [] as number[] };
+    });
+    journalEntries.forEach(e => {
+      const d = new Date(e.timestamp).toDateString();
+      const slot = days.find(day => day.date === d);
+      if (slot) slot.moods.push(e.mood);
+    });
+    return days.map(d => ({
+      day: d.day,
+      mood: d.moods.length ? Math.round((d.moods.reduce((a, b) => a + b, 0) / d.moods.length) * 2) : 0,
+    }));
+  }, [journalEntries]);
+
+  // Build frequency usage from journal
+  const freqUsage = useMemo(() => {
+    const map: Record<number, { sessions: number; minutes: number }> = {};
+    journalEntries.forEach(e => {
+      if (!map[e.frequencyHz]) map[e.frequencyHz] = { sessions: 0, minutes: 0 };
+      map[e.frequencyHz].sessions++;
+      map[e.frequencyHz].minutes += e.durationMinutes;
+    });
+    return Object.entries(map)
+      .map(([hz, v]) => ({ hz: Number(hz), ...v }))
+      .sort((a, b) => b.sessions - a.sessions)
+      .slice(0, 4);
+  }, [journalEntries]);
+
+  // Recent sessions from journal
+  const recentSessions = useMemo(() => journalEntries.slice(0, 5), [journalEntries]);
+
+  const WEEKLY_SESSIONS = hasRealData
+    ? (() => {
+        const now = Date.now();
+        return Array.from({ length: 7 }, (_, i) => {
+          const d = new Date(now - (6 - i) * 86400000);
+          const dayStr = d.toDateString();
+          const entries = journalEntries.filter(e => new Date(e.timestamp).toDateString() === dayStr);
+          return {
+            day: DAY_NAMES[d.getDay()],
+            minutes: entries.reduce((s, e) => s + e.durationMinutes, 0),
+            sessions: entries.length,
+          };
+        });
+      })()
+    : DEMO_WEEKLY_SESSIONS;
+
   const totalMinutes = WEEKLY_SESSIONS.reduce((s, d) => s + d.minutes, 0);
   const totalSessions = WEEKLY_SESSIONS.reduce((s, d) => s + d.sessions, 0);
+  const currentStreak = hasRealData
+    ? (() => {
+        let streak = 0;
+        const now = Date.now();
+        for (let i = 0; i < 30; i++) {
+          const d = new Date(now - i * 86400000).toDateString();
+          if (journalEntries.some(e => new Date(e.timestamp).toDateString() === d)) streak++;
+          else break;
+        }
+        return streak;
+      })()
+    : 7;
 
   return (
     <Layout>
@@ -102,10 +147,10 @@ export default function Dashboard() {
 
         {/* Stats grid */}
         <div className="px-6 mb-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard icon={Flame} label="Current Streak" value="7 days" sub="🔥 Personal best!" color="#F59E0B" />
+          <StatCard icon={Flame} label="Current Streak" value={`${currentStreak} days`} sub={currentStreak >= 7 ? "🔥 Personal best!" : "Keep going!"} color="#F59E0B" />
           <StatCard icon={Clock} label="This Week" value={`${totalMinutes}m`} sub={`${totalSessions} sessions`} color="#00D4AA" />
-          <StatCard icon={Waves} label="Total Sessions" value="43" sub="Since joining" color="#8B5CF6" />
-          <StatCard icon={Award} label="Harmony Score" value="87" sub="↑ 12 this week" color="#3B82F6" />
+          <StatCard icon={Waves} label="Total Sessions" value={hasRealData ? journalEntries.length : 43} sub="Since joining" color="#8B5CF6" />
+          <StatCard icon={BookOpen} label="Journal Entries" value={journalEntries.length} sub={hasRealData ? "Real data" : "Start a session!"} color="#3B82F6" />
         </div>
 
         {/* Streak calendar */}
@@ -116,17 +161,23 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-1.5 text-xs" style={{ color: '#F59E0B', fontFamily: 'DM Sans, sans-serif' }}>
               <Flame size={14} />
-              7 day streak
+              {currentStreak} day streak
             </div>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {STREAK_DAYS.map((active, i) => (
-              <div key={i} className="w-7 h-7 rounded-md"
-                style={{
-                  background: active ? 'rgba(0,212,170,0.25)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${active ? 'rgba(0,212,170,0.4)' : 'rgba(255,255,255,0.06)'}`,
-                }} />
-            ))}
+            {Array.from({ length: 28 }, (_, i) => {
+              const d = new Date(Date.now() - (27 - i) * 86400000).toDateString();
+              const active = hasRealData
+                ? journalEntries.some((e: { timestamp: number }) => new Date(e.timestamp).toDateString() === d)
+                : [0,1,2,3,4,5,7,8,9,10,11,12,13,16,17,18,19,20,21,22,23,24,25,26,27].includes(i);
+              return (
+                <div key={i} className="w-7 h-7 rounded-md"
+                  style={{
+                    background: active ? 'rgba(0,212,170,0.25)' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${active ? 'rgba(0,212,170,0.4)' : 'rgba(255,255,255,0.06)'}`,
+                  }} />
+              );
+            })}
           </div>
           <div className="flex items-center gap-3 mt-3 text-xs" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
             <div className="flex items-center gap-1">
@@ -185,7 +236,7 @@ export default function Dashboard() {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={120}>
-            <BarChart data={MOOD_DATA} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+            <BarChart data={moodData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
               <XAxis dataKey="day" tick={{ fill: '#6B7A99', fontSize: 11, fontFamily: 'DM Sans, sans-serif' }} axisLine={false} tickLine={false} />
               <YAxis domain={[0, 10]} tick={{ fill: '#6B7A99', fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip
@@ -193,7 +244,7 @@ export default function Dashboard() {
                 cursor={{ fill: 'rgba(255,255,255,0.03)' }}
               />
               <Bar dataKey="mood" radius={[4, 4, 0, 0]}>
-                {MOOD_DATA.map((entry, index) => (
+                {moodData.map((entry, index) => (
                   <Cell key={index} fill={entry.mood >= 8 ? '#00D4AA' : entry.mood >= 6 ? '#8B5CF6' : '#6B7A99'} />
                 ))}
               </Bar>
@@ -206,35 +257,39 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 size={16} style={{ color: '#00D4AA' }} />
             <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
-              Top Frequencies
+              Top Frequencies {hasRealData && <span className="text-xs ml-1" style={{ color: '#00D4AA' }}>(from your sessions)</span>}
             </div>
           </div>
-          <div className="space-y-3">
-            {FREQ_USAGE.map((usage, i) => {
-              const freq = FREQUENCIES.find(f => f.id === usage.id);
-              if (!freq) return null;
-              const maxSessions = Math.max(...FREQ_USAGE.map(u => u.sessions));
-              return (
-                <div key={usage.id} className="flex items-center gap-3">
-                  <div className="w-5 text-xs font-mono-brand" style={{ color: '#4A5568' }}>{i + 1}</div>
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: `${freq.color}15`, border: `1px solid ${freq.color}25` }}>
-                    <span className="font-mono-brand text-[10px] font-bold" style={{ color: freq.color }}>{freq.hz}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>{freq.name}</span>
-                      <span className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>{usage.sessions} sessions</span>
+          {hasRealData && freqUsage.length > 0 ? (
+            <div className="space-y-3">
+              {freqUsage.map((usage, i) => {
+                const freq = FREQUENCIES.find(f => f.hz === usage.hz);
+                const color = freq?.color || '#6B7A99';
+                const maxSessions = Math.max(...freqUsage.map(u => u.sessions));
+                return (
+                  <div key={usage.hz} className="flex items-center gap-3">
+                    <div className="w-5 text-xs font-mono-brand" style={{ color: '#4A5568' }}>{i + 1}</div>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: `${color}15`, border: `1px solid ${color}25` }}>
+                      <span className="font-mono-brand text-[10px] font-bold" style={{ color }}>{usage.hz}</span>
                     </div>
-                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                      <div className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${(usage.sessions / maxSessions) * 100}%`, background: freq.color }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>{freq?.name || `${usage.hz}Hz`}</span>
+                        <span className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>{usage.sessions} sessions</span>
+                      </div>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                        <div className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${(usage.sessions / maxSessions) * 100}%`, background: color }} />
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-xs" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Complete sessions in the Sound Studio to see your top frequencies here.</p>
+          )}
         </div>
 
         {/* Recent sessions */}
@@ -242,34 +297,49 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 mb-4">
             <Calendar size={16} style={{ color: '#F59E0B' }} />
             <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
-              Recent Sessions
+              Recent Sessions {hasRealData && <span className="text-xs ml-1" style={{ color: '#00D4AA' }}>(from journal)</span>}
             </div>
           </div>
-          <div className="space-y-3">
-            {RECENT_SESSIONS.map((session, i) => {
-              const freq = FREQUENCIES.find(f => f.id === session.freq);
-              if (!freq) return null;
-              return (
-                <div key={i} className="flex items-center gap-3 py-2 border-b last:border-0"
-                  style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: `${freq.color}15` }}>
-                    <span className="font-mono-brand text-[9px] font-bold" style={{ color: freq.color }}>{freq.hz}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
-                      {freq.name} — {session.duration}min
+          {hasRealData && recentSessions.length > 0 ? (
+            <div className="space-y-3">
+              {recentSessions.map((entry, i) => {
+                const freq = FREQUENCIES.find(f => f.hz === entry.frequencyHz);
+                const color = freq?.color || '#6B7A99';
+                const relTime = (() => {
+                  const diff = Date.now() - entry.timestamp;
+                  if (diff < 3600000) return `${Math.round(diff / 60000)}m ago`;
+                  if (diff < 86400000) return `${Math.round(diff / 3600000)}h ago`;
+                  return `${Math.round(diff / 86400000)}d ago`;
+                })();
+                return (
+                  <div key={entry.id} className="flex items-center gap-3 py-2 border-b last:border-0"
+                    style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: `${color}15` }}>
+                      <span className="font-mono-brand text-[9px] font-bold" style={{ color }}>{entry.frequencyHz}</span>
                     </div>
-                    <div className="text-[10px]" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>{session.time}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+                        {entry.frequencyName} — {entry.durationMinutes}min
+                      </div>
+                      <div className="text-[10px]" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>{relTime}</div>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full"
+                      style={{ background: 'rgba(0,212,170,0.1)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+                      {MOOD_LABELS[entry.mood] || 'Good'}
+                    </span>
+                    {entry.note && (
+                      <div className="text-[10px] max-w-[80px] truncate" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }} title={entry.note}>
+                        "{entry.note}"
+                      </div>
+                    )}
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full"
-                    style={{ background: 'rgba(0,212,170,0.1)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
-                    {session.mood}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-xs" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Your session journal is empty. Play a frequency in the Sound Studio and log your mood to see entries here.</p>
+          )}
         </div>
 
         {/* Goals section */}
