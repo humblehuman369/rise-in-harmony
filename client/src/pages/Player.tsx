@@ -4,11 +4,12 @@
  * Bioluminescent Depth theme
  */
 import { useState, useEffect, useRef } from "react";
-import { Play, Pause, Volume2, VolumeX, ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, ChevronLeft, ChevronRight, Lock, Zap } from "lucide-react";
 import Layout from "@/components/Layout";
 import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFrequencyPlayer";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
+import ChakraSequence from "@/components/ChakraSequence";
 
 function FrequencyVisualizer({ isPlaying, color, hz }: { isPlaying: boolean; color: string; hz: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -108,6 +109,7 @@ export default function Player() {
   const [selectedIndex, setSelectedIndex] = useState(4); // 432Hz default
   const [isMuted, setIsMuted] = useState(false);
   const [prevVolume, setPrevVolume] = useState(0.6);
+  const [showChakra, setShowChakra] = useState(false);
 
   const selected = FREQUENCIES[selectedIndex];
 
@@ -139,20 +141,37 @@ export default function Player() {
 
   return (
     <Layout>
+      {showChakra && <ChakraSequence onClose={() => setShowChakra(false)} />}
       <div className="min-h-screen flex flex-col" style={{ background: '#0A0B14' }}>
         {/* Header */}
-        <div className="px-6 pt-8 pb-4">
-          <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-            Frequency Player
+        <div className="px-6 pt-8 pb-4 flex items-start justify-between">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+              Frequency Player
+            </div>
+            <h1 style={{
+              fontFamily: 'Cormorant Garamond, serif',
+              fontSize: '2rem',
+              fontWeight: 600,
+              color: '#E8EDF5',
+            }}>
+              Healing Tones
+            </h1>
           </div>
-          <h1 style={{
-            fontFamily: 'Cormorant Garamond, serif',
-            fontSize: '2rem',
-            fontWeight: 600,
-            color: '#E8EDF5',
-          }}>
-            Healing Tones
-          </h1>
+          <button
+            onClick={() => setShowChakra(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 mt-2"
+            style={{
+              background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.2))',
+              border: '1px solid rgba(139,92,246,0.35)',
+              color: '#C084FC',
+              fontFamily: 'DM Sans, sans-serif',
+              boxShadow: '0 0 16px rgba(139,92,246,0.15)',
+            }}
+          >
+            <Zap size={13} />
+            7-Chakra Journey
+          </button>
         </div>
 
         {/* Main player area */}

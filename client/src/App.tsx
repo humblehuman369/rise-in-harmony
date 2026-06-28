@@ -9,6 +9,7 @@ import Player from "./pages/Player";
 import Alarm from "./pages/Alarm";
 import Library from "./pages/Library";
 import Dashboard from "./pages/Dashboard";
+import OnboardingModal, { useOnboarding } from "./components/OnboardingModal";
 
 function Router() {
   return (
@@ -24,21 +25,31 @@ function Router() {
   );
 }
 
+function AppContent() {
+  const { showOnboarding, completeOnboarding } = useOnboarding();
+  return (
+    <>
+      <Toaster
+        toastOptions={{
+          style: {
+            background: '#12152A',
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: '#E8EDF5',
+          },
+        }}
+      />
+      <Router />
+      {showOnboarding && <OnboardingModal onComplete={completeOnboarding} />}
+    </>
+  );
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
-          <Toaster
-            toastOptions={{
-              style: {
-                background: '#12152A',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: '#E8EDF5',
-              },
-            }}
-          />
-          <Router />
+          <AppContent />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

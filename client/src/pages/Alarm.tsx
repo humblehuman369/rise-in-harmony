@@ -3,12 +3,13 @@
  * Create, manage, and configure healing frequency alarms
  * Bioluminescent Depth theme
  */
-import { useState } from "react";
-import { Plus, AlarmClock, Trash2, Edit3, Bell, BellOff, Waves, Sunrise, Zap, Lock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, AlarmClock, Trash2, Edit3, Bell, BellOff, Waves, Sunrise, Zap, Lock, BellRing, ShieldCheck } from "lucide-react";
 import Layout from "@/components/Layout";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useAlarmNotifications } from "@/hooks/useAlarmNotifications";
 
 interface Alarm {
   id: string;
@@ -311,12 +312,36 @@ function CreateAlarmModal({ onClose, onSave }: { onClose: () => void; onSave: (a
 export default function Alarm() {
   const [alarms, setAlarms] = useState<Alarm[]>(DEFAULT_ALARMS);
   const [showCreate, setShowCreate] = useState(false);
+  const { permission, requestPermission, scheduleNotification, cancelNotification, isGranted, isSupported } = useAlarmNotifications();
+
+  // Schedule notifications for all enabled alarms whenever alarms or permission changes
+  useEffect(() => {
+    if (!isGranted) return;
+    alarms.forEach(alarm => {
+      if (alarm.enabled) {
+        const freq = FREQUENCIES.find(f => f.id === alarm.frequencyId);
+        scheduleNotification({
+          id: alarm.id,
+          label: alarm.label,
+          time: alarm.time,
+          days: alarm.days,
+          frequencyId: alarm.frequencyId,
+          frequencyHz: freq?.hz || 432,
+          frequencyName: freq?.name || 'Natural Harmony',
+          enabled: alarm.enabled,
+        });
+      } else {
+        cancelNotification(alarm.id);
+      }
+    });
+  }, [alarms, isGranted, scheduleNotification, cancelNotification]);
 
   const toggleAlarm = (id: string) => {
     setAlarms(prev => prev.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a));
   };
 
   const deleteAlarm = (id: string) => {
+    cancelNotification(id);
     setAlarms(prev => prev.filter(a => a.id !== id));
     toast("Alarm removed");
   };
@@ -327,6 +352,20 @@ export default function Alarm() {
 
   const saveAlarm = (alarm: Alarm) => {
     setAlarms(prev => [...prev, alarm]);
+    // Schedule notification for new alarm if permission granted
+    if (isGranted) {
+      const freq = FREQUENCIES.find(f => f.id === alarm.frequencyId);
+      scheduleNotification({
+        id: alarm.id,
+        label: alarm.label,
+        time: alarm.time,
+        days: alarm.days,
+        frequencyId: alarm.frequencyId,
+        frequencyHz: freq?.hz || 432,
+        frequencyName: freq?.name || 'Natural Harmony',
+        enabled: alarm.enabled,
+      });
+    }
   };
 
   const enabledCount = alarms.filter(a => a.enabled).length;
@@ -396,6 +435,46 @@ export default function Alarm() {
             ))
           )}
         </div>
+
+        {/* Browser Notification Permission Banner */}
+        {isSupported && !isGranted && (
+          <div className="mx-6 mb-4 p-4 rounded-xl" style={{
+            background: 'linear-gradient(135deg, rgba(0,212,170,0.08), rgba(59,130,246,0.05))',
+            border: '1px solid rgba(0,212,170,0.2)',
+          }}>
+            <div className="flex items-start gap-3">
+              <BellRing size={18} style={{ color: '#00D4AA', flexShrink: 0, marginTop: '1px' }} />
+              <div className="flex-1">
+                <div className="text-sm font-semibold mb-1" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+                  Enable Alarm Notifications
+                </div>
+                <div className="text-xs leading-relaxed mb-3" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                  Allow browser notifications so your healing alarms fire even when the app is in the background.
+                </div>
+                <button
+                  onClick={requestPermission}
+                  className="btn-teal px-4 py-2 text-xs font-semibold flex items-center gap-1.5"
+                >
+                  <Bell size={13} />
+                  Enable Notifications
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notification granted confirmation */}
+        {isGranted && (
+          <div className="mx-6 mb-4 p-3 rounded-xl flex items-center gap-2.5" style={{
+            background: 'rgba(0,212,170,0.06)',
+            border: '1px solid rgba(0,212,170,0.12)',
+          }}>
+            <ShieldCheck size={15} style={{ color: '#00D4AA', flexShrink: 0 }} />
+            <span className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+              Browser notifications active — alarms will fire even when the app is minimized.
+            </span>
+          </div>
+        )}
 
         {/* Alarm info banner */}
         <div className="mx-6 mb-8 p-4 rounded-xl" style={{
