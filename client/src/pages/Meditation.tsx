@@ -158,7 +158,7 @@ function MeditationPlayer({
   onClose: () => void;
 }) {
   const { isAuthenticated } = useAuth();
-  const [mode, setMode] = useState<"sound" | "frequency">("sound");
+  const [mode, setMode] = useState<"sound" | "frequency">("frequency");
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [volume, setVolume] = useState(0.6);
