@@ -58,8 +58,8 @@ const CHAKRA_STEPS: ChakraStep[] = [
   {
     name: "Heart",
     sanskrit: "Anāhata",
-    hz: 432,
-    frequencyId: "432hz",
+    hz: 639,
+    frequencyId: "639hz",
     color: "#00D4AA",
     glowColor: "#00D4AA80",
     element: "Air",
@@ -69,8 +69,8 @@ const CHAKRA_STEPS: ChakraStep[] = [
   {
     name: "Throat",
     sanskrit: "Viśuddha",
-    hz: 639,
-    frequencyId: "639hz",
+    hz: 741,
+    frequencyId: "741hz",
     color: "#3B82F6",
     glowColor: "#3B82F680",
     element: "Sound",
@@ -80,8 +80,8 @@ const CHAKRA_STEPS: ChakraStep[] = [
   {
     name: "Third Eye",
     sanskrit: "Ājñā",
-    hz: 741,
-    frequencyId: "741hz",
+    hz: 852,
+    frequencyId: "852hz",
     color: "#8B5CF6",
     glowColor: "#8B5CF680",
     element: "Light",
