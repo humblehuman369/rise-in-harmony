@@ -4,11 +4,13 @@
  * Bioluminescent Depth theme
  */
 import { useState, useMemo } from "react";
-import { Flame, Clock, Waves, TrendingUp, Calendar, Award, BarChart3, Target, BookOpen } from "lucide-react";
+import { Flame, Clock, Waves, TrendingUp, Calendar, Award, BarChart3, Target, BookOpen, Loader2 } from "lucide-react";
 import Layout from "@/components/Layout";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { loadJournalEntries } from "@/components/SessionJournal";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 // Fallback demo data (shown when no journal entries exist yet)
 const DEMO_WEEKLY_SESSIONS = [
@@ -61,10 +63,19 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<"week" | "month">("week");
+  const { isAuthenticated } = useAuth();
 
-  // Load real journal entries
+  // Server stats (when logged in)
+  const { data: serverStats, isLoading: statsLoading } = trpc.sessions.stats.useQuery(
+    undefined,
+    { enabled: isAuthenticated }
+  );
+
+  // Load local journal entries as fallback
   const journalEntries = useMemo(() => loadJournalEntries(), []);
-  const hasRealData = journalEntries.length > 0;
+  const hasRealData = isAuthenticated
+    ? (serverStats?.totalSessions ?? 0) > 0
+    : journalEntries.length > 0;
 
   // Build mood chart from journal (last 7 days)
   const moodData = useMemo(() => {
@@ -147,10 +158,18 @@ export default function Dashboard() {
 
         {/* Stats grid */}
         <div className="px-6 mb-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard icon={Flame} label="Current Streak" value={`${currentStreak} days`} sub={currentStreak >= 7 ? "🔥 Personal best!" : "Keep going!"} color="#F59E0B" />
-          <StatCard icon={Clock} label="This Week" value={`${totalMinutes}m`} sub={`${totalSessions} sessions`} color="#00D4AA" />
-          <StatCard icon={Waves} label="Total Sessions" value={hasRealData ? journalEntries.length : 43} sub="Since joining" color="#8B5CF6" />
-          <StatCard icon={BookOpen} label="Journal Entries" value={journalEntries.length} sub={hasRealData ? "Real data" : "Start a session!"} color="#3B82F6" />
+          {statsLoading ? (
+            <div className="col-span-4 flex items-center justify-center py-8">
+              <Loader2 size={24} className="animate-spin" style={{ color: '#00D4AA' }} />
+            </div>
+          ) : (
+            <>
+              <StatCard icon={Flame} label="Current Streak" value={`${currentStreak} days`} sub={currentStreak >= 7 ? "🔥 Personal best!" : "Keep going!"} color="#F59E0B" />
+              <StatCard icon={Clock} label="This Week" value={`${totalMinutes}m`} sub={`${totalSessions} sessions`} color="#00D4AA" />
+              <StatCard icon={Waves} label="Total Sessions" value={isAuthenticated ? (serverStats?.totalSessions ?? 0) : (hasRealData ? journalEntries.length : 43)} sub={isAuthenticated ? `${serverStats?.totalMinutes ?? 0} total minutes` : "Since joining"} color="#8B5CF6" />
+              <StatCard icon={BookOpen} label="Avg Mood" value={isAuthenticated ? (serverStats?.avgMoodRating ? serverStats.avgMoodRating.toFixed(1) : '—') : journalEntries.length} sub={isAuthenticated ? "From journal entries" : (hasRealData ? "Real data" : "Start a session!")} color="#3B82F6" />
+            </>
+          )}
         </div>
 
         {/* Streak calendar */}

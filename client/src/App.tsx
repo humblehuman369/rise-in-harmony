@@ -11,8 +11,8 @@ import Library from "./pages/Library";
 import Dashboard from "./pages/Dashboard";
 import SoundStudio from "./pages/SoundStudio";
 import OnboardingModal, { useOnboarding } from "./components/OnboardingModal";
-
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path="/" component={Home} />

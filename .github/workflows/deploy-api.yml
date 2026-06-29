@@ -1,0 +1,51 @@
+name: Deploy API → Railway
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "server/**"
+      - "drizzle/**"
+      - "shared/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+
+jobs:
+  deploy-api:
+    name: Deploy to Railway
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript type check
+        run: pnpm check
+
+      - name: Run tests
+        run: pnpm test
+        env:
+          DATABASE_URL: ""
+          JWT_SECRET: test-secret-for-ci
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        run: railway up --service rise-in-harmony-api --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

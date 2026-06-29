@@ -3,6 +3,7 @@
  * Bioluminescent Depth theme: dark void, teal glow, frequency rings
  * Sections: Hero, Features, Frequencies Preview, Testimonials, CTA
  */
+import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { Play, AlarmClock, Waves, Sparkles, ChevronRight, Star, Shield, Zap } from "lucide-react";
 import Layout from "@/components/Layout";
@@ -72,6 +73,7 @@ const testimonials = [
 const freeFrequencies = FREQUENCIES.filter(f => !f.isPremium).slice(0, 3);
 
 export default function Home() {
+    const { user } = useAuth();
   const [, navigate] = useLocation();
 
   return (
