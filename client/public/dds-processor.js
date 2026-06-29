@@ -22,9 +22,9 @@ class DDSProcessor extends AudioWorkletProcessor {
     this._phaseR = 0.0;
     this._freqR = 440.0;
 
-    // Amplitude
-    this._amplitude = 0.0;
-    this._targetAmplitude = 0.0;
+    // Amplitude — start at full so GainNode controls the envelope
+    this._amplitude = 1.0;
+    this._targetAmplitude = 1.0;
     this._ampSmooth = 0.0005; // ~10ms at 48kHz
 
     // Waveform: 'sine' | 'square' | 'triangle' | 'sawtooth'
@@ -84,11 +84,11 @@ class DDSProcessor extends AudioWorkletProcessor {
 
     const left = output[0];
     const right = output.length > 1 ? output[1] : output[0];
-    const sampleRate = sampleRate; // AudioWorkletGlobalScope
+    const sr = sampleRate; // AudioWorkletGlobalScope global
 
-    const dtL = this._freqL / sampleRate;
-    const dtR = this._freqR / sampleRate;
-    const dtIso = this._isoRate / sampleRate;
+    const dtL = this._freqL / sr;
+    const dtR = this._freqR / sr;
+    const dtIso = this._isoRate / sr;
     const smooth = this._ampSmooth;
 
     for (let i = 0; i < left.length; i++) {

@@ -18,7 +18,7 @@
  *   NFR-FREQ-003  Hardware disclaimer + headphone recommendation
  *   NFR-FREQ-004  Double-precision phase accumulation
  */
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Play, Pause, Square, Headphones, AlertCircle, Star, StarOff, Plus, Minus, Clock, Waves, Activity } from "lucide-react";
 import Layout from "@/components/Layout";
 import { Slider } from "@/components/ui/slider";
@@ -98,26 +98,9 @@ export default function PrecisionPlayer() {
   const [favNameInput, setFavNameInput] = useState("");
   const [showFavInput, setShowFavInput] = useState(false);
 
-  // Analyser node — needs re-read after play starts
-  const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
-  const analyserPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Poll for analyser node after play starts (it's created async in the worklet setup)
-  useEffect(() => {
-    if (player.isPlaying) {
-      analyserPollRef.current = setInterval(() => {
-        const node = player.analyserNode;
-        if (node) {
-          setAnalyserNode(node);
-          if (analyserPollRef.current) clearInterval(analyserPollRef.current);
-        }
-      }, 50);
-    } else {
-      setAnalyserNode(null);
-      if (analyserPollRef.current) clearInterval(analyserPollRef.current);
-    }
-    return () => { if (analyserPollRef.current) clearInterval(analyserPollRef.current); };
-  }, [player.isPlaying, player.analyserNode]);
+  // Analyser node — sync directly from player state
+  // analyserRef is set synchronously inside play() so we can read it right after isPlaying flips
+  const analyserNode = player.isPlaying ? player.analyserNode : null;
 
   // ── Build session from current UI state ──────────────────────────────────
   const buildSession = useCallback((): PrecisionSession => {
