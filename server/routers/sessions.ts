@@ -103,6 +103,66 @@ export const sessionsRouter = router({
   }),
 
   /**
+   * Bulk import sessions from localStorage (called once on first login).
+   * Accepts up to 90 entries; deduplicates by timestamp.
+   */
+  bulkImport: protectedProcedure
+    .input(
+      z.object({
+        entries: z.array(
+          z.object({
+            timestamp: z.number(),
+            frequencyHz: z.number(),
+            frequencyName: z.string().optional(),
+            durationMinutes: z.number(),
+            mood: z.number().min(1).max(5).optional(),
+            note: z.string().max(1000).optional(),
+          })
+        ).max(90),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Get existing session timestamps to avoid duplicates
+      const existing = await getUserSessions(ctx.user.id, 200);
+      const existingTimestamps = new Set(
+        existing.map(s => new Date(s.startedAt).getTime())
+      );
+
+      let imported = 0;
+      for (const entry of input.entries) {
+        // Skip if a session already exists within 60 seconds of this timestamp
+        const isDuplicate = Array.from(existingTimestamps).some(
+          ts => Math.abs(ts - entry.timestamp) < 60_000
+        );
+        if (isDuplicate) continue;
+
+        const durationSeconds = Math.round(entry.durationMinutes * 60);
+        const startedAt = new Date(entry.timestamp);
+
+        const sessionId = await createSession({
+          userId: ctx.user.id,
+          frequencyHz: entry.frequencyHz,
+          frequencyName: entry.frequencyName,
+          sessionType: "single",
+          durationSeconds,
+          startedAt,
+        });
+
+        await endSession(
+          sessionId,
+          durationSeconds,
+          entry.mood,
+          entry.note,
+        );
+
+        existingTimestamps.add(entry.timestamp);
+        imported++;
+      }
+
+      return { imported };
+    }),
+
+  /**
    * Re-engagement check — called by the Heartbeat scheduler.
    * Finds users who have not had a session in 7 days and sends a nudge email.
    * Safe to call repeatedly; email is only sent once per 7-day window.

@@ -33,16 +33,16 @@
 ## Remaining Web Work
 
 ### Data / Backend
-- [ ] Auto-log Chakra Journey sessions to journal on sequence completion
-- [ ] Bulk import localStorage sessions to server on first login
+- [x] Auto-log Chakra Journey sessions to journal on sequence completion
+- [x] Bulk import localStorage sessions to server on first login
 
 ### Monetization
-- [ ] Paywall trigger at end of 7-Chakra sequence completion screen
+- [x] Paywall trigger at end of 7-Chakra sequence completion screen
 - [ ] RevenueCat Web Billing integration (web subscription checkout)
 - [ ] RevenueCat webhook handler updating subscriptions table
 
 ### Analytics
-- [ ] PostHog feature flags for A/B testing
+- [x] PostHog feature flags for A/B testing (useFeatureFlag hook + reloadFeatureFlags on login)
 
 ### Infrastructure (external — requires service accounts)
 - [ ] Monorepo restructure (pnpm workspaces + Turborepo)

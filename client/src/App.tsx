@@ -12,6 +12,9 @@ import Dashboard from "./pages/Dashboard";
 import SoundStudio from "./pages/SoundStudio";
 import Privacy from "./pages/Privacy";
 import OnboardingModal, { useOnboarding } from "./components/OnboardingModal";
+import { useAuth } from "./_core/hooks/useAuth";
+import { useLocalSessionImport } from "./hooks/useLocalSessionImport";
+import { useAnalytics } from "./hooks/useAnalytics";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -31,6 +34,11 @@ function Router() {
 
 function AppContent() {
   const { showOnboarding, completeOnboarding } = useOnboarding();
+  const { user } = useAuth();
+  // Initialize PostHog, identify user, and reload feature flags after login
+  useAnalytics(user?.id ?? undefined, user?.email ?? undefined);
+  // One-time bulk import of localStorage sessions to server after login
+  useLocalSessionImport(user?.id);
   return (
     <>
       <Toaster

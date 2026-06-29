@@ -4,6 +4,7 @@
  */
 import posthog from "posthog-js";
 import { useEffect } from "react";
+import { reloadFeatureFlags } from "./useFeatureFlag";
 
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
 const POSTHOG_HOST = import.meta.env.VITE_POSTHOG_HOST as string | undefined;
@@ -27,6 +28,8 @@ export function useAnalytics(userId?: number, userEmail?: string) {
     initAnalytics();
     if (userId && POSTHOG_KEY) {
       posthog.identify(String(userId), { email: userEmail });
+      // Reload feature flags after identify so personalized flags are evaluated
+      reloadFeatureFlags();
     }
   }, [userId, userEmail]);
 }
