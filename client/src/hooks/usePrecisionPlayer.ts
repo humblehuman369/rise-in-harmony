@@ -137,6 +137,20 @@ export function usePrecisionPlayer() {
     });
     workletNodeRef.current = worklet;
 
+    // Wait for the worklet processor to signal it is ready before sending parameters
+    await new Promise<void>((resolve) => {
+      const onReady = (e: MessageEvent) => {
+        if (e.data?.type === 'ready') {
+          worklet.port.removeEventListener('message', onReady);
+          resolve();
+        }
+      };
+      worklet.port.addEventListener('message', onReady);
+      worklet.port.start();
+      // Fallback: resolve after 50ms if ready message was missed
+      setTimeout(resolve, 50);
+    });
+
     // Configure the DDS processor
     const freqL = s.freqL;
     const freqR = s.mode === "binaural"

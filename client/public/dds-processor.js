@@ -39,6 +39,9 @@ class DDSProcessor extends AudioWorkletProcessor {
     // Mode: 'mono' | 'binaural'
     this._mode = 'mono';
 
+    // Signal to the main thread that this processor instance is ready to receive messages
+    this.port.postMessage({ type: 'ready' });
+
     this.port.onmessage = (e) => {
       const d = e.data;
       if (d.type === 'setFreq') {
