@@ -15,6 +15,10 @@ export interface Frequency {
   benefit: string;
   color: string;
   isPremium: boolean;
+  /** Sanskrit chakra name + pronunciation guide, e.g. "Mūlādhāra · moo-LAH-dah-rah" */
+  pronunciation?: string;
+  /** Chakra position 1-7 (Root=1, Crown=7) for Chakra Map ordering */
+  chakraPosition?: number;
 }
 
 export const FREQUENCIES: Frequency[] = [
@@ -47,6 +51,8 @@ export const FREQUENCIES: Frequency[] = [
     benefit: "Grounds your energy and releases guilt, fear, and deeply held negative emotions. Traditionally associated with the Root Chakra, this tone is used to build a sense of safety, stability, and belonging.",
     color: "#EAB308",
     isPremium: false,
+    pronunciation: "Mūlādhāra · moo-LAH-dah-rah",
+    chakraPosition: 1,
   },
   {
     id: "417hz",
@@ -57,6 +63,8 @@ export const FREQUENCIES: Frequency[] = [
     benefit: "Clears traumatic experiences and facilitates positive change. Linked to the Sacral Chakra, it supports creativity, emotional flow, and the release of past patterns that no longer serve you.",
     color: "#84CC16",
     isPremium: true,
+    pronunciation: "Svādhiṣṭhāna · svah-DISH-tah-nah",
+    chakraPosition: 2,
   },
   {
     id: "432hz",
@@ -77,6 +85,8 @@ export const FREQUENCIES: Frequency[] = [
     benefit: "Known as the 'Love Frequency,' 528Hz is associated with DNA repair and cellular transformation. Linked to the Solar Plexus Chakra, it strengthens personal power, confidence, and your sense of purpose.",
     color: "#06B6D4",
     isPremium: false,
+    pronunciation: "Maṇipūra · mah-nee-POO-rah",
+    chakraPosition: 3,
   },
   {
     id: "639hz",
@@ -87,6 +97,8 @@ export const FREQUENCIES: Frequency[] = [
     benefit: "Opens the Heart Chakra to harmonize relationships and deepen compassion. This frequency is used to enhance communication, tolerance, and unconditional love — both for others and for yourself.",
     color: "#3B82F6",
     isPremium: true,
+    pronunciation: "Anāhata · ah-NAH-ha-ta",
+    chakraPosition: 4,
   },
   {
     id: "741hz",
@@ -97,6 +109,8 @@ export const FREQUENCIES: Frequency[] = [
     benefit: "Activates the Throat Chakra to support authentic self-expression and clear communication. Traditionally used to cleanse cells of electromagnetic toxins and expand consciousness through honest, purposeful speech.",
     color: "#8B5CF6",
     isPremium: true,
+    pronunciation: "Viśuddha · vee-SHOO-dah",
+    chakraPosition: 5,
   },
   {
     id: "852hz",
@@ -107,6 +121,8 @@ export const FREQUENCIES: Frequency[] = [
     benefit: "Awakens the Third Eye Chakra, deepening intuition and inner vision. This frequency is used to return to spiritual order, dissolve illusions, and strengthen the connection between your conscious mind and higher awareness.",
     color: "#A855F7",
     isPremium: true,
+    pronunciation: "Ājñā · AHJ-nyah",
+    chakraPosition: 6,
   },
   {
     id: "963hz",
@@ -117,6 +133,8 @@ export const FREQUENCIES: Frequency[] = [
     benefit: "Activates the Crown Chakra and the pineal gland, opening a channel to higher consciousness and universal oneness. Used in meditation to dissolve the boundary between self and the divine, inviting deep spiritual awakening.",
     color: "#EC4899",
     isPremium: true,
+    pronunciation: "Sahasrāra · sah-has-RAH-rah",
+    chakraPosition: 7,
   },
   {
     id: "binaural-alpha",

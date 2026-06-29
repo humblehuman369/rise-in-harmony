@@ -2,28 +2,132 @@
  * Library — Rise In Harmony Frequency Library
  * Full catalog of all 13 healing frequencies with categories
  * Bioluminescent Depth theme
+ * Features: Chakra category filter with progression header, Sanskrit pronunciation guides
  */
 import { useState } from "react";
-import { Play, Pause, Lock, Search, Filter } from "lucide-react";
+import { Play, Pause, Lock, Search, Filter, ChevronDown, ChevronUp, Volume2 } from "lucide-react";
 import Layout from "@/components/Layout";
 import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFrequencyPlayer";
 import { toast } from "sonner";
 import PremiumPaywall from "@/components/PremiumPaywall";
 
-const CATEGORIES = ["all", "solfeggio", "binaural", "chakra"] as const;
+const CATEGORIES = ["all", "chakra", "solfeggio", "binaural"] as const;
 type Category = typeof CATEGORIES[number];
 
 const CATEGORY_INFO = {
   all: { label: "All Frequencies", description: "The complete healing frequency library" },
   solfeggio: { label: "Solfeggio Scale", description: "Ancient 6-tone scale with healing properties" },
   binaural: { label: "Binaural Beats", description: "Two-tone audio for brainwave entrainment" },
-  chakra: { label: "Chakra Tones", description: "Seven energy center alignment frequencies" },
+  chakra: { label: "Chakra Journey", description: "Seven energy center alignment frequencies · Root to Crown" },
 };
 
-function FrequencyCard({ freq, isPlaying, onPlay }: {
+// The 7 chakra frequencies in ascending order
+const CHAKRA_HZ = [396, 417, 528, 639, 741, 852, 963];
+
+const CHAKRA_COLORS: Record<number, string> = {
+  1: "#EAB308", // Root — amber
+  2: "#84CC16", // Sacral — lime
+  3: "#06B6D4", // Solar Plexus — cyan
+  4: "#3B82F6", // Heart — blue
+  5: "#8B5CF6", // Throat — violet
+  6: "#A855F7", // Third Eye — purple
+  7: "#EC4899", // Crown — pink
+};
+
+function ChakraProgressionHeader() {
+  const chakraFreqs = FREQUENCIES.filter(f => f.chakraPosition !== undefined)
+    .sort((a, b) => (a.chakraPosition ?? 0) - (b.chakraPosition ?? 0));
+
+  return (
+    <div className="mx-6 mb-6 p-5 rounded-2xl"
+      style={{
+        background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(0,212,170,0.05))',
+        border: '1px solid rgba(139,92,246,0.18)',
+      }}>
+      <div className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>
+        The Seven Chakra Frequencies
+      </div>
+      <div className="flex items-center gap-1 flex-wrap">
+        {chakraFreqs.map((f, i) => (
+          <div key={f.id} className="flex items-center gap-1">
+            <div className="flex flex-col items-center">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-[9px] font-bold font-mono-brand"
+                style={{
+                  background: `${f.color}20`,
+                  border: `1.5px solid ${f.color}60`,
+                  color: f.color,
+                }}>
+                {f.hz}
+              </div>
+              <div className="text-[8px] mt-0.5 text-center max-w-[40px] leading-tight"
+                style={{ color: `${f.color}90`, fontFamily: 'DM Sans, sans-serif' }}>
+                {f.pronunciation?.split(' · ')[0].split('ā')[0].split('ū')[0].split('ṭ')[0].split('ṣ')[0].slice(0, 6)}
+              </div>
+            </div>
+            {i < chakraFreqs.length - 1 && (
+              <div className="w-3 h-px mb-3" style={{ background: 'rgba(255,255,255,0.12)' }} />
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="text-xs mt-3 leading-relaxed" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
+        Play them in sequence — Root to Crown — for a complete energetic alignment journey.
+      </div>
+    </div>
+  );
+}
+
+function PronunciationGuide({ freq }: { freq: Frequency }) {
+  const [open, setOpen] = useState(false);
+  if (!freq.pronunciation) return null;
+
+  const [sanskritName, phonetic] = freq.pronunciation.split(' · ');
+  const chakraLabel = freq.description.split('Chakra (')[0].split('— ')[1]?.trim() || '';
+
+  return (
+    <div className="mt-2">
+      <button
+        onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
+        className="flex items-center gap-1.5 text-[10px] font-medium transition-all duration-150"
+        style={{ color: open ? freq.color : '#4A5568', fontFamily: 'DM Sans, sans-serif' }}
+      >
+        <Volume2 size={10} />
+        Pronunciation
+        {open ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+      </button>
+      {open && (
+        <div
+          className="mt-1.5 px-3 py-2 rounded-lg text-xs"
+          style={{
+            background: `${freq.color}0A`,
+            border: `1px solid ${freq.color}25`,
+            fontFamily: 'DM Sans, sans-serif',
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="flex items-start gap-2">
+            <div className="flex-1">
+              <span className="font-semibold" style={{ color: freq.color }}>{sanskritName}</span>
+              <span className="mx-1.5" style={{ color: '#4A5568' }}>·</span>
+              <span style={{ color: '#8FA3BF' }}>"{phonetic}"</span>
+            </div>
+          </div>
+          {chakraLabel && (
+            <div className="mt-1 text-[10px]" style={{ color: '#4A5568' }}>
+              {chakraLabel} Chakra · Position {freq.chakraPosition} of 7
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FrequencyCard({ freq, isPlaying, onPlay, showChakraPosition }: {
   freq: Frequency;
   isPlaying: boolean;
   onPlay: (freq: Frequency) => void;
+  showChakraPosition?: boolean;
 }) {
   return (
     <div
@@ -32,11 +136,17 @@ function FrequencyCard({ freq, isPlaying, onPlay }: {
     >
       <div className="flex items-start gap-4">
         {/* Hz badge */}
-        <div className="flex-shrink-0 w-14 h-14 rounded-xl flex flex-col items-center justify-center"
+        <div className="flex-shrink-0 w-14 h-14 rounded-xl flex flex-col items-center justify-center relative"
           style={{
             background: `${freq.color}15`,
             border: `1px solid ${freq.color}30`,
           }}>
+          {showChakraPosition && freq.chakraPosition && (
+            <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold"
+              style={{ background: freq.color, color: '#0A0B14' }}>
+              {freq.chakraPosition}
+            </div>
+          )}
           <span className="font-mono-brand text-sm font-bold leading-tight" style={{ color: freq.color }}>
             {freq.hz}
           </span>
@@ -69,6 +179,8 @@ function FrequencyCard({ freq, isPlaying, onPlay }: {
               🎧 Binaural: {freq.hz}Hz + {freq.hz + freq.binauralOffset}Hz = {freq.binauralOffset}Hz beat
             </div>
           )}
+          {/* Sanskrit pronunciation guide */}
+          <PronunciationGuide freq={freq} />
         </div>
 
         {/* Play button */}
@@ -111,14 +223,25 @@ export default function Library() {
     togglePlay(freq);
   };
 
-  const filtered = FREQUENCIES.filter(f => {
-    const matchesCategory = activeCategory === "all" || f.category === activeCategory;
-    const matchesSearch = searchQuery === "" ||
-      f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.hz.toString().includes(searchQuery) ||
-      f.benefit.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const filtered = (() => {
+    let list = FREQUENCIES.filter(f => {
+      const matchesCategory = activeCategory === "all" || f.category === activeCategory;
+      const matchesSearch = searchQuery === "" ||
+        f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        f.hz.toString().includes(searchQuery) ||
+        f.benefit.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+
+    // When chakra category is selected, show only the 7 chakra frequencies sorted Root→Crown
+    if (activeCategory === "chakra") {
+      list = list
+        .filter(f => CHAKRA_HZ.includes(f.hz))
+        .sort((a, b) => (a.chakraPosition ?? 99) - (b.chakraPosition ?? 99));
+    }
+
+    return list;
+  })();
 
   const freeCount = FREQUENCIES.filter(f => !f.isPremium).length;
   const premiumCount = FREQUENCIES.filter(f => f.isPremium).length;
@@ -172,13 +295,19 @@ export default function Library() {
                 onClick={() => setActiveCategory(cat)}
                 className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200"
                 style={{
-                  background: activeCategory === cat ? 'rgba(0,212,170,0.15)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${activeCategory === cat ? 'rgba(0,212,170,0.35)' : 'rgba(255,255,255,0.06)'}`,
-                  color: activeCategory === cat ? '#00D4AA' : '#6B7A99',
+                  background: activeCategory === cat
+                    ? cat === 'chakra' ? 'rgba(139,92,246,0.15)' : 'rgba(0,212,170,0.15)'
+                    : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${activeCategory === cat
+                    ? cat === 'chakra' ? 'rgba(139,92,246,0.35)' : 'rgba(0,212,170,0.35)'
+                    : 'rgba(255,255,255,0.06)'}`,
+                  color: activeCategory === cat
+                    ? cat === 'chakra' ? '#8B5CF6' : '#00D4AA'
+                    : '#6B7A99',
                   fontFamily: 'DM Sans, sans-serif',
                 }}
               >
-                {CATEGORY_INFO[cat].label}
+                {cat === 'chakra' && '✦ '}{CATEGORY_INFO[cat].label}
               </button>
             ))}
           </div>
@@ -186,6 +315,9 @@ export default function Library() {
             {CATEGORY_INFO[activeCategory].description}
           </p>
         </div>
+
+        {/* Chakra progression header — shown only when chakra category is active */}
+        {activeCategory === 'chakra' && <ChakraProgressionHeader />}
 
         {/* Currently playing banner */}
         {isPlaying && currentFrequency && (
@@ -232,6 +364,7 @@ export default function Library() {
                   freq={freq}
                   isPlaying={isPlaying && currentFrequency?.id === freq.id}
                   onPlay={handlePlay}
+                  showChakraPosition={activeCategory === 'chakra'}
                 />
               </div>
             ))
