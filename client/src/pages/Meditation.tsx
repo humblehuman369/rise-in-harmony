@@ -171,11 +171,11 @@ function MeditationPlayer({
   const endSession = trpc.sessions.end.useMutation();
   const sessionIdRef = useRef<number | null>(null);
 
-  // Frequency synthesis
+  // Frequency synthesis — DDS AudioWorklet engine (SRS NFR-FREQ-004)
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const oscLRef = useRef<OscillatorNode | null>(null);
-  const oscRRef = useRef<OscillatorNode | null>(null);
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
   const freqGainRef = useRef<GainNode | null>(null);
+  const workletLoadedRef = useRef(false);
 
   // Sound studio (ambient layers)
   const { play: studioPlay, stop: studioStop, setLayerVolume, setMusicMode: setStudioMusicMode, setNatureSound: setStudioNatureSound } = useSoundStudio();
@@ -191,57 +191,65 @@ function MeditationPlayer({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopFrequency = useCallback(() => {
-    if (freqGainRef.current && audioCtxRef.current) {
-      freqGainRef.current.gain.setTargetAtTime(0, audioCtxRef.current.currentTime, 0.3);
-      setTimeout(() => {
-        oscLRef.current?.stop();
-        oscRRef.current?.stop();
-        oscLRef.current = null;
-        oscRRef.current = null;
-      }, 1200);
-    }
+    const ctx = audioCtxRef.current;
+    const gain = freqGainRef.current;
+    const node = workletNodeRef.current;
+    if (!ctx || !gain || !node) return;
+    gain.gain.cancelScheduledValues(ctx.currentTime);
+    gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
+    gain.gain.setTargetAtTime(0, ctx.currentTime, 0.3);
+    setTimeout(() => {
+      node.disconnect();
+      workletNodeRef.current = null;
+    }, 1200);
   }, []);
 
-  const startFrequency = useCallback(() => {
+  const startFrequency = useCallback(async () => {
     if (!recommendedFreq || mode !== "frequency") return;
+    // Stop any existing worklet node first
+    if (workletNodeRef.current) {
+      workletNodeRef.current.disconnect();
+      workletNodeRef.current = null;
+    }
     if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
-      audioCtxRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      audioCtxRef.current = new (
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      )();
+      workletLoadedRef.current = false;
     }
     const ctx = audioCtxRef.current;
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state === 'suspended') await ctx.resume();
+    if (!workletLoadedRef.current) {
+      await ctx.audioWorklet.addModule('/dds-processor.js');
+      workletLoadedRef.current = true;
+    }
 
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0, ctx.currentTime);
     gain.gain.setTargetAtTime(freqVolume, ctx.currentTime, 0.5);
     freqGainRef.current = gain;
 
-    if (recommendedFreq.binauralOffset !== undefined) {
-      const merger = ctx.createChannelMerger(2);
-      const oscL = ctx.createOscillator();
-      oscL.type = 'sine';
-      oscL.frequency.value = recommendedFreq.hz;
-      const splL = ctx.createChannelSplitter(1);
-      oscL.connect(splL);
-      splL.connect(merger, 0, 0);
-      const oscR = ctx.createOscillator();
-      oscR.type = 'sine';
-      oscR.frequency.value = recommendedFreq.hz + recommendedFreq.binauralOffset;
-      const splR = ctx.createChannelSplitter(1);
-      oscR.connect(splR);
-      splR.connect(merger, 0, 1);
-      merger.connect(gain);
-      gain.connect(ctx.destination);
-      oscL.start(); oscR.start();
-      oscLRef.current = oscL; oscRRef.current = oscR;
-    } else {
-      const osc = ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.value = recommendedFreq.hz;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      oscLRef.current = osc;
-    }
+    const worklet = new AudioWorkletNode(ctx, 'dds-processor', {
+      numberOfInputs: 0,
+      numberOfOutputs: 1,
+      outputChannelCount: [2],
+    });
+    workletNodeRef.current = worklet;
+
+    const freqL = recommendedFreq.hz;
+    const freqR = recommendedFreq.binauralOffset !== undefined
+      ? recommendedFreq.hz + recommendedFreq.binauralOffset
+      : recommendedFreq.hz;
+    const playMode = recommendedFreq.binauralOffset !== undefined ? 'binaural' : 'mono';
+
+    worklet.port.postMessage({ type: 'setFreq', freqL, freqR });
+    worklet.port.postMessage({ type: 'setWaveform', waveform: 'sine' });
+    worklet.port.postMessage({ type: 'setMode', mode: playMode });
+    worklet.port.postMessage({ type: 'setIsochronic', enabled: false });
+
+    worklet.connect(gain);
+    gain.connect(ctx.destination);
   }, [recommendedFreq, mode, freqVolume]);
 
   const handlePlay = useCallback(async () => {
