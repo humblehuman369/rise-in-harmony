@@ -7,12 +7,14 @@ on:
       - "server/**"
       - "drizzle/**"
       - "shared/**"
+      - "packages/shared-types/**"
+      - "packages/shared-utils/**"
       - "package.json"
       - "pnpm-lock.yaml"
 
 jobs:
-  deploy-api:
-    name: Deploy to Railway
+  test:
+    name: Type Check & Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -35,12 +37,24 @@ jobs:
 
       - name: TypeScript type check
         run: pnpm check
+        env:
+          DATABASE_URL: ""
+          JWT_SECRET: test-secret-for-ci
 
       - name: Run tests
         run: pnpm test
         env:
           DATABASE_URL: ""
           JWT_SECRET: test-secret-for-ci
+
+  deploy:
+    name: Deploy to Railway
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli

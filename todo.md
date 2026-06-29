@@ -1,6 +1,7 @@
 # Rise In Harmony — TODO
 
-## Completed Features
+## Completed — Core Web App
+
 - [x] Frequency Player with visualizer, volume, timer
 - [x] Sound Studio with layered audio and presets
 - [x] Alarm Scheduler with DB persistence
@@ -15,39 +16,87 @@
 - [x] Manus OAuth authentication
 - [x] Full DB schema: users, sessions, alarms, studio_presets, subscription_events
 - [x] tRPC routers: sessions, alarms, presets, subscription, auth, system
-- [x] PostHog analytics initialized with core events
-- [x] Server-side streak calculation in getUserStats (currentStreak field)
+- [x] Server-side streak calculation in getUserStats
 - [x] Dashboard currentStreak uses server value when authenticated
-- [x] Track `chakra_sequence_completed` PostHog event (wired in ChakraSequence.tsx)
-- [x] Track `alarm_fired` PostHog event (wired in useAlarmNotifications)
-- [x] Track `onboarding_completed` PostHog event (all paths including skip)
-- [x] WelcomeEmail — sent on first login via Resend with dedup (welcomeEmailSentAt)
-- [x] StreakMilestoneEmail — sent at 7-day and 30-day streaks with dedup (lastStreakMilestoneDays)
-- [x] ReEngagementEmail — checkReEngagement procedure with 7-day dedup (lastReEngagementEmailAt)
-- [x] SubscriptionConfirmEmail + TrialEndingEmail templates ready in email.ts
-- [x] Privacy Policy page at /privacy
-- [x] Privacy Policy link in sidebar footer
-- [x] Email dedup schema fields: welcomeEmailSentAt, lastStreakMilestoneEmailAt, lastStreakMilestoneDays, lastReEngagementEmailAt
-- [x] DB migration pushed (0001_lowly_brother_voodoo.sql)
-
-## Remaining Web Work
-
-### Data / Backend
 - [x] Auto-log Chakra Journey sessions to journal on sequence completion
 - [x] Bulk import localStorage sessions to server on first login
-
-### Monetization
 - [x] Paywall trigger at end of 7-Chakra sequence completion screen
-- [ ] RevenueCat Web Billing integration (web subscription checkout)
-- [ ] RevenueCat webhook handler updating subscriptions table
 
-### Analytics
-- [x] PostHog feature flags for A/B testing (useFeatureFlag hook + reloadFeatureFlags on login)
+## Completed — Analytics & Events
 
-### Infrastructure (external — requires service accounts)
-- [ ] Monorepo restructure (pnpm workspaces + Turborepo)
-- [ ] Railway PostgreSQL migration
-- [ ] GitHub Actions CI/CD workflows
-- [ ] Expo React Native mobile app (iOS + Android)
-- [ ] EAS Build configuration
-- [ ] App Store / Google Play submission
+- [x] PostHog analytics initialized with core events
+- [x] PostHog: chakra_sequence_completed event
+- [x] PostHog: alarm_fired event
+- [x] PostHog: onboarding_completed event (all paths including skip)
+- [x] PostHog feature flags (useFeatureFlag hook + pricing-test A/B flag in paywall)
+
+## Completed — Email (Resend)
+
+- [x] Welcome email on first login (with dedup via welcomeEmailSentAt)
+- [x] Streak milestone email at 7-day and 30-day streaks (with dedup)
+- [x] Re-engagement email after 7 days inactivity (with dedup)
+- [x] SubscriptionConfirmEmail + TrialEndingEmail templates ready in email.ts
+- [x] Email dedup schema fields migrated to DB
+
+## Completed — Monetization
+
+- [x] RevenueCat webhook handler (all event types, secret validation, subscription tier update)
+- [x] RevenueCat Web Billing integration (web subscription checkout)
+
+## Completed — Legal & UX
+
+- [x] Privacy Policy page at /privacy
+- [x] Privacy link in sidebar footer
+
+## Completed — Infrastructure
+
+- [x] pnpm workspace monorepo (pnpm-workspace.yaml)
+- [x] Turborepo (turbo.json)
+- [x] Shared packages: @rih/shared-types, @rih/shared-utils, @rih/ui-tokens
+- [x] GitHub Actions: CI workflow (type check + Vitest for all packages)
+- [x] GitHub Actions: deploy-api.yml (Railway deployment)
+- [x] GitHub Actions: deploy-web.yml (Vercel/Manus deployment, updated for monorepo)
+- [x] GitHub Actions: eas-build.yml (Expo EAS build + submit)
+- [x] Railway PostgreSQL migration guide (references/railway-migration-guide.md)
+
+## Completed — Mobile App Scaffold
+
+- [x] apps/mobile/package.json with all Expo dependencies
+- [x] apps/mobile/app.json with iOS/Android permissions and EAS config
+- [x] apps/mobile/eas.json with development/preview/production build profiles
+- [x] Expo Router layout with bottom tab navigation (5 tabs)
+- [x] Home screen with Quick Start card, free frequencies, chakra journey preview
+- [x] Library screen with full frequency list and premium lock
+- [x] Player, Alarm, Dashboard tab stubs with implementation guides
+- [x] Auth store (Zustand + expo-secure-store JWT storage)
+- [x] useAudioPlayer hook (expo-av, background audio, fade-in, sleep timer)
+- [x] useAlarmNotifications hook (expo-notifications, exact alarms, BOOT_COMPLETED)
+- [x] usePurchases hook (RevenueCat react-native-purchases SDK)
+- [x] useAnalytics hook (PostHog React Native, all events)
+- [x] API client (typed fetch wrapper with JWT refresh)
+- [x] Mobile README with full setup and submission guide
+
+## Remaining — Mobile App Phase 1 (Requires Expo + Apple/Google accounts)
+
+- [ ] Run `eas init` to generate EAS project ID (replace placeholder in app.json)
+- [ ] Add frequency audio files to assets/sounds/ (13 MP3 files + 1 WAV alarm sound)
+- [ ] Implement full Player screen (expo-av, waveform visualizer, affirmations)
+- [ ] Implement Alarm screen (exact alarm scheduling, Android reliability)
+- [ ] Implement Dashboard screen (charts, Chakra Map, streak calendar)
+- [ ] Implement Onboarding screen
+- [ ] Implement Paywall screen (RevenueCat packages, purchase flow)
+- [ ] Configure RevenueCat products in App Store Connect + Google Play Console
+- [ ] EAS development build and device testing
+- [ ] EAS preview build for internal QA
+- [ ] App Store Connect setup (app listing, screenshots, metadata)
+- [ ] Google Play Console setup (app listing, data safety form)
+- [ ] EAS production build + submit to both stores
+
+## Remaining — Infrastructure (Requires Railway account)
+
+- [ ] Create Railway project and PostgreSQL service
+- [ ] Update drizzle.config.ts to PostgreSQL dialect
+- [ ] Update server/db.ts to use pg driver
+- [ ] Run pnpm db:push against Railway PostgreSQL
+- [ ] Set all Railway environment secrets
+- [ ] Verify health check endpoint returns 200

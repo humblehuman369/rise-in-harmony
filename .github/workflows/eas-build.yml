@@ -4,7 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "mobile/**"
+      - "apps/mobile/**"
+      - "packages/**"
       - "shared/**"
   workflow_dispatch:
     inputs:
@@ -41,15 +42,14 @@ jobs:
           node-version: "22"
           cache: "pnpm"
 
+      - name: Install root dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Install Expo CLI & EAS CLI
         run: npm install -g expo-cli eas-cli
 
-      - name: Install mobile dependencies
-        working-directory: ./mobile
-        run: pnpm install --frozen-lockfile
-
       - name: Build with EAS
-        working-directory: ./mobile
+        working-directory: ./apps/mobile
         run: |
           PLATFORM="${{ github.event.inputs.platform || 'all' }}"
           PROFILE="${{ github.event.inputs.profile || 'preview' }}"
@@ -71,7 +71,7 @@ jobs:
         run: npm install -g eas-cli
 
       - name: Submit to App Store & Play Store
-        working-directory: ./mobile
+        working-directory: ./apps/mobile
         run: eas submit --platform ${{ github.event.inputs.platform || 'all' }} --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}

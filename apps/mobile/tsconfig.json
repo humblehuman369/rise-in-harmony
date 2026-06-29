@@ -1,0 +1,13 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@rih/shared-types": ["../../packages/shared-types/src/index.ts"],
+      "@rih/shared-utils": ["../../packages/shared-utils/src/index.ts"],
+      "@rih/ui-tokens": ["../../packages/ui-tokens/src/index.ts"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.d.ts", "expo-env.d.ts"]
+}

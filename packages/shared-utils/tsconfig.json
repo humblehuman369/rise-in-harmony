@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noEmit": true,
+    "paths": {
+      "@rih/shared-types": ["../shared-types/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*"]
+}
