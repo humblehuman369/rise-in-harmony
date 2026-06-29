@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import SoundStudio from "./pages/SoundStudio";
 import Privacy from "./pages/Privacy";
 import Meditation from "./pages/Meditation";
+import PrecisionPlayer from "./pages/PrecisionPlayer";
 import OnboardingModal, { useOnboarding } from "./components/OnboardingModal";
 import { useAuth } from "./_core/hooks/useAuth";
 import { useLocalSessionImport } from "./hooks/useLocalSessionImport";
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/library" component={Library} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/meditation" component={Meditation} />
+      <Route path="/precision" component={PrecisionPlayer} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

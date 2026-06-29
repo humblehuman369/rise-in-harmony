@@ -4,7 +4,7 @@
  * Navigation: Home, Player, Alarm, Library, Dashboard
  */
 import { Link, useLocation } from "wouter";
-import { Home, Music2, AlarmClock, BookOpen, BarChart3, Settings, Layers, Headphones } from "lucide-react";
+import { Home, Music2, AlarmClock, BookOpen, BarChart3, Settings, Layers, Headphones, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -16,6 +16,7 @@ const navItems = [
   { href: "/alarm", icon: AlarmClock, label: "Alarm" },
   { href: "/library", icon: BookOpen, label: "Library" },
   { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
+  { href: "/precision", icon: Activity, label: "Precision" },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

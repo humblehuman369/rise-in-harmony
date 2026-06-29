@@ -100,3 +100,19 @@
 - [ ] Run pnpm db:push against Railway PostgreSQL
 - [ ] Set all Railway environment secrets
 - [ ] Verify health check endpoint returns 200
+
+## Completed — Precision Frequency Engine (SRS v1.0)
+
+- [x] DDS AudioWorklet processor (dds-processor.js) — double-precision phase accumulation (NFR-FREQ-004)
+- [x] Phase-continuous frequency changes — no clicks/pops on parameter updates (FR-002)
+- [x] All 4 waveforms: Sine, Square, Triangle, Sawtooth (FR-003)
+- [x] Binaural beats mode — independent L/R channel frequencies, user-configurable base + beat Hz (FR-020)
+- [x] Isochronic tones mode — adjustable pulse rate + duty cycle (FR-021)
+- [x] Real-time oscilloscope display of generated waveform (FR-030)
+- [x] Real-time FFT spectrum analyzer with parabolic-interpolated Hz readout + accuracy indicator (FR-031)
+- [x] Custom frequency input 1–22,000 Hz at 0.01 Hz resolution (FR-001)
+- [x] Favorites system with custom names, localStorage persistence (FR-011)
+- [x] Sleep timer with smooth fade-out (FR-041)
+- [x] Hardware disclaimer + headphone recommendation + medical disclaimer (NFR-FREQ-003)
+- [x] Full preset library: all 9 Solfeggio + 432 Hz + 4 binaural brainwave states (FR-010)
+- [x] Precision Player page at /precision with sidebar nav link
