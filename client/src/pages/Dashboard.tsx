@@ -148,6 +148,98 @@ function ChakraMap({ playedHzThisWeek }: { playedHzThisWeek: Set<number> }) {
           ✦ Full chakra alignment achieved this week
         </div>
       )}
+
+      {/* Weekly balance insight */}
+      <ChakraBalanceInsight playedHzThisWeek={playedHzThisWeek} />
+    </div>
+  );
+}
+
+// ─── Chakra Balance Insight ───────────────────────────────────────────────────
+
+const LOWER_CHAKRAS = [396, 417, 528];
+const UPPER_CHAKRAS = [741, 852, 963];
+const HEART_HZ = 639;
+
+function buildInsight(played: Set<number>): { text: string; suggestion: string; color: string } | null {
+  if (played.size === 0) return null;
+
+  const lowerPlayed = LOWER_CHAKRAS.filter(hz => played.has(hz));
+  const upperPlayed = UPPER_CHAKRAS.filter(hz => played.has(hz));
+  const heartPlayed = played.has(HEART_HZ);
+
+  if (played.size === 7) {
+    return {
+      text: "You explored all seven energy centers this week — a complete Root-to-Crown journey.",
+      suggestion: "Try the 7-Chakra Journey for a guided sequence that deepens the alignment.",
+      color: '#00D4AA',
+    };
+  }
+
+  if (lowerPlayed.length >= 2 && upperPlayed.length === 0) {
+    return {
+      text: "You focused on grounding and lower-chakra work this week — a strong foundation.",
+      suggestion: "Consider adding Throat (741Hz), Third Eye (852Hz), or Crown (963Hz) to open your upper energy centers.",
+      color: '#8B5CF6',
+    };
+  }
+
+  if (upperPlayed.length >= 2 && lowerPlayed.length === 0) {
+    return {
+      text: "Your upper chakras received attention this week — intuition and consciousness are active.",
+      suggestion: "Balance with Root (396Hz) or Sacral (417Hz) to ground your expanded awareness.",
+      color: '#EAB308',
+    };
+  }
+
+  if (!heartPlayed && played.size >= 2) {
+    return {
+      text: "You've been working with multiple frequencies, but the Heart chakra hasn't been visited yet.",
+      suggestion: "Add 639Hz (Anāhata) to bridge your lower and upper energy centers with compassion.",
+      color: '#3B82F6',
+    };
+  }
+
+  if (played.size <= 2) {
+    const names = Array.from(played).map(hz => {
+      const node = CHAKRA_NODES.find(n => n.hz === hz);
+      return node ? `${node.name} (${hz}Hz)` : `${hz}Hz`;
+    });
+    return {
+      text: `You explored ${names.join(' and ')} this week.`,
+      suggestion: `Expand your practice to ${7 - played.size} more chakra frequencies for a fuller energetic balance.`,
+      color: '#06B6D4',
+    };
+  }
+
+  return {
+    text: `You activated ${played.size} of 7 chakra energy centers this week — good progress.`,
+    suggestion: `${7 - played.size} chakra${7 - played.size !== 1 ? 's' : ''} remain. Explore the full spectrum for complete alignment.`,
+    color: '#00D4AA',
+  };
+}
+
+function ChakraBalanceInsight({ playedHzThisWeek }: { playedHzThisWeek: Set<number> }) {
+  const insight = buildInsight(playedHzThisWeek);
+  if (!insight) return null;
+
+  return (
+    <div className="mt-4 p-4 rounded-xl"
+      style={{
+        background: `${insight.color}08`,
+        border: `1px solid ${insight.color}20`,
+      }}>
+      <div className="flex items-start gap-2.5">
+        <div className="text-sm mt-0.5" style={{ color: insight.color }}>✦</div>
+        <div>
+          <p className="text-xs leading-relaxed mb-1" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
+            {insight.text}
+          </p>
+          <p className="text-xs leading-relaxed" style={{ color: insight.color, fontFamily: 'DM Sans, sans-serif' }}>
+            {insight.suggestion}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

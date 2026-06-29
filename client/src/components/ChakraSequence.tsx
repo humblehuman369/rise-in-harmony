@@ -191,17 +191,21 @@ function CircularProgress({ progress, color, size = 160 }: { progress: number; c
 
 interface ChakraSequenceProps {
   onClose: () => void;
+  /** When true, skip the duration picker and immediately start with the default 3-min duration */
+  autoStart?: boolean;
+  /** Pre-selected duration in seconds when autoStart is true */
+  autoStartDuration?: number;
 }
 
-export default function ChakraSequence({ onClose }: ChakraSequenceProps) {
+export default function ChakraSequence({ onClose, autoStart = false, autoStartDuration = 180 }: ChakraSequenceProps) {
   const { playFrequency, stopAudio, isPlaying, currentFrequency } = useFrequencyPlayer();
   const [currentStep, setCurrentStep] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isComplete, setIsComplete] = useState(false);
-  const [stepDuration, setStepDuration] = useState(60);
-  const [showDurationPicker, setShowDurationPicker] = useState(true);
+  const [stepDuration, setStepDuration] = useState(autoStart ? autoStartDuration : 60);
+  const [showDurationPicker, setShowDurationPicker] = useState(!autoStart);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stepRef = useRef(currentStep);
@@ -232,7 +236,8 @@ export default function ChakraSequence({ onClose }: ChakraSequenceProps) {
     playFrequency(getFreqForChakra(CHAKRA_STEPS[next]));
   }, [playFrequency, stopAudio, getFreqForChakra]);
 
-  const startSequence = useCallback(() => {
+  const startSequence = useCallback((duration?: number) => {
+    if (duration !== undefined) setStepDuration(duration);
     setShowDurationPicker(false);
     setIsRunning(true);
     setCurrentStep(0);
@@ -241,6 +246,16 @@ export default function ChakraSequence({ onClose }: ChakraSequenceProps) {
     setIsComplete(false);
     playFrequency(getFreqForChakra(CHAKRA_STEPS[0]));
   }, [playFrequency, getFreqForChakra]);
+
+  // Auto-start effect
+  useEffect(() => {
+    if (autoStart) {
+      // Small delay to let the modal animate in before audio starts
+      const t = setTimeout(() => startSequence(autoStartDuration), 300);
+      return () => clearTimeout(t);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const togglePause = useCallback(() => {
     if (isRunning) {
@@ -425,7 +440,7 @@ export default function ChakraSequence({ onClose }: ChakraSequenceProps) {
             </div>
 
             <button
-              onClick={startSequence}
+              onClick={() => startSequence()}
               className="btn-teal w-full py-4 text-base font-semibold flex items-center justify-center gap-2"
             >
               <Play size={18} fill="currentColor" />
