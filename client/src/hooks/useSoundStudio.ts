@@ -1,12 +1,19 @@
 /**
- * useSoundStudio — Layered Audio Synthesis Engine
- * Three independent layers blended in real-time via Web Audio API:
- *   1. Healing Frequency — pure sine wave at the target Hz
- *   2. Musical Harmony  — procedural ambient chords tuned to the frequency root
- *   3. Nature Soundscape — synthesized rain / ocean / forest / wind / fire
+ * useSoundStudio — Layered Ambient Audio Engine (v2 — Smooth Redesign)
  *
- * All audio is generated entirely in the browser — no external files needed.
- * Bioluminescent Depth theme
+ * Three independent layers blended in real-time via Web Audio API:
+ *   1. Healing Frequency — pure sine wave at the target Hz (via DDS in Meditation page)
+ *   2. Musical Harmony  — soft, stable harmonic drones tuned to the frequency root
+ *   3. Nature Soundscape — gentle, heavily-filtered pink-noise approximations
+ *
+ * Design principles for v2:
+ *   - All noise sources use cascaded low-pass filters at low cutoff frequencies
+ *     to produce smooth, rumbling textures rather than harsh hiss
+ *   - LFOs modulate a *multiplier* gain node so gain never goes negative
+ *   - Crystal/bowl mode uses only the fundamental and octave (no harsh 3rd/5th harmonics)
+ *   - Ambient chord mode uses fixed, stable pentatonic intervals — no random selection
+ *   - A DynamicsCompressorNode on the master bus prevents level stacking
+ *   - All envelopes use exponential ramps for natural-sounding fades
  */
 import { useState, useRef, useCallback, useEffect } from "react";
 
@@ -26,35 +33,61 @@ export interface StudioState {
   masterVolume: number;      // 0–1
 }
 
+// ─── Pink-noise approximation ─────────────────────────────────────────────────
+/**
+ * Generate a buffer of pink-noise-approximated audio using the Voss-McCartney
+ * algorithm. Pink noise has equal energy per octave — much warmer/softer than
+ * white noise which has equal energy per Hz (very bright/hissy).
+ */
+function createPinkNoiseBuffer(ctx: AudioContext, durationSec = 4): AudioBuffer {
+  const sr = ctx.sampleRate;
+  const frameCount = sr * durationSec;
+  const buf = ctx.createBuffer(1, frameCount, sr);
+  const data = buf.getChannelData(0);
+
+  // Voss-McCartney pink noise: sum of 7 white-noise sources, each updated
+  // at half the rate of the previous one
+  let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+  for (let i = 0; i < frameCount; i++) {
+    const white = Math.random() * 2 - 1;
+    b0 = 0.99886 * b0 + white * 0.0555179;
+    b1 = 0.99332 * b1 + white * 0.0750759;
+    b2 = 0.96900 * b2 + white * 0.1538520;
+    b3 = 0.86650 * b3 + white * 0.3104856;
+    b4 = 0.55000 * b4 + white * 0.5329522;
+    b5 = -0.7616 * b5 - white * 0.0168980;
+    data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+    b6 = white * 0.115926;
+  }
+  return buf;
+}
+
 // ─── Musical helpers ──────────────────────────────────────────────────────────
 
-/**
- * Build a pentatonic scale rooted at `rootHz`.
- * Ratios: 1, 9/8, 5/4, 3/2, 5/3  (just-intonation pentatonic)
- */
-function pentatonicScale(rootHz: number): number[] {
-  const ratios = [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3];
-  const notes: number[] = [];
-  for (let octave = 0; octave < 3; octave++) {
-    for (const r of ratios) {
-      notes.push(rootHz * r * Math.pow(2, octave - 1));
-    }
-  }
-  return notes;
+/** Fixed stable drone: root + perfect fifth + octave — always consonant */
+function droneFreqs(rootHz: number): number[] {
+  return [
+    rootHz * 0.5,   // sub-octave (warm foundation)
+    rootHz,         // root
+    rootHz * 1.5,   // perfect fifth (3:2 — most consonant interval)
+    rootHz * 2,     // octave
+  ];
 }
 
-/**
- * Build a drone chord: root + perfect fifth + octave
- */
-function droneChord(rootHz: number): number[] {
-  return [rootHz * 0.5, rootHz, rootHz * 1.5, rootHz * 2];
+/** Fixed pentatonic ambient chord — 3 stable notes, no random selection */
+function ambientChordFreqs(rootHz: number): number[] {
+  // Root + major third + perfect fifth (a stable major triad in just intonation)
+  return [
+    rootHz * 0.5,       // sub-octave root
+    rootHz,             // root
+    rootHz * (5 / 4),   // major third (5:4)
+    rootHz * (3 / 2),   // perfect fifth (3:2)
+  ];
 }
 
-/**
- * Crystal bowl overtone series: root + 2nd + 3rd + 5th harmonic
- */
-function crystalSeries(rootHz: number): number[] {
-  return [rootHz, rootHz * 2, rootHz * 3, rootHz * 5];
+/** Singing bowl: fundamental + octave only — no harsh upper harmonics */
+function bowlFreqs(rootHz: number): number[] {
+  return [rootHz, rootHz * 2];
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -62,6 +95,7 @@ function crystalSeries(rootHz: number): number[] {
 export function useSoundStudio() {
   const ctxRef = useRef<AudioContext | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
+  const compressorRef = useRef<DynamicsCompressorNode | null>(null);
 
   // Layer gain nodes
   const freqGainRef = useRef<GainNode | null>(null);
@@ -89,9 +123,20 @@ export function useSoundStudio() {
   const getCtx = useCallback((): AudioContext => {
     if (!ctxRef.current || ctxRef.current.state === "closed") {
       ctxRef.current = new AudioContext();
+
+      // Master compressor — prevents harsh peaks when layers stack
+      const comp = ctxRef.current.createDynamicsCompressor();
+      comp.threshold.value = -18;   // dB — gentle limiting
+      comp.knee.value = 12;         // soft knee
+      comp.ratio.value = 4;         // 4:1 — gentle compression
+      comp.attack.value = 0.05;     // 50ms attack
+      comp.release.value = 0.3;     // 300ms release
+      comp.connect(ctxRef.current.destination);
+      compressorRef.current = comp;
+
       masterGainRef.current = ctxRef.current.createGain();
       masterGainRef.current.gain.value = state.masterVolume;
-      masterGainRef.current.connect(ctxRef.current.destination);
+      masterGainRef.current.connect(comp);
 
       freqGainRef.current = ctxRef.current.createGain();
       freqGainRef.current.gain.value = state.frequencyVolume;
@@ -139,10 +184,10 @@ export function useSoundStudio() {
     osc.type = "sine";
     osc.frequency.value = hz;
 
-    // Soft envelope
+    // Soft 2-second fade-in
     const env = ctx.createGain();
     env.gain.setValueAtTime(0, ctx.currentTime);
-    env.gain.linearRampToValueAtTime(1, ctx.currentTime + 1.5);
+    env.gain.linearRampToValueAtTime(1, ctx.currentTime + 2);
 
     osc.connect(env);
     env.connect(freqGainRef.current);
@@ -150,66 +195,34 @@ export function useSoundStudio() {
     freqOscRef.current = osc;
   }, [stopFrequency]);
 
-  // ── Music layer ──────────────────────────────────────────────────────────────
+  // ── Music layer — Ambient (stable harmonic chord, slow cross-fade) ────────────
   const startMusicAmbient = useCallback((ctx: AudioContext, rootHz: number) => {
     stopMusic();
     if (!musicGainRef.current) return;
 
-    const scale = pentatonicScale(rootHz);
-    const nodes: OscillatorNode[] = [];
-
-    // Play a slow evolving chord: pick 3 random notes, fade in/out over 4s, then repeat
-    const playChord = () => {
-      if (!musicGainRef.current) return;
-      // Stop previous chord
-      nodes.forEach(n => { try { n.stop(ctx.currentTime + 4); } catch {} });
-      nodes.length = 0;
-
-      const pick = [...scale].sort(() => Math.random() - 0.5).slice(0, 3);
-      pick.forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        osc.type = i === 0 ? "sine" : "triangle";
-        osc.frequency.value = freq;
-
-        const env = ctx.createGain();
-        env.gain.setValueAtTime(0, ctx.currentTime);
-        env.gain.linearRampToValueAtTime(0.3 / pick.length, ctx.currentTime + 2);
-        env.gain.linearRampToValueAtTime(0, ctx.currentTime + 6);
-
-        osc.connect(env);
-        env.connect(musicGainRef.current!);
-        osc.start();
-        nodes.push(osc);
-        musicNodesRef.current.push(osc);
-      });
-
-      musicTimerRef.current = setTimeout(playChord, 5000);
-    };
-    playChord();
-  }, [stopMusic]);
-
-  const startMusicDrone = useCallback((ctx: AudioContext, rootHz: number) => {
-    stopMusic();
-    if (!musicGainRef.current) return;
-
-    const chord = droneChord(rootHz);
-    chord.forEach((freq, i) => {
+    const freqs = ambientChordFreqs(rootHz);
+    // Each note fades in slowly and sustains indefinitely — no random re-triggering
+    freqs.forEach((freq, i) => {
       const osc = ctx.createOscillator();
       osc.type = "sine";
       osc.frequency.value = freq;
 
-      // Slow LFO vibrato
+      // Very slow vibrato LFO — adds warmth without pitch instability
       const lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.1 + i * 0.05;
+      lfo.frequency.value = 0.05 + i * 0.02; // 0.05–0.11 Hz (very slow)
       const lfoGain = ctx.createGain();
-      lfoGain.gain.value = freq * 0.003;
+      lfoGain.gain.value = freq * 0.001; // ±0.1% pitch variation — barely perceptible
       lfo.connect(lfoGain);
       lfoGain.connect(osc.frequency);
       lfo.start();
 
+      // Staggered fade-in so notes don't all hit at once
       const env = ctx.createGain();
       env.gain.setValueAtTime(0, ctx.currentTime);
-      env.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 3);
+      env.gain.linearRampToValueAtTime(
+        0.18 / freqs.length,
+        ctx.currentTime + 3 + i * 1.5
+      );
 
       osc.connect(env);
       env.connect(musicGainRef.current!);
@@ -218,238 +231,251 @@ export function useSoundStudio() {
     });
   }, [stopMusic]);
 
-  const startMusicCrystal = useCallback((ctx: AudioContext, rootHz: number) => {
+  // ── Music layer — Drone (deep, stable, warm) ──────────────────────────────────
+  const startMusicDrone = useCallback((ctx: AudioContext, rootHz: number) => {
     stopMusic();
     if (!musicGainRef.current) return;
 
-    const series = crystalSeries(rootHz);
-
-    const playNote = () => {
-      if (!musicGainRef.current) return;
-      const freq = series[Math.floor(Math.random() * series.length)];
+    const freqs = droneFreqs(rootHz);
+    freqs.forEach((freq, i) => {
       const osc = ctx.createOscillator();
       osc.type = "sine";
       osc.frequency.value = freq;
 
+      // Very slow LFO vibrato — adds organic warmth
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = 0.03 + i * 0.015; // 0.03–0.075 Hz
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.value = freq * 0.0008;
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+      lfo.start();
+
+      // Staggered 4-second fade-in
       const env = ctx.createGain();
-      const now = ctx.currentTime;
-      env.gain.setValueAtTime(0, now);
-      env.gain.linearRampToValueAtTime(0.25, now + 0.05);
-      env.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
+      env.gain.setValueAtTime(0, ctx.currentTime);
+      env.gain.linearRampToValueAtTime(
+        0.15 / freqs.length,
+        ctx.currentTime + 4 + i * 2
+      );
 
       osc.connect(env);
       env.connect(musicGainRef.current!);
       osc.start();
-      osc.stop(now + 2.6);
-      musicNodesRef.current.push(osc);
-
-      // Random interval between notes: 0.8s–3s
-      const delay = 800 + Math.random() * 2200;
-      musicTimerRef.current = setTimeout(playNote, delay);
-    };
-    playNote();
+      musicNodesRef.current.push(osc, lfo);
+    });
   }, [stopMusic]);
 
-  // ── Nature layer ─────────────────────────────────────────────────────────────
+  // ── Music layer — Crystal/Bowl (soft singing bowl simulation) ────────────────
+  const startMusicCrystal = useCallback((ctx: AudioContext, rootHz: number) => {
+    stopMusic();
+    if (!musicGainRef.current) return;
 
-  /** Create a looping white-noise buffer */
-  const createNoiseBuffer = useCallback((ctx: AudioContext, durationSec = 2): AudioBuffer => {
-    const sr = ctx.sampleRate;
-    const buf = ctx.createBuffer(1, sr * durationSec, sr);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-    return buf;
+    const freqs = bowlFreqs(rootHz);
+
+    // Sustain the fundamental and octave as soft, slowly-decaying tones
+    // Re-strike every 12 seconds for a natural bowl resonance feel
+    const strike = () => {
+      if (!musicGainRef.current) return;
+
+      freqs.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+
+        // Bowl-like envelope: fast attack, very long exponential decay
+        const env = ctx.createGain();
+        const now = ctx.currentTime;
+        const peakGain = i === 0 ? 0.22 : 0.10; // fundamental louder than octave
+        env.gain.setValueAtTime(0, now);
+        env.gain.linearRampToValueAtTime(peakGain, now + 0.08);  // 80ms attack
+        env.gain.exponentialRampToValueAtTime(0.001, now + 10);  // 10s decay
+
+        osc.connect(env);
+        env.connect(musicGainRef.current!);
+        osc.start(now);
+        osc.stop(now + 10.1);
+        musicNodesRef.current.push(osc);
+      });
+
+      // Re-strike after 12 seconds (2s silence between ring-outs)
+      musicTimerRef.current = setTimeout(strike, 12000);
+    };
+
+    strike();
+  }, [stopMusic]);
+
+  // ── Nature layer helpers ──────────────────────────────────────────────────────
+
+  /**
+   * Create a looped pink-noise source through a chain of low-pass filters.
+   * Using cascaded filters gives a steeper roll-off for a much softer sound.
+   * The LFO modulates a *separate* gain node (not the main env) so the
+   * main gain never goes negative.
+   */
+  const buildFilteredNoise = useCallback((
+    ctx: AudioContext,
+    cutoffHz: number,
+    lfoFreqHz: number,
+    lfoDepth: number,   // 0–1, fraction of base gain to modulate
+    baseGain: number,
+    outputNode: AudioNode,
+  ): AudioNode[] => {
+    const buf = createPinkNoiseBuffer(ctx, 6);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+
+    // Two cascaded low-pass filters for a steeper, softer roll-off
+    const lpf1 = ctx.createBiquadFilter();
+    lpf1.type = "lowpass";
+    lpf1.frequency.value = cutoffHz;
+    lpf1.Q.value = 0.5;
+
+    const lpf2 = ctx.createBiquadFilter();
+    lpf2.type = "lowpass";
+    lpf2.frequency.value = cutoffHz * 0.7; // second filter even lower
+    lpf2.Q.value = 0.5;
+
+    // Main envelope gain
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0, ctx.currentTime);
+    env.gain.linearRampToValueAtTime(baseGain, ctx.currentTime + 3);
+
+    // LFO modulates a *multiplier* gain (0.7–1.0 range) — never negative
+    const lfoGainNode = ctx.createGain();
+    lfoGainNode.gain.value = 1.0; // base multiplier
+
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = lfoFreqHz;
+    const lfoAmt = ctx.createGain();
+    lfoAmt.gain.value = lfoDepth * 0.15; // small modulation depth
+    lfo.connect(lfoAmt);
+    lfoAmt.connect(lfoGainNode.gain);
+    lfo.start();
+
+    src.connect(lpf1);
+    lpf1.connect(lpf2);
+    lpf2.connect(env);
+    env.connect(lfoGainNode);
+    lfoGainNode.connect(outputNode);
+    src.start();
+
+    return [src, lfo];
   }, []);
+
+  // ── Nature sounds ─────────────────────────────────────────────────────────────
 
   const startNatureRain = useCallback((ctx: AudioContext) => {
     stopNature();
     if (!natureGainRef.current) return;
 
-    // White noise → low-pass filter → gain
-    const buf = createNoiseBuffer(ctx, 3);
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.loop = true;
-
-    const lpf = ctx.createBiquadFilter();
-    lpf.type = "lowpass";
-    lpf.frequency.value = 3500;
-    lpf.Q.value = 0.5;
-
-    // Gentle amplitude modulation for rain variation
-    const mod = ctx.createOscillator();
-    mod.frequency.value = 0.3;
-    const modGain = ctx.createGain();
-    modGain.gain.value = 0.15;
-    mod.connect(modGain);
-
-    const env = ctx.createGain();
-    env.gain.setValueAtTime(0, ctx.currentTime);
-    env.gain.linearRampToValueAtTime(0.7, ctx.currentTime + 2);
-    modGain.connect(env.gain);
-
-    src.connect(lpf);
-    lpf.connect(env);
-    env.connect(natureGainRef.current);
-    src.start();
-    mod.start();
-    natureNodesRef.current.push(src, mod);
-  }, [stopNature, createNoiseBuffer]);
+    // Gentle rain: pink noise, low cutoff (700Hz), very slow modulation
+    const nodes = buildFilteredNoise(
+      ctx,
+      700,    // cutoff — warm, not hissy
+      0.25,   // LFO freq — very slow rain variation
+      0.3,    // LFO depth
+      0.65,   // base gain
+      natureGainRef.current,
+    );
+    natureNodesRef.current.push(...nodes);
+  }, [stopNature, buildFilteredNoise]);
 
   const startNatureOcean = useCallback((ctx: AudioContext) => {
     stopNature();
     if (!natureGainRef.current) return;
 
-    // Pink-ish noise (filtered white) with slow LFO for wave rhythm
-    const buf = createNoiseBuffer(ctx, 4);
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.loop = true;
-
-    const lpf = ctx.createBiquadFilter();
-    lpf.type = "lowpass";
-    lpf.frequency.value = 800;
-    lpf.Q.value = 1.2;
-
-    // Wave LFO: ~8-second cycle
-    const lfo = ctx.createOscillator();
-    lfo.frequency.value = 0.12;
-    const lfoGain = ctx.createGain();
-    lfoGain.gain.value = 0.4;
-    lfo.connect(lfoGain);
-
-    const env = ctx.createGain();
-    env.gain.setValueAtTime(0.3, ctx.currentTime);
-    lfoGain.connect(env.gain);
-
-    src.connect(lpf);
-    lpf.connect(env);
-    env.connect(natureGainRef.current);
-    src.start();
-    lfo.start();
-    natureNodesRef.current.push(src, lfo);
-  }, [stopNature, createNoiseBuffer]);
+    // Ocean waves: pink noise, very low cutoff (400Hz), slow wave LFO (~8s cycle)
+    const nodes = buildFilteredNoise(
+      ctx,
+      400,    // cutoff — deep, rumbling ocean
+      0.12,   // LFO freq — ~8s wave cycle
+      0.5,    // LFO depth — noticeable wave swell
+      0.6,
+      natureGainRef.current,
+    );
+    natureNodesRef.current.push(...nodes);
+  }, [stopNature, buildFilteredNoise]);
 
   const startNatureForest = useCallback((ctx: AudioContext) => {
     stopNature();
     if (!natureGainRef.current) return;
 
-    // Layered: soft wind base + occasional high-freq bird-like chirps
-    const buf = createNoiseBuffer(ctx, 3);
-    const windSrc = ctx.createBufferSource();
-    windSrc.buffer = buf;
-    windSrc.loop = true;
+    // Forest breeze: pink noise, medium cutoff (550Hz), gentle wind variation
+    const nodes = buildFilteredNoise(
+      ctx,
+      550,    // cutoff — soft wind through leaves
+      0.08,   // LFO freq — slow breeze gusts
+      0.35,
+      0.5,
+      natureGainRef.current,
+    );
+    natureNodesRef.current.push(...nodes);
 
-    const bpf = ctx.createBiquadFilter();
-    bpf.type = "bandpass";
-    bpf.frequency.value = 1200;
-    bpf.Q.value = 0.8;
-
-    const windEnv = ctx.createGain();
-    windEnv.gain.setValueAtTime(0, ctx.currentTime);
-    windEnv.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 2);
-
-    windSrc.connect(bpf);
-    bpf.connect(windEnv);
-    windEnv.connect(natureGainRef.current);
-    windSrc.start();
-    natureNodesRef.current.push(windSrc);
-
-    // Chirp generator
-    const chirp = () => {
+    // Occasional soft bird-like tone (very quiet, smooth sine, not a chirp)
+    const addBirdTone = () => {
       if (!natureGainRef.current) return;
+      // Use a gentle, low-frequency bird call (600–900Hz) — not the harsh 2400–3600Hz range
+      const birdFreqs = [620, 740, 680, 820, 700];
+      const freq = birdFreqs[Math.floor(Math.random() * birdFreqs.length)];
       const osc = ctx.createOscillator();
-      const chirpFreqs = [2400, 3200, 2800, 3600, 2200];
-      osc.frequency.value = chirpFreqs[Math.floor(Math.random() * chirpFreqs.length)];
       osc.type = "sine";
+      osc.frequency.value = freq;
 
+      // Smooth, slow envelope — a gentle warble, not a sharp chirp
       const env = ctx.createGain();
       const now = ctx.currentTime;
       env.gain.setValueAtTime(0, now);
-      env.gain.linearRampToValueAtTime(0.08, now + 0.02);
-      env.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      env.gain.linearRampToValueAtTime(0.04, now + 0.3);   // slow attack
+      env.gain.linearRampToValueAtTime(0.02, now + 0.8);   // sustain
+      env.gain.exponentialRampToValueAtTime(0.001, now + 1.8); // slow decay
 
       osc.connect(env);
       env.connect(natureGainRef.current!);
-      osc.start();
-      osc.stop(now + 0.35);
+      osc.start(now);
+      osc.stop(now + 1.9);
 
-      const delay = 1500 + Math.random() * 4000;
-      musicTimerRef.current = setTimeout(chirp, delay);
+      // Next bird tone in 8–20 seconds — infrequent and peaceful
+      const delay = 8000 + Math.random() * 12000;
+      musicTimerRef.current = setTimeout(addBirdTone, delay);
     };
-    setTimeout(chirp, 1000);
-  }, [stopNature, createNoiseBuffer]);
+    // First bird tone after 5 seconds
+    setTimeout(addBirdTone, 5000);
+  }, [stopNature, buildFilteredNoise]);
 
   const startNatureWind = useCallback((ctx: AudioContext) => {
     stopNature();
     if (!natureGainRef.current) return;
 
-    const buf = createNoiseBuffer(ctx, 4);
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.loop = true;
-
-    const hpf = ctx.createBiquadFilter();
-    hpf.type = "highpass";
-    hpf.frequency.value = 200;
-
-    const lpf = ctx.createBiquadFilter();
-    lpf.type = "lowpass";
-    lpf.frequency.value = 2000;
-
-    // Gusting LFO
-    const lfo = ctx.createOscillator();
-    lfo.frequency.value = 0.08;
-    const lfoGain = ctx.createGain();
-    lfoGain.gain.value = 0.35;
-    lfo.connect(lfoGain);
-
-    const env = ctx.createGain();
-    env.gain.setValueAtTime(0.2, ctx.currentTime);
-    lfoGain.connect(env.gain);
-
-    src.connect(hpf);
-    hpf.connect(lpf);
-    lpf.connect(env);
-    env.connect(natureGainRef.current);
-    src.start();
-    lfo.start();
-    natureNodesRef.current.push(src, lfo);
-  }, [stopNature, createNoiseBuffer]);
+    // Wind: pink noise, low cutoff (350Hz), slow gusting LFO
+    const nodes = buildFilteredNoise(
+      ctx,
+      350,    // cutoff — deep, smooth wind
+      0.06,   // LFO freq — very slow gusts (~17s cycle)
+      0.45,
+      0.55,
+      natureGainRef.current,
+    );
+    natureNodesRef.current.push(...nodes);
+  }, [stopNature, buildFilteredNoise]);
 
   const startNatureFire = useCallback((ctx: AudioContext) => {
     stopNature();
     if (!natureGainRef.current) return;
 
-    // Crackling fire: filtered noise + fast random amplitude modulation
-    const buf = createNoiseBuffer(ctx, 2);
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.loop = true;
-
-    const lpf = ctx.createBiquadFilter();
-    lpf.type = "lowpass";
-    lpf.frequency.value = 1200;
-    lpf.Q.value = 2;
-
-    // Fast crackle LFO
-    const crackle = ctx.createOscillator();
-    crackle.frequency.value = 8;
-    const crackleGain = ctx.createGain();
-    crackleGain.gain.value = 0.3;
-    crackle.connect(crackleGain);
-
-    const env = ctx.createGain();
-    env.gain.setValueAtTime(0.4, ctx.currentTime);
-    crackleGain.connect(env.gain);
-
-    src.connect(lpf);
-    lpf.connect(env);
-    env.connect(natureGainRef.current);
-    src.start();
-    crackle.start();
-    natureNodesRef.current.push(src, crackle);
-  }, [stopNature, createNoiseBuffer]);
+    // Fire: pink noise, low cutoff (500Hz), medium-speed flicker LFO
+    // The crackle LFO is now at 1.5Hz (not 8Hz) — a gentle flicker, not a buzz
+    const nodes = buildFilteredNoise(
+      ctx,
+      500,    // cutoff — warm fire rumble
+      1.5,    // LFO freq — gentle flicker (was 8Hz — that was the harsh buzz)
+      0.4,
+      0.55,
+      natureGainRef.current,
+    );
+    natureNodesRef.current.push(...nodes);
+  }, [stopNature, buildFilteredNoise]);
 
   // ── Master play / stop ───────────────────────────────────────────────────────
   const startAllLayers = useCallback((s: StudioState) => {
@@ -639,10 +665,10 @@ export const STUDIO_PRESETS: StudioPreset[] = [
   {
     id: "heart-healing",
     name: "Heart Healing",
-    description: "639Hz connection + fire + ambient chords",
+    description: "639Hz connection + forest + ambient chords",
     icon: "💚",
     color: "#00D4AA",
-    settings: { frequencyHz: 639, musicMode: "ambient", natureSound: "fire", frequencyVolume: 0.6, musicVolume: 0.4, natureVolume: 0.35 },
+    settings: { frequencyHz: 639, musicMode: "ambient", natureSound: "forest", frequencyVolume: 0.6, musicVolume: 0.4, natureVolume: 0.35 },
   },
   {
     id: "meditation",

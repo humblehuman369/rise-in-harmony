@@ -92,6 +92,16 @@
 - [ ] Google Play Console setup (app listing, data safety form)
 - [ ] EAS production build + submit to both stores
 
+## In Progress — Meditation Audio Redesign
+
+- [x] Redesign ambient audio engine — replace noisy procedural synthesis with smooth soundscapes
+- [x] Fix LFO-to-gain modulation (prevent negative gain clipping artifacts)
+- [x] Replace raw white noise with heavily-filtered pink-noise (lower cutoff frequencies)
+- [x] Replace crystal mode with soft singing bowl simulation
+- [x] Replace random chord selection with stable harmonics
+- [x] Add DynamicsCompressorNode on master output
+- [x] Remap meditation soundscape assignments to avoid harsh combinations
+
 ## Remaining — Infrastructure (Requires Railway account)
 
 - [ ] Create Railway project and PostgreSQL service
