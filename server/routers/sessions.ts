@@ -3,9 +3,16 @@ import { protectedProcedure, router } from "../_core/trpc";
 import {
   createSession,
   endSession,
+  getUserById,
   getUserSessions,
   getUserStats,
+  markStreakMilestoneEmailSent,
+  markReEngagementEmailSent,
 } from "../db";
+import { sendStreakMilestoneEmail, sendReEngagementEmail } from "../email";
+
+// Streak milestones that trigger an email (days)
+const STREAK_MILESTONES = new Set([7, 30]);
 
 export const sessionsRouter = router({
   // Start a new healing session
@@ -45,7 +52,7 @@ export const sessionsRouter = router({
         intention: z.string().max(500).optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       await endSession(
         input.sessionId,
         input.durationSeconds,
@@ -53,6 +60,33 @@ export const sessionsRouter = router({
         input.journalNote,
         input.intention
       );
+
+      // Fire-and-forget: check streak milestones and send email if needed
+      Promise.resolve().then(async () => {
+        try {
+          const [stats, user] = await Promise.all([
+            getUserStats(ctx.user.id),
+            getUserById(ctx.user.id),
+          ]);
+          if (!stats || !user?.email) return;
+
+          const streak = stats.currentStreak;
+          if (STREAK_MILESTONES.has(streak)) {
+            // markStreakMilestoneEmailSent returns false if already sent for this milestone
+            const shouldSend = await markStreakMilestoneEmailSent(ctx.user.id, streak);
+            if (shouldSend) {
+              await sendStreakMilestoneEmail(
+                user.email,
+                user.name || "friend",
+                streak,
+              );
+            }
+          }
+        } catch (err) {
+          console.warn("[Email] Streak milestone check failed:", err);
+        }
+      });
+
       return { success: true };
     }),
 
@@ -66,5 +100,48 @@ export const sessionsRouter = router({
   // Get aggregated stats for the dashboard
   stats: protectedProcedure.query(async ({ ctx }) => {
     return getUserStats(ctx.user.id);
+  }),
+
+  /**
+   * Re-engagement check — called by the Heartbeat scheduler.
+   * Finds users who have not had a session in 7 days and sends a nudge email.
+   * Safe to call repeatedly; email is only sent once per 7-day window.
+   */
+  checkReEngagement: protectedProcedure.mutation(async ({ ctx }) => {
+    try {
+      const [stats, user] = await Promise.all([
+        getUserStats(ctx.user.id),
+        getUserById(ctx.user.id),
+      ]);
+      if (!stats || !user?.email) return { sent: false };
+
+      const recentSessions = stats.recentSessions;
+      if (recentSessions.length === 0) {
+        // No sessions at all — skip (welcome email already handles this)
+        return { sent: false };
+      }
+
+      const lastSession = recentSessions[0];
+      const daysSinceLast = Math.floor(
+        (Date.now() - new Date(lastSession.startedAt).getTime()) / 86400000
+      );
+
+      if (daysSinceLast >= 7) {
+        // markReEngagementEmailSent returns false if sent within the last 7 days
+        const shouldSend = await markReEngagementEmailSent(ctx.user.id);
+        if (shouldSend) {
+          await sendReEngagementEmail(
+            user.email,
+            user.name || "friend"
+          );
+        }
+        return { sent: shouldSend, daysSinceLast };
+      }
+
+      return { sent: false, daysSinceLast };
+    } catch (err) {
+      console.warn("[Email] Re-engagement check failed:", err);
+      return { sent: false };
+    }
   }),
 });

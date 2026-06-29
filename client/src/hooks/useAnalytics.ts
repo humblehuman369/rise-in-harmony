@@ -94,3 +94,21 @@ export function trackSleepTimerStarted(durationMinutes: number) {
   if (!POSTHOG_KEY) return;
   posthog.capture("sleep_timer_started", { durationMinutes });
 }
+
+/** Fired when all 7 chakras in the guided sequence are completed */
+export function trackChakraSequenceCompleted(totalDurationMinutes: number) {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("chakra_sequence_completed", { total_duration_minutes: totalDurationMinutes });
+}
+
+/** Fired when an alarm notification is delivered (client-side, when alarm fires) */
+export function trackAlarmFired(props: { frequencyHz: number; timeOfDay: string }) {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("alarm_fired", props);
+}
+
+/** Fired when the paywall is shown at sequence completion */
+export function trackPaywallShownAtSequenceEnd() {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("paywall_shown", { source: "sequence_completion", trigger: "sequence_end" });
+}

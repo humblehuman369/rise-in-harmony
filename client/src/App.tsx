@@ -10,6 +10,7 @@ import Alarm from "./pages/Alarm";
 import Library from "./pages/Library";
 import Dashboard from "./pages/Dashboard";
 import SoundStudio from "./pages/SoundStudio";
+import Privacy from "./pages/Privacy";
 import OnboardingModal, { useOnboarding } from "./components/OnboardingModal";
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/alarm" component={Alarm} />
       <Route path="/library" component={Library} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/privacy" component={Privacy} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

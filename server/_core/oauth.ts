@@ -1,6 +1,8 @@
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
+import { markWelcomeEmailSent } from "../db";
+import { sendWelcomeEmail } from "../email";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
 
@@ -28,13 +30,24 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
-      await db.upsertUser({
+      const { isNewUser } = await db.upsertUser({
         openId: userInfo.openId,
         name: userInfo.name || null,
         email: userInfo.email ?? null,
         loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
         lastSignedIn: new Date(),
       });
+
+      // Send welcome email to brand-new users (fire-and-forget, never block the redirect)
+      // Dedup: only send if welcomeEmailSentAt is null (checked via isNewUser flag)
+      if (isNewUser && userInfo.email) {
+        const freshUser = await db.getUserByOpenId(userInfo.openId);
+        if (freshUser && !freshUser.welcomeEmailSentAt) {
+          sendWelcomeEmail(userInfo.email, userInfo.name || "friend", "morning")
+            .then(() => markWelcomeEmailSent(freshUser.id))
+            .catch((err) => console.warn("[Email] Welcome email failed:", err));
+        }
+      }
 
       const sessionToken = await sdk.createSessionToken(userInfo.openId, {
         name: userInfo.name || "",

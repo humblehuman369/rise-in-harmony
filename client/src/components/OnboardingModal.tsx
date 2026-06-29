@@ -7,6 +7,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { X, ChevronRight, Moon, Zap, Brain, Sparkles, Heart, Waves } from "lucide-react";
+import { trackOnboardingComplete } from "@/hooks/useAnalytics";
 
 const ONBOARDING_KEY = "rih_onboarding_complete";
 
@@ -111,17 +112,21 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
 
   const handleComplete = () => {
     localStorage.setItem(ONBOARDING_KEY, "true");
+    // Always fire the analytics event; use 'skipped' when user closes without selecting a goal
+    trackOnboardingComplete(selectedGoal?.id ?? "skipped");
     onComplete();
   };
 
   const handleGoToPlayer = () => {
     localStorage.setItem(ONBOARDING_KEY, "true");
+    if (selectedGoal) trackOnboardingComplete(selectedGoal.id);
     onComplete();
     navigate("/player");
   };
 
   const handleGoToChakra = () => {
     localStorage.setItem(ONBOARDING_KEY, "true");
+    if (selectedGoal) trackOnboardingComplete(selectedGoal.id);
     onComplete();
     navigate("/player");
   };

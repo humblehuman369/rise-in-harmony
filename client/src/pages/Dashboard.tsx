@@ -362,18 +362,21 @@ export default function Dashboard() {
 
   const totalMinutes = WEEKLY_SESSIONS.reduce((s, d) => s + d.minutes, 0);
   const totalSessions = WEEKLY_SESSIONS.reduce((s, d) => s + d.sessions, 0);
-  const currentStreak = hasRealData
-    ? (() => {
-        let streak = 0;
-        const now = Date.now();
-        for (let i = 0; i < 30; i++) {
-          const d = new Date(now - i * 86400000).toDateString();
-          if (journalEntries.some(e => new Date(e.timestamp).toDateString() === d)) streak++;
-          else break;
-        }
-        return streak;
-      })()
-    : 7;
+  // Use server-side streak when authenticated, fall back to local calculation
+  const currentStreak = isAuthenticated
+    ? (serverStats?.currentStreak ?? 0)
+    : hasRealData
+      ? (() => {
+          let streak = 0;
+          const now = Date.now();
+          for (let i = 0; i < 30; i++) {
+            const d = new Date(now - i * 86400000).toDateString();
+            if (journalEntries.some(e => new Date(e.timestamp).toDateString() === d)) streak++;
+            else break;
+          }
+          return streak;
+        })()
+      : 7;
 
   // Determine which chakra Hz values were played this week (last 7 days)
   const playedChakraHzThisWeek = useMemo(() => {

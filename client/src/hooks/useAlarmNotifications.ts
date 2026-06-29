@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
+import { trackAlarmFired } from "./useAnalytics";
 
 export type NotificationPermission = "default" | "granted" | "denied" | "unsupported";
 
@@ -105,6 +106,12 @@ export function useAlarmNotifications() {
     const scheduledFor = new Date(Date.now() + ms);
 
     const timeoutId = setTimeout(() => {
+      // Track alarm fired event
+      trackAlarmFired({
+        frequencyHz: alarm.frequencyHz,
+        timeOfDay: alarm.time,
+      });
+
       // Fire the notification
       try {
         const notification = new Notification(`⏰ Rise In Harmony — ${alarm.label}`, {

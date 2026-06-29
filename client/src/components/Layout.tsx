@@ -97,6 +97,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <span className="text-sm font-medium">Settings</span>
           </button>
 
+          {/* Privacy link */}
+          <Link href="/privacy">
+            <div className="flex items-center gap-2 px-3 py-1.5 mt-1 rounded-lg transition-all duration-200 cursor-pointer"
+              style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; }}
+            >
+              <span className="text-xs">Privacy Policy</span>
+            </div>
+          </Link>
+
           {/* Premium badge */}
           <div className="mt-4 mx-1 p-3 rounded-xl" style={{
             background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(0,212,170,0.08))',

@@ -32,10 +32,17 @@ export async function getDb() {
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 
-export async function upsertUser(user: InsertUser): Promise<void> {
+/**
+ * Upsert a user and return whether this is their first login.
+ */
+export async function upsertUser(user: InsertUser): Promise<{ isNewUser: boolean }> {
   if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb();
-  if (!db) return;
+  if (!db) return { isNewUser: false };
+
+  // Check if user already exists before upserting
+  const existing = await db.select({ id: users.id }).from(users).where(eq(users.openId, user.openId)).limit(1);
+  const isNewUser = existing.length === 0;
 
   const values: InsertUser = { openId: user.openId };
   const updateSet: Record<string, unknown> = {};
@@ -61,6 +68,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 
   await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
+  return { isNewUser };
 }
 
 export async function getUserByOpenId(openId: string) {
@@ -151,7 +159,7 @@ export async function getUserStats(userId: number) {
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const [totalRows, recentRows, moodRows, topFreqRows] = await Promise.all([
+  const [totalRows, recentRows, moodRows, topFreqRows, streakRows] = await Promise.all([
     db
       .select({
         count: sql<number>`count(*)`,
@@ -179,12 +187,48 @@ export async function getUserStats(userId: number) {
       .groupBy(sessions.frequencyName, sessions.frequencyHz)
       .orderBy(desc(sql`count(*)`))
       .limit(5),
+    // Fetch distinct session dates for streak calculation (last 60 days)
+    db
+      .select({
+        day: sql<string>`DATE(startedAt)`,
+      })
+      .from(sessions)
+      .where(and(
+        eq(sessions.userId, userId),
+        gte(sessions.startedAt, new Date(Date.now() - 60 * 24 * 60 * 60 * 1000))
+      ))
+      .groupBy(sql`DATE(startedAt)`)
+      .orderBy(desc(sql`DATE(startedAt)`)),
   ]);
+
+  // Compute streak: count consecutive days ending today or yesterday
+  let currentStreak = 0;
+  if (streakRows.length > 0) {
+    const sessionDays = new Set(streakRows.map(r => r.day as string));
+    const today = new Date();
+    // Start from today; if today has no session, allow yesterday as the streak anchor
+    let checkDate = new Date(today);
+    const todayStr = checkDate.toISOString().slice(0, 10);
+    if (!sessionDays.has(todayStr)) {
+      // Shift back one day — streak may have ended yesterday
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+    for (let i = 0; i < 60; i++) {
+      const dateStr = checkDate.toISOString().slice(0, 10);
+      if (sessionDays.has(dateStr)) {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+  }
 
   return {
     totalSessions: Number(totalRows[0]?.count ?? 0),
     totalMinutes: Math.round(Number(totalRows[0]?.totalSeconds ?? 0) / 60),
     avgMoodRating: Number(moodRows[0]?.avg ?? 0),
+    currentStreak,
     recentSessions: recentRows,
     topFrequencies: topFreqRows,
   };
@@ -253,6 +297,43 @@ export async function deletePreset(presetId: number, userId: number): Promise<vo
   await db
     .delete(studioPresets)
     .where(and(eq(studioPresets.id, presetId), eq(studioPresets.userId, userId)));
+}
+
+// ─── Email Deduplication Helpers ────────────────────────────────────────────
+
+/** Mark that the welcome email was sent for a user */
+export async function markWelcomeEmailSent(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ welcomeEmailSentAt: new Date() }).where(eq(users.id, userId));
+}
+
+/** Mark that a streak milestone email was sent. Returns false if already sent for this milestone. */
+export async function markStreakMilestoneEmailSent(
+  userId: number,
+  streakDays: number
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const user = await db.select({ lastMilestone: users.lastStreakMilestoneDays }).from(users).where(eq(users.id, userId)).limit(1);
+  if (!user[0] || user[0].lastMilestone >= streakDays) return false; // already sent
+  await db.update(users).set({
+    lastStreakMilestoneEmailAt: new Date(),
+    lastStreakMilestoneDays: streakDays,
+  }).where(eq(users.id, userId));
+  return true;
+}
+
+/** Mark that a re-engagement email was sent. Returns false if sent within the last 7 days. */
+export async function markReEngagementEmailSent(userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const user = await db.select({ lastSent: users.lastReEngagementEmailAt }).from(users).where(eq(users.id, userId)).limit(1);
+  if (!user[0]) return false;
+  const lastSent = user[0].lastSent;
+  if (lastSent && Date.now() - lastSent.getTime() < 7 * 86400000) return false; // sent within 7 days
+  await db.update(users).set({ lastReEngagementEmailAt: new Date() }).where(eq(users.id, userId));
+  return true;
 }
 
 // ─── Subscription Events ──────────────────────────────────────────────────────

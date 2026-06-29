@@ -8,6 +8,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Play, Pause, SkipForward, X, Zap } from "lucide-react";
 import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFrequencyPlayer";
 import { toast } from "sonner";
+import { trackChakraSequenceCompleted } from "@/hooks/useAnalytics";
 
 interface ChakraStep {
   name: string;
@@ -228,6 +229,9 @@ export default function ChakraSequence({ onClose, autoStart = false, autoStartDu
       setIsComplete(true);
       if (timerRef.current) clearInterval(timerRef.current);
       toast("✦ Chakra sequence complete — your energy is aligned");
+      // Track completion event with total duration in minutes
+      const totalMinutes = Math.round((CHAKRA_STEPS.length * stepRef.current) / 60);
+      trackChakraSequenceCompleted(totalMinutes);
       return;
     }
     setCompletedSteps(prev => [...prev, stepRef.current]);

@@ -28,6 +28,11 @@ export const users = mysqlTable("users", {
     .notNull(),
   subscriptionExpiresAt: timestamp("subscriptionExpiresAt"),
   revenuecatUserId: varchar("revenuecatUserId", { length: 128 }),
+  // Email deduplication timestamps
+  welcomeEmailSentAt: timestamp("welcomeEmailSentAt"),
+  lastStreakMilestoneEmailAt: timestamp("lastStreakMilestoneEmailAt"),
+  lastStreakMilestoneDays: int("lastStreakMilestoneDays").default(0).notNull(),
+  lastReEngagementEmailAt: timestamp("lastReEngagementEmailAt"),
   // Timestamps
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
