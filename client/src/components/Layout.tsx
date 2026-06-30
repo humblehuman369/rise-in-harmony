@@ -99,16 +99,32 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <span className="text-sm font-medium">Settings</span>
           </button>
 
-          {/* Privacy link */}
-          <Link href="/privacy">
-            <div className="flex items-center gap-2 px-3 py-1.5 mt-1 rounded-lg transition-all duration-200 cursor-pointer"
-              style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; }}
-            >
-              <span className="text-xs">Privacy Policy</span>
-            </div>
-          </Link>
+          {/* Legal links */}
+          <div className="flex flex-wrap gap-x-1 px-3 mt-1">
+            <Link href="/about">
+              <span className="text-xs transition-colors duration-200 cursor-pointer"
+                style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; }}
+              >About</span>
+            </Link>
+            <span className="text-xs" style={{ color: '#2A3040' }}>·</span>
+            <Link href="/privacy">
+              <span className="text-xs transition-colors duration-200 cursor-pointer"
+                style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; }}
+              >Privacy</span>
+            </Link>
+            <span className="text-xs" style={{ color: '#2A3040' }}>·</span>
+            <Link href="/terms">
+              <span className="text-xs transition-colors duration-200 cursor-pointer"
+                style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; }}
+              >Terms</span>
+            </Link>
+          </div>
 
           {/* Premium badge */}
           <div className="mt-4 mx-1 p-3 rounded-xl" style={{
