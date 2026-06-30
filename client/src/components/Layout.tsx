@@ -4,7 +4,7 @@
  * Navigation: Home, Player, Alarm, Library, Dashboard
  */
 import { Link, useLocation } from "wouter";
-import { Home, Music2, AlarmClock, BookOpen, BarChart3, Settings, Layers } from "lucide-react";
+import { Home, Music2, AlarmClock, BookOpen, BarChart3, Settings, Layers, Headphones, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -12,9 +12,11 @@ const navItems = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/player", icon: Music2, label: "Player" },
   { href: "/studio", icon: Layers, label: "Studio" },
+  { href: "/meditation", icon: Headphones, label: "Meditate" },
   { href: "/alarm", icon: AlarmClock, label: "Alarm" },
   { href: "/library", icon: BookOpen, label: "Library" },
   { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
+  { href: "/precision", icon: Activity, label: "Precision" },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -96,6 +98,33 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Settings size={18} strokeWidth={1.8} />
             <span className="text-sm font-medium">Settings</span>
           </button>
+
+          {/* Legal links */}
+          <div className="flex flex-wrap gap-x-1 px-3 mt-1">
+            <Link href="/about">
+              <span className="text-xs transition-colors duration-200 cursor-pointer"
+                style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; }}
+              >About</span>
+            </Link>
+            <span className="text-xs" style={{ color: '#2A3040' }}>·</span>
+            <Link href="/privacy">
+              <span className="text-xs transition-colors duration-200 cursor-pointer"
+                style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; }}
+              >Privacy</span>
+            </Link>
+            <span className="text-xs" style={{ color: '#2A3040' }}>·</span>
+            <Link href="/terms">
+              <span className="text-xs transition-colors duration-200 cursor-pointer"
+                style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; }}
+              >Terms</span>
+            </Link>
+          </div>
 
           {/* Premium badge */}
           <div className="mt-4 mx-1 p-3 rounded-xl" style={{

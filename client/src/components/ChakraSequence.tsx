@@ -8,6 +8,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Play, Pause, SkipForward, X, Zap } from "lucide-react";
 import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFrequencyPlayer";
 import { toast } from "sonner";
+import { trackChakraSequenceCompleted } from "@/hooks/useAnalytics";
+import { trpc } from "@/lib/trpc";
+import PremiumPaywall from "@/components/PremiumPaywall";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 interface ChakraStep {
   name: string;
@@ -58,8 +62,8 @@ const CHAKRA_STEPS: ChakraStep[] = [
   {
     name: "Heart",
     sanskrit: "Anāhata",
-    hz: 432,
-    frequencyId: "432hz",
+    hz: 639,
+    frequencyId: "639hz",
     color: "#00D4AA",
     glowColor: "#00D4AA80",
     element: "Air",
@@ -69,8 +73,8 @@ const CHAKRA_STEPS: ChakraStep[] = [
   {
     name: "Throat",
     sanskrit: "Viśuddha",
-    hz: 639,
-    frequencyId: "639hz",
+    hz: 741,
+    frequencyId: "741hz",
     color: "#3B82F6",
     glowColor: "#3B82F680",
     element: "Sound",
@@ -80,8 +84,8 @@ const CHAKRA_STEPS: ChakraStep[] = [
   {
     name: "Third Eye",
     sanskrit: "Ājñā",
-    hz: 741,
-    frequencyId: "741hz",
+    hz: 852,
+    frequencyId: "852hz",
     color: "#8B5CF6",
     glowColor: "#8B5CF680",
     element: "Light",
@@ -191,17 +195,38 @@ function CircularProgress({ progress, color, size = 160 }: { progress: number; c
 
 interface ChakraSequenceProps {
   onClose: () => void;
+  /** When true, skip the duration picker and immediately start with the default 3-min duration */
+  autoStart?: boolean;
+  /** Pre-selected duration in seconds when autoStart is true */
+  autoStartDuration?: number;
 }
 
-export default function ChakraSequence({ onClose }: ChakraSequenceProps) {
+export default function ChakraSequence({ onClose, autoStart = false, autoStartDuration = 180 }: ChakraSequenceProps) {
   const { playFrequency, stopAudio, isPlaying, currentFrequency } = useFrequencyPlayer();
   const [currentStep, setCurrentStep] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isComplete, setIsComplete] = useState(false);
-  const [stepDuration, setStepDuration] = useState(60);
-  const [showDurationPicker, setShowDurationPicker] = useState(true);
+  const [stepDuration, setStepDuration] = useState(autoStart ? autoStartDuration : 60);
+  const [showDurationPicker, setShowDurationPicker] = useState(!autoStart);
+
+  const { user } = useAuth();
+  const [showPaywall, setShowPaywall] = useState(false);
+
+  // tRPC mutations for auto-logging the completed chakra sequence as a session
+  const utils = trpc.useUtils();
+  const startSession = trpc.sessions.start.useMutation();
+  const endSession = trpc.sessions.end.useMutation({
+    onSuccess: () => {
+      // Refresh Dashboard stats so Chakra Map and streak update immediately
+      utils.sessions.stats.invalidate();
+      utils.sessions.list.invalidate();
+    },
+  });
+  const sessionIdRef = useRef<number | null>(null);
+  const stepDurationRef = useRef(stepDuration);
+  stepDurationRef.current = stepDuration;
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stepRef = useRef(currentStep);
@@ -224,6 +249,29 @@ export default function ChakraSequence({ onClose }: ChakraSequenceProps) {
       setIsComplete(true);
       if (timerRef.current) clearInterval(timerRef.current);
       toast("✦ Chakra sequence complete — your energy is aligned");
+      // Track completion event with total duration in minutes
+      const totalMinutes = Math.round((CHAKRA_STEPS.length * stepDurationRef.current) / 60);
+      trackChakraSequenceCompleted(totalMinutes);
+      // Auto-log: end the session so Dashboard Chakra Map and streak update
+      if (sessionIdRef.current !== null) {
+        // Use stepDurationRef (not stepRef which is the step index) for correct total
+        const totalSeconds = CHAKRA_STEPS.length * stepDurationRef.current;
+        endSession.mutate({
+          sessionId: sessionIdRef.current,
+          durationSeconds: totalSeconds,
+          journalNote: "Completed full 7-Chakra Journey sequence",
+        });
+        sessionIdRef.current = null;
+      }
+      // Auto-open paywall for free/unauthenticated users after a short delay
+      // so the completion screen renders first before the modal appears
+      // (user ref is read via closure; premium users skip the modal)
+      const isFreeUser = !user || !user.subscriptionTier || user.subscriptionTier === "free";
+      if (isFreeUser) {
+        setTimeout(() => {
+          setShowPaywall(true);
+        }, 1200);
+      }
       return;
     }
     setCompletedSteps(prev => [...prev, stepRef.current]);
@@ -232,7 +280,8 @@ export default function ChakraSequence({ onClose }: ChakraSequenceProps) {
     playFrequency(getFreqForChakra(CHAKRA_STEPS[next]));
   }, [playFrequency, stopAudio, getFreqForChakra]);
 
-  const startSequence = useCallback(() => {
+  const startSequence = useCallback((duration?: number) => {
+    if (duration !== undefined) setStepDuration(duration);
     setShowDurationPicker(false);
     setIsRunning(true);
     setCurrentStep(0);
@@ -240,7 +289,25 @@ export default function ChakraSequence({ onClose }: ChakraSequenceProps) {
     setCompletedSteps([]);
     setIsComplete(false);
     playFrequency(getFreqForChakra(CHAKRA_STEPS[0]));
-  }, [playFrequency, getFreqForChakra]);
+    // Auto-log: start a chakra_sequence session (fire-and-forget, only when authenticated)
+    startSession.mutateAsync({
+      frequencyHz: 396,
+      frequencyName: "7-Chakra Journey",
+      sessionType: "chakra_sequence",
+    }).then(({ sessionId }) => {
+      sessionIdRef.current = sessionId;
+    }).catch(() => { /* unauthenticated — silently skip */ });
+  }, [playFrequency, getFreqForChakra, startSession]);
+
+  // Auto-start effect
+  useEffect(() => {
+    if (autoStart) {
+      // Small delay to let the modal animate in before audio starts
+      const t = setTimeout(() => startSequence(autoStartDuration), 300);
+      return () => clearTimeout(t);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const togglePause = useCallback(() => {
     if (isRunning) {
@@ -325,6 +392,7 @@ export default function ChakraSequence({ onClose }: ChakraSequenceProps) {
   const totalDuration = CHAKRA_STEPS.length * stepDuration;
 
   return (
+    <>
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)" }}
@@ -425,7 +493,7 @@ export default function ChakraSequence({ onClose }: ChakraSequenceProps) {
             </div>
 
             <button
-              onClick={startSequence}
+              onClick={() => startSequence()}
               className="btn-teal w-full py-4 text-base font-semibold flex items-center justify-center gap-2"
             >
               <Play size={18} fill="currentColor" />
@@ -578,6 +646,23 @@ export default function ChakraSequence({ onClose }: ChakraSequenceProps) {
               ))}
             </div>
 
+            {/* Paywall nudge for free users */}
+            {!user?.subscriptionTier || user.subscriptionTier === "free" ? (
+              <div className="mb-4 p-3 rounded-xl text-center"
+                style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)" }}>
+                <p className="text-xs mb-2" style={{ color: "#8B5CF6", fontFamily: "DM Sans, sans-serif" }}>
+                  ✦ Unlock unlimited Chakra Journeys + 8 premium frequencies
+                </p>
+                <button
+                  onClick={() => setShowPaywall(true)}
+                  className="text-xs font-semibold px-4 py-1.5 rounded-full transition-all duration-200"
+                  style={{ background: "linear-gradient(135deg, #8B5CF6, #6D28D9)", color: "#fff", fontFamily: "DM Sans, sans-serif" }}
+                >
+                  Upgrade to Premium
+                </button>
+              </div>
+            ) : null}
+
             <div className="flex gap-3">
               <button
                 onClick={() => { setShowDurationPicker(true); setIsComplete(false); setCompletedSteps([]); setCurrentStep(0); setElapsed(0); }}
@@ -597,5 +682,14 @@ export default function ChakraSequence({ onClose }: ChakraSequenceProps) {
         )}
       </div>
     </div>
+
+    {/* Premium paywall modal — shown at sequence completion for free users */}
+    {showPaywall && (
+      <PremiumPaywall
+        triggerFrequencyName="7-Chakra Journey"
+        onClose={() => setShowPaywall(false)}
+      />
+    )}
+    </>
   );
 }

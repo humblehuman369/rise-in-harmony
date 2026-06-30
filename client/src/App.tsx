@@ -10,9 +10,17 @@ import Alarm from "./pages/Alarm";
 import Library from "./pages/Library";
 import Dashboard from "./pages/Dashboard";
 import SoundStudio from "./pages/SoundStudio";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import About from "./pages/About";
+import Meditation from "./pages/Meditation";
+import PrecisionPlayer from "./pages/PrecisionPlayer";
 import OnboardingModal, { useOnboarding } from "./components/OnboardingModal";
-
+import { useAuth } from "./_core/hooks/useAuth";
+import { useLocalSessionImport } from "./hooks/useLocalSessionImport";
+import { useAnalytics } from "./hooks/useAnalytics";
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path="/" component={Home} />
@@ -21,6 +29,11 @@ function Router() {
       <Route path="/alarm" component={Alarm} />
       <Route path="/library" component={Library} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/meditation" component={Meditation} />
+      <Route path="/precision" component={PrecisionPlayer} />
+      <Route path="/privacy" component={Privacy} />
+      <Route path="/terms" component={Terms} />
+      <Route path="/about" component={About} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
@@ -29,6 +42,11 @@ function Router() {
 
 function AppContent() {
   const { showOnboarding, completeOnboarding } = useOnboarding();
+  const { user } = useAuth();
+  // Initialize PostHog, identify user, and reload feature flags after login
+  useAnalytics(user?.id ?? undefined, user?.email ?? undefined);
+  // One-time bulk import of localStorage sessions to server after login
+  useLocalSessionImport(user?.id);
   return (
     <>
       <Toaster

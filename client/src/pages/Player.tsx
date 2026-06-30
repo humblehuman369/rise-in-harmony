@@ -2,15 +2,74 @@
  * Player — Rise In Harmony Frequency Player
  * Central frequency visualizer with play controls, volume, and timer
  * Bioluminescent Depth theme
+ * Features:
+ *   - Frequency visualizer with waveform
+ *   - Chakra affirmation overlay while a chakra frequency is playing
+ *   - Quick-Start Guided Chakra Journey (3 min/chakra, auto-begins)
+ *   - Full 7-Chakra Journey modal with duration picker
  */
 import { useState, useEffect, useRef } from "react";
-import { Play, Pause, Volume2, VolumeX, ChevronLeft, ChevronRight, Lock, Zap } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, ChevronLeft, ChevronRight, Lock, Zap, Sparkles } from "lucide-react";
 import Layout from "@/components/Layout";
 import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFrequencyPlayer";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import ChakraSequence from "@/components/ChakraSequence";
 import PremiumPaywall from "@/components/PremiumPaywall";
+
+// ─── Chakra affirmation data ──────────────────────────────────────────────────
+
+const CHAKRA_AFFIRMATIONS: Record<number, {
+  affirmation: string;
+  element: string;
+  sanskrit: string;
+  color: string;
+}> = {
+  396: {
+    affirmation: "I am grounded. I am safe. I belong.",
+    element: "Earth",
+    sanskrit: "Mūlādhāra",
+    color: "#EAB308",
+  },
+  417: {
+    affirmation: "I flow with creativity and joy.",
+    element: "Water",
+    sanskrit: "Svādhiṣṭhāna",
+    color: "#84CC16",
+  },
+  528: {
+    affirmation: "I am confident. I am powerful. I am worthy.",
+    element: "Fire",
+    sanskrit: "Maṇipūra",
+    color: "#06B6D4",
+  },
+  639: {
+    affirmation: "I give and receive love freely.",
+    element: "Air",
+    sanskrit: "Anāhata",
+    color: "#3B82F6",
+  },
+  741: {
+    affirmation: "I speak my truth with clarity and grace.",
+    element: "Sound",
+    sanskrit: "Viśuddha",
+    color: "#8B5CF6",
+  },
+  852: {
+    affirmation: "I trust my intuition and inner wisdom.",
+    element: "Light",
+    sanskrit: "Ājñā",
+    color: "#A855F7",
+  },
+  963: {
+    affirmation: "I am connected to divine consciousness.",
+    element: "Thought",
+    sanskrit: "Sahasrāra",
+    color: "#EC4899",
+  },
+};
+
+// ─── Visualizer ───────────────────────────────────────────────────────────────
 
 function FrequencyVisualizer({ isPlaying, color, hz }: { isPlaying: boolean; color: string; hz: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -99,11 +158,62 @@ function FrequencyVisualizer({ isPlaying, color, hz }: { isPlaying: boolean; col
   );
 }
 
+// ─── Affirmation overlay ──────────────────────────────────────────────────────
+
+function ChakraAffirmationOverlay({ freq }: { freq: Frequency }) {
+  const data = CHAKRA_AFFIRMATIONS[freq.hz];
+  const [visible, setVisible] = useState(false);
+
+  // Fade in after a short delay when frequency changes
+  useEffect(() => {
+    setVisible(false);
+    const t = setTimeout(() => setVisible(true), 400);
+    return () => clearTimeout(t);
+  }, [freq.hz]);
+
+  if (!data) return null;
+
+  return (
+    <div
+      className="mt-5 mx-auto w-full max-w-sm px-5 py-4 rounded-2xl text-center transition-all duration-700"
+      style={{
+        background: `linear-gradient(135deg, ${data.color}0D, ${data.color}06)`,
+        border: `1px solid ${data.color}25`,
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(8px)',
+      }}
+    >
+      {/* Element badge */}
+      <div className="flex items-center justify-center gap-2 mb-2">
+        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: data.color }} />
+        <span className="text-[10px] font-semibold uppercase tracking-widest"
+          style={{ color: data.color, fontFamily: 'DM Sans, sans-serif' }}>
+          {data.sanskrit} · {data.element}
+        </span>
+        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: data.color }} />
+      </div>
+      {/* Affirmation */}
+      <p className="text-base italic leading-snug"
+        style={{
+          fontFamily: 'Cormorant Garamond, serif',
+          color: '#C8D5E8',
+          fontSize: '1.05rem',
+        }}>
+        "{data.affirmation}"
+      </p>
+    </div>
+  );
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60).toString().padStart(2, '0');
   const s = (seconds % 60).toString().padStart(2, '0');
   return `${m}:${s}`;
 }
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Player() {
   const { isPlaying, currentFrequency, volume, playTime, togglePlay, setVolume } = useFrequencyPlayer();
@@ -111,6 +221,7 @@ export default function Player() {
   const [isMuted, setIsMuted] = useState(false);
   const [prevVolume, setPrevVolume] = useState(0.6);
   const [showChakra, setShowChakra] = useState(false);
+  const [chakraAutoStart, setChakraAutoStart] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
 
   const selected = FREQUENCIES[selectedIndex];
@@ -137,11 +248,32 @@ export default function Player() {
     }
   };
 
+  /** Open the full journey modal with duration picker */
+  const openJourneyPicker = () => {
+    setChakraAutoStart(false);
+    setShowChakra(true);
+  };
+
+  /** Open the journey modal and immediately begin (3 min/chakra) */
+  const quickStartJourney = () => {
+    setChakraAutoStart(true);
+    setShowChakra(true);
+  };
+
   const isCurrentlyPlaying = isPlaying && currentFrequency?.id === selected.id;
+
+  // Is the currently selected frequency a chakra frequency with an affirmation?
+  const showAffirmation = isCurrentlyPlaying && !!CHAKRA_AFFIRMATIONS[selected.hz];
 
   return (
     <Layout>
-      {showChakra && <ChakraSequence onClose={() => setShowChakra(false)} />}
+      {showChakra && (
+        <ChakraSequence
+          onClose={() => { setShowChakra(false); setChakraAutoStart(false); }}
+          autoStart={chakraAutoStart}
+          autoStartDuration={180}
+        />
+      )}
       {showPaywall && (
         <PremiumPaywall
           triggerFrequencyHz={selected.hz}
@@ -151,34 +283,57 @@ export default function Player() {
       )}
       <div className="min-h-screen flex flex-col" style={{ background: '#0A0B14' }}>
         {/* Header */}
-        <div className="px-6 pt-8 pb-4 flex items-start justify-between">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-              Frequency Player
+        <div className="px-6 pt-8 pb-4">
+          <div className="flex items-start justify-between mb-2">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                Frequency Player
+              </div>
+              <h1 style={{
+                fontFamily: 'Cormorant Garamond, serif',
+                fontSize: '2rem',
+                fontWeight: 600,
+                color: '#E8EDF5',
+              }}>
+                Healing Tones
+              </h1>
             </div>
-            <h1 style={{
-              fontFamily: 'Cormorant Garamond, serif',
-              fontSize: '2rem',
-              fontWeight: 600,
-              color: '#E8EDF5',
-            }}>
-              Healing Tones
-            </h1>
+            {/* Journey buttons */}
+            <div className="flex flex-col gap-2 mt-1">
+              {/* Quick Start — immediately begins 3 min/chakra */}
+              <button
+                onClick={quickStartJourney}
+                className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(0,212,170,0.2), rgba(139,92,246,0.2))',
+                  border: '1px solid rgba(0,212,170,0.35)',
+                  color: '#00D4AA',
+                  fontFamily: 'DM Sans, sans-serif',
+                  boxShadow: '0 0 16px rgba(0,212,170,0.12)',
+                }}
+                title="Start the 7-Chakra Journey immediately (3 min per chakra)"
+              >
+                <Sparkles size={12} />
+                Quick Start
+              </button>
+              {/* Full picker */}
+              <button
+                onClick={openJourneyPicker}
+                className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.2))',
+                  border: '1px solid rgba(139,92,246,0.35)',
+                  color: '#C084FC',
+                  fontFamily: 'DM Sans, sans-serif',
+                  boxShadow: '0 0 16px rgba(139,92,246,0.12)',
+                }}
+                title="Choose duration and start the 7-Chakra Journey"
+              >
+                <Zap size={12} />
+                7-Chakra Journey
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => setShowChakra(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 mt-2"
-            style={{
-              background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.2))',
-              border: '1px solid rgba(139,92,246,0.35)',
-              color: '#C084FC',
-              fontFamily: 'DM Sans, sans-serif',
-              boxShadow: '0 0 16px rgba(139,92,246,0.15)',
-            }}
-          >
-            <Zap size={13} />
-            7-Chakra Journey
-          </button>
         </div>
 
         {/* Main player area */}
@@ -237,6 +392,9 @@ export default function Player() {
                 )}
               </div>
             </div>
+
+            {/* Chakra affirmation overlay — shown when a chakra frequency is playing */}
+            {showAffirmation && <ChakraAffirmationOverlay freq={selected} />}
 
             {/* Navigation + Play controls */}
             <div className="flex items-center gap-6 mt-6">
@@ -329,6 +487,46 @@ export default function Player() {
               )}
             </div>
 
+            {/* Chakra Journey info card */}
+            <div className="glow-card p-5"
+              style={{
+                background: 'linear-gradient(135deg, rgba(139,92,246,0.06), rgba(236,72,153,0.04))',
+                border: '1px solid rgba(139,92,246,0.15)',
+              }}>
+              <div className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>
+                ✦ Guided Chakra Journey
+              </div>
+              <p className="text-xs leading-relaxed mb-3" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                Play all 7 chakra frequencies in sequence — Root to Crown — for a complete energetic alignment. Each chakra plays for your chosen duration with its affirmation.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={quickStartJourney}
+                  className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-200"
+                  style={{
+                    background: 'rgba(0,212,170,0.12)',
+                    border: '1px solid rgba(0,212,170,0.3)',
+                    color: '#00D4AA',
+                    fontFamily: 'DM Sans, sans-serif',
+                  }}
+                >
+                  Quick Start (3 min)
+                </button>
+                <button
+                  onClick={openJourneyPicker}
+                  className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-200"
+                  style={{
+                    background: 'rgba(139,92,246,0.12)',
+                    border: '1px solid rgba(139,92,246,0.3)',
+                    color: '#C084FC',
+                    fontFamily: 'DM Sans, sans-serif',
+                  }}
+                >
+                  Choose Duration
+                </button>
+              </div>
+            </div>
+
             {/* Quick select grid */}
             <div className="glow-card p-5">
               <div className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -340,7 +538,7 @@ export default function Player() {
                     key={f.id}
                     onClick={() => {
                       if (f.isPremium) {
-                        setSelectedIndex(i); // allow selection for preview
+                        setSelectedIndex(i);
                         setShowPaywall(true);
                         return;
                       }

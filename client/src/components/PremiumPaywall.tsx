@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { X, Sparkles, Check, Lock, Zap, Music, Waves, Star } from "lucide-react";
 import { toast } from "sonner";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 // ─── Pricing tiers ────────────────────────────────────────────────────────────
 
@@ -60,7 +61,10 @@ export default function PremiumPaywall({
   triggerFrequencyHz,
   onClose,
 }: PremiumPaywallProps) {
-  const [selectedPlan, setSelectedPlan] = useState("annual");
+  // A/B test: "annual-first" highlights annual plan, "lifetime-highlight" highlights lifetime
+  const pricingVariant = useFeatureFlag<string>("pricing-test", "control");
+  const defaultPlan = pricingVariant === "lifetime-highlight" ? "lifetime" : "annual";
+  const [selectedPlan, setSelectedPlan] = useState(defaultPlan);
 
   const handleStartTrial = () => {
     toast("✦ Free trial — coming in the native app launch (Phase 2)");

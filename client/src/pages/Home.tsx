@@ -3,6 +3,7 @@
  * Bioluminescent Depth theme: dark void, teal glow, frequency rings
  * Sections: Hero, Features, Frequencies Preview, Testimonials, CTA
  */
+import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { Play, AlarmClock, Waves, Sparkles, ChevronRight, Star, Shield, Zap } from "lucide-react";
 import Layout from "@/components/Layout";
@@ -72,6 +73,7 @@ const testimonials = [
 const freeFrequencies = FREQUENCIES.filter(f => !f.isPremium).slice(0, 3);
 
 export default function Home() {
+    const { user } = useAuth();
   const [, navigate] = useLocation();
 
   return (
@@ -119,7 +121,7 @@ export default function Home() {
                 fontFamily: 'DM Sans, sans-serif',
               }}>
               <span className="w-1.5 h-1.5 rounded-full bg-[#00D4AA] animate-pulse" />
-              Phase 1 MVP — Now Live
+              Your morning ritual, reimagined
             </div>
 
             {/* Headline */}
@@ -184,7 +186,7 @@ export default function Home() {
                   {[1,2,3,4,5].map(i => <Star key={i} size={12} fill="#F59E0B" color="#F59E0B" />)}
                 </div>
                 <div className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-                  Loved by 10,000+ early adopters
+                  Loved by early adopters
                 </div>
               </div>
             </div>
