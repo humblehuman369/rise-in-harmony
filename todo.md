@@ -79,7 +79,7 @@
 ## Remaining — Mobile App Phase 1 (Requires Expo + Apple/Google accounts)
 
 - [ ] Run `eas init` to generate EAS project ID (replace placeholder in app.json)
-- [ ] Add frequency audio files to assets/sounds/ (13 MP3 files + 1 WAV alarm sound)
+- [x] Add frequency audio files to assets/sounds/ (14 MP3 files + 1 WAV alarm sound — includes alpha-isochronic, delta-binaural, schumann-7hz, updated 417hz)
 - [x] Implement full Player screen (expo-av, waveform visualizer, affirmations) — animated rings + 12-bar waveform visualizer
 - [x] Implement Alarm screen (exact alarm scheduling, repeat-day scheduling, AsyncStorage persistence, cancel-on-delete/toggle)
 - [x] Implement Dashboard screen (real API data, weekly bar chart, Chakra Map, 30-day streak calendar)
