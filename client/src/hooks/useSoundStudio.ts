@@ -29,13 +29,13 @@ export interface StudioState {
 }
 
 // ─── Nature sound file URLs ───────────────────────────────────────────────────
-/** AI-generated ambient audio files uploaded to webdev storage */
+/** Real high-precision ambient recordings uploaded to webdev storage */
 const NATURE_AUDIO_URLS: Record<string, string> = {
-  rain:   "/manus-storage/ambient-rain_ca541d35.mp3",
-  ocean:  "/manus-storage/ambient-ocean_cd73c379.mp3",
-  forest: "/manus-storage/ambient-forest_745cd58c.mp3",
-  wind:   "/manus-storage/ambient-wind_fcd03d0d.mp3",
-  fire:   "/manus-storage/ambient-fire_354802d4.mp3",
+  rain:   "/manus-storage/ambient-rain_60c52a9d.mp3",
+  ocean:  "/manus-storage/ambient-ocean_d01f891d.mp3",
+  forest: "/manus-storage/ambient-forest_a27b9787.mp3",
+  wind:   "/manus-storage/ambient-wind_755d9689.mp3",
+  fire:   "/manus-storage/ambient-fire_a3cec079.mp3",
 };
 
 // ─── Musical helpers ──────────────────────────────────────────────────────────

@@ -31,6 +31,8 @@ const FREQUENCY_AUDIO_MAP: Record<string, ReturnType<typeof require>> = {
   "alpha": require("../../assets/sounds/alpha-binaural.mp3"),
   "theta": require("../../assets/sounds/theta-binaural.mp3"),
   "delta": require("../../assets/sounds/delta-binaural.mp3"),
+  "alpha-isochronic": require("../../assets/sounds/alpha-isochronic.mp3"),
+  "schumann": require("../../assets/sounds/schumann-7hz.mp3"),
 };
 
 interface AudioPlayerState {

@@ -128,9 +128,9 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#06B6D4",
     soundscape: "rain",     // steady, calming — good for body scan
     musicMode: "drone",     // deep, stable — no random events to distract
-    recommendedFrequencyId: "396hz",
-    recommendedFrequencyLabel: "396Hz Liberation",
-    frequencyRationale: "396Hz is specifically associated with releasing guilt, fear, and deeply held tension — the perfect companion for a body scan focused on letting go.",
+    recommendedFrequencyId: "schumann",
+    recommendedFrequencyLabel: "Schumann Resonance (7.83Hz)",
+    frequencyRationale: "The Schumann Resonance (7.83Hz) is Earth's own electromagnetic heartbeat — it grounds the nervous system and dissolves tension at a cellular level, making it the ideal companion for a full-body release practice.",
     affirmation: "I release all tension. My body is safe, relaxed, and at peace.",
     guidance: [
       "Lie down comfortably on your back. Let your feet fall open naturally. Close your eyes.",
@@ -189,9 +189,9 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#6366F1",
     soundscape: "wind",     // minimal, non-distracting — no random events
     musicMode: "drone",     // stable, continuous — no chord changes to pull attention
-    recommendedFrequencyId: "binaural-alpha",
-    recommendedFrequencyLabel: "Alpha Waves (10Hz)",
-    frequencyRationale: "Alpha binaural beats (10Hz) induce a state of relaxed alertness — the optimal brainwave state for focused, creative work.",
+    recommendedFrequencyId: "alpha-isochronic",
+    recommendedFrequencyLabel: "Alpha Isochronic (10Hz)",
+    frequencyRationale: "Alpha Isochronic beats (10Hz) induce a state of relaxed alertness — the optimal brainwave state for focused, creative work. Unlike binaural beats, isochronic tones work without headphones.",
     affirmation: "My mind is clear, sharp, and fully present.",
     guidance: [
       "Sit upright with your spine tall. Set a timer for 10 minutes so you don't need to watch the clock.",
@@ -250,8 +250,8 @@ export const MEDITATIONS: MeditationTrack[] = [
     soundscape: "rain",     // steady, consistent — ideal for sleep onset
     musicMode: "drone",     // deep, continuous — most hypnotic for sleep
     recommendedFrequencyId: "binaural-delta",
-    recommendedFrequencyLabel: "Delta Waves (2Hz)",
-    frequencyRationale: "Delta binaural beats (2Hz) mirror the brainwave state of deep, dreamless sleep — gently guiding your brain toward the frequency of rest.",
+    recommendedFrequencyLabel: "Delta Binaural (3Hz)",
+    frequencyRationale: "Delta binaural beats (3Hz) mirror the brainwave state of deep, dreamless sleep — gently guiding your brain toward the frequency of rest.",
     affirmation: "I release this day completely. I am safe, warm, and deeply at rest.",
     guidance: [
       "Lie in your bed in a comfortable position. Dim or turn off all lights.",

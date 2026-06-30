@@ -18,6 +18,8 @@ export interface Frequency {
   name: string;
   hz: number;
   binauralOffset?: number; // Hz offset for right channel (binaural beats)
+  /** When true, DDS engine uses isochronic pulse mode instead of binaural */
+  isIsochronic?: boolean;
   category: "solfeggio" | "binaural" | "chakra" | "nature";
   description: string;
   benefit: string;
@@ -170,11 +172,33 @@ export const FREQUENCIES: Frequency[] = [
     id: "binaural-delta",
     name: "Delta Waves",
     hz: 200,
-    binauralOffset: 2,
+    binauralOffset: 3,
     category: "binaural",
-    description: "Delta Binaural — 2Hz beat",
+    description: "Delta Binaural — 3Hz beat",
     benefit: "Deep sleep, healing, unconscious mind",
     color: "#6366F1",
+    isPremium: true,
+  },
+  {
+    id: "alpha-isochronic",
+    name: "Alpha Isochronic",
+    hz: 10,
+    isIsochronic: true,
+    category: "binaural",
+    description: "Alpha Isochronic — 10Hz pulse (no headphones needed)",
+    benefit: "Focused clarity and relaxed alertness — works without headphones",
+    color: "#F59E0B",
+    isPremium: true,
+  },
+  {
+    id: "schumann",
+    name: "Schumann Resonance",
+    hz: 200,
+    binauralOffset: 7.83,
+    category: "binaural",
+    description: "Schumann Resonance — 7.83Hz (Earth's heartbeat)",
+    benefit: "Grounding, balance, and connection to Earth's natural electromagnetic field",
+    color: "#22C55E",
     isPremium: true,
   },
 ];
@@ -307,7 +331,7 @@ export function useFrequencyPlayer() {
     worklet.port.postMessage({ type: "setFreq", freqL, freqR });
     worklet.port.postMessage({ type: "setWaveform", waveform: "sine" });
     worklet.port.postMessage({ type: "setMode", mode });
-    worklet.port.postMessage({ type: "setIsochronic", enabled: false });
+    worklet.port.postMessage({ type: "setIsochronic", enabled: freq.isIsochronic === true });
 
     // Connect to audio graph
     worklet.connect(gain);
