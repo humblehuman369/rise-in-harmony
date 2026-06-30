@@ -1,11 +1,13 @@
-import { useEffect } from "react";
-import { Stack } from "expo-router";
+import { useEffect, useState } from "react";
+import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuthStore } from "@/store/authStore";
+import { ONBOARDING_COMPLETED_KEY } from "./onboarding";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,9 +21,19 @@ const queryClient = new QueryClient({
 function RootLayoutNav() {
   useAnalytics();
   const { restoreSession } = useAuthStore();
+  const router = useRouter();
+  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    restoreSession();
+    async function init() {
+      await restoreSession();
+      const done = await AsyncStorage.getItem(ONBOARDING_COMPLETED_KEY);
+      if (!done) {
+        router.replace("/onboarding");
+      }
+      setChecked(true);
+    }
+    init();
   }, []);
 
   return (

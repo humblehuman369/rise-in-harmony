@@ -15,10 +15,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState, useRef } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
 import { ONBOARDING_GOALS, FREQUENCIES } from "@rih/shared-utils";
 import type { OnboardingGoal } from "@rih/shared-types";
 import { trackOnboardingCompleted } from "@/hooks/useAnalytics";
+
+export const ONBOARDING_COMPLETED_KEY = "rih_onboarding_completed";
 
 const { width } = Dimensions.get("window");
 
@@ -66,8 +69,9 @@ export default function OnboardingScreen() {
     setTimeout(() => setStep(nextStep), 200);
   };
 
-  const finish = () => {
+  const finish = async () => {
     trackOnboardingCompleted({ goal: selectedGoal ?? "skipped" });
+    await AsyncStorage.setItem(ONBOARDING_COMPLETED_KEY, "true");
     router.replace("/(tabs)");
   };
 

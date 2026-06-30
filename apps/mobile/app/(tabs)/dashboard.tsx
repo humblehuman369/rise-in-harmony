@@ -1,7 +1,8 @@
 /**
  * Dashboard Tab Screen
  * Wellness stats: streak, session minutes, chakra map, top frequencies.
- * Data comes from the same tRPC backend as the web app.
+ * Fetches real data from the Rise In Harmony backend API.
+ * Falls back to empty/zero state when unauthenticated or offline.
  */
 import {
   View,
@@ -9,26 +10,93 @@ import {
   ScrollView,
   StyleSheet,
   Dimensions,
+  ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useEffect, useState, useCallback } from "react";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
-import { CHAKRA_FREQUENCIES, formatDuration, formatStreakLabel } from "@rih/shared-utils";
+import { CHAKRA_FREQUENCIES, formatStreakLabel, calculateStreak } from "@rih/shared-utils";
 import { useAuthStore } from "@/store/authStore";
+import { api } from "@/lib/api";
+import type { SessionStats, Session } from "@rih/shared-types";
 
 const { width } = Dimensions.get("window");
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-// Placeholder weekly data — replace with tRPC sessions.stats query
-const MOCK_WEEK = [12, 0, 25, 18, 30, 0, 22]; // minutes per day
-const MOCK_STREAK = 4;
-const MOCK_LONGEST = 12;
-const MOCK_TOTAL_MIN = 340;
-const MOCK_SESSIONS = 28;
-const MAX_BAR = Math.max(...MOCK_WEEK, 1);
 const BAR_MAX_HEIGHT = 80;
 
+function getWeekMinutes(sessions: Session[]): number[] {
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  // Monday = 0 index
+  const day = now.getDay(); // 0=Sun,1=Mon,...
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  startOfWeek.setDate(now.getDate() + mondayOffset);
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const buckets = [0, 0, 0, 0, 0, 0, 0]; // Mon–Sun
+  for (const s of sessions) {
+    const d = new Date(s.startedAt);
+    if (d < startOfWeek) continue;
+    const dayIndex = (d.getDay() + 6) % 7; // Mon=0, Sun=6
+    buckets[dayIndex] += Math.round(s.durationSeconds / 60);
+  }
+  return buckets;
+}
+
+function getChakraActivity(sessions: Session[]): Set<number> {
+  const active = new Set<number>();
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30); // last 30 days
+  for (const s of sessions) {
+    if (new Date(s.startedAt) < cutoff) continue;
+    active.add(s.frequencyHz);
+  }
+  return active;
+}
+
 export default function DashboardScreen() {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
+  const [stats, setStats] = useState<SessionStats | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStats = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get<SessionStats>("/api/trpc/sessions.getStats");
+      if (res.success) {
+        setStats(res.data);
+      } else {
+        setError(res.error);
+      }
+    } catch {
+      setError("Could not load stats. Check your connection.");
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  // Derived values
+  const streak = stats?.currentStreak ?? 0;
+  const totalMin = stats?.totalMinutes ?? 0;
+  const totalSessions = stats?.totalSessions ?? 0;
+  const recentSessions = stats?.recentSessions ?? [];
+
+  // Compute longest streak from recent sessions
+  const sessionDates = recentSessions.map((s) => new Date(s.startedAt));
+  const longestStreak = calculateStreak(sessionDates);
+
+  const weekMinutes = getWeekMinutes(recentSessions);
+  const maxBar = Math.max(...weekMinutes, 1);
+
+  const chakraActive = getChakraActivity(recentSessions);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -39,23 +107,39 @@ export default function DashboardScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Your Journey</Text>
-          <Text style={styles.subtitle}>Wellness at a glance</Text>
+          <Text style={styles.subtitle}>
+            {user ? `Welcome back, ${user.name?.split(" ")[0] ?? "friend"}` : "Wellness at a glance"}
+          </Text>
         </View>
+
+        {/* Loading / Error */}
+        {loading && (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color={colors.teal} />
+            <Text style={styles.loadingText}>Loading your stats…</Text>
+          </View>
+        )}
+        {error && !loading && (
+          <TouchableOpacity style={styles.errorCard} onPress={fetchStats}>
+            <Text style={styles.errorText}>{error}</Text>
+            <Text style={styles.errorRetry}>Tap to retry</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Streak + totals row */}
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { borderColor: "rgba(0,212,170,0.3)" }]}>
             <Text style={[styles.statValue, { color: colors.teal }]}>
-              {MOCK_STREAK}
+              {streak}
             </Text>
             <Text style={styles.statLabel}>Day Streak 🔥</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{MOCK_TOTAL_MIN}</Text>
+            <Text style={styles.statValue}>{totalMin}</Text>
             <Text style={styles.statLabel}>Total Minutes</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{MOCK_SESSIONS}</Text>
+            <Text style={styles.statValue}>{totalSessions}</Text>
             <Text style={styles.statLabel}>Sessions</Text>
           </View>
         </View>
@@ -65,7 +149,7 @@ export default function DashboardScreen() {
           <Text style={styles.sectionTitle}>This Week</Text>
           <View style={styles.chartCard}>
             <View style={styles.barChart}>
-              {MOCK_WEEK.map((min, i) => (
+              {weekMinutes.map((min, i) => (
                 <View key={i} style={styles.barCol}>
                   <Text style={styles.barValue}>
                     {min > 0 ? min : ""}
@@ -75,7 +159,7 @@ export default function DashboardScreen() {
                       style={[
                         styles.barFill,
                         {
-                          height: (min / MAX_BAR) * BAR_MAX_HEIGHT,
+                          height: (min / maxBar) * BAR_MAX_HEIGHT,
                           backgroundColor:
                             min > 0
                               ? colors.teal
@@ -93,11 +177,11 @@ export default function DashboardScreen() {
 
         {/* Chakra Map */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Chakra Balance</Text>
+          <Text style={styles.sectionTitle}>Chakra Balance (Last 30 Days)</Text>
           <View style={styles.chartCard}>
             <View style={styles.chakraRow}>
-              {CHAKRA_FREQUENCIES.map((freq, i) => {
-                const active = MOCK_WEEK[i % 7] > 0;
+              {CHAKRA_FREQUENCIES.map((freq) => {
+                const active = chakraActive.has(freq.hz);
                 return (
                   <View key={freq.id} style={styles.chakraCol}>
                     <View
@@ -138,26 +222,89 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Longest streak */}
+        {/* Streak calendar (last 30 days) */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>30-Day Calendar</Text>
+          <View style={styles.chartCard}>
+            <StreakCalendar sessions={recentSessions} />
+          </View>
+        </View>
+
+        {/* Personal best */}
         <View style={styles.section}>
           <View style={styles.insightCard}>
             <Text style={styles.insightEmoji}>🏆</Text>
             <View style={styles.insightText}>
               <Text style={styles.insightTitle}>Personal Best</Text>
               <Text style={styles.insightBody}>
-                {formatStreakLabel(MOCK_LONGEST)} — keep going!
+                {longestStreak > 0
+                  ? `${formatStreakLabel(longestStreak)} — keep going!`
+                  : "Start your first session to begin your streak."}
               </Text>
             </View>
           </View>
         </View>
 
-        <Text style={styles.note}>
-          Connect your account to sync sessions across devices.
-        </Text>
+        {!user && (
+          <Text style={styles.note}>
+            Sign in to sync sessions across devices and unlock detailed analytics.
+          </Text>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+/** 30-day streak calendar grid */
+function StreakCalendar({ sessions }: { sessions: Session[] }) {
+  const activeDays = new Set<string>();
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 29);
+  for (const s of sessions) {
+    const d = new Date(s.startedAt);
+    if (d >= cutoff) {
+      activeDays.add(d.toISOString().slice(0, 10));
+    }
+  }
+
+  const days: Date[] = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d);
+  }
+
+  return (
+    <View style={calStyles.grid}>
+      {days.map((d, i) => {
+        const key = d.toISOString().slice(0, 10);
+        const active = activeDays.has(key);
+        return (
+          <View
+            key={i}
+            style={[
+              calStyles.cell,
+              { backgroundColor: active ? colors.teal + "50" : "rgba(255,255,255,0.04)" },
+            ]}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
+const calStyles = StyleSheet.create({
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 4,
+  },
+  cell: {
+    width: (width - spacing[5] * 2 - spacing[4] * 2 - 4 * 29) / 30,
+    height: 16,
+    borderRadius: 3,
+  },
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bgDeep },
@@ -173,6 +320,25 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   subtitle: { fontSize: fontSizes.sm, color: colors.textMuted, marginTop: 2 },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[2],
+    paddingHorizontal: spacing[5],
+    marginBottom: spacing[3],
+  },
+  loadingText: { fontSize: fontSizes.sm, color: colors.textMuted },
+  errorCard: {
+    marginHorizontal: spacing[5],
+    marginBottom: spacing[4],
+    backgroundColor: "rgba(239,68,68,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(239,68,68,0.25)",
+    borderRadius: radii.lg,
+    padding: spacing[4],
+  },
+  errorText: { fontSize: fontSizes.sm, color: "#EF4444" },
+  errorRetry: { fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 4 },
   // Stats row
   statsRow: {
     flexDirection: "row",
@@ -293,6 +459,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[8],
     marginTop: spacing[2],
   },
-  // Needed for textSecondary
-  textSecondary: { color: colors.textSecondary },
 });

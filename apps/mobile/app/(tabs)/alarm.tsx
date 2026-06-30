@@ -12,16 +12,61 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
 import { FREQUENCIES } from "@rih/shared-utils";
 import {
   useAlarmNotifications,
   scheduleAlarm,
   cancelAlarm,
+  cancelAllAlarms,
   requestAlarmPermissions,
 } from "@/hooks/useAlarmNotifications";
 import type { Alarm, AlarmDayOfWeek } from "@rih/shared-types";
+
+const ALARMS_STORAGE_KEY = "rih_alarms";
+
+// Persist alarms to AsyncStorage
+async function saveAlarms(alarms: Alarm[]) {
+  try {
+    await AsyncStorage.setItem(ALARMS_STORAGE_KEY, JSON.stringify(alarms));
+  } catch {}
+}
+
+async function loadAlarms(): Promise<Alarm[]> {
+  try {
+    const raw = await AsyncStorage.getItem(ALARMS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+// Schedule repeat alarms for each selected day
+async function scheduleRepeatAlarm(alarm: Alarm): Promise<string[]> {
+  const DAY_INDEX: Record<string, number> = {
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  };
+  const ids: string[] = [];
+  if (alarm.days.length === 0) {
+    // One-time alarm
+    const id = await scheduleAlarm(alarm);
+    if (id) ids.push(id);
+  } else {
+    for (const day of alarm.days) {
+      const now = new Date();
+      const target = new Date(now);
+      const targetDay = DAY_INDEX[day];
+      const diff = (targetDay - now.getDay() + 7) % 7;
+      target.setDate(now.getDate() + (diff === 0 && (now.getHours() * 60 + now.getMinutes()) >= alarm.hour * 60 + alarm.minute ? 7 : diff));
+      target.setHours(alarm.hour, alarm.minute, 0, 0);
+      const id = await scheduleAlarm({ ...alarm, time: target.toISOString() });
+      if (id) ids.push(id);
+    }
+  }
+  return ids;
+}
 
 const DAYS: AlarmDayOfWeek[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DEFAULT_FREQUENCY = FREQUENCIES.find((f) => f.id === "528") ?? FREQUENCIES[0];
@@ -49,6 +94,11 @@ export default function AlarmScreen() {
   const [newFadeMin, setNewFadeMin] = useState(5);
 
   useAlarmNotifications();
+
+  // Load persisted alarms on mount
+  useEffect(() => {
+    loadAlarms().then(setAlarms);
+  }, []);
 
   const toggleDay = (day: AlarmDayOfWeek) => {
     setNewDays((prev) =>
@@ -86,26 +136,45 @@ export default function AlarmScreen() {
       time: `${newHour.toString().padStart(2, "0")}:${newMinute.toString().padStart(2, "0")}`,
       createdAt: new Date().toISOString(),
     };
-    const notifId = await scheduleAlarm(alarm);
-    if (notifId) {
-      setAlarms((prev) => [...prev, alarm]);
+    const ids = await scheduleRepeatAlarm(alarm);
+    if (ids.length > 0) {
+      const updated = [...(await loadAlarms()), alarm];
+      await saveAlarms(updated);
+      setAlarms(updated);
       setCreating(false);
     }
   }, [newHour, newMinute, newDays, newFreqId, newFadeMin]);
 
   const toggleAlarm = useCallback(async (alarm: Alarm) => {
     if (alarm.isActive) {
-      // Deactivate
-      setAlarms((prev) =>
-        prev.map((a) => (a.id === alarm.id ? { ...a, isActive: false } : a))
+      // Deactivate — cancel all scheduled notifications for this alarm
+      const stored = await loadAlarms();
+      const target = stored.find((a) => a.id === alarm.id);
+      if (target) {
+        // Cancel by re-fetching scheduled notifications and cancelling matching ones
+        const { Notifications } = await import("expo-notifications");
+        const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+        for (const notif of scheduled) {
+          const data = notif.content.data as { alarm?: Alarm };
+          if (data?.alarm?.id === alarm.id) {
+            await Notifications.cancelScheduledNotificationAsync(notif.identifier);
+          }
+        }
+      }
+      const updated = (await loadAlarms()).map((a) =>
+        a.id === alarm.id ? { ...a, isActive: false } : a
       );
+      await saveAlarms(updated);
+      setAlarms(updated);
     } else {
       // Reactivate — reschedule
-      const notifId = await scheduleAlarm({ ...alarm, isActive: true });
-      if (notifId) {
-        setAlarms((prev) =>
-          prev.map((a) => (a.id === alarm.id ? { ...a, isActive: true } : a))
+      const ids = await scheduleRepeatAlarm({ ...alarm, isActive: true });
+      if (ids.length > 0) {
+        const updated = (await loadAlarms()).map((a) =>
+          a.id === alarm.id ? { ...a, isActive: true } : a
         );
+        await saveAlarms(updated);
+        setAlarms(updated);
       }
     }
   }, []);
@@ -116,8 +185,19 @@ export default function AlarmScreen() {
       {
         text: "Delete",
         style: "destructive",
-        onPress: () => {
-          setAlarms((prev) => prev.filter((a) => a.id !== alarm.id));
+        onPress: async () => {
+          // Cancel scheduled notifications for this alarm
+          const { Notifications } = await import("expo-notifications");
+          const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+          for (const notif of scheduled) {
+            const data = notif.content.data as { alarm?: Alarm };
+            if (data?.alarm?.id === alarm.id) {
+              await Notifications.cancelScheduledNotificationAsync(notif.identifier);
+            }
+          }
+          const updated = (await loadAlarms()).filter((a) => a.id !== alarm.id);
+          await saveAlarms(updated);
+          setAlarms(updated);
         },
       },
     ]);

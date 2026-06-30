@@ -80,11 +80,11 @@
 
 - [ ] Run `eas init` to generate EAS project ID (replace placeholder in app.json)
 - [ ] Add frequency audio files to assets/sounds/ (13 MP3 files + 1 WAV alarm sound)
-- [ ] Implement full Player screen (expo-av, waveform visualizer, affirmations)
-- [ ] Implement Alarm screen (exact alarm scheduling, Android reliability)
-- [ ] Implement Dashboard screen (charts, Chakra Map, streak calendar)
-- [ ] Implement Onboarding screen
-- [ ] Implement Paywall screen (RevenueCat packages, purchase flow)
+- [x] Implement full Player screen (expo-av, waveform visualizer, affirmations) — animated rings + 12-bar waveform visualizer
+- [x] Implement Alarm screen (exact alarm scheduling, repeat-day scheduling, AsyncStorage persistence, cancel-on-delete/toggle)
+- [x] Implement Dashboard screen (real API data, weekly bar chart, Chakra Map, 30-day streak calendar)
+- [x] Implement Onboarding screen (AsyncStorage persistence, first-launch routing in _layout.tsx)
+- [x] Implement Paywall screen (RevenueCat packages, purchase flow, useEffect guard for premium redirect)
 - [ ] Configure RevenueCat products in App Store Connect + Google Play Console
 - [ ] EAS development build and device testing
 - [ ] EAS preview build for internal QA

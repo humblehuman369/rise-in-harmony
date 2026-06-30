@@ -87,10 +87,13 @@ export default function PaywallScreen() {
     }
   };
 
-  if (isPremium) {
-    router.back();
-    return null;
-  }
+  React.useEffect(() => {
+    if (isPremium) {
+      router.back();
+    }
+  }, [isPremium]);
+
+  if (isPremium) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>

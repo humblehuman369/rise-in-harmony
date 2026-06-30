@@ -75,6 +75,37 @@ export default function PlayerDetailScreen() {
   const [sleepMinutes, setSleepMinutes] = useState(0);
   const [showAffirmation, setShowAffirmation] = useState(false);
 
+  // Waveform bars (12 bars, each with independent Animated.Value)
+  const waveAnims = useRef(
+    Array.from({ length: 12 }, () => new Animated.Value(0.15))
+  ).current;
+
+  useEffect(() => {
+    if (!isPlaying) {
+      waveAnims.forEach((a) => a.setValue(0.15));
+      return;
+    }
+    const animations = waveAnims.map((anim, i) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(i * 60),
+          Animated.timing(anim, {
+            toValue: 0.2 + Math.random() * 0.8,
+            duration: 300 + Math.random() * 400,
+            useNativeDriver: false,
+          }),
+          Animated.timing(anim, {
+            toValue: 0.1 + Math.random() * 0.3,
+            duration: 300 + Math.random() * 400,
+            useNativeDriver: false,
+          }),
+        ])
+      )
+    );
+    animations.forEach((a) => a.start());
+    return () => animations.forEach((a) => a.stop());
+  }, [isPlaying]);
+
   // Animated rings
   const ring1 = useRef(new Animated.Value(1)).current;
   const ring2 = useRef(new Animated.Value(1)).current;
@@ -200,6 +231,29 @@ export default function PlayerDetailScreen() {
             {isLoading ? "⏳" : isPlaying ? "⏸" : "▶"}
           </Text>
         </TouchableOpacity>
+
+        {/* Waveform visualizer */}
+        <View style={styles.waveRow}>
+          {waveAnims.map((anim, i) => (
+            <Animated.View
+              key={i}
+              style={[
+                styles.waveBar,
+                {
+                  backgroundColor: frequency.color,
+                  height: anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [4, 36],
+                  }),
+                  opacity: anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.3, 0.9],
+                  }),
+                },
+              ]}
+            />
+          ))}
+        </View>
 
         {/* Volume slider */}
         <View style={styles.sliderRow}>
@@ -414,10 +468,22 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   pronunciation: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     color: colors.textDim,
     textAlign: "center",
-    fontStyle: "italic",
+    marginTop: spacing[2],
     paddingHorizontal: spacing[8],
+  },
+  // Waveform visualizer
+  waveRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    height: 40,
+    marginBottom: spacing[5],
+  },
+  waveBar: {
+    width: 4,
+    borderRadius: 2,
   },
 });
