@@ -1,19 +1,14 @@
 /**
- * useSoundStudio — Layered Ambient Audio Engine (v2 — Smooth Redesign)
+ * useSoundStudio — Layered Ambient Audio Engine (v3 — Real Audio Files)
  *
- * Three independent layers blended in real-time via Web Audio API:
+ * Three independent layers blended in real-time:
  *   1. Healing Frequency — pure sine wave at the target Hz (via DDS in Meditation page)
  *   2. Musical Harmony  — soft, stable harmonic drones tuned to the frequency root
- *   3. Nature Soundscape — gentle, heavily-filtered pink-noise approximations
+ *   3. Nature Soundscape — AI-generated real audio files (rain, ocean, forest, wind, fire)
  *
- * Design principles for v2:
- *   - All noise sources use cascaded low-pass filters at low cutoff frequencies
- *     to produce smooth, rumbling textures rather than harsh hiss
- *   - LFOs modulate a *multiplier* gain node so gain never goes negative
- *   - Crystal/bowl mode uses only the fundamental and octave (no harsh 3rd/5th harmonics)
- *   - Ambient chord mode uses fixed, stable pentatonic intervals — no random selection
- *   - A DynamicsCompressorNode on the master bus prevents level stacking
- *   - All envelopes use exponential ramps for natural-sounding fades
+ * Nature layer uses HTMLAudioElement for seamless looping of real recordings.
+ * Frequency and music layers use Web Audio API oscillators.
+ * A DynamicsCompressorNode on the master bus prevents level stacking.
  */
 import { useState, useRef, useCallback, useEffect } from "react";
 
@@ -33,34 +28,15 @@ export interface StudioState {
   masterVolume: number;      // 0–1
 }
 
-// ─── Pink-noise approximation ─────────────────────────────────────────────────
-/**
- * Generate a buffer of pink-noise-approximated audio using the Voss-McCartney
- * algorithm. Pink noise has equal energy per octave — much warmer/softer than
- * white noise which has equal energy per Hz (very bright/hissy).
- */
-function createPinkNoiseBuffer(ctx: AudioContext, durationSec = 4): AudioBuffer {
-  const sr = ctx.sampleRate;
-  const frameCount = sr * durationSec;
-  const buf = ctx.createBuffer(1, frameCount, sr);
-  const data = buf.getChannelData(0);
-
-  // Voss-McCartney pink noise: sum of 7 white-noise sources, each updated
-  // at half the rate of the previous one
-  let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-  for (let i = 0; i < frameCount; i++) {
-    const white = Math.random() * 2 - 1;
-    b0 = 0.99886 * b0 + white * 0.0555179;
-    b1 = 0.99332 * b1 + white * 0.0750759;
-    b2 = 0.96900 * b2 + white * 0.1538520;
-    b3 = 0.86650 * b3 + white * 0.3104856;
-    b4 = 0.55000 * b4 + white * 0.5329522;
-    b5 = -0.7616 * b5 - white * 0.0168980;
-    data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
-    b6 = white * 0.115926;
-  }
-  return buf;
-}
+// ─── Nature sound file URLs ───────────────────────────────────────────────────
+/** AI-generated ambient audio files uploaded to webdev storage */
+const NATURE_AUDIO_URLS: Record<string, string> = {
+  rain:   "/manus-storage/ambient-rain_ca541d35.mp3",
+  ocean:  "/manus-storage/ambient-ocean_cd73c379.mp3",
+  forest: "/manus-storage/ambient-forest_745cd58c.mp3",
+  wind:   "/manus-storage/ambient-wind_fcd03d0d.mp3",
+  fire:   "/manus-storage/ambient-fire_354802d4.mp3",
+};
 
 // ─── Musical helpers ──────────────────────────────────────────────────────────
 
@@ -107,6 +83,10 @@ export function useSoundStudio() {
   const musicNodesRef = useRef<(OscillatorNode | AudioNode)[]>([]);
   const natureNodesRef = useRef<AudioNode[]>([]);
   const musicTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // HTMLAudioElement for nature sound real-audio playback
+  const natureAudioRef = useRef<HTMLAudioElement | null>(null);
+  const natureAudioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
 
   const [state, setState] = useState<StudioState>({
     isPlaying: false,
@@ -168,6 +148,17 @@ export function useSoundStudio() {
   }, []);
 
   const stopNature = useCallback(() => {
+    // Stop real audio element
+    if (natureAudioRef.current) {
+      natureAudioRef.current.pause();
+      natureAudioRef.current.currentTime = 0;
+      natureAudioRef.current = null;
+    }
+    if (natureAudioSourceRef.current) {
+      try { natureAudioSourceRef.current.disconnect(); } catch {}
+      natureAudioSourceRef.current = null;
+    }
+    // Stop any legacy synthesis nodes (fallback)
     natureNodesRef.current.forEach(n => {
       try { (n as AudioBufferSourceNode).stop?.(); } catch {}
       try { (n as OscillatorNode).stop?.(); } catch {}
@@ -305,177 +296,51 @@ export function useSoundStudio() {
     strike();
   }, [stopMusic]);
 
-  // ── Nature layer helpers ──────────────────────────────────────────────────────
+  // ── Nature sounds — real audio file playback ─────────────────────────────────
 
   /**
-   * Create a looped pink-noise source through a chain of low-pass filters.
-   * Using cascaded filters gives a steeper roll-off for a much softer sound.
-   * The LFO modulates a *separate* gain node (not the main env) so the
-   * main gain never goes negative.
+   * Start a real audio file for the nature layer.
+   * Uses HTMLAudioElement connected into the Web Audio graph via
+   * createMediaElementSource so volume is controlled by natureGainRef.
+   * The audio element loops seamlessly.
    */
-  const buildFilteredNoise = useCallback((
-    ctx: AudioContext,
-    cutoffHz: number,
-    lfoFreqHz: number,
-    lfoDepth: number,   // 0–1, fraction of base gain to modulate
-    baseGain: number,
-    outputNode: AudioNode,
-  ): AudioNode[] => {
-    const buf = createPinkNoiseBuffer(ctx, 6);
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.loop = true;
-
-    // Two cascaded low-pass filters for a steeper, softer roll-off
-    const lpf1 = ctx.createBiquadFilter();
-    lpf1.type = "lowpass";
-    lpf1.frequency.value = cutoffHz;
-    lpf1.Q.value = 0.5;
-
-    const lpf2 = ctx.createBiquadFilter();
-    lpf2.type = "lowpass";
-    lpf2.frequency.value = cutoffHz * 0.7; // second filter even lower
-    lpf2.Q.value = 0.5;
-
-    // Main envelope gain
-    const env = ctx.createGain();
-    env.gain.setValueAtTime(0, ctx.currentTime);
-    env.gain.linearRampToValueAtTime(baseGain, ctx.currentTime + 3);
-
-    // LFO modulates a *multiplier* gain (0.7–1.0 range) — never negative
-    const lfoGainNode = ctx.createGain();
-    lfoGainNode.gain.value = 1.0; // base multiplier
-
-    const lfo = ctx.createOscillator();
-    lfo.frequency.value = lfoFreqHz;
-    const lfoAmt = ctx.createGain();
-    lfoAmt.gain.value = lfoDepth * 0.15; // small modulation depth
-    lfo.connect(lfoAmt);
-    lfoAmt.connect(lfoGainNode.gain);
-    lfo.start();
-
-    src.connect(lpf1);
-    lpf1.connect(lpf2);
-    lpf2.connect(env);
-    env.connect(lfoGainNode);
-    lfoGainNode.connect(outputNode);
-    src.start();
-
-    return [src, lfo];
-  }, []);
-
-  // ── Nature sounds ─────────────────────────────────────────────────────────────
-
-  const startNatureRain = useCallback((ctx: AudioContext) => {
+  const startNatureAudio = useCallback((ctx: AudioContext, soundKey: string) => {
     stopNature();
     if (!natureGainRef.current) return;
 
-    // Gentle rain: pink noise, low cutoff (700Hz), very slow modulation
-    const nodes = buildFilteredNoise(
-      ctx,
-      700,    // cutoff — warm, not hissy
-      0.25,   // LFO freq — very slow rain variation
-      0.3,    // LFO depth
-      0.65,   // base gain
-      natureGainRef.current,
+    const url = NATURE_AUDIO_URLS[soundKey];
+    if (!url) return;
+
+    const audio = new Audio(url);
+    audio.loop = true;
+    audio.crossOrigin = "anonymous";
+    audio.volume = 1; // volume controlled by Web Audio gain node
+
+    // Connect into the Web Audio graph so it respects natureGainRef
+    const source = ctx.createMediaElementSource(audio);
+    source.connect(natureGainRef.current);
+
+    // Soft fade-in via the nature gain node
+    const now = ctx.currentTime;
+    natureGainRef.current.gain.setValueAtTime(0, now);
+    natureGainRef.current.gain.linearRampToValueAtTime(
+      state.natureVolume,
+      now + 3  // 3-second fade-in
     );
-    natureNodesRef.current.push(...nodes);
-  }, [stopNature, buildFilteredNoise]);
 
-  const startNatureOcean = useCallback((ctx: AudioContext) => {
-    stopNature();
-    if (!natureGainRef.current) return;
+    audio.play().catch(() => {
+      // Autoplay blocked — will play on next user interaction
+    });
 
-    // Ocean waves: pink noise, very low cutoff (400Hz), slow wave LFO (~8s cycle)
-    const nodes = buildFilteredNoise(
-      ctx,
-      400,    // cutoff — deep, rumbling ocean
-      0.12,   // LFO freq — ~8s wave cycle
-      0.5,    // LFO depth — noticeable wave swell
-      0.6,
-      natureGainRef.current,
-    );
-    natureNodesRef.current.push(...nodes);
-  }, [stopNature, buildFilteredNoise]);
+    natureAudioRef.current = audio;
+    natureAudioSourceRef.current = source;
+  }, [stopNature, state.natureVolume]);
 
-  const startNatureForest = useCallback((ctx: AudioContext) => {
-    stopNature();
-    if (!natureGainRef.current) return;
-
-    // Forest breeze: pink noise, medium cutoff (550Hz), gentle wind variation
-    const nodes = buildFilteredNoise(
-      ctx,
-      550,    // cutoff — soft wind through leaves
-      0.08,   // LFO freq — slow breeze gusts
-      0.35,
-      0.5,
-      natureGainRef.current,
-    );
-    natureNodesRef.current.push(...nodes);
-
-    // Occasional soft bird-like tone (very quiet, smooth sine, not a chirp)
-    const addBirdTone = () => {
-      if (!natureGainRef.current) return;
-      // Use a gentle, low-frequency bird call (600–900Hz) — not the harsh 2400–3600Hz range
-      const birdFreqs = [620, 740, 680, 820, 700];
-      const freq = birdFreqs[Math.floor(Math.random() * birdFreqs.length)];
-      const osc = ctx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.value = freq;
-
-      // Smooth, slow envelope — a gentle warble, not a sharp chirp
-      const env = ctx.createGain();
-      const now = ctx.currentTime;
-      env.gain.setValueAtTime(0, now);
-      env.gain.linearRampToValueAtTime(0.04, now + 0.3);   // slow attack
-      env.gain.linearRampToValueAtTime(0.02, now + 0.8);   // sustain
-      env.gain.exponentialRampToValueAtTime(0.001, now + 1.8); // slow decay
-
-      osc.connect(env);
-      env.connect(natureGainRef.current!);
-      osc.start(now);
-      osc.stop(now + 1.9);
-
-      // Next bird tone in 8–20 seconds — infrequent and peaceful
-      const delay = 8000 + Math.random() * 12000;
-      musicTimerRef.current = setTimeout(addBirdTone, delay);
-    };
-    // First bird tone after 5 seconds
-    setTimeout(addBirdTone, 5000);
-  }, [stopNature, buildFilteredNoise]);
-
-  const startNatureWind = useCallback((ctx: AudioContext) => {
-    stopNature();
-    if (!natureGainRef.current) return;
-
-    // Wind: pink noise, low cutoff (350Hz), slow gusting LFO
-    const nodes = buildFilteredNoise(
-      ctx,
-      350,    // cutoff — deep, smooth wind
-      0.06,   // LFO freq — very slow gusts (~17s cycle)
-      0.45,
-      0.55,
-      natureGainRef.current,
-    );
-    natureNodesRef.current.push(...nodes);
-  }, [stopNature, buildFilteredNoise]);
-
-  const startNatureFire = useCallback((ctx: AudioContext) => {
-    stopNature();
-    if (!natureGainRef.current) return;
-
-    // Fire: pink noise, low cutoff (500Hz), medium-speed flicker LFO
-    // The crackle LFO is now at 1.5Hz (not 8Hz) — a gentle flicker, not a buzz
-    const nodes = buildFilteredNoise(
-      ctx,
-      500,    // cutoff — warm fire rumble
-      1.5,    // LFO freq — gentle flicker (was 8Hz — that was the harsh buzz)
-      0.4,
-      0.55,
-      natureGainRef.current,
-    );
-    natureNodesRef.current.push(...nodes);
-  }, [stopNature, buildFilteredNoise]);
+  const startNatureRain   = useCallback((ctx: AudioContext) => startNatureAudio(ctx, "rain"),   [startNatureAudio]);
+  const startNatureOcean  = useCallback((ctx: AudioContext) => startNatureAudio(ctx, "ocean"),  [startNatureAudio]);
+  const startNatureForest = useCallback((ctx: AudioContext) => startNatureAudio(ctx, "forest"), [startNatureAudio]);
+  const startNatureWind   = useCallback((ctx: AudioContext) => startNatureAudio(ctx, "wind"),   [startNatureAudio]);
+  const startNatureFire   = useCallback((ctx: AudioContext) => startNatureAudio(ctx, "fire"),   [startNatureAudio]);
 
   // ── Master play / stop ───────────────────────────────────────────────────────
   const startAllLayers = useCallback((s: StudioState) => {
