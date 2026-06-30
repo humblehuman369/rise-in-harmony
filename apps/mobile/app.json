@@ -81,12 +81,12 @@
     },
     "extra": {
       "eas": {
-        "projectId": "REPLACE_WITH_YOUR_EAS_PROJECT_ID"
+        "projectId": "1HM_0YL4zAiablB9EuW5BBNDjAgMSywq4jcL0AB2"
       }
     },
-    "owner": "REPLACE_WITH_YOUR_EXPO_USERNAME",
+    "owner": "humblehuman369",
     "updates": {
-      "url": "https://u.expo.dev/REPLACE_WITH_YOUR_EAS_PROJECT_ID",
+      "url": "https://u.expo.dev/1HM_0YL4zAiablB9EuW5BBNDjAgMSywq4jcL0AB2",
       "enabled": true,
       "fallbackToCacheTimeout": 0,
       "checkAutomatically": "ON_LOAD"
