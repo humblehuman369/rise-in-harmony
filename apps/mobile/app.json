@@ -18,7 +18,6 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.riseinharmony.app",
-      "buildNumber": "1",
       "infoPlist": {
         "UIBackgroundModes": [
           "audio"
