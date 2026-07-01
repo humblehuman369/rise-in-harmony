@@ -12,16 +12,24 @@
       "resizeMode": "contain",
       "backgroundColor": "#0A0B14"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.riseinharmony.app",
       "buildNumber": "1",
       "infoPlist": {
-        "UIBackgroundModes": ["audio", "fetch"],
+        "UIBackgroundModes": [
+          "audio",
+          "fetch",
+          "audio",
+          "fetch"
+        ],
         "NSMicrophoneUsageDescription": "Rise In Harmony uses the microphone for voice journaling.",
         "NSUserNotificationsUsageDescription": "Rise In Harmony uses notifications for healing alarm delivery.",
-        "UIRequiresFullScreen": true
+        "UIRequiresFullScreen": true,
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -38,7 +46,9 @@
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "android.permission.WAKE_LOCK",
         "android.permission.VIBRATE",
-        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "web": {
@@ -53,7 +63,9 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#00D4AA",
-          "sounds": ["./assets/sounds/528hz-gentle.wav"]
+          "sounds": [
+            "./assets/sounds/528hz-gentle.wav"
+          ]
         }
       ],
       [
@@ -74,7 +86,8 @@
             "targetSdkVersion": 35
           }
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
