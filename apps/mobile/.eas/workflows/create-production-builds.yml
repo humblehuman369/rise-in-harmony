@@ -1,0 +1,40 @@
+name: Create production builds
+
+# Runs on pushes to main: gate on typecheck + unit tests, then build iOS and
+# Android production artifacts in parallel.
+#
+# Monorepo note: this repo uses pnpm workspaces. `eas/install_node_modules`
+# installs from the workspace root; the build jobs read the `production`
+# profile from apps/mobile/eas.json (this workflow is scoped to that project).
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  verify:
+    name: Typecheck & unit tests
+    steps:
+      - uses: eas/checkout
+      - uses: eas/install_node_modules
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm run test
+
+  build_ios:
+    name: Build iOS (production)
+    needs: [verify]
+    type: build
+    params:
+      platform: ios
+      profile: production
+
+  build_android:
+    name: Build Android (production)
+    needs: [verify]
+    type: build
+    params:
+      platform: android
+      profile: production

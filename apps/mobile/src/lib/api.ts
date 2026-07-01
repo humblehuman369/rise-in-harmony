@@ -12,7 +12,7 @@
 
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
-import type { ApiResponse } from "@rih/shared-types";
+import type { ApiResponse, User } from "@rih/shared-types";
 
 const API_BASE_URL: string =
   Constants.expoConfig?.extra?.apiUrl ?? "https://www.riseinharmony.com";
@@ -97,3 +97,12 @@ export const api = {
     }),
   delete: <T>(path: string) => apiRequest<T>(path, { method: "DELETE" }),
 };
+
+/**
+ * Fetch the currently authenticated user's profile. Relies on the Bearer token
+ * attached by `apiRequest` (which also transparently refreshes on 401).
+ * The path must match the backend auth route namespace (`/api/auth/*`).
+ */
+export function getCurrentUser() {
+  return api.get<User>("/api/auth/me");
+}

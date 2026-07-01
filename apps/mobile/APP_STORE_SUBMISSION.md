@@ -16,6 +16,10 @@ Before submitting, confirm every item below is complete:
 - [ ] All 5 required screenshot sizes captured
 - [ ] Privacy policy URL live at `https://www.riseinharmony.com/privacy`
 - [ ] Terms of service URL live at `https://www.riseinharmony.com/terms`
+- [ ] App Privacy ("nutrition label") completed in App Store Connect — PostHog collects user id/name/email + usage, which must be declared
+- [ ] Listing describes ONLY features present in the submitted build (Guided Meditations and Sound Studio are NOT yet implemented — do not advertise them until they ship; Guideline 2.3.1)
+
+> ⚠️ **Health-claim language:** In-app copy and this description reference effects such as "DNA repair", "tissue regeneration", and "pineal activation". These are unsubstantiated medical claims and are a common cause of rejection (Guidelines 1.4.1 / 2.3). Prefer experiential phrasing ("associated with", "many people use for") and keep the medical disclaimer prominent.
 
 ---
 
@@ -46,14 +50,8 @@ Rise In Harmony replaces your jarring alarm clock with healing frequencies that 
 HEALING FREQUENCIES
 Explore the complete Solfeggio scale — 174Hz through 963Hz — plus binaural beats for Alpha, Theta, and Delta brainwave states. Each frequency is precisely tuned and scientifically referenced, with chakra associations, Sanskrit pronunciations, and personal affirmations.
 
-HEALING ALARM CLOCK
-Set your wake time and choose a healing frequency. Rise In Harmony fades in gradually over 1–10 minutes, easing you from sleep to consciousness instead of shocking you awake. Supports repeat schedules and works in airplane mode.
-
-GUIDED MEDITATIONS
-12 curated meditation sessions with real ambient soundscapes — gentle rain, ocean waves, forest birdsong, mountain wind, and crackling fire — layered with precisely tuned healing frequencies. Sessions range from 5 to 30 minutes.
-
-SOUND STUDIO
-Mix your own healing soundscape. Blend a healing frequency with nature sounds and harmonic music layers. Save your custom mixes and return to them anytime.
+HEALING ALARM
+Set your wake time and choose a healing frequency. Rise In Harmony delivers a gentle wake-up notification with a soft healing tone instead of a jarring buzzer. Supports repeat schedules. (In-app playback also offers a 1–10 minute fade-in for wind-down and sleep sessions.)
 
 7-CHAKRA JOURNEY
 A guided sequence through all seven chakras — Root to Crown — with the corresponding Solfeggio frequency for each energy center. Includes Sanskrit names, pronunciations, and affirmations.

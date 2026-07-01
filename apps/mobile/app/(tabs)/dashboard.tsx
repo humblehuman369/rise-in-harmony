@@ -56,13 +56,13 @@ function getChakraActivity(sessions: Session[]): Set<number> {
 }
 
 export default function DashboardScreen() {
-  const { user, token } = useAuthStore();
+  const { user, accessToken } = useAuthStore();
   const [stats, setStats] = useState<SessionStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStats = useCallback(async () => {
-    if (!token) return;
+    if (!accessToken) return;
     setLoading(true);
     setError(null);
     try {
@@ -77,7 +77,7 @@ export default function DashboardScreen() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [accessToken]);
 
   useEffect(() => {
     fetchStats();

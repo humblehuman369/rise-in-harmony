@@ -25,23 +25,6 @@ import { isPremiumUser } from "@rih/shared-utils";
 const { width } = Dimensions.get("window");
 const RING_BASE = width * 0.38;
 
-// Audio file map — files must exist in assets/sounds/
-const AUDIO_MAP: Record<string, ReturnType<typeof require>> = {
-  "174": require("../../assets/sounds/174hz.mp3"),
-  "285": require("../../assets/sounds/285hz.mp3"),
-  "396": require("../../assets/sounds/396hz.mp3"),
-  "417": require("../../assets/sounds/417hz.mp3"),
-  "432": require("../../assets/sounds/432hz.mp3"),
-  "528": require("../../assets/sounds/528hz.mp3"),
-  "639": require("../../assets/sounds/639hz.mp3"),
-  "741": require("../../assets/sounds/741hz.mp3"),
-  "852": require("../../assets/sounds/852hz.mp3"),
-  "963": require("../../assets/sounds/963hz.mp3"),
-  alpha: require("../../assets/sounds/alpha-binaural.mp3"),
-  theta: require("../../assets/sounds/theta-binaural.mp3"),
-  delta: require("../../assets/sounds/delta-binaural.mp3"),
-};
-
 const SLEEP_OPTIONS = [
   { label: "Off", minutes: 0 },
   { label: "15m", minutes: 15 },
@@ -68,7 +51,6 @@ export default function PlayerDetailScreen() {
     }
   }, [frequency, isPremium]);
 
-  const audioSource = frequency ? AUDIO_MAP[frequency.id] : null;
   const { isPlaying, isLoading, volume, play, pause, setVolume, setSleepTimer } =
     useAudioPlayer(frequency ?? null);
 

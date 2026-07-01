@@ -36,8 +36,7 @@
       "autoIncrement": true,
       "channel": "production",
       "ios": {
-        "enterpriseProvisioning": "universal",
-        "image": "latest"
+        "image": "macos-sequoia-15.6-xcode-26.2"
       },
       "android": {
         "buildType": "app-bundle"
