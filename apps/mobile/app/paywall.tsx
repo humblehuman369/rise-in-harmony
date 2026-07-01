@@ -14,8 +14,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
 import { usePurchases } from "@/hooks/usePurchases";
+import { useAuthStore } from "@/store/authStore";
 import type { PurchasesPackage } from "react-native-purchases";
 
 const FEATURES = [
@@ -50,13 +52,14 @@ export default function PaywallScreen() {
   const router = useRouter();
   const { packages, isPremium, isLoading, error, purchasePackage, restorePurchases } =
     usePurchases();
+  const { restoreSession } = useAuthStore();
 
-  const [selectedPkg, setSelectedPkg] = React.useState<PurchasesPackage | null>(
+  const [selectedPkg, setSelectedPkg] = useState<PurchasesPackage | null>(
     packages[0] ?? null
   );
 
   // Sync selection when packages load
-  React.useEffect(() => {
+  useEffect(() => {
     if (packages.length > 0 && !selectedPkg) {
       // Default to annual if available
       const annual = packages.find((p) =>
@@ -70,6 +73,8 @@ export default function PaywallScreen() {
     if (!selectedPkg) return;
     const result = await purchasePackage(selectedPkg);
     if (result.success) {
+      // Refresh the server-side profile so subscriptionTier-based gating updates.
+      await restoreSession();
       router.back();
     } else if (result.error && !result.error.includes("cancelled")) {
       Alert.alert("Purchase Failed", result.error);
@@ -79,6 +84,7 @@ export default function PaywallScreen() {
   const handleRestore = async () => {
     const result = await restorePurchases();
     if (result.isPremium) {
+      await restoreSession();
       Alert.alert("Restored", "Your premium access has been restored.", [
         { text: "Continue", onPress: () => router.back() },
       ]);
@@ -87,7 +93,7 @@ export default function PaywallScreen() {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isPremium) {
       router.back();
     }
@@ -228,9 +234,6 @@ export default function PaywallScreen() {
     </SafeAreaView>
   );
 }
-
-// React import needed for useState/useEffect in this file
-import React from "react";
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bgDeep },

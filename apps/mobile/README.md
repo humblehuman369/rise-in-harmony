@@ -164,7 +164,7 @@ apps/mobile/
     player/[id].tsx       ← Individual frequency player
   src/
     hooks/
-      useAudioPlayer.ts   ← expo-av audio engine
+      useAudioPlayer.ts   ← expo-audio audio engine
       useAlarmNotifications.ts  ← Alarm scheduling
       useAnalytics.ts     ← PostHog events
       usePurchases.ts     ← RevenueCat subscriptions
@@ -180,9 +180,11 @@ apps/mobile/
 
 ## Key Dependencies
 
+> Built on **Expo SDK 54** (React Native 0.81 / React 19). Production iOS builds use the Xcode 26 EAS image to satisfy Apple's April 2026 submission requirement.
+
 | Package | Purpose |
 | :--- | :--- |
-| `expo-av` | Frequency audio playback with background mode |
+| `expo-audio` | Frequency audio playback with background mode (replaces the deprecated `expo-av`) |
 | `expo-notifications` | Healing alarm scheduling (exact alarms) |
 | `expo-secure-store` | JWT token storage (replaces AsyncStorage) |
 | `expo-sqlite` | Offline-first local session database |

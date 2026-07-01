@@ -16,8 +16,10 @@ let posthog: PostHog | null = null;
 function getPostHog(): PostHog {
   if (!posthog) {
     const key = Constants.expoConfig?.extra?.posthogKey ?? "";
+    const host =
+      Constants.expoConfig?.extra?.posthogHost ?? "https://us.i.posthog.com";
     posthog = new PostHog(key, {
-      host: "https://app.posthog.com",
+      host,
       disabled: !key || __DEV__,
     });
   }
