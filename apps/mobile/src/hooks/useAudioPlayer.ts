@@ -105,7 +105,7 @@ export function useAudioPlayer(frequency: Frequency | null) {
   const teardown = useCallback(() => {
     teardownPlayer();
     clearSleepTimer();
-    KeepAwake.deactivateKeepAwakeAsync().catch(() => {});
+    KeepAwake.deactivateKeepAwake().catch(() => {});
   }, [teardownPlayer, clearSleepTimer]);
 
   const loadSound = useCallback(
@@ -122,7 +122,7 @@ export function useAudioPlayer(frequency: Frequency | null) {
 
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
       try {
-        const player = createAudioPlayer(source, 500);
+        const player = createAudioPlayer(source, { updateInterval: 500 });
         player.loop = true;
         player.volume = volumeRef.current;
         statusSubRef.current = player.addListener(
@@ -202,7 +202,7 @@ export function useAudioPlayer(frequency: Frequency | null) {
   const pause = useCallback(async () => {
     clearFadeInterval();
     playerRef.current?.pause();
-    KeepAwake.deactivateKeepAwakeAsync().catch(() => {});
+    KeepAwake.deactivateKeepAwake().catch(() => {});
   }, [clearFadeInterval]);
 
   const stop = useCallback(async () => {
@@ -213,7 +213,7 @@ export function useAudioPlayer(frequency: Frequency | null) {
       player.pause();
       await player.seekTo(0).catch(() => {});
     }
-    KeepAwake.deactivateKeepAwakeAsync().catch(() => {});
+    KeepAwake.deactivateKeepAwake().catch(() => {});
   }, [clearFadeInterval, clearSleepTimer]);
 
   const setVolume = useCallback((vol: number) => {

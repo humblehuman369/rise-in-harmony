@@ -5,12 +5,11 @@ import { colors } from "@rih/ui-tokens";
 // Tab bar icons using simple SVG-based components
 function TabIcon({
   focused,
-  color,
   children,
 }: {
   focused: boolean;
   color: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
     <View style={[styles.iconWrapper, focused && styles.iconActive]}>
