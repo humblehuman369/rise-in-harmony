@@ -28,5 +28,7 @@ yarn-error.*
 # macOS
 .DS_Store
 
-# EAS
+# EAS / Apple credentials (NEVER commit private keys)
 google-service-account.json
+*.p8
+AuthKey_*.p8
