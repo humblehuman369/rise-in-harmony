@@ -68,7 +68,7 @@ export async function scheduleAlarm(alarm: Alarm): Promise<string | null> {
     content: {
       title: "Rise In Harmony",
       body: `Your ${alarm.frequencyHz}Hz healing alarm`,
-      sound: "528hz-gentle.wav",
+      sound: "gentle_528hz.wav",
       data: { alarm },
     },
     trigger: {

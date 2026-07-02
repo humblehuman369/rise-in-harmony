@@ -70,10 +70,10 @@ assets/sounds/
   alpha-binaural.mp3
   theta-binaural.mp3
   delta-binaural.mp3
-  528hz-gentle.wav    ← used for alarm notification sound
+  gentle_528hz.wav    ← used for alarm notification sound (Android res name must start with a letter, no hyphens)
 ```
 
-Audio files should be 10-minute loops at 44.1kHz, 128kbps MP3. The `528hz-gentle.wav` alarm sound must be under 30 seconds for iOS notification delivery.
+Audio files should be 10-minute loops at 44.1kHz, 128kbps MP3. The `gentle_528hz.wav` alarm sound must be under 30 seconds for iOS notification delivery.
 
 ---
 

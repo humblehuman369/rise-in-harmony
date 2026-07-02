@@ -143,7 +143,7 @@ The following files must be placed in `apps/mobile/assets/sounds/` before buildi
 | `alpha-binaural.mp3` | 10Hz Alpha binaural beat, 10-min loop | Record or license |
 | `theta-binaural.mp3` | 6Hz Theta binaural beat, 10-min loop | Record or license |
 | `delta-binaural.mp3` | 2Hz Delta binaural beat, 10-min loop | Record or license |
-| `528hz-gentle.wav` | Gentle 528Hz alarm tone (30 seconds) | Record or license |
+| `gentle_528hz.wav` | Gentle 528Hz alarm tone (30 seconds) | Record or license |
 
 **Recommended sources for royalty-free audio:**
 - [Freesound.org](https://freesound.org) — CC0 licensed tones

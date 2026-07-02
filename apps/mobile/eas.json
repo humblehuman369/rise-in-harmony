@@ -51,7 +51,7 @@
       "ios": {
         "appleId": "REPLACE_WITH_YOUR_APPLE_ID",
         "ascAppId": "REPLACE_WITH_YOUR_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "REPLACE_WITH_YOUR_APPLE_TEAM_ID"
+        "appleTeamId": "A2Y6C3NNSY"
       },
       "android": {
         "serviceAccountKeyPath": "./google-service-account.json",
