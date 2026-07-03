@@ -155,6 +155,7 @@ apps/mobile/
     (tabs)/               ← Bottom tab navigator
       index.tsx           ← Home screen
       player.tsx          ← Frequency player
+      meditation.tsx      ← Guided meditation library (12 sessions)
       library.tsx         ← Frequency library
       alarm.tsx           ← Alarm scheduler
       dashboard.tsx       ← Stats & chakra map
@@ -162,9 +163,11 @@ apps/mobile/
     onboarding.tsx        ← First-launch onboarding
     paywall.tsx           ← Premium upgrade modal
     player/[id].tsx       ← Individual frequency player
+    meditation/[id].tsx   ← Meditation session player (nature + frequency layers)
   src/
     hooks/
       useAudioPlayer.ts   ← expo-audio audio engine
+      useMeditationPlayer.ts ← layered meditation audio + guidance timer
       useAlarmNotifications.ts  ← Alarm scheduling
       useAnalytics.ts     ← PostHog events
       usePurchases.ts     ← RevenueCat subscriptions

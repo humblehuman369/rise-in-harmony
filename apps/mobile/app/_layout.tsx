@@ -48,6 +48,7 @@ function RootLayoutNav() {
       <Stack.Screen name="onboarding" options={{ headerShown: false, animation: "fade" }} />
       <Stack.Screen name="paywall" options={{ presentation: "modal" }} />
       <Stack.Screen name="player/[id]" options={{ presentation: "card" }} />
+      <Stack.Screen name="meditation/[id]" options={{ presentation: "card" }} />
     </Stack>
   );
 }
