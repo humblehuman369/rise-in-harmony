@@ -22,6 +22,7 @@
         "UIBackgroundModes": [
           "audio"
         ],
+        "NSMicrophoneUsageDescription": "Rise In Harmony does not record audio. This notice is required because the app's audio playback engine includes recording capabilities that the app never uses.",
         "UIRequiresFullScreen": true,
         "ITSAppUsesNonExemptEncryption": false
       }
