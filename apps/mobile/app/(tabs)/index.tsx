@@ -52,7 +52,12 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         {/* Free Frequencies */}
-        <Text style={styles.sectionTitle}>Free Frequencies</Text>
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>Free Frequencies</Text>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/library")}>
+            <Text style={styles.seeAll}>See all →</Text>
+          </TouchableOpacity>
+        </View>
         {FREE_FREQUENCIES.slice(0, 3).map((freq) => (
           <TouchableOpacity
             key={freq.id}
@@ -186,6 +191,16 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginBottom: spacing[3],
     marginTop: spacing[2],
+  },
+  sectionRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+  },
+  seeAll: {
+    fontSize: fontSizes.xs,
+    color: colors.teal,
+    fontWeight: "600",
   },
   freqRow: {
     flexDirection: "row",

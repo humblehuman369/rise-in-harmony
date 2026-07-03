@@ -181,6 +181,30 @@ export interface StudioPreset {
   createdAt: string; // ISO 8601 UTC
 }
 
+// ─── Sound Studio (layered mixer) ────────────────────────────────────────────
+
+export type StudioNatureSound = "rain" | "ocean" | "forest" | "wind" | "fire" | "none";
+export type StudioMusicMode = MusicMode;
+
+export interface StudioMixSettings {
+  frequencyHz: number;
+  musicMode: StudioMusicMode;
+  natureSound: StudioNatureSound;
+  frequencyVolume: number; // 0–1
+  musicVolume: number; // 0–1
+  natureVolume: number; // 0–1
+  masterVolume?: number; // 0–1
+}
+
+export interface StudioBuiltinPreset {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  settings: StudioMixSettings;
+}
+
 // ─── Subscription ─────────────────────────────────────────────────────────────
 
 export interface SubscriptionStatus {

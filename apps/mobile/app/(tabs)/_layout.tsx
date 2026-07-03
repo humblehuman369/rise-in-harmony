@@ -64,16 +64,19 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="library"
+        name="studio"
         options={{
-          title: "Library",
+          title: "Studio",
           tabBarIcon: ({ focused, color }) => (
             <TabIcon focused={focused} color={color}>
-              {/* Library icon placeholder */}
+              {/* Studio icon placeholder */}
             </TabIcon>
           ),
         }}
       />
+      {/* Library duplicates the Player grid; keep it routable (linked from
+          Home) but out of the tab bar so we stay at 6 tabs. */}
+      <Tabs.Screen name="library" options={{ href: null }} />
       <Tabs.Screen
         name="alarm"
         options={{

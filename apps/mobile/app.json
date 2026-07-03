@@ -62,6 +62,13 @@
         }
       ],
       [
+        "react-native-audio-api",
+        {
+          "iosBackgroundMode": true,
+          "androidForegroundService": true
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "ios": {

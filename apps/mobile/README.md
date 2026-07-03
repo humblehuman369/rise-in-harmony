@@ -156,7 +156,8 @@ apps/mobile/
       index.tsx           ← Home screen
       player.tsx          ← Frequency player
       meditation.tsx      ← Guided meditation library (12 sessions)
-      library.tsx         ← Frequency library
+      studio.tsx          ← Sound Studio (layered mixer: frequency + music + nature)
+      library.tsx         ← Frequency library (routable via Home; hidden from tab bar)
       alarm.tsx           ← Alarm scheduler
       dashboard.tsx       ← Stats & chakra map
     _layout.tsx           ← Root layout (providers)
@@ -168,6 +169,7 @@ apps/mobile/
     hooks/
       useAudioPlayer.ts   ← expo-audio audio engine
       useMeditationPlayer.ts ← layered meditation audio + guidance timer
+      useSoundStudio.ts   ← live synthesis engine (react-native-audio-api oscillators)
       useAlarmNotifications.ts  ← Alarm scheduling
       useAnalytics.ts     ← PostHog events
       usePurchases.ts     ← RevenueCat subscriptions
@@ -188,6 +190,7 @@ apps/mobile/
 | Package | Purpose |
 | :--- | :--- |
 | `expo-audio` | Frequency audio playback with background mode (replaces the deprecated `expo-av`) |
+| `react-native-audio-api` | Web Audio API for RN — live sine/chord/drone synthesis in the Sound Studio |
 | `expo-notifications` | Healing alarm scheduling (exact alarms) |
 | `expo-secure-store` | JWT token storage (replaces AsyncStorage) |
 | `expo-sqlite` | Offline-first local session database |
