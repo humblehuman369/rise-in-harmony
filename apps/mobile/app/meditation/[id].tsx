@@ -20,6 +20,7 @@ import { MEDITATIONS, isPremiumUser } from "@rih/shared-utils";
 import { useMeditationPlayer, type MeditationMode } from "@/hooks/useMeditationPlayer";
 import { useAuthStore } from "@/store/authStore";
 import { trackSessionStarted, trackSessionEnded } from "@/hooks/useAnalytics";
+import SessionJournal from "@/components/SessionJournal";
 import { MEDITATION_EMOJI } from "../(tabs)/meditation";
 
 function formatTime(sec: number) {
@@ -46,6 +47,8 @@ export default function MeditationSessionScreen() {
 
   const meditation = MEDITATIONS.find((m) => m.id === id) ?? null;
   const [mode, setMode] = useState<MeditationMode>("frequency");
+  const [journalMinutes, setJournalMinutes] = useState<number | null>(null);
+  const closeAfterJournalRef = useRef(false);
 
   const {
     isPlaying,
@@ -92,15 +95,16 @@ export default function MeditationSessionScreen() {
     return () => anim.stop();
   }, [isPlaying, pulse]);
 
-  // Analytics: session end on completion
+  // Session end on completion: analytics + mood check-in
   useEffect(() => {
     if (isComplete && meditation && sessionStartedRef.current) {
       trackSessionEnded({
         frequency_hz: 0,
         duration_seconds: totalSec,
-        had_journal_entry: false,
+        had_journal_entry: true,
       });
       sessionStartedRef.current = false;
+      setJournalMinutes(meditation.durationMinutes);
     }
   }, [isComplete, meditation, totalSec]);
 
@@ -129,16 +133,30 @@ export default function MeditationSessionScreen() {
   };
 
   const handleEnd = () => {
+    const promptJournal = elapsedSec > 30;
     if (sessionStartedRef.current) {
       trackSessionEnded({
         frequency_hz: 0,
         duration_seconds: elapsedSec,
-        had_journal_entry: false,
+        had_journal_entry: promptJournal,
       });
       sessionStartedRef.current = false;
     }
     stop();
-    router.back();
+    if (promptJournal) {
+      closeAfterJournalRef.current = true;
+      setJournalMinutes(Math.max(1, Math.round(elapsedSec / 60)));
+    } else {
+      router.back();
+    }
+  };
+
+  const handleJournalClosed = () => {
+    setJournalMinutes(null);
+    if (closeAfterJournalRef.current) {
+      closeAfterJournalRef.current = false;
+      router.back();
+    }
   };
 
   return (
@@ -303,6 +321,15 @@ export default function MeditationSessionScreen() {
         {/* Affirmation */}
         <Text style={styles.affirmation}>"{meditation.affirmation}"</Text>
       </ScrollView>
+
+      {/* Post-session mood check-in */}
+      <SessionJournal
+        visible={journalMinutes !== null}
+        frequencyHz={0}
+        frequencyName={meditation.title}
+        durationMinutes={journalMinutes ?? 0}
+        onClose={handleJournalClosed}
+      />
     </SafeAreaView>
   );
 }

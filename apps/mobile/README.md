@@ -165,11 +165,16 @@ apps/mobile/
     paywall.tsx           ← Premium upgrade modal
     player/[id].tsx       ← Individual frequency player
     meditation/[id].tsx   ← Meditation session player (nature + frequency layers)
+    chakra-journey.tsx    ← Guided 7-chakra sequence with crossfades
   src/
+    components/
+      SessionJournal.tsx  ← Post-session mood check-in (1–5 + note, AsyncStorage)
+      BreathingGuide.tsx  ← 4-7-8 / Box / Calm breathing overlay
     hooks/
       useAudioPlayer.ts   ← expo-audio audio engine
       useMeditationPlayer.ts ← layered meditation audio + guidance timer
       useSoundStudio.ts   ← live synthesis engine (react-native-audio-api oscillators)
+      useChakraJourney.ts ← 7-chakra sequence engine with crossfades
       useAlarmNotifications.ts  ← Alarm scheduling
       useAnalytics.ts     ← PostHog events
       usePurchases.ts     ← RevenueCat subscriptions

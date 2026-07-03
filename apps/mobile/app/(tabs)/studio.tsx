@@ -28,6 +28,8 @@ import {
 import type { StudioMixSettings } from "@rih/shared-types";
 import { useSoundStudio } from "@/hooks/useSoundStudio";
 import { trackSessionStarted, trackSessionEnded } from "@/hooks/useAnalytics";
+import BreathingGuide from "@/components/BreathingGuide";
+import SessionJournal from "@/components/SessionJournal";
 
 const CUSTOM_PRESETS_KEY = "rih_custom_presets";
 const SLEEP_DURATIONS = [15, 30, 45, 60];
@@ -78,6 +80,8 @@ export default function StudioScreen() {
   const [customPresets, setCustomPresets] = useState<CustomPreset[]>([]);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [newPresetName, setNewPresetName] = useState("");
+  const [showBreathing, setShowBreathing] = useState(false);
+  const [journalState, setJournalState] = useState<{ minutes: number } | null>(null);
 
   // Sleep timer
   const [timerRemainSec, setTimerRemainSec] = useState(0);
@@ -107,12 +111,17 @@ export default function StudioScreen() {
         source: "studio",
       });
     } else if (sessionStartRef.current) {
+      const durationSec = Math.round((Date.now() - sessionStartRef.current) / 1000);
       trackSessionEnded({
         frequency_hz: state.frequencyHz,
-        duration_seconds: Math.round((Date.now() - sessionStartRef.current) / 1000),
-        had_journal_entry: false,
+        duration_seconds: durationSec,
+        had_journal_entry: durationSec > 30,
       });
       sessionStartRef.current = null;
+      // Prompt a mood check-in after meaningful sessions
+      if (durationSec > 30) {
+        setJournalState({ minutes: Math.max(1, Math.round(durationSec / 60)) });
+      }
     }
     toggle();
   }, [state.isPlaying, state.frequencyHz, selectedFreq.name, toggle]);
@@ -277,9 +286,17 @@ export default function StudioScreen() {
         {/* Presets */}
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionLabel}>PRESETS</Text>
-          <TouchableOpacity style={styles.saveMixBtn} onPress={() => setSaveModalOpen(true)}>
-            <Text style={styles.saveMixBtnText}>＋ Save Mix</Text>
-          </TouchableOpacity>
+          <View style={styles.headerBtnRow}>
+            <TouchableOpacity
+              style={styles.breatheBtn}
+              onPress={() => setShowBreathing(true)}
+            >
+              <Text style={styles.breatheBtnText}>🌬 Breathe</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.saveMixBtn} onPress={() => setSaveModalOpen(true)}>
+              <Text style={styles.saveMixBtnText}>＋ Save Mix</Text>
+            </TouchableOpacity>
+          </View>
         </View>
         <ScrollView
           horizontal
@@ -557,6 +574,22 @@ export default function StudioScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Breathing guide overlay */}
+      <BreathingGuide
+        visible={showBreathing}
+        onClose={() => setShowBreathing(false)}
+        accentColor={selectedFreq.color}
+      />
+
+      {/* Post-session mood check-in */}
+      <SessionJournal
+        visible={journalState !== null}
+        frequencyHz={state.frequencyHz}
+        frequencyName={selectedFreq.name}
+        durationMinutes={journalState?.minutes ?? 0}
+        onClose={() => setJournalState(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -625,6 +658,16 @@ const styles = StyleSheet.create({
   },
   sectionGap: { marginTop: spacing[6], marginBottom: spacing[3] },
   myMixesLabel: { marginTop: spacing[3], marginBottom: spacing[2] },
+  headerBtnRow: { flexDirection: "row", gap: spacing[2] },
+  breatheBtn: {
+    backgroundColor: colors.tealDim,
+    borderWidth: 1,
+    borderColor: colors.tealBorder,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[1],
+  },
+  breatheBtnText: { fontSize: fontSizes.xs, color: colors.teal, fontWeight: "600" },
   saveMixBtn: {
     backgroundColor: colors.purpleDim,
     borderWidth: 1,

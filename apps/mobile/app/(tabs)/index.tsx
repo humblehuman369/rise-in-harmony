@@ -38,7 +38,7 @@ export default function HomeScreen() {
         {/* Quick Start Card */}
         <TouchableOpacity
           style={styles.quickStartCard}
-          onPress={() => router.push("/(tabs)/player")}
+          onPress={() => router.push("/chakra-journey")}
           activeOpacity={0.85}
         >
           <Text style={styles.quickStartLabel}>QUICK START</Text>
