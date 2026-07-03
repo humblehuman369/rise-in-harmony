@@ -197,6 +197,11 @@ export default function PlayerDetailScreen() {
             </Text>
           </View>
         )}
+        {frequency.category === "binaural" && (
+          <Text style={styles.headphoneHint}>
+            🎧 Headphones required — true binaural beat ({frequency.hz}Hz offset)
+          </Text>
+        )}
 
         {/* Play / Pause */}
         <TouchableOpacity
@@ -376,6 +381,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing[6],
   },
   chakraBadgeText: { fontSize: fontSizes.sm, fontWeight: "600" },
+  headphoneHint: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    textAlign: "center",
+    paddingHorizontal: spacing[8],
+    marginTop: -spacing[4],
+    marginBottom: spacing[5],
+  },
   // Play button
   playBtn: {
     width: 80,

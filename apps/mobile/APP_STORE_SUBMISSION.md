@@ -126,23 +126,18 @@ After creating products in App Store Connect:
 
 ## Audio Assets Required
 
-The following files must be placed in `apps/mobile/assets/sounds/` before building:
+All healing frequencies (solfeggio tones, binaural beats, isochronic pulses) are
+**synthesized live on-device** — no pre-rendered frequency recordings ship in the
+binary (~28 MB smaller). Only the following files must be in
+`apps/mobile/assets/sounds/` before building:
 
 | Filename | Description | Source |
 |---|---|---|
-| `174hz.mp3` | 174Hz Solfeggio tone, 10-min loop | Record or license |
-| `285hz.mp3` | 285Hz Solfeggio tone, 10-min loop | Record or license |
-| `396hz.mp3` | 396Hz Solfeggio tone, 10-min loop | Record or license |
-| `417hz.mp3` | 417Hz Solfeggio tone, 10-min loop | Record or license |
-| `432hz.mp3` | 432Hz Universal Harmony, 10-min loop | Record or license |
-| `528hz.mp3` | 528Hz Miracle Tone, 10-min loop | Record or license |
-| `639hz.mp3` | 639Hz Connection, 10-min loop | Record or license |
-| `741hz.mp3` | 741Hz Awakening, 10-min loop | Record or license |
-| `852hz.mp3` | 852Hz Third Eye, 10-min loop | Record or license |
-| `963hz.mp3` | 963Hz Divine Consciousness, 10-min loop | Record or license |
-| `alpha-binaural.mp3` | 10Hz Alpha binaural beat, 10-min loop | Record or license |
-| `theta-binaural.mp3` | 6Hz Theta binaural beat, 10-min loop | Record or license |
-| `delta-binaural.mp3` | 2Hz Delta binaural beat, 10-min loop | Record or license |
+| `ambient-rain.mp3` | Gentle rain loop | Record or license |
+| `ambient-ocean.mp3` | Ocean waves loop | Record or license |
+| `ambient-forest.mp3` | Forest birdsong loop | Record or license |
+| `ambient-wind.mp3` | Mountain wind loop | Record or license |
+| `ambient-fire.mp3` | Crackling fire loop | Record or license |
 | `gentle_528hz.wav` | Gentle 528Hz alarm tone (30 seconds) | Record or license |
 
 **Recommended sources for royalty-free audio:**

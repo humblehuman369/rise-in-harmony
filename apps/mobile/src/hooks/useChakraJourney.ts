@@ -1,18 +1,17 @@
 /**
  * useChakraJourney — guided 7-chakra sequence engine
  *
- * Steps through CHAKRA_FREQUENCIES (Root 396Hz → Crown 963Hz), playing each
- * chakra's frequency loop for a configurable duration with a ~2.5s crossfade
- * between steps (two expo-audio players, JS-driven volume ramps).
+ * Steps through CHAKRA_FREQUENCIES (Root 396Hz → Crown 963Hz), synthesizing
+ * each chakra's exact frequency live (react-native-audio-api oscillators)
+ * for a configurable duration, with a ~2.5s crossfade between steps done as
+ * native gain ramps (incoming voice fades in while the outgoing fades out).
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from "expo-audio";
 import * as KeepAwake from "expo-keep-awake";
 import { CHAKRA_FREQUENCIES } from "@rih/shared-utils";
-import { FREQUENCY_AUDIO_MAP } from "./useAudioPlayer";
+import { createCatalogVoice, type SynthVoice } from "@/lib/synth";
 
-const CROSSFADE_MS = 2500;
-const FADE_STEP_MS = 100;
+const CROSSFADE_SEC = 2.5;
 const TARGET_VOLUME = 0.75;
 
 interface ChakraJourneyState {
@@ -25,10 +24,8 @@ interface ChakraJourneyState {
 }
 
 export function useChakraJourney(stepDurationSec: number) {
-  const currentPlayerRef = useRef<AudioPlayer | null>(null);
-  const outgoingPlayerRef = useRef<AudioPlayer | null>(null);
+  const voiceRef = useRef<SynthVoice | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const fadeRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [state, setState] = useState<ChakraJourneyState>({
     isRunning: false,
@@ -44,64 +41,27 @@ export function useChakraJourney(stepDurationSec: number) {
     }
   }, []);
 
-  const clearFade = useCallback(() => {
-    if (fadeRef.current) {
-      clearInterval(fadeRef.current);
-      fadeRef.current = null;
+  const teardownAudio = useCallback((fadeOutSec = 0.4) => {
+    if (voiceRef.current) {
+      voiceRef.current.stop(fadeOutSec);
+      voiceRef.current = null;
     }
   }, []);
 
-  const removePlayer = (ref: React.MutableRefObject<AudioPlayer | null>) => {
-    if (ref.current) {
-      try {
-        ref.current.pause();
-        ref.current.remove();
-      } catch {}
-      ref.current = null;
-    }
-  };
-
-  const teardownAudio = useCallback(() => {
-    clearFade();
-    removePlayer(currentPlayerRef);
-    removePlayer(outgoingPlayerRef);
-  }, [clearFade]);
-
   /** Start playing chakra `index`, crossfading from whatever is playing. */
   const playChakra = useCallback(
-    (index: number) => {
+    (index: number, fadeSec = CROSSFADE_SEC) => {
       const freq = CHAKRA_FREQUENCIES[index];
       if (!freq) return;
-      const source = FREQUENCY_AUDIO_MAP[freq.id];
-      if (source === undefined) return;
 
-      clearFade();
-      // Any previous outgoing player is done fading — drop it
-      removePlayer(outgoingPlayerRef);
-      // Current becomes outgoing
-      outgoingPlayerRef.current = currentPlayerRef.current;
-      currentPlayerRef.current = null;
+      // Outgoing voice fades out over the same window the incoming fades in
+      teardownAudio(fadeSec);
 
-      const incoming = createAudioPlayer(source);
-      incoming.loop = true;
-      incoming.volume = 0;
-      incoming.play();
-      currentPlayerRef.current = incoming;
-
-      const steps = Math.max(1, Math.round(CROSSFADE_MS / FADE_STEP_MS));
-      let step = 0;
-      fadeRef.current = setInterval(() => {
-        step++;
-        const t = Math.min(step / steps, 1);
-        if (currentPlayerRef.current) currentPlayerRef.current.volume = TARGET_VOLUME * t;
-        if (outgoingPlayerRef.current) outgoingPlayerRef.current.volume = TARGET_VOLUME * (1 - t);
-        if (t >= 1) {
-          clearFade();
-          removePlayer(outgoingPlayerRef);
-        }
-      }, FADE_STEP_MS);
+      const incoming = createCatalogVoice(freq, TARGET_VOLUME);
+      incoming.start(fadeSec);
+      voiceRef.current = incoming;
     },
-    [clearFade]
+    [teardownAudio]
   );
 
   const stop = useCallback(
@@ -139,32 +99,28 @@ export function useChakraJourney(stepDurationSec: number) {
   }, [clearTick, stepDurationSec, playChakra, stop]);
 
   const start = useCallback(() => {
-    setAudioModeAsync({
-      playsInSilentMode: true,
-      shouldPlayInBackground: true,
-      interruptionMode: "doNotMix",
-      interruptionModeAndroid: "doNotMix",
-    }).catch(() => {});
     KeepAwake.activateKeepAwakeAsync().catch(() => {});
     setState({ isRunning: true, currentIndex: 0, elapsedInStep: 0, isComplete: false });
-    playChakra(0);
+    playChakra(0, 1.5);
     startTick();
   }, [playChakra, startTick]);
 
   const pause = useCallback(() => {
     clearTick();
-    currentPlayerRef.current?.pause();
-    outgoingPlayerRef.current?.pause();
+    // Oscillator voices can't pause — fade out and recreate on resume
+    teardownAudio(0.3);
     KeepAwake.deactivateKeepAwake().catch(() => {});
     setState((prev) => ({ ...prev, isRunning: false }));
-  }, [clearTick]);
+  }, [clearTick, teardownAudio]);
 
   const resume = useCallback(() => {
-    currentPlayerRef.current?.play();
     KeepAwake.activateKeepAwakeAsync().catch(() => {});
-    setState((prev) => ({ ...prev, isRunning: true }));
+    setState((prev) => {
+      playChakra(prev.currentIndex, 1);
+      return { ...prev, isRunning: true };
+    });
     startTick();
-  }, [startTick]);
+  }, [playChakra, startTick]);
 
   // Teardown on unmount
   useEffect(() => {

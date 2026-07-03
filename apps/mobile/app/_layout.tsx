@@ -50,6 +50,7 @@ function RootLayoutNav() {
       <Stack.Screen name="player/[id]" options={{ presentation: "card" }} />
       <Stack.Screen name="meditation/[id]" options={{ presentation: "card" }} />
       <Stack.Screen name="chakra-journey" options={{ presentation: "card" }} />
+      <Stack.Screen name="precision" options={{ presentation: "card" }} />
     </Stack>
   );
 }

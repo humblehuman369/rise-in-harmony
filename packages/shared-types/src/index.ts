@@ -235,7 +235,7 @@ export interface SessionStartedEvent {
   frequency_name?: string;
   session_type: SessionType;
   is_premium: boolean;
-  source: "player" | "studio" | "alarm" | "chakra_sequence";
+  source: "player" | "studio" | "alarm" | "chakra_sequence" | "precision";
 }
 
 export interface SessionEndedEvent {
