@@ -16,7 +16,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import Slider from "@react-native-community/slider";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
-import { MEDITATIONS, isPremiumUser } from "@rih/shared-utils";
+import { MEDITATIONS, FREQUENCIES, isPremiumUser } from "@rih/shared-utils";
 import { useMeditationPlayer, type MeditationMode } from "@/hooks/useMeditationPlayer";
 import { useAuthStore } from "@/store/authStore";
 import { trackSessionStarted, trackSessionEnded } from "@/hooks/useAnalytics";
@@ -49,6 +49,14 @@ export default function MeditationSessionScreen() {
   const [mode, setMode] = useState<MeditationMode>("frequency");
   const [journalMinutes, setJournalMinutes] = useState<number | null>(null);
   const closeAfterJournalRef = useRef(false);
+
+  // The healing frequency paired with this meditation. Reported in analytics
+  // and the journal only when the frequency layer is active ("frequency"
+  // mode) — matching the web app's behavior.
+  const recommendedFreq = meditation
+    ? FREQUENCIES.find((f) => f.id === meditation.recommendedFrequencyId) ?? null
+    : null;
+  const activeFrequencyHz = mode === "frequency" ? recommendedFreq?.hz ?? 0 : 0;
 
   const {
     isPlaying,
@@ -99,14 +107,14 @@ export default function MeditationSessionScreen() {
   useEffect(() => {
     if (isComplete && meditation && sessionStartedRef.current) {
       trackSessionEnded({
-        frequency_hz: 0,
+        frequency_hz: activeFrequencyHz,
         duration_seconds: totalSec,
         had_journal_entry: true,
       });
       sessionStartedRef.current = false;
       setJournalMinutes(meditation.durationMinutes);
     }
-  }, [isComplete, meditation, totalSec]);
+  }, [isComplete, meditation, totalSec, activeFrequencyHz]);
 
   if (!meditation) return null;
 
@@ -120,7 +128,7 @@ export default function MeditationSessionScreen() {
     } else {
       if (!sessionStartedRef.current) {
         trackSessionStarted({
-          frequency_hz: 0,
+          frequency_hz: activeFrequencyHz,
           frequency_name: meditation.title,
           session_type: "single",
           is_premium: meditation.isPremium,
@@ -136,7 +144,7 @@ export default function MeditationSessionScreen() {
     const promptJournal = elapsedSec > 30;
     if (sessionStartedRef.current) {
       trackSessionEnded({
-        frequency_hz: 0,
+        frequency_hz: activeFrequencyHz,
         duration_seconds: elapsedSec,
         had_journal_entry: promptJournal,
       });
@@ -325,7 +333,7 @@ export default function MeditationSessionScreen() {
       {/* Post-session mood check-in */}
       <SessionJournal
         visible={journalMinutes !== null}
-        frequencyHz={0}
+        frequencyHz={activeFrequencyHz}
         frequencyName={meditation.title}
         durationMinutes={journalMinutes ?? 0}
         onClose={handleJournalClosed}
