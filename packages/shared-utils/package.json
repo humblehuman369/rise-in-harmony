@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@rih/shared-types": "workspace:*"
+    "@rih/shared-types": "file:../shared-types"
   },
   "devDependencies": {
     "typescript": "5.9.3"

@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useCallback, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Notifications from "expo-notifications";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
 import { FREQUENCIES } from "@rih/shared-utils";
 import {
@@ -152,7 +153,6 @@ export default function AlarmScreen() {
       const target = stored.find((a) => a.id === alarm.id);
       if (target) {
         // Cancel by re-fetching scheduled notifications and cancelling matching ones
-        const { Notifications } = await import("expo-notifications");
         const scheduled = await Notifications.getAllScheduledNotificationsAsync();
         for (const notif of scheduled) {
           const data = notif.content.data as { alarm?: Alarm };
@@ -187,7 +187,6 @@ export default function AlarmScreen() {
         style: "destructive",
         onPress: async () => {
           // Cancel scheduled notifications for this alarm
-          const { Notifications } = await import("expo-notifications");
           const scheduled = await Notifications.getAllScheduledNotificationsAsync();
           for (const notif of scheduled) {
             const data = notif.content.data as { alarm?: Alarm };

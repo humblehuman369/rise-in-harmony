@@ -194,6 +194,37 @@ export default function Home() {
         </div>
       </section>
 
+      {/* TrueHz technology banner */}
+      <section className="py-10" style={{ background: '#0A0B14' }}>
+        <div className="container">
+          <button
+            onClick={() => navigate("/technology")}
+            className="w-full text-left rounded-2xl p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-5 transition-transform hover:scale-[1.01]"
+            style={{
+              background: 'linear-gradient(135deg, rgba(0,212,170,0.1), rgba(139,92,246,0.06))',
+              border: '1px solid rgba(0,212,170,0.25)',
+            }}
+          >
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(0,212,170,0.15)', border: '1px solid rgba(0,212,170,0.3)' }}>
+              <span className="font-bold" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>Hz</span>
+            </div>
+            <div className="flex-1">
+              <div className="text-base font-bold mb-1" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+                TrueHz™ Precision Tuning
+              </div>
+              <p className="text-sm leading-relaxed" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
+                Most frequency apps play compressed or pitch-shifted recordings.
+                Every tone here is generated live, mathematically exact to 0.01 Hz.
+              </p>
+            </div>
+            <span className="text-sm font-semibold flex-shrink-0" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+              See why it matters →
+            </span>
+          </button>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section className="py-24" style={{ background: '#0A0B14' }}>
         <div className="container">

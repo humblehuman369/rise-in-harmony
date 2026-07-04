@@ -19,28 +19,13 @@ import Slider from "@react-native-community/slider";
 import { colors, fontSizes, spacing, radii } from "@rih/ui-tokens";
 import { FREQUENCIES } from "@rih/shared-utils";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
+import { useAudioOutput } from "@/hooks/useAudioOutput";
+import { binauralRouteHint } from "@/lib/audioRoute";
 import { useAuthStore } from "@/store/authStore";
 import { isPremiumUser } from "@rih/shared-utils";
 
 const { width } = Dimensions.get("window");
 const RING_BASE = width * 0.38;
-
-// Audio file map — files must exist in assets/sounds/
-const AUDIO_MAP: Record<string, ReturnType<typeof require>> = {
-  "174": require("../../assets/sounds/174hz.mp3"),
-  "285": require("../../assets/sounds/285hz.mp3"),
-  "396": require("../../assets/sounds/396hz.mp3"),
-  "417": require("../../assets/sounds/417hz.mp3"),
-  "432": require("../../assets/sounds/432hz.mp3"),
-  "528": require("../../assets/sounds/528hz.mp3"),
-  "639": require("../../assets/sounds/639hz.mp3"),
-  "741": require("../../assets/sounds/741hz.mp3"),
-  "852": require("../../assets/sounds/852hz.mp3"),
-  "963": require("../../assets/sounds/963hz.mp3"),
-  alpha: require("../../assets/sounds/alpha-binaural.mp3"),
-  theta: require("../../assets/sounds/theta-binaural.mp3"),
-  delta: require("../../assets/sounds/delta-binaural.mp3"),
-};
 
 const SLEEP_OPTIONS = [
   { label: "Off", minutes: 0 },
@@ -68,9 +53,9 @@ export default function PlayerDetailScreen() {
     }
   }, [frequency, isPremium]);
 
-  const audioSource = frequency ? AUDIO_MAP[frequency.id] : null;
   const { isPlaying, isLoading, volume, play, pause, setVolume, setSleepTimer } =
     useAudioPlayer(frequency ?? null);
+  const audioOutput = useAudioOutput();
 
   const [sleepMinutes, setSleepMinutes] = useState(0);
   const [showAffirmation, setShowAffirmation] = useState(false);
@@ -215,6 +200,23 @@ export default function PlayerDetailScreen() {
             </Text>
           </View>
         )}
+        {frequency.category === "binaural" && (
+          <Text style={styles.headphoneHint}>
+            {binauralRouteHint(audioOutput.kind)} True binaural beat —{" "}
+            {frequency.hz}Hz offset.
+          </Text>
+        )}
+
+        {/* TrueHz badge */}
+        <TouchableOpacity
+          style={styles.trueHzBadge}
+          onPress={() => router.push("/technology")}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.trueHzBadgeText}>
+            ✓ TrueHz™ Precision Tuning · exact to 0.01 Hz
+          </Text>
+        </TouchableOpacity>
 
         {/* Play / Pause */}
         <TouchableOpacity
@@ -394,6 +396,29 @@ const styles = StyleSheet.create({
     marginBottom: spacing[6],
   },
   chakraBadgeText: { fontSize: fontSizes.sm, fontWeight: "600" },
+  headphoneHint: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    textAlign: "center",
+    paddingHorizontal: spacing[8],
+    marginTop: -spacing[4],
+    marginBottom: spacing[5],
+  },
+  trueHzBadge: {
+    backgroundColor: "rgba(0,212,170,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(0,212,170,0.22)",
+    borderRadius: radii.full,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    marginTop: -spacing[2],
+    marginBottom: spacing[5],
+  },
+  trueHzBadgeText: {
+    fontSize: fontSizes.xs,
+    fontWeight: "600",
+    color: colors.teal,
+  },
   // Play button
   playBtn: {
     width: 80,

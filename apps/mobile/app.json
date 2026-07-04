@@ -12,16 +12,19 @@
       "resizeMode": "contain",
       "backgroundColor": "#0A0B14"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.riseinharmony.app",
-      "buildNumber": "1",
       "infoPlist": {
-        "UIBackgroundModes": ["audio", "fetch"],
-        "NSMicrophoneUsageDescription": "Rise In Harmony uses the microphone for voice journaling.",
-        "NSUserNotificationsUsageDescription": "Rise In Harmony uses notifications for healing alarm delivery.",
-        "UIRequiresFullScreen": true
+        "UIBackgroundModes": [
+          "audio"
+        ],
+        "NSMicrophoneUsageDescription": "Rise In Harmony does not record audio. This notice is required because the app's audio playback engine includes recording capabilities that the app never uses.",
+        "UIRequiresFullScreen": true,
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -38,7 +41,8 @@
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "android.permission.WAKE_LOCK",
         "android.permission.VIBRATE",
-        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "web": {
@@ -53,13 +57,16 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#00D4AA",
-          "sounds": ["./assets/sounds/528hz-gentle.wav"]
+          "sounds": [
+            "./assets/sounds/gentle_528hz.wav"
+          ]
         }
       ],
       [
-        "expo-av",
+        "react-native-audio-api",
         {
-          "microphonePermission": "Allow Rise In Harmony to access your microphone for voice journaling."
+          "iosBackgroundMode": true,
+          "androidForegroundService": true
         }
       ],
       [
@@ -74,7 +81,8 @@
             "targetSdkVersion": 35
           }
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true

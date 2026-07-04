@@ -4,12 +4,26 @@
  * Bioluminescent Depth theme
  */
 import { useState, useEffect } from "react";
-import { Plus, AlarmClock, Trash2, Edit3, Bell, BellOff, Waves, Sunrise, Zap, Lock, BellRing, ShieldCheck, Layers } from "lucide-react";
+import { Plus, AlarmClock, Trash2, Edit3, Bell, BellOff, Waves, Sunrise, Zap, Lock, BellRing, ShieldCheck, Layers, Smartphone } from "lucide-react";
 import Layout from "@/components/Layout";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useAlarmNotifications } from "@/hooks/useAlarmNotifications";
+
+// ─── Mobile browser detection ────────────────────────────────────────────────
+// Mobile browsers suspend a background/locked tab's timers, so web alarms
+// cannot reliably fire on phones. On mobile we replace the notification
+// banners with an honest prompt to install the native app.
+const APP_STORE_URL = "https://apps.apple.com/app/id6786561356";
+
+function detectMobilePlatform(): "ios" | "android" | null {
+  if (typeof navigator === "undefined") return null;
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/i.test(ua)) return "ios";
+  if (/Android/i.test(ua)) return "android";
+  return null;
+}
 
 // ─── Custom Studio Mix presets (read from localStorage) ──────────────────────────────
 const CUSTOM_PRESETS_KEY = "rih_custom_presets";
@@ -413,6 +427,7 @@ export default function Alarm() {
   const [alarms, setAlarms] = useState<Alarm[]>(DEFAULT_ALARMS);
   const [showCreate, setShowCreate] = useState(false);
   const { permission, requestPermission, scheduleNotification, cancelNotification, isGranted, isSupported } = useAlarmNotifications();
+  const mobilePlatform = detectMobilePlatform();
 
   // Schedule notifications for all enabled alarms whenever alarms or permission changes
   useEffect(() => {
@@ -536,8 +551,46 @@ export default function Alarm() {
           )}
         </div>
 
-        {/* Browser Notification Permission Banner */}
-        {isSupported && !isGranted && (
+        {/* Mobile: browsers can't wake a locked phone — prompt the native app */}
+        {mobilePlatform !== null && (
+          <div className="mx-6 mb-4 p-4 rounded-xl" style={{
+            background: 'linear-gradient(135deg, rgba(0,212,170,0.1), rgba(139,92,246,0.06))',
+            border: '1px solid rgba(0,212,170,0.25)',
+          }}>
+            <div className="flex items-start gap-3">
+              <Smartphone size={18} style={{ color: '#00D4AA', flexShrink: 0, marginTop: '1px' }} />
+              <div className="flex-1">
+                <div className="text-sm font-semibold mb-1" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+                  Get the real healing alarm
+                </div>
+                <div className="text-xs leading-relaxed mb-3" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                  Phone browsers can't wake a locked phone — web alarms only fire while this
+                  page stays open. The Rise In Harmony app wakes you with your chosen healing
+                  frequency reliably, even with the screen locked.
+                </div>
+                {mobilePlatform === "ios" ? (
+                  <a
+                    href={APP_STORE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-teal inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold"
+                  >
+                    <Smartphone size={13} />
+                    Get the iOS App
+                  </a>
+                ) : (
+                  <div className="text-xs font-medium" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+                    Available now on iPhone — Android coming soon.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Browser Notification Permission Banner (desktop only — mobile browsers
+            suspend background tabs, so the promise below would be false there) */}
+        {mobilePlatform === null && isSupported && !isGranted && (
           <div className="mx-6 mb-4 p-4 rounded-xl" style={{
             background: 'linear-gradient(135deg, rgba(0,212,170,0.08), rgba(59,130,246,0.05))',
             border: '1px solid rgba(0,212,170,0.2)',
@@ -563,8 +616,8 @@ export default function Alarm() {
           </div>
         )}
 
-        {/* Notification granted confirmation */}
-        {isGranted && (
+        {/* Notification granted confirmation (desktop only) */}
+        {mobilePlatform === null && isGranted && (
           <div className="mx-6 mb-4 p-3 rounded-xl flex items-center gap-2.5" style={{
             background: 'rgba(0,212,170,0.06)',
             border: '1px solid rgba(0,212,170,0.12)',

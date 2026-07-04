@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { colors, spacing, fontSizes } from "@rih/ui-tokens";
+import { colors, spacing, fontSizes, radii } from "@rih/ui-tokens";
 import { CHAKRA_FREQUENCIES, FREE_FREQUENCIES } from "@rih/shared-utils";
 import { useAuthStore } from "@/store/authStore";
 
@@ -38,7 +38,7 @@ export default function HomeScreen() {
         {/* Quick Start Card */}
         <TouchableOpacity
           style={styles.quickStartCard}
-          onPress={() => router.push("/(tabs)/player")}
+          onPress={() => router.push("/chakra-journey")}
           activeOpacity={0.85}
         >
           <Text style={styles.quickStartLabel}>QUICK START</Text>
@@ -51,8 +51,30 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
+        {/* TrueHz technology promo */}
+        <TouchableOpacity
+          style={styles.trueHzCard}
+          onPress={() => router.push("/technology")}
+          activeOpacity={0.85}
+        >
+          <View style={styles.trueHzIcon}>
+            <Text style={styles.trueHzIconText}>Hz</Text>
+          </View>
+          <View style={styles.trueHzBody}>
+            <Text style={styles.trueHzTitle}>TrueHz™ Precision Tuning</Text>
+            <Text style={styles.trueHzSub}>
+              Mathematically exact frequencies — not recordings. See why it matters →
+            </Text>
+          </View>
+        </TouchableOpacity>
+
         {/* Free Frequencies */}
-        <Text style={styles.sectionTitle}>Free Frequencies</Text>
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>Free Frequencies</Text>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/library")}>
+            <Text style={styles.seeAll}>See all →</Text>
+          </TouchableOpacity>
+        </View>
         {FREE_FREQUENCIES.slice(0, 3).map((freq) => (
           <TouchableOpacity
             key={freq.id}
@@ -186,6 +208,52 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginBottom: spacing[3],
     marginTop: spacing[2],
+  },
+  sectionRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+  },
+  trueHzCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[3],
+    backgroundColor: "rgba(0,212,170,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(0,212,170,0.25)",
+    borderRadius: radii.lg,
+    padding: spacing[4],
+    marginBottom: spacing[5],
+  },
+  trueHzIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
+    backgroundColor: "rgba(0,212,170,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  trueHzIconText: {
+    fontSize: fontSizes.base,
+    fontWeight: "800",
+    color: colors.teal,
+  },
+  trueHzBody: { flex: 1 },
+  trueHzTitle: {
+    fontSize: fontSizes.sm,
+    fontWeight: "700",
+    color: colors.teal,
+  },
+  trueHzSub: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+    lineHeight: 17,
+  },
+  seeAll: {
+    fontSize: fontSizes.xs,
+    color: colors.teal,
+    fontWeight: "600",
   },
   freqRow: {
     flexDirection: "row",

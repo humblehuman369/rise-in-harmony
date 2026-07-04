@@ -16,8 +16,10 @@ let posthog: PostHog | null = null;
 function getPostHog(): PostHog {
   if (!posthog) {
     const key = Constants.expoConfig?.extra?.posthogKey ?? "";
+    const host =
+      Constants.expoConfig?.extra?.posthogHost ?? "https://us.i.posthog.com";
     posthog = new PostHog(key, {
-      host: "https://app.posthog.com",
+      host,
       disabled: !key || __DEV__,
     });
   }
@@ -44,33 +46,41 @@ export function useAnalytics() {
 
 // ─── Event Helpers ────────────────────────────────────────────────────────────
 
+// PostHog's capture() expects an index-signature'd property bag. Our strongly
+// typed event interfaces are structurally JSON but lack that index signature,
+// so we funnel everything through this wrapper with a single localized cast.
+type AnalyticsProps = Record<string, string | number | boolean | null>;
+function capture(event: string, props: object) {
+  getPostHog().capture(event, props as AnalyticsProps);
+}
+
 export function trackSessionStarted(props: SessionStartedEvent) {
-  getPostHog().capture("session_started", props);
+  capture("session_started", props);
 }
 
 export function trackSessionEnded(props: SessionEndedEvent) {
-  getPostHog().capture("session_ended", props);
+  capture("session_ended", props);
 }
 
 export function trackPaywallViewed(props: PaywallViewedEvent) {
-  getPostHog().capture("paywall_viewed", props);
+  capture("paywall_viewed", props);
 }
 
 export function trackChakraSequenceCompleted(
   props: ChakraSequenceCompletedEvent
 ) {
-  getPostHog().capture("chakra_sequence_completed", props);
+  capture("chakra_sequence_completed", props);
 }
 
 export function trackOnboardingCompleted(props: OnboardingCompletedEvent) {
-  getPostHog().capture("onboarding_completed", props);
+  capture("onboarding_completed", props);
 }
 
 export function trackAlarmFired(props: {
   frequency_hz: number;
   time_of_day: string;
 }) {
-  getPostHog().capture("alarm_fired", props);
+  capture("alarm_fired", props);
 }
 
 export function trackSubscriptionStarted(props: {
@@ -78,7 +88,7 @@ export function trackSubscriptionStarted(props: {
   price: number;
   platform: "ios" | "android";
 }) {
-  getPostHog().capture("subscription_started", props);
+  capture("subscription_started", props);
 }
 
 export function useFeatureFlag(flagKey: string): boolean {
