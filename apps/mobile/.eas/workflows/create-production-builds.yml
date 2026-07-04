@@ -1,16 +1,15 @@
 name: Create production builds
 
-# Runs on pushes to main: gate on typecheck + unit tests, then build iOS and
-# Android production artifacts in parallel.
+# Manual-trigger only: gate on typecheck + unit tests, then build iOS and
+# Android production artifacts in parallel. Run with:
+#   eas workflow:run create-production-builds.yml
+# (Auto-build on push to main is intentionally disabled — every production
+# build costs EAS build credits, and releases are cut deliberately via
+# `eas build --profile production --auto-submit` during release work.)
 #
 # Monorepo note: this repo uses pnpm workspaces. `eas/install_node_modules`
 # installs from the workspace root; the build jobs read the `production`
 # profile from apps/mobile/eas.json (this workflow is scoped to that project).
-
-on:
-  push:
-    branches:
-      - main
 
 jobs:
   verify:
