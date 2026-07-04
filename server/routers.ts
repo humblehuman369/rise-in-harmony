@@ -2,6 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
+import { adminRouter } from "./routers/admin";
 import { alarmsRouter } from "./routers/alarms";
 import { presetsRouter } from "./routers/presets";
 import { sessionsRouter } from "./routers/sessions";
@@ -26,6 +27,7 @@ export const appRouter = router({
   alarms: alarmsRouter,
   presets: presetsRouter,
   subscription: subscriptionRouter,
+  admin: adminRouter,
 });
 
 export type AppRouter = typeof appRouter;

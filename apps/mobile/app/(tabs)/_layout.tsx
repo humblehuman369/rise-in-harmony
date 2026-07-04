@@ -5,12 +5,11 @@ import { colors } from "@rih/ui-tokens";
 // Tab bar icons using simple SVG-based components
 function TabIcon({
   focused,
-  color,
   children,
 }: {
   focused: boolean;
   color: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
     <View style={[styles.iconWrapper, focused && styles.iconActive]}>
@@ -54,16 +53,30 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="library"
+        name="meditation"
         options={{
-          title: "Library",
+          title: "Meditate",
           tabBarIcon: ({ focused, color }) => (
             <TabIcon focused={focused} color={color}>
-              {/* Library icon placeholder */}
+              {/* Meditation icon placeholder */}
             </TabIcon>
           ),
         }}
       />
+      <Tabs.Screen
+        name="studio"
+        options={{
+          title: "Studio",
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon focused={focused} color={color}>
+              {/* Studio icon placeholder */}
+            </TabIcon>
+          ),
+        }}
+      />
+      {/* Library duplicates the Player grid; keep it routable (linked from
+          Home) but out of the tab bar so we stay at 6 tabs. */}
+      <Tabs.Screen name="library" options={{ href: null }} />
       <Tabs.Screen
         name="alarm"
         options={{

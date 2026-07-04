@@ -7,6 +7,22 @@
 
 import type { Frequency, OnboardingGoal } from "@rih/shared-types";
 
+export {
+  MEDITATIONS,
+  MEDITATION_CATEGORIES,
+  FREE_MEDITATIONS,
+} from "./meditations";
+
+export {
+  STUDIO_FREQUENCIES,
+  STUDIO_MUSIC_MODES,
+  STUDIO_NATURE_SOUNDS,
+  STUDIO_PRESETS,
+  droneFreqs,
+  ambientChordFreqs,
+  bowlFreqs,
+} from "./studio";
+
 // ─── Frequency Catalog ────────────────────────────────────────────────────────
 
 export const FREQUENCIES: Frequency[] = [

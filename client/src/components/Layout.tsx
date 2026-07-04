@@ -4,11 +4,12 @@
  * Navigation: Home, Player, Alarm, Library, Dashboard
  */
 import { Link, useLocation } from "wouter";
-import { Home, Music2, AlarmClock, BookOpen, BarChart3, Settings, Layers, Headphones, Activity } from "lucide-react";
+import { Home, Music2, AlarmClock, BookOpen, BarChart3, Settings, Layers, Headphones, Activity, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
 
-const navItems = [
+const baseNavItems = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/player", icon: Music2, label: "Player" },
   { href: "/studio", icon: Layers, label: "Studio" },
@@ -19,8 +20,12 @@ const navItems = [
   { href: "/precision", icon: Activity, label: "Precision" },
 ];
 
+const adminNavItem = { href: "/admin", icon: ShieldCheck, label: "Admin" };
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { user } = useAuth();
+  const navItems = user?.role === "admin" ? [...baseNavItems, adminNavItem] : baseNavItems;
 
   return (
     <div className="flex min-h-screen" style={{ background: '#0A0B14' }}>
@@ -107,6 +112,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; }}
               >About</span>
+            </Link>
+            <span className="text-xs" style={{ color: '#2A3040' }}>·</span>
+            <Link href="/technology">
+              <span className="text-xs transition-colors duration-200 cursor-pointer"
+                style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; }}
+              >Technology</span>
             </Link>
             <span className="text-xs" style={{ color: '#2A3040' }}>·</span>
             <Link href="/privacy">

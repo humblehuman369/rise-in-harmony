@@ -27,8 +27,17 @@ export default function PlayerScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Frequencies</Text>
-        <Text style={styles.subtitle}>{FREQUENCIES.length} healing tones</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>Frequencies</Text>
+          <Text style={styles.subtitle}>{FREQUENCIES.length} healing tones</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.precisionBtn}
+          onPress={() => router.push("/precision")}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.precisionBtnText}>🎛 Precision</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -100,9 +109,24 @@ export default function PlayerScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bgDeep },
   header: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: spacing[5],
     paddingTop: spacing[4],
     paddingBottom: spacing[3],
+  },
+  precisionBtn: {
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: radii.full,
+    backgroundColor: "rgba(0,212,170,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(0,212,170,0.35)",
+  },
+  precisionBtnText: {
+    fontSize: fontSizes.xs,
+    color: colors.teal,
+    fontWeight: "700",
   },
   title: {
     fontSize: fontSizes["2xl"],

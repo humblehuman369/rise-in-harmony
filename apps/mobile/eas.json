@@ -36,8 +36,7 @@
       "autoIncrement": true,
       "channel": "production",
       "ios": {
-        "enterpriseProvisioning": "universal",
-        "image": "latest"
+        "image": "macos-sequoia-15.6-xcode-26.2"
       },
       "android": {
         "buildType": "app-bundle"
@@ -50,9 +49,11 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "REPLACE_WITH_YOUR_APPLE_ID",
-        "ascAppId": "REPLACE_WITH_YOUR_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "REPLACE_WITH_YOUR_APPLE_TEAM_ID"
+        "ascAppId": "6786561356",
+        "appleTeamId": "A2Y6C3NNSY",
+        "ascApiKeyPath": "./AuthKey_LHBH9DWB4P.p8",
+        "ascApiKeyId": "LHBH9DWB4P",
+        "ascApiKeyIssuerId": "80f1a1d2-fbf9-47c1-95eb-618b72e89933"
       },
       "android": {
         "serviceAccountKeyPath": "./google-service-account.json",

@@ -16,6 +16,10 @@ Before submitting, confirm every item below is complete:
 - [ ] All 5 required screenshot sizes captured
 - [ ] Privacy policy URL live at `https://www.riseinharmony.com/privacy`
 - [ ] Terms of service URL live at `https://www.riseinharmony.com/terms`
+- [ ] App Privacy ("nutrition label") completed in App Store Connect — PostHog collects user id/name/email + usage, which must be declared
+- [ ] Listing describes ONLY features present in the submitted build (Guided Meditations and Sound Studio are NOT yet implemented — do not advertise them until they ship; Guideline 2.3.1)
+
+> ⚠️ **Health-claim language:** In-app copy and this description reference effects such as "DNA repair", "tissue regeneration", and "pineal activation". These are unsubstantiated medical claims and are a common cause of rejection (Guidelines 1.4.1 / 2.3). Prefer experiential phrasing ("associated with", "many people use for") and keep the medical disclaimer prominent.
 
 ---
 
@@ -46,14 +50,11 @@ Rise In Harmony replaces your jarring alarm clock with healing frequencies that 
 HEALING FREQUENCIES
 Explore the complete Solfeggio scale — 174Hz through 963Hz — plus binaural beats for Alpha, Theta, and Delta brainwave states. Each frequency is precisely tuned and scientifically referenced, with chakra associations, Sanskrit pronunciations, and personal affirmations.
 
-HEALING ALARM CLOCK
-Set your wake time and choose a healing frequency. Rise In Harmony fades in gradually over 1–10 minutes, easing you from sleep to consciousness instead of shocking you awake. Supports repeat schedules and works in airplane mode.
+TRUEHZ™ PRECISION TUNING
+Most frequency apps play compressed recordings or pitch-shifted music — the tone you hear is an approximation of the number on the label. Rise In Harmony is different: every frequency is generated live on your device with our proprietary TrueHz™ precision-tuning methodology, mathematically exact to 0.01 Hz, with zero compression and true dual-channel binaural separation. When we say 528 Hz, you get 528.00 Hz.
 
-GUIDED MEDITATIONS
-12 curated meditation sessions with real ambient soundscapes — gentle rain, ocean waves, forest birdsong, mountain wind, and crackling fire — layered with precisely tuned healing frequencies. Sessions range from 5 to 30 minutes.
-
-SOUND STUDIO
-Mix your own healing soundscape. Blend a healing frequency with nature sounds and harmonic music layers. Save your custom mixes and return to them anytime.
+HEALING ALARM
+Set your wake time and choose a healing frequency. Rise In Harmony delivers a gentle wake-up notification with a soft healing tone instead of a jarring buzzer. Supports repeat schedules. (In-app playback also offers a 1–10 minute fade-in for wind-down and sleep sessions.)
 
 7-CHAKRA JOURNEY
 A guided sequence through all seven chakras — Root to Crown — with the corresponding Solfeggio frequency for each energy center. Includes Sanskrit names, pronunciations, and affirmations.
@@ -128,24 +129,19 @@ After creating products in App Store Connect:
 
 ## Audio Assets Required
 
-The following files must be placed in `apps/mobile/assets/sounds/` before building:
+All healing frequencies (solfeggio tones, binaural beats, isochronic pulses) are
+**synthesized live on-device** — no pre-rendered frequency recordings ship in the
+binary (~28 MB smaller). Only the following files must be in
+`apps/mobile/assets/sounds/` before building:
 
 | Filename | Description | Source |
 |---|---|---|
-| `174hz.mp3` | 174Hz Solfeggio tone, 10-min loop | Record or license |
-| `285hz.mp3` | 285Hz Solfeggio tone, 10-min loop | Record or license |
-| `396hz.mp3` | 396Hz Solfeggio tone, 10-min loop | Record or license |
-| `417hz.mp3` | 417Hz Solfeggio tone, 10-min loop | Record or license |
-| `432hz.mp3` | 432Hz Universal Harmony, 10-min loop | Record or license |
-| `528hz.mp3` | 528Hz Miracle Tone, 10-min loop | Record or license |
-| `639hz.mp3` | 639Hz Connection, 10-min loop | Record or license |
-| `741hz.mp3` | 741Hz Awakening, 10-min loop | Record or license |
-| `852hz.mp3` | 852Hz Third Eye, 10-min loop | Record or license |
-| `963hz.mp3` | 963Hz Divine Consciousness, 10-min loop | Record or license |
-| `alpha-binaural.mp3` | 10Hz Alpha binaural beat, 10-min loop | Record or license |
-| `theta-binaural.mp3` | 6Hz Theta binaural beat, 10-min loop | Record or license |
-| `delta-binaural.mp3` | 2Hz Delta binaural beat, 10-min loop | Record or license |
-| `528hz-gentle.wav` | Gentle 528Hz alarm tone (30 seconds) | Record or license |
+| `ambient-rain.mp3` | Gentle rain loop | Record or license |
+| `ambient-ocean.mp3` | Ocean waves loop | Record or license |
+| `ambient-forest.mp3` | Forest birdsong loop | Record or license |
+| `ambient-wind.mp3` | Mountain wind loop | Record or license |
+| `ambient-fire.mp3` | Crackling fire loop | Record or license |
+| `gentle_528hz.wav` | Gentle 528Hz alarm tone (30 seconds) | Record or license |
 
 **Recommended sources for royalty-free audio:**
 - [Freesound.org](https://freesound.org) — CC0 licensed tones

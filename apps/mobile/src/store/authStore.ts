@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import * as SecureStore from "expo-secure-store";
 import type { User } from "@rih/shared-types";
+import { getCurrentUser } from "@/lib/api";
 
 const TOKEN_KEY = "rih_jwt_token";
 const REFRESH_KEY = "rih_refresh_token";
@@ -44,11 +45,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     try {
       const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      if (token) {
-        set({ accessToken: token });
-        // TODO: Validate token and fetch user profile from API
-        // const user = await fetchCurrentUser(token);
-        // set({ user, isAuthenticated: true });
+      if (!token) {
+        set({ user: null, accessToken: null, isAuthenticated: false });
+        return;
+      }
+      set({ accessToken: token });
+      // Validate the token and hydrate the profile. `getCurrentUser` transparently
+      // refreshes an expired access token via the refresh token on a 401.
+      const res = await getCurrentUser();
+      if (res.success) {
+        set({ user: res.data, isAuthenticated: true });
+      } else {
+        // Token is invalid/expired and could not be refreshed — clear it.
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        await SecureStore.deleteItemAsync(REFRESH_KEY);
+        set({ user: null, accessToken: null, isAuthenticated: false });
       }
     } catch (error) {
       console.error("[AuthStore] Failed to restore session:", error);

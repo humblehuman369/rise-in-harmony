@@ -42,6 +42,10 @@ export const subscriptionRouter = router({
           app_user_id: z.string(),
           product_id: z.string().optional(),
           expiration_at_ms: z.number().optional(),
+          // Set to "PROMOTIONAL" for entitlements granted via the RevenueCat
+          // dashboard/API (comps) rather than store purchases
+          store: z.string().optional(),
+          period_type: z.string().optional(),
         }),
       })
     )
@@ -53,17 +57,27 @@ export const subscriptionRouter = router({
         throw new Error("Unauthorized webhook");
       }
 
-      const { type, app_user_id, product_id, expiration_at_ms } = input.event;
+      const { type, app_user_id, product_id, expiration_at_ms, store, period_type } =
+        input.event;
 
-      // Determine tier from event type
-      let tier: "free" | "premium" | "lifetime" = "free";
+      // Determine tier from event type. Unrecognized event types (e.g.
+      // TRANSFER, SUBSCRIPTION_PAUSED, ordinary NON_RENEWING_PURCHASE) are
+      // logged but must NOT touch the tier.
+      let tier: "free" | "premium" | "lifetime" | null = null;
       let expiresAt: Date | null = null;
+
+      // Promotional entitlements (granted via the RevenueCat dashboard/API)
+      // arrive as NON_RENEWING_PURCHASE with store/period_type PROMOTIONAL
+      const isPromotionalGrant =
+        type === "NON_RENEWING_PURCHASE" &&
+        (store === "PROMOTIONAL" || period_type === "PROMOTIONAL");
 
       if (
         type === "INITIAL_PURCHASE" ||
         type === "RENEWAL" ||
         type === "PRODUCT_CHANGE" ||
-        type === "UNCANCELLATION"
+        type === "UNCANCELLATION" ||
+        isPromotionalGrant
       ) {
         if (product_id?.includes("lifetime")) {
           tier = "lifetime";
@@ -83,7 +97,7 @@ export const subscriptionRouter = router({
       // RevenueCat app_user_id is set to the user's numeric ID as a string
       const userId = parseInt(app_user_id, 10);
 
-      if (!isNaN(userId)) {
+      if (!isNaN(userId) && tier !== null) {
         await updateUserSubscription(userId, tier, expiresAt, app_user_id);
       }
 

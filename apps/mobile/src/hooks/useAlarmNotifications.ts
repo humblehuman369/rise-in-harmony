@@ -17,12 +17,8 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import * as Notifications from "expo-notifications";
-import * as TaskManager from "expo-task-manager";
-import { Platform } from "react-native";
 import type { Alarm } from "@rih/shared-types";
 import { trackAlarmFired } from "./useAnalytics";
-
-const ALARM_TASK_NAME = "RIH_ALARM_TASK";
 
 // Configure how notifications appear when the app is in foreground
 Notifications.setNotificationHandler({
@@ -35,31 +31,19 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Background task for alarm fires
-TaskManager.defineTask(ALARM_TASK_NAME, ({ data, error }) => {
-  if (error) {
-    console.error("[AlarmTask] Error:", error);
-    return;
-  }
-  const alarmData = (data as { alarm?: Alarm })?.alarm;
-  if (alarmData) {
-    trackAlarmFired({
-      frequency_hz: alarmData.frequencyHz,
-      time_of_day: alarmData.time,
-    });
-  }
-});
-
 export async function requestAlarmPermissions(): Promise<boolean> {
   const { status: existing } = await Notifications.getPermissionsAsync();
   if (existing === "granted") return true;
 
+  // NOTE: `allowCriticalAlerts` is intentionally omitted — Critical Alerts
+  // require a special Apple-granted entitlement
+  // (com.apple.developer.usernotifications.critical-alerts) that this app does
+  // not hold. Requesting it without the entitlement fails and risks review.
   const { status } = await Notifications.requestPermissionsAsync({
     ios: {
       allowAlert: true,
       allowBadge: false,
       allowSound: true,
-      allowCriticalAlerts: true, // Required for alarm-style delivery on iOS
     },
   });
 
@@ -84,7 +68,7 @@ export async function scheduleAlarm(alarm: Alarm): Promise<string | null> {
     content: {
       title: "Rise In Harmony",
       body: `Your ${alarm.frequencyHz}Hz healing alarm`,
-      sound: "528hz-gentle.wav",
+      sound: "gentle_528hz.wav",
       data: { alarm },
     },
     trigger: {

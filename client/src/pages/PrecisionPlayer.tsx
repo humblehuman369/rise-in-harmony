@@ -228,6 +228,13 @@ export default function PrecisionPlayer() {
           <p className="text-sm" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
             Double-precision DDS synthesis · ±0.05 Hz accuracy · Phase-continuous
           </p>
+          <a
+            href="/technology"
+            className="inline-block mt-2 text-xs font-semibold transition-colors"
+            style={{ color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}
+          >
+            Powered by TrueHz™ Precision Tuning — learn how we're different →
+          </a>
         </div>
 
         {/* Hardware disclaimer (NFR-FREQ-003) */}

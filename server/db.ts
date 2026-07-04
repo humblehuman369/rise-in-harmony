@@ -112,6 +112,96 @@ export async function updateUserSubscription(
     .where(eq(users.id, userId));
 }
 
+// ─── Admin ────────────────────────────────────────────────────────────────────
+
+/**
+ * "Cancelled" = currently free but has a CANCELLATION / EXPIRATION /
+ * BILLING_ISSUE event in the RevenueCat webhook log (i.e. was once paid).
+ */
+const cancelledEventExists = sql`EXISTS (
+  SELECT 1 FROM subscription_events se
+  WHERE se.userId = ${users.id}
+    AND se.eventType IN ('CANCELLATION', 'EXPIRATION', 'BILLING_ISSUE')
+)`;
+
+export type AdminUserFilter = "all" | "active" | "cancelled" | "free";
+
+/** Aggregate user counts for the admin dashboard. */
+export async function getAdminUserCounts() {
+  const db = await getDb();
+  if (!db) return null;
+
+  const rows = await db
+    .select({
+      total: sql<number>`count(*)`,
+      active: sql<number>`sum(case when subscriptionTier IN ('premium','lifetime') then 1 else 0 end)`,
+      cancelled: sql<number>`sum(case when subscriptionTier = 'free' AND ${cancelledEventExists} then 1 else 0 end)`,
+      free: sql<number>`sum(case when subscriptionTier = 'free' then 1 else 0 end)`,
+    })
+    .from(users);
+
+  const r = rows[0];
+  return {
+    total: Number(r?.total ?? 0),
+    active: Number(r?.active ?? 0),
+    cancelled: Number(r?.cancelled ?? 0),
+    free: Number(r?.free ?? 0),
+  };
+}
+
+/** Paged, filterable user list for the admin dashboard. */
+export async function listUsersForAdmin(options: {
+  filter: AdminUserFilter;
+  search?: string;
+  limit: number;
+  offset: number;
+}) {
+  const db = await getDb();
+  if (!db) return { users: [], total: 0 };
+
+  const conditions: ReturnType<typeof sql>[] = [];
+  if (options.filter === "active") {
+    conditions.push(sql`subscriptionTier IN ('premium','lifetime')`);
+  } else if (options.filter === "cancelled") {
+    conditions.push(sql`subscriptionTier = 'free' AND ${cancelledEventExists}`);
+  } else if (options.filter === "free") {
+    conditions.push(sql`subscriptionTier = 'free'`);
+  }
+  if (options.search) {
+    const like = `%${options.search}%`;
+    conditions.push(sql`(name LIKE ${like} OR email LIKE ${like})`);
+  }
+  const where = conditions.length
+    ? sql.join(conditions, sql` AND `)
+    : sql`1=1`;
+
+  const [rows, countRows] = await Promise.all([
+    db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        subscriptionTier: users.subscriptionTier,
+        subscriptionExpiresAt: users.subscriptionExpiresAt,
+        createdAt: users.createdAt,
+        lastSignedIn: users.lastSignedIn,
+        hasCancelled: sql<number>`case when ${cancelledEventExists} then 1 else 0 end`,
+      })
+      .from(users)
+      .where(where)
+      .orderBy(desc(users.createdAt))
+      .limit(options.limit)
+      .offset(options.offset),
+    db.select({ count: sql<number>`count(*)` }).from(users).where(where),
+  ]);
+
+  return {
+    users: rows.map(r => ({ ...r, hasCancelled: Number(r.hasCancelled) === 1 })),
+    total: Number(countRows[0]?.count ?? 0),
+  };
+}
+
 // ─── Sessions ─────────────────────────────────────────────────────────────────
 
 export async function createSession(data: InsertSession): Promise<number> {

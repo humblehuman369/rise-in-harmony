@@ -113,6 +113,58 @@ export interface Frequency {
   affirmation?: string;
 }
 
+// ─── Meditations ──────────────────────────────────────────────────────────────
+
+export type MeditationCategory =
+  | "morning"
+  | "sleep"
+  | "stress"
+  | "focus"
+  | "healing"
+  | "spiritual";
+
+export type NatureSoundscape =
+  | "rain"
+  | "ocean"
+  | "forest"
+  | "wind"
+  | "fire"
+  | "bowl"
+  | "silence";
+
+export type MusicMode = "ambient" | "drone" | "crystal" | "none";
+
+export interface Meditation {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: MeditationCategory;
+  durationMinutes: number;
+  description: string;
+  benefit: string;
+  /** Lucide icon name (web); mobile maps this to an emoji */
+  icon: string;
+  /** Accent color for the card */
+  color: string;
+  /** Secondary color for gradients */
+  colorSecondary: string;
+  /** Nature soundscape to layer underneath */
+  soundscape: NatureSoundscape;
+  /** Music mode to layer underneath (not yet supported on mobile) */
+  musicMode: MusicMode;
+  /** ID from the shared FREQUENCIES catalog — the recommended pairing */
+  recommendedFrequencyId: string;
+  /** Short label for the recommended frequency */
+  recommendedFrequencyLabel: string;
+  /** Why this frequency pairs well */
+  frequencyRationale: string;
+  /** Affirmation or intention for this meditation */
+  affirmation: string;
+  /** Step-by-step guidance script (shown as timed on-screen prompts) */
+  guidance: string[];
+  isPremium: boolean;
+}
+
 // ─── Studio Presets ───────────────────────────────────────────────────────────
 
 export interface StudioPreset {
@@ -127,6 +179,30 @@ export interface StudioPreset {
   musicVolume: number; // 0–1
   natureSoundVolume: number; // 0–1
   createdAt: string; // ISO 8601 UTC
+}
+
+// ─── Sound Studio (layered mixer) ────────────────────────────────────────────
+
+export type StudioNatureSound = "rain" | "ocean" | "forest" | "wind" | "fire" | "none";
+export type StudioMusicMode = MusicMode;
+
+export interface StudioMixSettings {
+  frequencyHz: number;
+  musicMode: StudioMusicMode;
+  natureSound: StudioNatureSound;
+  frequencyVolume: number; // 0–1
+  musicVolume: number; // 0–1
+  natureVolume: number; // 0–1
+  masterVolume?: number; // 0–1
+}
+
+export interface StudioBuiltinPreset {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  settings: StudioMixSettings;
 }
 
 // ─── Subscription ─────────────────────────────────────────────────────────────
@@ -159,7 +235,7 @@ export interface SessionStartedEvent {
   frequency_name?: string;
   session_type: SessionType;
   is_premium: boolean;
-  source: "player" | "studio" | "alarm" | "chakra_sequence";
+  source: "player" | "studio" | "alarm" | "chakra_sequence" | "precision";
 }
 
 export interface SessionEndedEvent {

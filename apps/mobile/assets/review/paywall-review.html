@@ -1,0 +1,145 @@
+<!doctype html>
+<!--
+  Paywall review-screenshot source.
+  Replicates app/paywall.tsx using @rih/ui-tokens values so the App Store
+  review screenshot matches the real in-app paywall. Rendered at 642x1389
+  CSS px with deviceScaleFactor 2 => 1284x2778 (iPhone 6.7") PNG.
+-->
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  /* Layout is designed at 642x1389 CSS px; zoom scales it to the
+     iPhone 13 Pro Max viewport (428x926 @3x => 1284x2778 output). */
+  html { zoom: 0.66667; }
+  html, body { width: 642px; height: 1389px; }
+  body {
+    background: #0A0B14;
+    font-family: "DM Sans", -apple-system, "SF Pro Text", system-ui, sans-serif;
+    color: #E8EDF5;
+    position: relative;
+    overflow: hidden;
+  }
+  .statusbar {
+    height: 54px; display: flex; align-items: center;
+    justify-content: space-between; padding: 0 32px;
+    font-size: 17px; font-weight: 600; color: #E8EDF5;
+  }
+  .close {
+    position: absolute; top: 64px; right: 26px;
+    width: 42px; height: 42px; border-radius: 21px;
+    background: rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    color: #6B7A99; font-size: 20px;
+  }
+  .hero { text-align: center; padding: 40px 32px 26px; }
+  .hero .emoji { font-size: 72px; margin-bottom: 16px; }
+  .hero h1 { font-size: 38px; font-weight: 700; color: #E8EDF5; }
+  .hero .premium {
+    font-size: 30px; color: #00D4AA; font-weight: 800;
+    letter-spacing: 3px; text-transform: uppercase; margin: 4px 0 16px;
+  }
+  .hero p { font-size: 19px; color: #6B7A99; line-height: 1.45; }
+  .features {
+    margin: 0 26px 26px; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 24px;
+    padding: 26px; display: flex; flex-direction: column; gap: 15px;
+  }
+  .features div { font-size: 19px; color: #8FA3BF; line-height: 1.4; }
+  .packages { margin: 0 26px 26px; display: flex; flex-direction: column; gap: 15px; }
+  .pkg {
+    position: relative; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 18px;
+    padding: 20px 22px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .pkg.selected {
+    border-color: rgba(0,212,170,0.5); background: rgba(0,212,170,0.06);
+  }
+  .pkg .left .title { font-size: 19px; font-weight: 600; color: #E8EDF5; }
+  .pkg.selected .left .title { color: #00D4AA; }
+  .pkg .left .desc { font-size: 16px; color: #6B7A99; margin-top: 3px; }
+  .pkg .right { text-align: right; }
+  .pkg .right .price { font-size: 29px; font-weight: 800; color: #E8EDF5; }
+  .pkg.selected .right .price { color: #00D4AA; }
+  .pkg .right .period { font-size: 14px; color: #6B7A99; }
+  .badge {
+    position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+    background: #00D4AA; color: #0A0B14; font-size: 12px; font-weight: 800;
+    letter-spacing: 1px; padding: 4px 14px; border-radius: 999px;
+  }
+  .check {
+    position: absolute; top: 14px; right: 16px;
+    color: #00D4AA; font-size: 19px; font-weight: 700;
+  }
+  .cta {
+    margin: 0 26px 15px; background: #00D4AA; border-radius: 999px;
+    padding: 21px; text-align: center; color: #0A0B14;
+    font-size: 20px; font-weight: 700; letter-spacing: 0.3px;
+    box-shadow: 0 0 24px rgba(0,212,170,0.35);
+  }
+  .restore { text-align: center; color: #6B7A99; font-size: 16px;
+    text-decoration: underline; padding: 8px 0 16px; }
+  .legal {
+    font-size: 13.5px; color: #4A5568; text-align: center;
+    padding: 0 40px; line-height: 1.45;
+  }
+</style>
+</head>
+<body>
+  <div class="statusbar"><span>9:41</span><span>&#xFF0F;&#x1F4F6; &#x1F50B;</span></div>
+  <div class="close">&#x2715;</div>
+
+  <div class="hero">
+    <div class="emoji">&#x2728;</div>
+    <h1>Rise In Harmony</h1>
+    <div class="premium">Premium</div>
+    <p>Unlock the full healing frequency library<br/>and all premium features.</p>
+  </div>
+
+  <div class="features">
+    <div>&#x1F3B5;&nbsp; All 13 healing frequencies</div>
+    <div>&#x23F0;&nbsp; Unlimited healing alarms</div>
+    <div>&#x1F9EC;&nbsp; Binaural beats (Alpha, Theta, Delta)</div>
+    <div>&#x1F300;&nbsp; 7-Chakra journey sequences</div>
+    <div>&#x1F4CA;&nbsp; Wellness dashboard &amp; streak tracking</div>
+    <div>&#x1F507;&nbsp; Background audio (screen off)</div>
+    <div>&#x1F4F5;&nbsp; Offline mode — no Wi-Fi needed</div>
+  </div>
+
+  <div class="packages">
+    <div class="pkg">
+      <div class="left">
+        <div class="title">Rise In Harmony Premium (Monthly)</div>
+        <div class="desc">Full premium access, billed monthly</div>
+      </div>
+      <div class="right"><div class="price">$7.99</div><div class="period">/ month</div></div>
+    </div>
+
+    <div class="pkg selected">
+      <div class="badge">BEST VALUE</div>
+      <div class="check">&#x2713;</div>
+      <div class="left">
+        <div class="title">Rise In Harmony Premium (Annual)</div>
+        <div class="desc">Save 48% vs monthly</div>
+      </div>
+      <div class="right"><div class="price">$49.99</div><div class="period">/ year</div></div>
+    </div>
+
+    <div class="pkg">
+      <div class="left">
+        <div class="title">Rise In Harmony Premium (Lifetime)</div>
+        <div class="desc">One-time purchase, yours forever</div>
+      </div>
+      <div class="right"><div class="price">$99.99</div><div class="period">one-time</div></div>
+    </div>
+  </div>
+
+  <div class="cta">Start Premium — $49.99</div>
+  <div class="restore">Restore Purchases</div>
+  <div class="legal">
+    Subscriptions auto-renew unless cancelled at least 24 hours before the end of
+    the current period. Manage or cancel in your App Store account settings.
+  </div>
+</body>
+</html>

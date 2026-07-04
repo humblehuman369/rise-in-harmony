@@ -15,10 +15,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback } from "react";
+import { useFocusEffect } from "expo-router";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
 import { CHAKRA_FREQUENCIES, formatStreakLabel, calculateStreak } from "@rih/shared-utils";
 import { useAuthStore } from "@/store/authStore";
 import { api } from "@/lib/api";
+import { loadJournalEntries, averageMood } from "@/lib/journal";
 import type { SessionStats, Session } from "@rih/shared-types";
 
 const { width } = Dimensions.get("window");
@@ -56,13 +58,21 @@ function getChakraActivity(sessions: Session[]): Set<number> {
 }
 
 export default function DashboardScreen() {
-  const { user, token } = useAuthStore();
+  const { user, accessToken } = useAuthStore();
   const [stats, setStats] = useState<SessionStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [avgMood, setAvgMood] = useState<number | null>(null);
+
+  // Refresh local mood average whenever the tab regains focus
+  useFocusEffect(
+    useCallback(() => {
+      loadJournalEntries().then((entries) => setAvgMood(averageMood(entries)));
+    }, [])
+  );
 
   const fetchStats = useCallback(async () => {
-    if (!token) return;
+    if (!accessToken) return;
     setLoading(true);
     setError(null);
     try {
@@ -77,7 +87,7 @@ export default function DashboardScreen() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [accessToken]);
 
   useEffect(() => {
     fetchStats();
@@ -141,6 +151,12 @@ export default function DashboardScreen() {
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{totalSessions}</Text>
             <Text style={styles.statLabel}>Sessions</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>
+              {avgMood !== null ? avgMood : "–"}
+            </Text>
+            <Text style={styles.statLabel}>Avg Mood (30d)</Text>
           </View>
         </View>
 

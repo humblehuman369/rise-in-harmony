@@ -53,27 +53,22 @@ Required variables:
 
 ### 4. Add audio assets
 
-Place the frequency audio files in `assets/sounds/`:
+All healing frequencies (solfeggio tones, binaural beats, isochronic pulses) are
+**synthesized live** via `react-native-audio-api` oscillators — no pre-rendered
+frequency files are bundled. Only nature loops and the alarm tone ship as assets
+in `assets/sounds/`:
 
 ```
 assets/sounds/
-  174hz.mp3
-  285hz.mp3
-  396hz.mp3
-  417hz.mp3
-  432hz.mp3
-  528hz.mp3
-  639hz.mp3
-  741hz.mp3
-  852hz.mp3
-  963hz.mp3
-  alpha-binaural.mp3
-  theta-binaural.mp3
-  delta-binaural.mp3
-  528hz-gentle.wav    ← used for alarm notification sound
+  ambient-rain.mp3
+  ambient-ocean.mp3
+  ambient-forest.mp3
+  ambient-wind.mp3
+  ambient-fire.mp3
+  gentle_528hz.wav    ← used for alarm notification sound (Android res name must start with a letter, no hyphens)
 ```
 
-Audio files should be 10-minute loops at 44.1kHz, 128kbps MP3. The `528hz-gentle.wav` alarm sound must be under 30 seconds for iOS notification delivery.
+Nature loops should be seamless at 44.1kHz, 128kbps MP3. The `gentle_528hz.wav` alarm sound must be under 30 seconds for iOS notification delivery.
 
 ---
 
@@ -155,16 +150,28 @@ apps/mobile/
     (tabs)/               ← Bottom tab navigator
       index.tsx           ← Home screen
       player.tsx          ← Frequency player
-      library.tsx         ← Frequency library
+      meditation.tsx      ← Guided meditation library (12 sessions)
+      studio.tsx          ← Sound Studio (layered mixer: frequency + music + nature)
+      library.tsx         ← Frequency library (routable via Home; hidden from tab bar)
       alarm.tsx           ← Alarm scheduler
       dashboard.tsx       ← Stats & chakra map
     _layout.tsx           ← Root layout (providers)
     onboarding.tsx        ← First-launch onboarding
     paywall.tsx           ← Premium upgrade modal
     player/[id].tsx       ← Individual frequency player
+    meditation/[id].tsx   ← Meditation session player (nature + frequency layers)
+    chakra-journey.tsx    ← Guided 7-chakra sequence with crossfades
+    precision.tsx         ← Precision Player: custom Hz, waveforms, binaural/isochronic
   src/
+    components/
+      SessionJournal.tsx  ← Post-session mood check-in (1–5 + note, AsyncStorage)
+      BreathingGuide.tsx  ← 4-7-8 / Box / Calm breathing overlay
     hooks/
-      useAudioPlayer.ts   ← expo-av audio engine
+      useAudioPlayer.ts   ← live-synthesis frequency engine (oscillators, true binaural)
+      useMeditationPlayer.ts ← layered meditation audio + guidance timer
+      useSoundStudio.ts   ← live synthesis engine (react-native-audio-api oscillators)
+      useChakraJourney.ts ← 7-chakra sequence engine with native gain crossfades
+      usePrecisionPlayer.ts ← custom Hz generator (1–22000 Hz, 4 waveforms, 3 modes)
       useAlarmNotifications.ts  ← Alarm scheduling
       useAnalytics.ts     ← PostHog events
       usePurchases.ts     ← RevenueCat subscriptions
@@ -173,16 +180,19 @@ apps/mobile/
     lib/
       api.ts              ← Typed API client with JWT refresh
   assets/
-    sounds/               ← Frequency audio files (see Setup above)
+    sounds/               ← Nature loops + alarm tone (frequencies are synthesized)
 ```
 
 ---
 
 ## Key Dependencies
 
+> Built on **Expo SDK 54** (React Native 0.81 / React 19). Production iOS builds use the Xcode 26 EAS image to satisfy Apple's April 2026 submission requirement.
+
 | Package | Purpose |
 | :--- | :--- |
-| `expo-av` | Frequency audio playback with background mode |
+| `expo-audio` | Nature soundscape loop playback with background mode (replaces the deprecated `expo-av`) |
+| `react-native-audio-api` | Web Audio API for RN — ALL healing frequencies are synthesized live (pure tones, true binaural, isochronic, Studio chords/drones) |
 | `expo-notifications` | Healing alarm scheduling (exact alarms) |
 | `expo-secure-store` | JWT token storage (replaces AsyncStorage) |
 | `expo-sqlite` | Offline-first local session database |
