@@ -207,6 +207,17 @@ export default function PlayerDetailScreen() {
           </Text>
         )}
 
+        {/* TrueHz badge */}
+        <TouchableOpacity
+          style={styles.trueHzBadge}
+          onPress={() => router.push("/technology")}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.trueHzBadgeText}>
+            ✓ TrueHz™ Precision Tuning · exact to 0.01 Hz
+          </Text>
+        </TouchableOpacity>
+
         {/* Play / Pause */}
         <TouchableOpacity
           style={[
@@ -392,6 +403,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[8],
     marginTop: -spacing[4],
     marginBottom: spacing[5],
+  },
+  trueHzBadge: {
+    backgroundColor: "rgba(0,212,170,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(0,212,170,0.22)",
+    borderRadius: radii.full,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    marginTop: -spacing[2],
+    marginBottom: spacing[5],
+  },
+  trueHzBadgeText: {
+    fontSize: fontSizes.xs,
+    fontWeight: "600",
+    color: colors.teal,
   },
   // Play button
   playBtn: {

@@ -273,6 +273,12 @@ export default function PrecisionScreen() {
             <Text style={styles.hzUnit}>Hz</Text>
           </View>
           <Text style={styles.hzRange}>1 – 22,000 Hz · 0.01 resolution</Text>
+          <TouchableOpacity
+            onPress={() => router.push("/technology")}
+            hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
+          >
+            <Text style={styles.trueHzLink}>Powered by TrueHz™ Precision Tuning →</Text>
+          </TouchableOpacity>
           <View style={styles.nudgeRow}>
             {NUDGES.map((n) => (
               <TouchableOpacity
@@ -562,6 +568,12 @@ const styles = StyleSheet.create({
   },
   hzUnit: { fontSize: fontSizes.xl, color: colors.textMuted, fontWeight: "600" },
   hzRange: { fontSize: fontSizes.xs, color: colors.textDim, marginTop: spacing[1] },
+  trueHzLink: {
+    fontSize: fontSizes.xs,
+    fontWeight: "600",
+    color: colors.teal,
+    marginTop: spacing[2],
+  },
   nudgeRow: {
     flexDirection: "row",
     gap: spacing[2],

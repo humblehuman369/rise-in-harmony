@@ -50,6 +50,9 @@ Rise In Harmony replaces your jarring alarm clock with healing frequencies that 
 HEALING FREQUENCIES
 Explore the complete Solfeggio scale — 174Hz through 963Hz — plus binaural beats for Alpha, Theta, and Delta brainwave states. Each frequency is precisely tuned and scientifically referenced, with chakra associations, Sanskrit pronunciations, and personal affirmations.
 
+TRUEHZ™ PRECISION TUNING
+Most frequency apps play compressed recordings or pitch-shifted music — the tone you hear is an approximation of the number on the label. Rise In Harmony is different: every frequency is generated live on your device with our proprietary TrueHz™ precision-tuning methodology, mathematically exact to 0.01 Hz, with zero compression and true dual-channel binaural separation. When we say 528 Hz, you get 528.00 Hz.
+
 HEALING ALARM
 Set your wake time and choose a healing frequency. Rise In Harmony delivers a gentle wake-up notification with a soft healing tone instead of a jarring buzzer. Supports repeat schedules. (In-app playback also offers a 1–10 minute fade-in for wind-down and sleep sessions.)
 
