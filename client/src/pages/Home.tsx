@@ -177,7 +177,7 @@ export default function Home() {
                 {['#00D4AA','#8B5CF6','#F59E0B','#3B82F6'].map((c, i) => (
                   <div key={i} className="w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold"
                     style={{ background: c, borderColor: '#0A0B14', color: '#0A0B14' }}>
-                    {['S','J','P','M'][i]}
+                    {['B','K','B','C'][i]}
                   </div>
                 ))}
               </div>
