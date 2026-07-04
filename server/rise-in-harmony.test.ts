@@ -51,6 +51,12 @@ vi.mock("./db", () => ({
   listUsersForAdmin: vi.fn().mockResolvedValue({ users: [], total: 0 }),
 }));
 
+vi.mock("./revenuecat", () => ({
+  isRevenueCatConfigured: vi.fn().mockReturnValue(true),
+  grantPromotionalEntitlement: vi.fn().mockResolvedValue(true),
+  revokePromotionalEntitlement: vi.fn().mockResolvedValue(true),
+}));
+
 vi.mock("./email", () => ({
   sendWelcomeEmail: vi.fn().mockResolvedValue(undefined),
   sendReceiptEmail: vi.fn().mockResolvedValue(undefined),
@@ -215,12 +221,16 @@ describe("admin router", () => {
 
   it("grants lifetime membership when no days given", async () => {
     const { updateUserSubscription, logSubscriptionEvent } = await import("./db");
+    const { grantPromotionalEntitlement } = await import("./revenuecat");
     const ctx = makeAuthCtx({ role: "admin" });
     const caller = appRouter.createCaller(ctx);
     const result = await caller.admin.grantMembership({ userId: 1 });
     expect(result.tier).toBe("lifetime");
     expect(result.expiresAt).toBeNull();
+    expect(result.revenueCatSynced).toBe(true);
     expect(updateUserSubscription).toHaveBeenCalledWith(1, "lifetime", null);
+    // Lifetime grant → no end time passed to RevenueCat
+    expect(grantPromotionalEntitlement).toHaveBeenCalledWith("1", undefined);
     expect(logSubscriptionEvent).toHaveBeenCalledWith(
       expect.objectContaining({ eventType: "ADMIN_GRANT" })
     );
@@ -228,6 +238,7 @@ describe("admin router", () => {
 
   it("grants time-limited premium when days given", async () => {
     const { updateUserSubscription } = await import("./db");
+    const { grantPromotionalEntitlement } = await import("./revenuecat");
     const ctx = makeAuthCtx({ role: "admin" });
     const caller = appRouter.createCaller(ctx);
     const result = await caller.admin.grantMembership({ userId: 1, days: 30 });
@@ -238,18 +249,87 @@ describe("admin router", () => {
       "premium",
       expect.any(Date)
     );
+    // Timed grant → exact end time forwarded to RevenueCat
+    expect(grantPromotionalEntitlement).toHaveBeenCalledWith(
+      "1",
+      expect.any(Number)
+    );
   });
 
   it("revokes membership back to free", async () => {
     const { updateUserSubscription, logSubscriptionEvent } = await import("./db");
+    const { revokePromotionalEntitlement } = await import("./revenuecat");
     const ctx = makeAuthCtx({ role: "admin" });
     const caller = appRouter.createCaller(ctx);
     const result = await caller.admin.revokeMembership({ userId: 1 });
     expect(result.success).toBe(true);
     expect(updateUserSubscription).toHaveBeenCalledWith(1, "free", null);
+    expect(revokePromotionalEntitlement).toHaveBeenCalledWith("1");
     expect(logSubscriptionEvent).toHaveBeenCalledWith(
       expect.objectContaining({ eventType: "ADMIN_REVOKE" })
     );
+  });
+});
+
+describe("revenuecatWebhook promotional grants", () => {
+  it("maps a PROMOTIONAL NON_RENEWING_PURCHASE to premium", async () => {
+    const { updateUserSubscription } = await import("./db");
+    const ctx = makeAuthCtx();
+    const caller = appRouter.createCaller(ctx);
+    const expiration = Date.now() + 30 * 24 * 60 * 60 * 1000;
+    const result = await caller.subscription.revenuecatWebhook({
+      event: {
+        type: "NON_RENEWING_PURCHASE",
+        app_user_id: "1",
+        product_id: "rc_promo_premium_monthly",
+        expiration_at_ms: expiration,
+        store: "PROMOTIONAL",
+        period_type: "PROMOTIONAL",
+      },
+    });
+    expect(result.received).toBe(true);
+    expect(updateUserSubscription).toHaveBeenCalledWith(
+      1,
+      "premium",
+      new Date(expiration),
+      "1"
+    );
+  });
+
+  it("maps a lifetime promotional grant to lifetime", async () => {
+    const { updateUserSubscription } = await import("./db");
+    const ctx = makeAuthCtx();
+    const caller = appRouter.createCaller(ctx);
+    await caller.subscription.revenuecatWebhook({
+      event: {
+        type: "NON_RENEWING_PURCHASE",
+        app_user_id: "1",
+        product_id: "rc_promo_premium_lifetime",
+        store: "PROMOTIONAL",
+        period_type: "PROMOTIONAL",
+      },
+    });
+    expect(updateUserSubscription).toHaveBeenCalledWith(1, "lifetime", null, "1");
+  });
+
+  it("does not touch the tier for non-promotional NON_RENEWING_PURCHASE", async () => {
+    const { updateUserSubscription } = await import("./db");
+    vi.mocked(updateUserSubscription).mockClear();
+    const ctx = makeAuthCtx();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.subscription.revenuecatWebhook({
+      event: {
+        type: "NON_RENEWING_PURCHASE",
+        app_user_id: "1",
+        product_id: "some_consumable",
+        store: "APP_STORE",
+        period_type: "NORMAL",
+      },
+    });
+    // Event is acknowledged + logged, but an ordinary consumable purchase
+    // must never downgrade (or upgrade) the subscription tier
+    expect(result.received).toBe(true);
+    expect(updateUserSubscription).not.toHaveBeenCalled();
   });
 });
 

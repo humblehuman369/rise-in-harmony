@@ -64,16 +64,29 @@ export default function Admin() {
   };
 
   const grantMutation = trpc.admin.grantMembership.useMutation({
-    onSuccess: (_data, vars) => {
-      toast.success(vars.days ? `Granted ${vars.days} days of premium` : "Granted lifetime membership");
+    onSuccess: (data, vars) => {
+      const what = vars.days ? `${vars.days} days of premium` : "lifetime membership";
+      if (data.revenueCatSynced) {
+        toast.success(`Granted ${what} — synced to RevenueCat`);
+      } else if (!data.revenueCatConfigured) {
+        toast.success(`Granted ${what} (database only — set REVENUECAT_SECRET_KEY to sync grants into RevenueCat)`);
+      } else {
+        toast.warning(`Granted ${what} in the database, but the RevenueCat sync failed — check server logs`);
+      }
       refresh();
     },
     onError: e => toast.error(e.message),
   });
 
   const revokeMutation = trpc.admin.revokeMembership.useMutation({
-    onSuccess: () => {
-      toast.success("Membership revoked — user is back on the free tier");
+    onSuccess: data => {
+      if (data.revenueCatSynced) {
+        toast.success("Membership revoked — promotional grant removed in RevenueCat too");
+      } else if (!data.revenueCatConfigured) {
+        toast.success("Membership revoked (database only — set REVENUECAT_SECRET_KEY to sync with RevenueCat)");
+      } else {
+        toast.warning("Revoked in the database, but the RevenueCat sync failed — check server logs");
+      }
       refresh();
     },
     onError: e => toast.error(e.message),

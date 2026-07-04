@@ -12,6 +12,11 @@ import {
   logSubscriptionEvent,
   updateUserSubscription,
 } from "../db";
+import {
+  grantPromotionalEntitlement,
+  isRevenueCatConfigured,
+  revokePromotionalEntitlement,
+} from "../revenuecat";
 
 export const adminRouter = router({
   /** Aggregate counts: total / active (paid) / cancelled / free */
@@ -63,18 +68,38 @@ export const adminRouter = router({
           ? null
           : new Date(Date.now() + input.days * 24 * 60 * 60 * 1000);
 
+      // Mirror the grant into RevenueCat as a promotional entitlement, so the
+      // mobile SDK sees it and RevenueCat handles auto-expiry. RevenueCat app
+      // user ids are our numeric user id as a string.
+      const rcUserId = target.revenuecatUserId ?? String(input.userId);
+      const revenueCatSynced = await grantPromotionalEntitlement(
+        rcUserId,
+        expiresAt?.getTime()
+      );
+
+      // Update our DB immediately (don't wait for the webhook round trip)
       await updateUserSubscription(input.userId, tier, expiresAt);
       // Audit trail in the same log the RevenueCat webhook writes to
       await logSubscriptionEvent({
         userId: input.userId,
-        revenuecatUserId: target.revenuecatUserId ?? String(input.userId),
+        revenuecatUserId: rcUserId,
         eventType: "ADMIN_GRANT",
         productId: tier === "lifetime" ? "admin_comp_lifetime" : `admin_comp_${input.days}d`,
         expiresAt: expiresAt ?? undefined,
-        rawPayload: { grantedByAdminId: ctx.user.id, days: input.days ?? null },
+        rawPayload: {
+          grantedByAdminId: ctx.user.id,
+          days: input.days ?? null,
+          revenueCatSynced,
+        },
       });
 
-      return { success: true, tier, expiresAt };
+      return {
+        success: true,
+        tier,
+        expiresAt,
+        revenueCatSynced,
+        revenueCatConfigured: isRevenueCatConfigured(),
+      };
     }),
 
   /** Revoke a previously granted (or paid) membership — back to free. */
@@ -86,14 +111,23 @@ export const adminRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       }
 
+      // Revoke any promotional grants in RevenueCat (store purchases are
+      // unaffected — those can only be cancelled through the store).
+      const rcUserId = target.revenuecatUserId ?? String(input.userId);
+      const revenueCatSynced = await revokePromotionalEntitlement(rcUserId);
+
       await updateUserSubscription(input.userId, "free", null);
       await logSubscriptionEvent({
         userId: input.userId,
-        revenuecatUserId: target.revenuecatUserId ?? String(input.userId),
+        revenuecatUserId: rcUserId,
         eventType: "ADMIN_REVOKE",
-        rawPayload: { revokedByAdminId: ctx.user.id },
+        rawPayload: { revokedByAdminId: ctx.user.id, revenueCatSynced },
       });
 
-      return { success: true };
+      return {
+        success: true,
+        revenueCatSynced,
+        revenueCatConfigured: isRevenueCatConfigured(),
+      };
     }),
 });
