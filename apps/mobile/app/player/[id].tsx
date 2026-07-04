@@ -19,6 +19,8 @@ import Slider from "@react-native-community/slider";
 import { colors, fontSizes, spacing, radii } from "@rih/ui-tokens";
 import { FREQUENCIES } from "@rih/shared-utils";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
+import { useAudioOutput } from "@/hooks/useAudioOutput";
+import { binauralRouteHint } from "@/lib/audioRoute";
 import { useAuthStore } from "@/store/authStore";
 import { isPremiumUser } from "@rih/shared-utils";
 
@@ -53,6 +55,7 @@ export default function PlayerDetailScreen() {
 
   const { isPlaying, isLoading, volume, play, pause, setVolume, setSleepTimer } =
     useAudioPlayer(frequency ?? null);
+  const audioOutput = useAudioOutput();
 
   const [sleepMinutes, setSleepMinutes] = useState(0);
   const [showAffirmation, setShowAffirmation] = useState(false);
@@ -199,7 +202,8 @@ export default function PlayerDetailScreen() {
         )}
         {frequency.category === "binaural" && (
           <Text style={styles.headphoneHint}>
-            🎧 Headphones required — true binaural beat ({frequency.hz}Hz offset)
+            {binauralRouteHint(audioOutput.kind)} True binaural beat —{" "}
+            {frequency.hz}Hz offset.
           </Text>
         )}
 

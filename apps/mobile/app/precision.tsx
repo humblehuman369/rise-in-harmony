@@ -23,6 +23,8 @@ import Slider from "@react-native-community/slider";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
 import { isPremiumUser } from "@rih/shared-utils";
 import { usePrecisionPlayer, type PlayMode } from "@/hooks/usePrecisionPlayer";
+import { useAudioOutput } from "@/hooks/useAudioOutput";
+import { binauralRouteHint, outputLabel } from "@/lib/audioRoute";
 import {
   clampHz,
   clampBeatHz,
@@ -108,6 +110,7 @@ export default function PrecisionScreen() {
 
   const { isPlaying, playTime, volume, play, stop, retune, setVolume } =
     usePrecisionPlayer();
+  const audioOutput = useAudioOutput();
 
   const [hz, setHz] = useState(432);
   const [hzText, setHzText] = useState("432");
@@ -330,8 +333,8 @@ export default function PrecisionScreen() {
         </View>
         {mode === "binaural" && (
           <Text style={styles.hint}>
-            🎧 Headphones required — left ear {hz} Hz, right ear{" "}
-            {clampHz(hz + beatHz)} Hz
+            {binauralRouteHint(audioOutput.kind)}
+            {"\n"}Left ear {hz} Hz · right ear {clampHz(hz + beatHz)} Hz
           </Text>
         )}
         {mode === "isochronic" && (
@@ -407,6 +410,9 @@ export default function PrecisionScreen() {
           />
           <Text style={styles.volIcon}>🔊</Text>
         </View>
+        <Text style={styles.outputLabel}>
+          ♪ Playing via {outputLabel(audioOutput.kind, audioOutput.name ?? undefined)}
+        </Text>
 
         {/* Quick presets */}
         <Text style={styles.sectionLabel}>QUICK PRESETS</Text>
@@ -656,6 +662,13 @@ const styles = StyleSheet.create({
   },
   volIcon: { fontSize: fontSizes.base },
   slider: { flex: 1, marginHorizontal: spacing[2] },
+  outputLabel: {
+    fontSize: fontSizes.xs,
+    color: colors.textDim,
+    textAlign: "center",
+    marginTop: -spacing[3],
+    marginBottom: spacing[5],
+  },
   // Presets
   presetRow: { gap: spacing[2], paddingBottom: spacing[5] },
   presetChip: {

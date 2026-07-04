@@ -31,6 +31,9 @@ function getContext(): AudioContext {
     AudioManager.setAudioSessionOptions({
       iosCategory: "playback",
       iosMode: "default",
+      // Route to high-fidelity outputs: stereo Bluetooth (A2DP, not the
+      // low-quality hands-free profile) and AirPlay speakers.
+      iosOptions: ["allowBluetoothA2DP", "allowAirPlay"],
     });
     AudioManager.setAudioSessionActivity(true).catch(() => {});
     sharedCtx = new AudioContext();
