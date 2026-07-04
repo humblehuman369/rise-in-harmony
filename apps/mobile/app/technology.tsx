@@ -128,8 +128,8 @@ export default function TechnologyScreen() {
             pitch-shifting. No drift. Just the pure frequency.
           </Text>
           <Text style={styles.answerBody}>
-            Exactly how we do it is our secret. What it delivers isn't: when this app
-            says 528 Hz, you get 528.00 Hz.
+            Exactly how we do it is our secret — but the result is simple to state:
+            when this app says 528 Hz, you get 528.00 Hz.
           </Text>
         </View>
 

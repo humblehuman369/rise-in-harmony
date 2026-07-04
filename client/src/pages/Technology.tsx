@@ -175,8 +175,8 @@ export default function Technology() {
               pitch-shifting. No drift. Just the pure frequency.
             </p>
             <p className="text-sm leading-relaxed" style={{ color: '#B8C5DB', fontFamily: 'DM Sans, sans-serif' }}>
-              Exactly how we do it is our secret. What it delivers isn't: when this app
-              says 528 Hz, you get 528.00 Hz.
+              Exactly how we do it is our secret — but the result is simple to state:
+              when this app says 528 Hz, you get 528.00 Hz.
             </p>
           </div>
 
