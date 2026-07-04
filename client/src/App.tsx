@@ -15,6 +15,7 @@ import Terms from "./pages/Terms";
 import About from "./pages/About";
 import Meditation from "./pages/Meditation";
 import PrecisionPlayer from "./pages/PrecisionPlayer";
+import Technology from "./pages/Technology";
 import OnboardingModal, { useOnboarding } from "./components/OnboardingModal";
 import { useAuth } from "./_core/hooks/useAuth";
 import { useLocalSessionImport } from "./hooks/useLocalSessionImport";
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
       <Route path="/about" component={About} />
+      <Route path="/technology" component={Technology} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

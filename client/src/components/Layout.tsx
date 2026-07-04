@@ -109,6 +109,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               >About</span>
             </Link>
             <span className="text-xs" style={{ color: '#2A3040' }}>·</span>
+            <Link href="/technology">
+              <span className="text-xs transition-colors duration-200 cursor-pointer"
+                style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; }}
+              >Technology</span>
+            </Link>
+            <span className="text-xs" style={{ color: '#2A3040' }}>·</span>
             <Link href="/privacy">
               <span className="text-xs transition-colors duration-200 cursor-pointer"
                 style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}
