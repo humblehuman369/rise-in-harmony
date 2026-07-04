@@ -1,0 +1,52 @@
+name: CI
+
+# Typecheck + unit tests for the web/server monorepo root and the mobile app.
+# Verification only — deploys stay deliberate (web via Manus, mobile via EAS).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web-server:
+    name: Web + server (typecheck, vitest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # version comes from packageManager in package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+      - name: Typecheck
+        run: npm run check
+      - name: Server unit tests
+        run: npx vitest run --root . server/
+
+  mobile:
+    name: Mobile app (typecheck, jest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
