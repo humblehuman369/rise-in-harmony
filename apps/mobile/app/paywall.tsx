@@ -16,19 +16,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
+import { FREQUENCIES } from "@rih/shared-utils";
 import { usePurchases } from "@/hooks/usePurchases";
 import { useAuthStore } from "@/store/authStore";
 import type { PurchasesPackage } from "react-native-purchases";
 
 const FEATURES = [
-  "🎵  All 13 healing frequencies",
+  `🎵  All ${FREQUENCIES.length} healing frequencies`,
+  "🧬  True binaural & isochronic brainwave beats",
   "🧘  Full meditation library",
-  "⏰  Unlimited healing alarms",
-  "🧬  Binaural beats (Alpha, Theta, Delta)",
   "🌀  7-Chakra journey sequences",
-  "📊  Wellness dashboard & streak tracking",
+  "⏰  Unlimited healing alarms",
   "🔇  Background audio (screen off)",
   "📵  Offline mode — no Wi-Fi needed",
+  "📊  Wellness dashboard & streak tracking",
 ];
 
 function formatPrice(pkg: PurchasesPackage): string {
@@ -123,6 +124,24 @@ export default function PaywallScreen() {
           <Text style={styles.heroPremium}>Premium</Text>
           <Text style={styles.heroSubtitle}>
             Unlock the full healing frequency library and all premium features.
+          </Text>
+        </View>
+
+        {/* TrueHz differentiator — the reason these frequencies are worth paying for */}
+        <View style={styles.trueHzBanner}>
+          <View style={styles.trueHzHeader}>
+            <View style={styles.trueHzIcon}>
+              <Text style={styles.trueHzIconText}>Hz</Text>
+            </View>
+            <Text style={styles.trueHzTitle}>TrueHz™ Precision Tuning</Text>
+          </View>
+          <Text style={styles.trueHzBody}>
+            Most frequency apps play compressed recordings — close, but not the
+            real frequency. Every tone here is generated live on your device,
+            mathematically exact to 0.01 Hz.
+          </Text>
+          <Text style={styles.trueHzTagline}>
+            When we say 528 Hz, you get 528.00 Hz.
           </Text>
         </View>
 
@@ -279,6 +298,50 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   // Features
+  trueHzBanner: {
+    marginHorizontal: spacing[5],
+    backgroundColor: "rgba(0,212,170,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(0,212,170,0.35)",
+    borderRadius: radii.xl,
+    padding: spacing[5],
+    marginBottom: spacing[4],
+  },
+  trueHzHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[3],
+    marginBottom: spacing[3],
+  },
+  trueHzIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: radii.md,
+    backgroundColor: "rgba(0,212,170,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  trueHzIconText: {
+    fontSize: fontSizes.sm,
+    fontWeight: "800",
+    color: colors.teal,
+  },
+  trueHzTitle: {
+    fontSize: fontSizes.base,
+    fontWeight: "800",
+    color: colors.teal,
+  },
+  trueHzBody: {
+    fontSize: fontSizes.sm,
+    color: colors.textSecondary,
+    lineHeight: 21,
+    marginBottom: spacing[2],
+  },
+  trueHzTagline: {
+    fontSize: fontSizes.sm,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
   featuresCard: {
     marginHorizontal: spacing[5],
     backgroundColor: colors.bgCard,
