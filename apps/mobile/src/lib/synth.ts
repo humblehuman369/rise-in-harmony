@@ -28,12 +28,14 @@ let sharedCtx: AudioContext | null = null;
 
 function getContext(): AudioContext {
   if (!sharedCtx || sharedCtx.state === "closed") {
+    // NOTE: do NOT pass iosOptions here. "allowAirPlay"/"allowBluetoothA2DP"
+    // may only be set explicitly with the playAndRecord category — combining
+    // them with "playback" raises NSInvalidArgumentException and crashes the
+    // app (TestFlight crash B6479B0C, build 21). With the playback category,
+    // AirPlay and A2DP routing are enabled implicitly (Apple QA1803).
     AudioManager.setAudioSessionOptions({
       iosCategory: "playback",
       iosMode: "default",
-      // Route to high-fidelity outputs: stereo Bluetooth (A2DP, not the
-      // low-quality hands-free profile) and AirPlay speakers.
-      iosOptions: ["allowBluetoothA2DP", "allowAirPlay"],
     });
     AudioManager.setAudioSessionActivity(true).catch(() => {});
     sharedCtx = new AudioContext();

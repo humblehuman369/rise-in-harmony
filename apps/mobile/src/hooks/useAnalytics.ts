@@ -13,15 +13,29 @@ import { useAuthStore } from "@/store/authStore";
 // Initialize PostHog once at module level
 let posthog: PostHog | null = null;
 
+// PostHog's constructor throws on an empty api key (even with disabled: true),
+// which would crash the app at boot if the EXPO_PUBLIC_POSTHOG_KEY env var is
+// ever missing from a build. Fall back to a no-op stub instead.
+const noopPostHog = {
+  identify: () => {},
+  reset: () => {},
+  capture: () => {},
+} as unknown as PostHog;
+
 function getPostHog(): PostHog {
   if (!posthog) {
     const key = Constants.expoConfig?.extra?.posthogKey ?? "";
     const host =
       Constants.expoConfig?.extra?.posthogHost ?? "https://us.i.posthog.com";
-    posthog = new PostHog(key, {
-      host,
-      disabled: !key || __DEV__,
-    });
+    if (!key) {
+      posthog = noopPostHog;
+    } else {
+      try {
+        posthog = new PostHog(key, { host, disabled: __DEV__ });
+      } catch {
+        posthog = noopPostHog;
+      }
+    }
   }
   return posthog;
 }
