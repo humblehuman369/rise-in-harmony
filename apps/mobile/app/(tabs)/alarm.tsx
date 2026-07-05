@@ -10,11 +10,15 @@ import {
   Switch,
   StyleSheet,
   Alert,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useCallback, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
 import { FREQUENCIES } from "@rih/shared-utils";
 import {
@@ -87,9 +91,16 @@ function formatTime(hour: number, minute: number) {
 export default function AlarmScreen() {
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [creating, setCreating] = useState(false);
-  // New alarm form state
-  const [newHour, setNewHour] = useState(7);
-  const [newMinute, setNewMinute] = useState(0);
+  // New alarm form state — time is held as a Date for the native picker
+  const [newTime, setNewTime] = useState(() => {
+    const d = new Date();
+    d.setHours(7, 0, 0, 0);
+    return d;
+  });
+  const newHour = newTime.getHours();
+  const newMinute = newTime.getMinutes();
+  // Android shows the picker as a one-shot dialog; iOS renders it inline
+  const [showAndroidPicker, setShowAndroidPicker] = useState(false);
   const [newDays, setNewDays] = useState<AlarmDayOfWeek[]>(["Mon", "Tue", "Wed", "Thu", "Fri"]);
   const [newFreqId, setNewFreqId] = useState(DEFAULT_FREQUENCY.id);
   const [newFadeMin, setNewFadeMin] = useState(5);
@@ -107,10 +118,10 @@ export default function AlarmScreen() {
     );
   };
 
-  const adjustHour = (delta: number) =>
-    setNewHour((h) => (h + delta + 24) % 24);
-  const adjustMinute = (delta: number) =>
-    setNewMinute((m) => (m + delta + 60) % 60);
+  const onTimeChange = (event: DateTimePickerEvent, date?: Date) => {
+    if (Platform.OS === "android") setShowAndroidPicker(false);
+    if (event.type === "set" && date) setNewTime(date);
+  };
 
   const createAlarm = useCallback(async () => {
     const granted = await requestAlarmPermissions();
@@ -225,34 +236,42 @@ export default function AlarmScreen() {
         {/* Create form */}
         {creating && (
           <View style={styles.form}>
-            {/* Time picker */}
+            {/* Time picker — native spinner (iOS inline, Android dialog) */}
             <Text style={styles.sectionLabel}>Wake Time</Text>
-            <View style={styles.timePicker}>
-              <View style={styles.timeUnit}>
-                <TouchableOpacity onPress={() => adjustHour(1)} style={styles.timeArrow}>
-                  <Text style={styles.timeArrowText}>▲</Text>
-                </TouchableOpacity>
-                <Text style={styles.timeValue}>
-                  {(newHour % 12 || 12).toString().padStart(2, "0")}
-                </Text>
-                <TouchableOpacity onPress={() => adjustHour(-1)} style={styles.timeArrow}>
-                  <Text style={styles.timeArrowText}>▼</Text>
-                </TouchableOpacity>
+            {Platform.OS === "ios" ? (
+              <View style={styles.timePickerWrap}>
+                <DateTimePicker
+                  value={newTime}
+                  mode="time"
+                  display="spinner"
+                  onChange={onTimeChange}
+                  themeVariant="dark"
+                  textColor={colors.textPrimary}
+                  style={styles.iosPicker}
+                />
               </View>
-              <Text style={styles.timeSep}>:</Text>
-              <View style={styles.timeUnit}>
-                <TouchableOpacity onPress={() => adjustMinute(5)} style={styles.timeArrow}>
-                  <Text style={styles.timeArrowText}>▲</Text>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={styles.androidTimeButton}
+                  onPress={() => setShowAndroidPicker(true)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.androidTimeText}>
+                    {formatTime(newHour, newMinute)}
+                  </Text>
+                  <Text style={styles.androidTimeHint}>Tap to change</Text>
                 </TouchableOpacity>
-                <Text style={styles.timeValue}>
-                  {newMinute.toString().padStart(2, "0")}
-                </Text>
-                <TouchableOpacity onPress={() => adjustMinute(-5)} style={styles.timeArrow}>
-                  <Text style={styles.timeArrowText}>▼</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.ampm}>{newHour < 12 ? "AM" : "PM"}</Text>
-            </View>
+                {showAndroidPicker && (
+                  <DateTimePicker
+                    value={newTime}
+                    mode="time"
+                    display="spinner"
+                    onChange={onTimeChange}
+                  />
+                )}
+              </>
+            )}
 
             {/* Day selector */}
             <Text style={styles.sectionLabel}>Repeat</Text>
@@ -459,33 +478,32 @@ const styles = StyleSheet.create({
     marginBottom: spacing[2],
     marginTop: spacing[4],
   },
-  timePicker: {
-    flexDirection: "row",
+  timePickerWrap: {
     alignItems: "center",
     justifyContent: "center",
-    gap: spacing[3],
   },
-  timeUnit: { alignItems: "center", gap: spacing[1] },
-  timeArrow: { padding: spacing[2] },
-  timeArrowText: { color: colors.textMuted, fontSize: fontSizes.base },
-  timeValue: {
+  iosPicker: {
+    alignSelf: "center",
+    height: 180,
+    width: 260,
+  },
+  androidTimeButton: {
+    alignItems: "center",
+    paddingVertical: spacing[4],
+    borderRadius: radii.lg,
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.bgBorder,
+  },
+  androidTimeText: {
     fontSize: fontSizes["3xl"],
     color: colors.textPrimary,
     fontWeight: "700",
-    minWidth: 60,
-    textAlign: "center",
   },
-  timeSep: {
-    fontSize: fontSizes["3xl"],
+  androidTimeHint: {
+    fontSize: fontSizes.xs,
     color: colors.textMuted,
-    fontWeight: "300",
-    marginBottom: spacing[3],
-  },
-  ampm: {
-    fontSize: fontSizes.md,
-    color: colors.teal,
-    fontWeight: "600",
-    marginBottom: spacing[3],
+    marginTop: spacing[1],
   },
   dayRow: {
     flexDirection: "row",
