@@ -189,19 +189,26 @@ export function createVoice(options: VoiceOptions): SynthVoice {
 
 /**
  * Build a voice for an entry from the shared FREQUENCIES catalog.
- * Solfeggio entries become pure tones; binaural entries (alpha/theta/delta,
- * whose hz value IS the beat frequency) ride on the standard 200Hz carrier.
+ * - solfeggio: pure tone at the exact catalog Hz
+ * - binaural: the catalog hz IS the beat frequency, riding on the standard
+ *   200Hz carrier (left 200, right 200 + beat)
+ * - isochronic: the catalog hz IS the pulse rate, gating a 200Hz tone
+ *   (works on speakers — no headphones needed)
  */
 export function createCatalogVoice(
-  freq: { hz: number; category: "solfeggio" | "binaural" },
+  freq: { hz: number; category: "solfeggio" | "binaural" | "isochronic" },
   volume: number
 ): SynthVoice {
-  if (freq.category === "binaural") {
-    return createVoice({
-      hz: 200,
-      binauralBeatHz: freq.hz,
-      volume,
-    });
+  switch (freq.category) {
+    case "binaural":
+      return createVoice({ hz: 200, binauralBeatHz: freq.hz, volume });
+    case "isochronic":
+      return createVoice({ hz: 200, isochronicHz: freq.hz, volume });
+    case "solfeggio":
+      return createVoice({ hz: freq.hz, volume });
+    default: {
+      const exhaustive: never = freq.category;
+      throw new Error(`Unknown frequency category: ${exhaustive}`);
+    }
   }
-  return createVoice({ hz: freq.hz, volume });
 }

@@ -106,7 +106,7 @@ export interface Frequency {
   benefit: string;
   color: string;
   isPremium: boolean;
-  category: "solfeggio" | "binaural";
+  category: "solfeggio" | "binaural" | "isochronic";
   chakraPosition?: number; // 1 (Root) – 7 (Crown)
   chakraName?: string;
   pronunciation?: string;

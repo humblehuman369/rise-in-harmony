@@ -206,6 +206,12 @@ export default function PlayerDetailScreen() {
             {frequency.hz}Hz offset.
           </Text>
         )}
+        {frequency.category === "isochronic" && (
+          <Text style={styles.headphoneHint}>
+            Isochronic pulse — the tone gates on/off {frequency.hz} times per
+            second. Works on any speaker, no headphones needed.
+          </Text>
+        )}
 
         {/* TrueHz badge */}
         <TouchableOpacity

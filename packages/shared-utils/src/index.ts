@@ -181,7 +181,7 @@ export const FREQUENCIES: Frequency[] = [
     benefit: "Focused clarity — no headphones needed",
     color: "#F59E0B",
     isPremium: true,
-    category: "binaural",
+    category: "isochronic",
   },
   {
     id: "schumann",
