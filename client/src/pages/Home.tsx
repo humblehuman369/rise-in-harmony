@@ -51,13 +51,13 @@ const features = [
 
 const testimonials = [
   {
-    name: "Sarah M.",
+    name: "Kristi G.",
     role: "Yoga Instructor",
     text: "I've tried every meditation app. Rise In Harmony is the only one that actually changes how I feel when I wake up. The 528Hz sequence is transformative.",
     rating: 5,
   },
   {
-    name: "James K.",
+    name: "Brad G.",
     role: "Software Engineer",
     text: "The binaural beats for focus are incredible. I use the Alpha wave session every morning before deep work. My productivity has genuinely improved.",
     rating: 5,
