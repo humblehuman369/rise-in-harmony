@@ -182,6 +182,31 @@ App Store requires screenshots for the following device sizes:
 
 ---
 
+## App Privacy Questionnaire — Answer Sheet
+
+App Store Connect → App Privacy → Get Started. Apple only allows this via the
+website UI. Answer exactly as follows (mobile app has no login; PostHog and
+RevenueCat run with anonymous IDs):
+
+**"Do you or your third-party partners collect data from this app?"** → **Yes**
+
+Declare these three data types, nothing else:
+
+| Data type | Category | Linked to identity? | Used for tracking? | Purposes |
+|---|---|---|---|---|
+| Purchases → Purchase History | RevenueCat receipt validation | No | No | App Functionality |
+| Identifiers → User ID | RevenueCat anonymous app-user ID + PostHog device ID | No | No | App Functionality, Analytics |
+| Usage Data → Product Interaction | PostHog screen/session events | No | No | Analytics |
+
+Everything else (contact info, health data, location, contacts, photos,
+search history, sensitive info, diagnostics) → **not collected**.
+
+Because nothing is "used to track you" across other companies' apps, no App
+Tracking Transparency prompt is needed and the privacy label shows the mild
+"Data Not Linked to You" card.
+
+---
+
 ## App Review Notes
 
 Include these notes in the App Review Information section:
