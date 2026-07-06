@@ -50,6 +50,16 @@ export async function requestAlarmPermissions(): Promise<boolean> {
   return status === "granted";
 }
 
+// Bundled notification sounds — one exact-Hz tone per solfeggio frequency.
+// iOS requires bundled files (<30 s); these are generated sine tones with a
+// gentle 0.8 Hz tremolo, verified spectrally exact to the labeled frequency.
+const ALARM_SOUND_HZ = [174, 285, 396, 417, 432, 528, 639, 741, 852, 963];
+
+export function alarmSoundForHz(hz: number): string {
+  const match = ALARM_SOUND_HZ.includes(hz) ? hz : 528;
+  return `alarm_${match}.wav`;
+}
+
 export async function scheduleAlarm(alarm: Alarm): Promise<string | null> {
   const granted = await requestAlarmPermissions();
   if (!granted) return null;
@@ -68,7 +78,7 @@ export async function scheduleAlarm(alarm: Alarm): Promise<string | null> {
     content: {
       title: "Rise In Harmony",
       body: `Your ${alarm.frequencyHz}Hz healing alarm`,
-      sound: "gentle_528hz.wav",
+      sound: alarmSoundForHz(alarm.frequencyHz),
       data: { alarm },
     },
     trigger: {

@@ -65,10 +65,10 @@ assets/sounds/
   ambient-forest.mp3
   ambient-wind.mp3
   ambient-fire.mp3
-  gentle_528hz.wav    ← used for alarm notification sound (Android res name must start with a letter, no hyphens)
+  alarm_<hz>.wav ×10  ← alarm notification tones, one per solfeggio Hz (Android res name must start with a letter, no hyphens)
 ```
 
-Nature loops should be seamless at 44.1kHz, 128kbps MP3. The `gentle_528hz.wav` alarm sound must be under 30 seconds for iOS notification delivery.
+Nature loops should be seamless at 44.1kHz, 128kbps MP3. The `alarm_<hz>.wav` alarm sounds must be under 30 seconds for iOS notification delivery (ours are 29.5 s).
 
 ---
 

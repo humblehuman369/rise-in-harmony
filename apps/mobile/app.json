@@ -58,7 +58,16 @@
           "icon": "./assets/notification-icon.png",
           "color": "#00D4AA",
           "sounds": [
-            "./assets/sounds/gentle_528hz.wav"
+            "./assets/sounds/alarm_174.wav",
+            "./assets/sounds/alarm_285.wav",
+            "./assets/sounds/alarm_396.wav",
+            "./assets/sounds/alarm_417.wav",
+            "./assets/sounds/alarm_432.wav",
+            "./assets/sounds/alarm_528.wav",
+            "./assets/sounds/alarm_639.wav",
+            "./assets/sounds/alarm_741.wav",
+            "./assets/sounds/alarm_852.wav",
+            "./assets/sounds/alarm_963.wav"
           ]
         }
       ],

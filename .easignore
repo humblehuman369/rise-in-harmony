@@ -3,8 +3,8 @@
 # When .easignore exists, EAS uses it INSTEAD of .gitignore files to decide
 # what to upload. This exists because apps/mobile/assets/sounds/.gitignore
 # excludes *.mp3/*.wav from Manus's checkpoint system — but those bundled
-# audio files (nature loops + alarm tone) MUST be uploaded to EAS or iOS
-# prebuild fails copying gentle_528hz.wav. Do not add audio exclusions here.
+# audio files (nature loops + alarm_<hz>.wav tones) MUST be uploaded to EAS
+# or iOS prebuild fails copying notification sounds. No audio exclusions here.
 
 # Dependencies / VCS
 **/node_modules

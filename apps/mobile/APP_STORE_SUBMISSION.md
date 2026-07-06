@@ -141,7 +141,7 @@ binary (~28 MB smaller). Only the following files must be in
 | `ambient-forest.mp3` | Forest birdsong loop | Record or license |
 | `ambient-wind.mp3` | Mountain wind loop | Record or license |
 | `ambient-fire.mp3` | Crackling fire loop | Record or license |
-| `gentle_528hz.wav` | Gentle 528Hz alarm tone (30 seconds) | Record or license |
+| `alarm_<hz>.wav` ×10 | Exact-Hz solfeggio alarm tones (29.5 s, generated sine + tremolo, one per solfeggio frequency 174–963) | Generated in-repo via ffmpeg |
 
 **Recommended sources for royalty-free audio:**
 - [Freesound.org](https://freesound.org) — CC0 licensed tones

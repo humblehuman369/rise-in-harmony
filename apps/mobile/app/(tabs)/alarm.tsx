@@ -13,6 +13,7 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { useState, useCallback, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
@@ -20,7 +21,8 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
-import { FREQUENCIES } from "@rih/shared-utils";
+import { FREQUENCIES, isPremiumUser } from "@rih/shared-utils";
+import { useAuthStore } from "@/store/authStore";
 import {
   useAlarmNotifications,
   scheduleAlarm,
@@ -74,6 +76,9 @@ async function scheduleRepeatAlarm(alarm: Alarm): Promise<string[]> {
 }
 
 const DAYS: AlarmDayOfWeek[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+// Only solfeggio tones have bundled notification sounds (alarm_<hz>.wav).
+// Beat-based entries (binaural/isochronic) can't play as notification audio.
+const ALARM_FREQUENCIES = FREQUENCIES.filter((f) => f.category === "solfeggio");
 const DEFAULT_FREQUENCY = FREQUENCIES.find((f) => f.id === "528") ?? FREQUENCIES[0];
 
 let _nextId = Date.now();
@@ -89,6 +94,9 @@ function formatTime(hour: number, minute: number) {
 }
 
 export default function AlarmScreen() {
+  const router = useRouter();
+  const { user } = useAuthStore();
+  const userIsPremium = isPremiumUser(user?.subscriptionTier ?? "free");
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [creating, setCreating] = useState(false);
   // New alarm form state — time is held as a Date for the native picker
@@ -304,24 +312,30 @@ export default function AlarmScreen() {
               showsHorizontalScrollIndicator={false}
               style={styles.freqScroll}
             >
-              {FREQUENCIES.filter((f) => !f.isPremium).map((f) => (
-                <TouchableOpacity
-                  key={f.id}
-                  style={[
-                    styles.freqChip,
-                    newFreqId === f.id && {
-                      backgroundColor: f.color + "25",
-                      borderColor: f.color + "60",
-                    },
-                  ]}
-                  onPress={() => setNewFreqId(f.id)}
-                >
-                  <Text style={[styles.freqChipHz, { color: f.color }]}>
-                    {f.hz}Hz
-                  </Text>
-                  <Text style={styles.freqChipName}>{f.name}</Text>
-                </TouchableOpacity>
-              ))}
+              {ALARM_FREQUENCIES.map((f) => {
+                const locked = f.isPremium && !userIsPremium;
+                return (
+                  <TouchableOpacity
+                    key={f.id}
+                    style={[
+                      styles.freqChip,
+                      newFreqId === f.id && {
+                        backgroundColor: f.color + "25",
+                        borderColor: f.color + "60",
+                      },
+                    ]}
+                    onPress={() =>
+                      locked ? router.push("/paywall") : setNewFreqId(f.id)
+                    }
+                  >
+                    <Text style={[styles.freqChipHz, { color: f.color }]}>
+                      {locked ? "🔒 " : ""}
+                      {f.hz}Hz
+                    </Text>
+                    <Text style={styles.freqChipName}>{f.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
 
             {/* Fade-in */}
