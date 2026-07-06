@@ -53,6 +53,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="precision"
+        options={{
+          title: "Precision",
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon focused={focused} color={color}>
+              {/* Tuning-fork icon placeholder */}
+            </TabIcon>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="meditation"
         options={{
           title: "Meditate",

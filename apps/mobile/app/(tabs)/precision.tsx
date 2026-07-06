@@ -241,14 +241,7 @@ export default function PrecisionScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.topBar}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
-        >
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
         <Text style={styles.topTitle}>Precision Player</Text>
-        <View style={{ width: 48 }} />
       </View>
 
       <ScrollView
@@ -532,14 +525,11 @@ export default function PrecisionScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bgDeep },
   topBar: {
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: spacing[5],
     paddingTop: spacing[3],
     paddingBottom: spacing[2],
   },
-  backText: { color: colors.textMuted, fontSize: fontSizes.base },
   topTitle: {
     fontSize: fontSizes.base,
     color: colors.textPrimary,
