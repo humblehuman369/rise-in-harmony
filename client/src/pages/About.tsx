@@ -63,7 +63,7 @@ const FREQUENCIES_EXPLAINED = [
   {
     hz: "285 Hz",
     name: "Tissue Repair",
-    description: "Believed to influence energy fields and support cellular regeneration. Often used in healing and recovery contexts.",
+    description: "Traditionally associated with renewal and restoration. Often used in relaxation and recovery contexts.",
   },
   {
     hz: "396 Hz",

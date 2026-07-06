@@ -66,7 +66,7 @@ const GOALS: Goal[] = [
     recommendedFreqId: "528hz",
     recommendedHz: 528,
     recommendedName: "Miracle Tone",
-    recommendedBenefit: "528Hz activates cellular energy and DNA repair — the perfect morning frequency.",
+    recommendedBenefit: "528Hz — the Miracle Tone — is the perfect morning frequency for energy and intention.",
   },
   {
     id: "spiritual",
@@ -77,7 +77,7 @@ const GOALS: Goal[] = [
     recommendedFreqId: "963hz",
     recommendedHz: 963,
     recommendedName: "Divine Consciousness",
-    recommendedBenefit: "963Hz activates the pineal gland and connects you to higher states of awareness.",
+    recommendedBenefit: "963Hz — the highest Solfeggio tone — is traditionally used to connect with higher states of awareness.",
   },
   {
     id: "healing",

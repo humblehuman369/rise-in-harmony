@@ -57,7 +57,7 @@ describe("subscription gating", () => {
     id: "963",
     hz: 963,
     name: "Divine Consciousness",
-    benefit: "Pineal activation & unity",
+    benefit: "Unity & transcendence",
     color: "#A855F7",
     isPremium: true,
     category: "solfeggio",

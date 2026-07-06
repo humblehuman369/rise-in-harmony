@@ -404,7 +404,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     musicMode: "crystal",   // soft bowl strikes — infrequent, transcendent quality
     recommendedFrequencyId: "963hz",
     recommendedFrequencyLabel: "963Hz Divine Consciousness",
-    frequencyRationale: "963Hz activates the Crown Chakra and the pineal gland — it is the highest Solfeggio frequency, associated with divine consciousness and universal oneness.",
+    frequencyRationale: "963Hz is the highest Solfeggio frequency — traditionally associated with the Crown Chakra, divine consciousness, and universal oneness.",
     affirmation: "I am one with all that is. I am the universe experiencing itself.",
     guidance: [
       "Sit in your most comfortable meditation posture. Let your hands rest open in your lap.",
