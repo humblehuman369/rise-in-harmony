@@ -14,7 +14,10 @@ import { useState, useRef, useCallback, useEffect } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type NatureSound = "rain" | "ocean" | "forest" | "wind" | "fire" | "none";
+export type NatureSound =
+  | "rain" | "ocean" | "forest" | "wind" | "fire"
+  | "river" | "night" | "cave" | "bowl"
+  | "none";
 export type MusicMode = "ambient" | "drone" | "crystal" | "none";
 
 export interface StudioState {
@@ -35,6 +38,9 @@ const NATURE_AUDIO_URLS: Record<string, string> = {
   forest: "/sounds/ambient-forest.mp3",
   wind: "/sounds/ambient-wind.mp3",
   fire: "/sounds/ambient-fire.mp3",
+  river: "/sounds/ambient-river.mp3",
+  night: "/sounds/ambient-night.mp3",
+  cave: "/sounds/ambient-cave.mp3",
   bowl: "/sounds/ambient-bowl.mp3",
 };
 
@@ -226,12 +232,6 @@ export function useSoundStudio() {
     natureAudioSourceRef.current = source;
   }, [stopNature, state.natureVolume]);
 
-  const startNatureRain   = useCallback((ctx: AudioContext) => startNatureAudio(ctx, "rain"),   [startNatureAudio]);
-  const startNatureOcean  = useCallback((ctx: AudioContext) => startNatureAudio(ctx, "ocean"),  [startNatureAudio]);
-  const startNatureForest = useCallback((ctx: AudioContext) => startNatureAudio(ctx, "forest"), [startNatureAudio]);
-  const startNatureWind   = useCallback((ctx: AudioContext) => startNatureAudio(ctx, "wind"),   [startNatureAudio]);
-  const startNatureFire   = useCallback((ctx: AudioContext) => startNatureAudio(ctx, "fire"),   [startNatureAudio]);
-
   // ── Master play / stop ───────────────────────────────────────────────────────
   const startAllLayers = useCallback((s: StudioState) => {
     const ctx = getCtx();
@@ -249,17 +249,8 @@ export function useSoundStudio() {
     else if (s.musicMode === "drone") startMusicAudio(ctx, "drone", s.musicVolume);
     else if (s.musicMode === "crystal") startMusicAudio(ctx, "crystal", s.musicVolume);
 
-    if (s.natureSound === "rain") startNatureRain(ctx);
-    else if (s.natureSound === "ocean") startNatureOcean(ctx);
-    else if (s.natureSound === "forest") startNatureForest(ctx);
-    else if (s.natureSound === "wind") startNatureWind(ctx);
-    else if (s.natureSound === "fire") startNatureFire(ctx);
-  }, [
-    getCtx,
-    startFrequency,
-    startMusicAudio,
-    startNatureRain, startNatureOcean, startNatureForest, startNatureWind, startNatureFire,
-  ]);
+    if (s.natureSound !== "none") startNatureAudio(ctx, s.natureSound);
+  }, [getCtx, startFrequency, startMusicAudio, startNatureAudio]);
 
   const stopAllLayers = useCallback(() => {
     stopFrequency();
@@ -346,16 +337,12 @@ export function useSoundStudio() {
     setState(prev => {
       const next = { ...prev, natureSound: sound };
       if (prev.isPlaying && ctxRef.current) {
-        if (sound === "rain") startNatureRain(ctxRef.current);
-        else if (sound === "ocean") startNatureOcean(ctxRef.current);
-        else if (sound === "forest") startNatureForest(ctxRef.current);
-        else if (sound === "wind") startNatureWind(ctxRef.current);
-        else if (sound === "fire") startNatureFire(ctxRef.current);
+        if (sound !== "none") startNatureAudio(ctxRef.current, sound);
         else stopNature();
       }
       return next;
     });
-  }, [startNatureRain, startNatureOcean, startNatureForest, startNatureWind, startNatureFire, stopNature]);
+  }, [startNatureAudio, stopNature]);
 
   // Cleanup
   useEffect(() => {

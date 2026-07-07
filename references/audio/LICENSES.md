@@ -6,13 +6,15 @@ Records for royalty-free audio used in Rise In Harmony. Keep purchase receipts a
 
 ### Tera Mangala — Nature Sounds Sample Pack (103 Loops)
 
+Curated subset kept locally in `incoming/MEDITATION MUSIC - Nature Sounds`.
+
 | Field | Value |
 |---|---|
 | **Source** | Tera Mangala Meditation Music |
 | **Purchase price** | $15 |
 | **License** | Royalty-free, commercial use |
-| **Used in app** | `ambient-rain`, `ambient-ocean`, `ambient-forest`, `ambient-wind`, `ambient-fire` |
-| **Source tracks** | loop n3 rain only, loop n191 ocean soft wave, 90 Birds In A Natural Forest, loop n12 wind forest, loop n18 fire crisp fireplace |
+| **Used in app** | `ambient-rain`, `ambient-ocean`, `ambient-forest`, `ambient-fire`, `ambient-river`, `ambient-night`, `ambient-cave`, `ambient-wind` |
+| **Source tracks** | Rain only; ocean sea lagoon; Birds single blackbird; Fire crisp fireplace; River slow gentle; Jungle crikets chirp; Cave water dripping; loop n12 wind forest (wind kept from earlier processing run — no wind track in curated subset) |
 
 ### Tera Mangala — Singing Bowls Sample Pack (Chakras High Frequencies Scale)
 

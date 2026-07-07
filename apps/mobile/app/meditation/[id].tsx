@@ -35,6 +35,9 @@ const SOUNDSCAPE_LABEL: Record<string, string> = {
   forest: "Forest",
   wind: "Wind",
   fire: "Crackling fire",
+  river: "Gentle river",
+  night: "Night crickets",
+  cave: "Cave water",
   bowl: "Singing bowl",
   silence: "Silence",
 };

@@ -9,7 +9,17 @@ import {
   FREQUENCIES,
 } from "../../../packages/shared-utils/src";
 
-const MOBILE_NATURE_SOUNDSCAPES = ["rain", "ocean", "forest", "wind", "fire"];
+const MOBILE_NATURE_SOUNDSCAPES = [
+  "rain",
+  "ocean",
+  "forest",
+  "wind",
+  "fire",
+  "river",
+  "night",
+  "cave",
+  "bowl",
+];
 
 describe("meditation catalog", () => {
   it("has 12 meditations", () => {
@@ -30,8 +40,8 @@ describe("meditation catalog", () => {
 
   it("every soundscape has a bundled mobile audio asset", () => {
     for (const m of MEDITATIONS) {
-      // "bowl" and "silence" are allowed by the type but have no mobile asset;
-      // the current catalog should only use the five bundled loops.
+      // "silence" is allowed by the type but intentionally has no asset;
+      // every other soundscape must map to a bundled loop.
       expect(MOBILE_NATURE_SOUNDSCAPES).toContain(m.soundscape);
     }
   });

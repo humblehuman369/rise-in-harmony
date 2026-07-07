@@ -24,6 +24,9 @@ const NATURE_AUDIO_MAP: Record<string, number | null> = {
   forest: require("../../assets/sounds/ambient-forest.mp3"),
   wind: require("../../assets/sounds/ambient-wind.mp3"),
   fire: require("../../assets/sounds/ambient-fire.mp3"),
+  river: require("../../assets/sounds/ambient-river.mp3"),
+  night: require("../../assets/sounds/ambient-night.mp3"),
+  cave: require("../../assets/sounds/ambient-cave.mp3"),
   bowl: require("../../assets/sounds/ambient-bowl.mp3"),
   silence: null,
 };

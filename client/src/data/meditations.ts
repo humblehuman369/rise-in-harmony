@@ -37,7 +37,7 @@ export interface MeditationTrack {
   /** Secondary color for gradient */
   colorSecondary: string;
   /** Nature soundscape to layer underneath */
-  soundscape: "rain" | "ocean" | "forest" | "wind" | "fire" | "bowl" | "silence";
+  soundscape: "rain" | "ocean" | "forest" | "wind" | "fire" | "river" | "night" | "cave" | "bowl" | "silence";
   /** Music mode to use underneath */
   musicMode: "ambient" | "drone" | "crystal" | "none";
   /** ID from FREQUENCIES catalog — the recommended pairing */
@@ -187,7 +187,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     icon: "Target",
     color: "#8B5CF6",
     colorSecondary: "#6366F1",
-    soundscape: "wind",     // minimal, non-distracting — no random events
+    soundscape: "river",    // slow gentle river — steady, non-distracting flow
     musicMode: "drone",     // stable, continuous — no chord changes to pull attention
     recommendedFrequencyId: "alpha-isochronic",
     recommendedFrequencyLabel: "Alpha Isochronic (10Hz)",
@@ -216,7 +216,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     icon: "Repeat",
     color: "#A855F7",
     colorSecondary: "#8B5CF6",
-    soundscape: "wind",     // changed from "bowl" — wind is more continuous and less distracting for mantra
+    soundscape: "river",    // slow gentle river — continuous and less distracting for mantra
     musicMode: "crystal",   // soft bowl strikes support the mantra rhythm
     recommendedFrequencyId: "741hz",
     recommendedFrequencyLabel: "741Hz Awakening",
@@ -247,7 +247,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     icon: "Moon",
     color: "#6366F1",
     colorSecondary: "#8B5CF6",
-    soundscape: "rain",     // steady, consistent — ideal for sleep onset
+    soundscape: "night",    // soft night crickets — classic sleep-onset ambience
     musicMode: "drone",     // deep, continuous — most hypnotic for sleep
     recommendedFrequencyId: "binaural-delta",
     recommendedFrequencyLabel: "Delta Binaural (3Hz)",
@@ -370,7 +370,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     icon: "Eye",
     color: "#7C3AED",
     colorSecondary: "#A855F7",
-    soundscape: "wind",     // changed from "bowl" — wind is vast and spacious, good for inner vision
+    soundscape: "cave",     // slow water drops in a vast cave — deep, spacious, inward
     musicMode: "crystal",   // soft bowl strikes — infrequent, meditative, supports inner focus
     recommendedFrequencyId: "852hz",
     recommendedFrequencyLabel: "852Hz Spiritual Order",
@@ -400,7 +400,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     icon: "Zap",
     color: "#EC4899",
     colorSecondary: "#A855F7",
-    soundscape: "wind",     // changed from "silence" — wind adds a sense of vast spaciousness
+    soundscape: "cave",     // vast cave resonance — a sense of infinite spaciousness
     musicMode: "crystal",   // soft bowl strikes — infrequent, transcendent quality
     recommendedFrequencyId: "963hz",
     recommendedFrequencyLabel: "963Hz Divine Consciousness",

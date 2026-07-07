@@ -21,21 +21,23 @@ find_source() {
 }
 
 # Process one track: trim to duration, loudness-normalize, encode MP3
-# Usage: process_loop <output_name> <source_glob> <duration_sec>
+# Usage: process_loop <output_name> <source_glob> <duration_sec> <lufs>
 process_loop() {
   local out_name="$1"
   local source_glob="$2"
   local duration="$3"
+  local lufs="$4"
   local src
   src=$(find_source "$source_glob")
   local dest="$OUT/${out_name}.mp3"
 
-  echo "→ $out_name  (${duration}s)  ←  $(basename "$src")"
+  echo "→ $out_name  (${duration}s @ ${lufs} LUFS)  ←  $(basename "$src")"
 
   ffmpeg -y -hide_banner -loglevel error \
     -i "$src" \
     -t "$duration" \
-    -af "loudnorm=I=-18:TP=-1.5:LRA=11" \
+    -vn \
+    -af "loudnorm=I=${lufs}:TP=-2.0:LRA=11" \
     -ar 44100 \
     -ac 2 \
     -codec:a libmp3lame \
@@ -50,20 +52,26 @@ process_loop() {
 echo "Processing audio loops into $OUT"
 echo ""
 
-# ── Nature soundscapes (replace existing ambient-*.mp3) ───────────────────────
-process_loop "ambient-rain"   "*03 loop n3 rain only*" 60
-process_loop "ambient-ocean"  "*63 loop n191 ocean soft wave*" 60
-process_loop "ambient-forest" "*90 Birds In A Natural Forest*" 90
-process_loop "ambient-wind"   "*12 loop n12 wind forest*" 60
-process_loop "ambient-fire"  "*18 loop n18 fire crisp fireplace*" 57
+# ── Nature soundscapes ────────────────────────────────────────────────────────
+# Sourced from "MEDITATION MUSIC - Nature Sounds" pack. Normalized to -21 LUFS
+# (softer than the music beds) so meditation ambience sits gently in the mix.
+# NOTE: no wind recording exists in this pack — the bundled ambient-wind.mp3 is
+# kept from the previous processing run and is not regenerated here.
+process_loop "ambient-rain"   "Rain only.mp3" 24.9 -21
+process_loop "ambient-ocean"  "ocean sea lagoon.mp3" 24.9 -21
+process_loop "ambient-forest" "Birds single blackbird.mp3" 56 -21
+process_loop "ambient-fire"   "Fire crisp fireplace.mp3" 56 -21
+process_loop "ambient-river"  "River slow gentle.mp3" 59.9 -21
+process_loop "ambient-night"  "Jungle crikets chirp.mp3" 56 -21
+process_loop "ambient-cave"   "Cave water dripping.mp3" 50 -21
 
-# ── Bowl soundscape (new — fills silent meditation soundscape) ───────────────
-process_loop "ambient-bowl"  "*06 528Hz Shiva Bowl Turning*" 54
+# ── Bowl soundscape (from Singing Bowls pack) ────────────────────────────────
+process_loop "ambient-bowl"  "*06 528Hz Shiva Bowl Turning*" 54 -21
 
-# ── Music beds (replace procedural ambient/drone/crystal synthesis) ─────────
-process_loop "music-ambient" "*01 Slow Current*" 90
-process_loop "music-drone"   "*05 Sinking Slowly Below Consciousness*" 90
-process_loop "music-crystal" "*06 528Hz Shiva Bowl Turning*" 54
+# ── Music beds (from Ethereal Sanctuary Vol. 5) ──────────────────────────────
+process_loop "music-ambient" "*01 Slow Current*" 90 -18
+process_loop "music-drone"   "*05 Sinking Slowly Below Consciousness*" 90 -18
+process_loop "music-crystal" "*06 528Hz Shiva Bowl Turning*" 54 -18
 
 echo ""
 echo "Done. $(ls -1 "$OUT"/*.mp3 | wc -l | tr -d ' ') files in $OUT"

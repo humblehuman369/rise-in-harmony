@@ -280,7 +280,7 @@ function MeditationPlayer({
       // manages its own DDS overlay via startFrequency() in "Sound + Frequency" mode.
       // This prevents an unwanted 432Hz sine tone from playing in "Sound Only" mode.
       setLayerVolume("frequency", 0);
-      setStudioNatureSound(meditation.soundscape === "bowl" || meditation.soundscape === "silence" ? "none" : meditation.soundscape as "rain" | "ocean" | "forest" | "wind" | "fire");
+      setStudioNatureSound(meditation.soundscape === "silence" ? "none" : meditation.soundscape);
       setStudioMusicMode(meditation.musicMode);
       setLayerVolume("nature", volume);
       setLayerVolume("music", volume * 0.7);

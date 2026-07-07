@@ -5,13 +5,13 @@
  * client/src/data/meditations.ts with recommendedFrequencyId values normalized
  * to the shared FREQUENCIES catalog ids ("432", "alpha", …).
  *
- * Soundscape assignment guidelines:
- *  - Morning: forest (gentle, uplifting) + ambient (stable harmonic chords)
- *  - Stress/anxiety: ocean (slow wave rhythm) or rain (steady) + drone
- *  - Focus: wind (minimal, non-distracting) + drone (stable)
- *  - Sleep: ocean or rain + drone (deepest, most hypnotic)
+ * Soundscape assignment guidelines (v3 — gentle nature recordings):
+ *  - Morning: forest (soft blackbird song) + ambient (stable harmonic chords)
+ *  - Stress/anxiety: ocean (gentle lagoon) or rain (soft steady) + drone
+ *  - Focus: river (slow gentle flow, non-distracting) + drone (stable)
+ *  - Sleep: night (soft crickets) or ocean + drone (deepest, most hypnotic)
  *  - Healing: forest (nurturing) or ocean (cleansing) + ambient
- *  - Spiritual: wind (vast, spacious) + crystal (bowl resonance)
+ *  - Spiritual: cave (vast, spacious water drops) + crystal (bowl resonance)
  */
 import type { Meditation, MeditationCategory } from "@rih/shared-types";
 
@@ -160,7 +160,7 @@ export const MEDITATIONS: Meditation[] = [
     icon: "Target",
     color: "#8B5CF6",
     colorSecondary: "#6366F1",
-    soundscape: "wind",
+    soundscape: "river",
     musicMode: "drone",
     recommendedFrequencyId: "alpha",
     recommendedFrequencyLabel: "Alpha Waves (10Hz)",
@@ -191,7 +191,7 @@ export const MEDITATIONS: Meditation[] = [
     icon: "Repeat",
     color: "#A855F7",
     colorSecondary: "#8B5CF6",
-    soundscape: "wind",
+    soundscape: "river",
     musicMode: "crystal",
     recommendedFrequencyId: "741",
     recommendedFrequencyLabel: "741Hz Awakening",
@@ -225,7 +225,7 @@ export const MEDITATIONS: Meditation[] = [
     icon: "Moon",
     color: "#6366F1",
     colorSecondary: "#8B5CF6",
-    soundscape: "rain",
+    soundscape: "night",
     musicMode: "drone",
     recommendedFrequencyId: "delta",
     recommendedFrequencyLabel: "Delta Waves (2Hz)",
@@ -360,7 +360,7 @@ export const MEDITATIONS: Meditation[] = [
     icon: "Eye",
     color: "#7C3AED",
     colorSecondary: "#A855F7",
-    soundscape: "wind",
+    soundscape: "cave",
     musicMode: "crystal",
     recommendedFrequencyId: "852",
     recommendedFrequencyLabel: "852Hz Spiritual Order",
@@ -392,7 +392,7 @@ export const MEDITATIONS: Meditation[] = [
     icon: "Zap",
     color: "#EC4899",
     colorSecondary: "#A855F7",
-    soundscape: "wind",
+    soundscape: "cave",
     musicMode: "crystal",
     recommendedFrequencyId: "963",
     recommendedFrequencyLabel: "963Hz Divine Consciousness",

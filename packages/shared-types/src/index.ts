@@ -129,6 +129,9 @@ export type NatureSoundscape =
   | "forest"
   | "wind"
   | "fire"
+  | "river"
+  | "night"
+  | "cave"
   | "bowl"
   | "silence";
 
