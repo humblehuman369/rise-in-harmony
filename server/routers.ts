@@ -6,6 +6,7 @@ import { adminRouter } from "./routers/admin";
 import { alarmsRouter } from "./routers/alarms";
 import { presetsRouter } from "./routers/presets";
 import { sessionsRouter } from "./routers/sessions";
+import { soundsRouter } from "./routers/sounds";
 import { subscriptionRouter } from "./routers/subscription";
 
 export const appRouter = router({
@@ -26,6 +27,7 @@ export const appRouter = router({
   sessions: sessionsRouter,
   alarms: alarmsRouter,
   presets: presetsRouter,
+  sounds: soundsRouter,
   subscription: subscriptionRouter,
   admin: adminRouter,
 });

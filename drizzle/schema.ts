@@ -129,6 +129,33 @@ export const studioPresets = mysqlTable("studio_presets", {
 export type StudioPreset = typeof studioPresets.$inferSelect;
 export type InsertStudioPreset = typeof studioPresets.$inferInsert;
 
+// ─── User Sounds (Precision Player saved recipes) ─────────────────────────────
+
+export const userSounds = mysqlTable("user_sounds", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 128 }).notNull(),
+  // Tone layer
+  freqL: float("freqL").notNull(),
+  beatHz: float("beatHz"),
+  isoRate: float("isoRate"),
+  isoDuty: float("isoDuty"),
+  waveform: varchar("waveform", { length: 32 }).notNull(),
+  mode: varchar("mode", { length: 32 }).notNull(), // mono | binaural | isochronic
+  toneVolume: float("toneVolume").default(0.7).notNull(),
+  // Background layer
+  backgroundType: varchar("backgroundType", { length: 32 }).default("none").notNull(), // none | library | upload
+  backgroundKey: varchar("backgroundKey", { length: 256 }),
+  backgroundVolume: float("backgroundVolume").default(0.35).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserSound = typeof userSounds.$inferSelect;
+export type InsertUserSound = typeof userSounds.$inferInsert;
+
 // ─── Subscription Events (RevenueCat webhook log) ─────────────────────────────
 
 export const subscriptionEvents = mysqlTable("subscription_events", {

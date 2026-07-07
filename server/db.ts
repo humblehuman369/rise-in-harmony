@@ -6,12 +6,15 @@ import {
   InsertSession,
   InsertStudioPreset,
   InsertUser,
+  InsertUserSound,
   Session,
   StudioPreset,
+  UserSound,
   alarms,
   sessions,
   studioPresets,
   subscriptionEvents,
+  userSounds,
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -387,6 +390,82 @@ export async function deletePreset(presetId: number, userId: number): Promise<vo
   await db
     .delete(studioPresets)
     .where(and(eq(studioPresets.id, presetId), eq(studioPresets.userId, userId)));
+}
+
+// ─── User Sounds ──────────────────────────────────────────────────────────────
+
+export async function getUserSounds(userId: number): Promise<UserSound[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(userSounds)
+    .where(eq(userSounds.userId, userId))
+    .orderBy(desc(userSounds.createdAt));
+}
+
+export async function getUserSoundById(
+  soundId: number,
+  userId: number,
+): Promise<UserSound | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select()
+    .from(userSounds)
+    .where(and(eq(userSounds.id, soundId), eq(userSounds.userId, userId)))
+    .limit(1);
+  return rows[0];
+}
+
+export async function createUserSound(data: InsertUserSound): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.insert(userSounds).values(data);
+  return (result[0] as { insertId: number }).insertId;
+}
+
+export async function renameUserSound(
+  soundId: number,
+  userId: number,
+  name: string,
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db
+    .update(userSounds)
+    .set({ name })
+    .where(and(eq(userSounds.id, soundId), eq(userSounds.userId, userId)));
+  return (result[0] as { affectedRows: number }).affectedRows > 0;
+}
+
+export async function deleteUserSound(
+  soundId: number,
+  userId: number,
+): Promise<UserSound | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const existing = await getUserSoundById(soundId, userId);
+  if (!existing) return undefined;
+  await db
+    .delete(userSounds)
+    .where(and(eq(userSounds.id, soundId), eq(userSounds.userId, userId)));
+  return existing;
+}
+
+export async function getUserUploadKeys(userId: number): Promise<string[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ backgroundKey: userSounds.backgroundKey })
+    .from(userSounds)
+    .where(
+      and(eq(userSounds.userId, userId), eq(userSounds.backgroundType, "upload")),
+    );
+  const keys = rows
+    .map(row => row.backgroundKey)
+    .filter((key): key is string => typeof key === "string" && key.length > 0);
+  return Array.from(new Set(keys));
 }
 
 // ─── Email Deduplication Helpers ────────────────────────────────────────────

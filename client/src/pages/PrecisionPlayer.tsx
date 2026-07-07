@@ -18,14 +18,20 @@
  *   NFR-FREQ-003  Hardware disclaimer + headphone recommendation
  *   NFR-FREQ-004  Double-precision phase accumulation
  */
-import { useState, useCallback, useEffect } from "react";
-import { Play, Pause, Square, Headphones, AlertCircle, Star, StarOff, Plus, Minus, Clock, Waves, Activity } from "lucide-react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { Play, Square, AlertCircle, Star, StarOff, Plus, Minus, Clock, Activity, Upload, Save, Loader2, Music2 } from "lucide-react";
 import Layout from "@/components/Layout";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { usePrecisionPlayer, type Waveform, type PlayMode, type PrecisionSession } from "@/hooks/usePrecisionPlayer";
+import { useBackgroundLayer } from "@/hooks/useBackgroundLayer";
 import PrecisionVisualizer from "@/components/PrecisionVisualizer";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
+import { BACKGROUND_LOOPS, formatSoundSummary, type BackgroundType } from "@/data/backgroundLoops";
+import { uploadSoundMp3 } from "@/lib/soundUpload";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { getLoginUrl } from "@/const";
 
 // ─── Preset catalog ──────────────────────────────────────────────────────────
 
@@ -81,6 +87,30 @@ function saveFavorites(favs: Favorite[]) {
 
 export default function PrecisionPlayer() {
   const player = usePrecisionPlayer();
+  const background = useBackgroundLayer(() => player.getAudioContext());
+  const { user } = useAuth();
+  const utils = trpc.useUtils();
+  const createSound = trpc.sounds.create.useMutation({
+    onSuccess: () => {
+      void utils.sounds.list.invalidate();
+      void utils.sounds.listUploads.invalidate();
+    },
+  });
+  const uploadsQuery = trpc.sounds.listUploads.useQuery(undefined, {
+    enabled: !!user,
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const deepLinkLoadedRef = useRef<number | null>(null);
+
+  const soundIdParam = (() => {
+    if (typeof window === "undefined") return null;
+    const id = new URLSearchParams(window.location.search).get("sound");
+    return id ? Number(id) : null;
+  })();
+  const savedSoundQuery = trpc.sounds.get.useQuery(
+    { id: soundIdParam ?? 0 },
+    { enabled: !!user && soundIdParam !== null && !Number.isNaN(soundIdParam) && soundIdParam > 0 },
+  );
 
   // Custom frequency state
   const [customFreq, setCustomFreq] = useState<number>(528);
@@ -97,6 +127,45 @@ export default function PrecisionPlayer() {
   const [favorites, setFavorites] = useState<Favorite[]>(loadFavorites);
   const [favNameInput, setFavNameInput] = useState("");
   const [showFavInput, setShowFavInput] = useState(false);
+  const [showSaveInput, setShowSaveInput] = useState(false);
+  const [saveNameInput, setSaveNameInput] = useState("");
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [pendingUploads, setPendingUploads] = useState<Array<{ key: string; label: string }>>([]);
+
+  const applySavedSound = useCallback((sound: {
+    freqL: number;
+    beatHz: number | null;
+    isoRate: number | null;
+    isoDuty: number | null;
+    waveform: string;
+    mode: string;
+    toneVolume: number;
+    backgroundType: string;
+    backgroundKey: string | null;
+    backgroundVolume: number;
+  }) => {
+    setCustomFreq(sound.freqL);
+    setCustomFreqInput(sound.freqL.toFixed(2));
+    setWaveformState(sound.waveform as Waveform);
+    setPlayMode(sound.mode as PlayMode);
+    if (sound.beatHz != null) setBeatHz(sound.beatHz);
+    if (sound.isoRate != null) setIsoRate(sound.isoRate);
+    if (sound.isoDuty != null) setIsoDuty(sound.isoDuty);
+    player.setVolume(sound.toneVolume);
+    background.selectBackground(
+      sound.backgroundType as BackgroundType,
+      sound.backgroundKey,
+    );
+    background.setBackgroundVolume(sound.backgroundVolume);
+  }, [player, background]);
+
+  useEffect(() => {
+    const sound = savedSoundQuery.data;
+    if (!sound || deepLinkLoadedRef.current === sound.id) return;
+    deepLinkLoadedRef.current = sound.id;
+    applySavedSound(sound);
+    toast.success(`Loaded "${sound.name}"`);
+  }, [savedSoundQuery.data, applySavedSound]);
 
   // Analyser node — sync directly from player state
   // analyserRef is set synchronously inside play() so we can read it right after isPlaying flips
@@ -124,11 +193,17 @@ export default function PrecisionPlayer() {
   // ── Play / Stop ───────────────────────────────────────────────────────────
   const handlePlay = useCallback(async () => {
     if (player.isPlaying) {
+      background.stopBackground();
       player.stopAudio();
     } else {
       await player.play(buildSession());
+      await background.startBackground(
+        background.layer.type,
+        background.layer.key,
+        background.layer.volume,
+      );
     }
-  }, [player, buildSession]);
+  }, [player, buildSession, background]);
 
   const handlePreset = useCallback(async (preset: typeof PRESETS[0]) => {
     const s = preset.session;
@@ -139,7 +214,12 @@ export default function PrecisionPlayer() {
     if (s.beatHz !== undefined) setBeatHz(s.beatHz);
     if (s.isoRate !== undefined) setIsoRate(s.isoRate);
     await player.play(s);
-  }, [player]);
+    await background.startBackground(
+      background.layer.type,
+      background.layer.key,
+      background.layer.volume,
+    );
+  }, [player, background]);
 
   // ── Frequency input ───────────────────────────────────────────────────────
   const commitFreq = useCallback(() => {
@@ -203,6 +283,81 @@ export default function PrecisionPlayer() {
     setFavorites(updated);
     saveFavorites(updated);
   }, [favorites]);
+
+  const buildSavePayload = useCallback(() => ({
+    name: saveNameInput.trim() || `${customFreq.toFixed(2)} Hz mix`,
+    freqL: customFreq,
+    beatHz: playMode === "binaural" ? beatHz : undefined,
+    isoRate: playMode === "isochronic" ? isoRate : undefined,
+    isoDuty: playMode === "isochronic" ? isoDuty : undefined,
+    waveform,
+    mode: playMode,
+    toneVolume: player.volume,
+    backgroundType: background.layer.type,
+    backgroundKey: background.layer.type === "none" ? undefined : (background.layer.key ?? undefined),
+    backgroundVolume: background.layer.volume,
+  }), [
+    saveNameInput,
+    customFreq,
+    playMode,
+    beatHz,
+    isoRate,
+    isoDuty,
+    waveform,
+    player.volume,
+    background.layer,
+  ]);
+
+  const saveSound = useCallback(async () => {
+    if (!user) {
+      toast.error("Sign in to save sounds to your account", {
+        action: { label: "Sign in", onClick: () => { window.location.href = getLoginUrl(); } },
+      });
+      return;
+    }
+    try {
+      const result = await createSound.mutateAsync(buildSavePayload());
+      setSaveNameInput("");
+      setShowSaveInput(false);
+      toast.success("Sound saved", {
+        description: "Find it in your Dashboard under My Sounds.",
+        action: { label: "Dashboard", onClick: () => { window.location.href = "/dashboard"; } },
+      });
+      return result;
+    } catch {
+      toast.error("Could not save sound");
+    }
+  }, [user, createSound, buildSavePayload]);
+
+  const handleUpload = useCallback(async (file: File) => {
+    if (!user) {
+      toast.error("Sign in to upload MP3 backgrounds", {
+        action: { label: "Sign in", onClick: () => { window.location.href = getLoginUrl(); } },
+      });
+      return;
+    }
+    setUploadProgress(0);
+    try {
+      const result = await uploadSoundMp3(file, setUploadProgress);
+      const label = file.name.replace(/\.mp3$/i, "");
+      setPendingUploads(prev => [{ key: result.key, label }, ...prev.filter(u => u.key !== result.key)]);
+      background.selectBackground("upload", result.key);
+      toast.success(`Uploaded "${label}"`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Upload failed");
+    } finally {
+      setUploadProgress(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, [user, background]);
+
+  const uploadOptions = [
+    ...pendingUploads,
+    ...(uploadsQuery.data ?? []).map(key => ({
+      key,
+      label: key.split("/").pop()?.replace(/\.mp3$/i, "") ?? key,
+    })).filter(u => !pendingUploads.some(p => p.key === u.key)),
+  ];
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -446,6 +601,132 @@ export default function PrecisionPlayer() {
               )}
             </div>
 
+            {/* Background layer */}
+            <div className="p-5 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                  Background Layer
+                </div>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadProgress !== null}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all disabled:opacity-50"
+                  style={{ background: "rgba(139,92,246,0.12)", color: "#8B5CF6", border: "1px solid rgba(139,92,246,0.25)" }}
+                >
+                  {uploadProgress !== null ? <Loader2 size={11} className="animate-spin" /> : <Upload size={11} />}
+                  Upload MP3
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/mpeg,.mp3"
+                  className="hidden"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) void handleUpload(file);
+                  }}
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                <button
+                  onClick={() => background.selectBackground("none", null)}
+                  className="px-2.5 py-1.5 rounded-lg text-xs transition-all"
+                  style={background.layer.type === "none" ? {
+                    background: "rgba(0,212,170,0.15)",
+                    color: "#00D4AA",
+                    border: "1px solid rgba(0,212,170,0.3)",
+                  } : {
+                    background: "rgba(255,255,255,0.04)",
+                    color: "#6B7A99",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                  }}
+                >
+                  None
+                </button>
+                {BACKGROUND_LOOPS.map(loop => (
+                  <button
+                    key={loop.id}
+                    onClick={() => background.selectBackground("library", loop.id)}
+                    className="px-2.5 py-1.5 rounded-lg text-xs transition-all"
+                    style={
+                      background.layer.type === "library" && background.layer.key === loop.id
+                        ? {
+                            background: "rgba(139,92,246,0.18)",
+                            color: "#C4B5FD",
+                            border: "1px solid rgba(139,92,246,0.35)",
+                          }
+                        : {
+                            background: "rgba(255,255,255,0.04)",
+                            color: "#6B7A99",
+                            border: "1px solid rgba(255,255,255,0.06)",
+                          }
+                    }
+                  >
+                    {loop.category === "music" ? "♪ " : ""}{loop.label}
+                  </button>
+                ))}
+              </div>
+
+              {uploadOptions.length > 0 && (
+                <div className="mb-3">
+                  <div className="text-[10px] uppercase tracking-widest mb-2" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>
+                    My uploads
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {uploadOptions.map(upload => (
+                      <button
+                        key={upload.key}
+                        onClick={() => background.selectBackground("upload", upload.key)}
+                        className="px-2.5 py-1.5 rounded-lg text-xs transition-all"
+                        style={
+                          background.layer.type === "upload" && background.layer.key === upload.key
+                            ? {
+                                background: "rgba(245,158,11,0.15)",
+                                color: "#F59E0B",
+                                border: "1px solid rgba(245,158,11,0.3)",
+                              }
+                            : {
+                                background: "rgba(255,255,255,0.04)",
+                                color: "#6B7A99",
+                                border: "1px solid rgba(255,255,255,0.06)",
+                              }
+                        }
+                      >
+                        {upload.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {background.layer.type !== "none" && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs flex items-center gap-1" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
+                      <Music2 size={12} /> Background volume
+                    </span>
+                    <span className="text-xs font-mono" style={{ color: "#E8EDF5" }}>
+                      {Math.round(background.layer.volume * 100)}%
+                    </span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={[background.layer.volume]}
+                    onValueChange={([v]) => background.setBackgroundVolume(v)}
+                  />
+                </div>
+              )}
+
+              {uploadProgress !== null && (
+                <p className="text-xs mt-2" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
+                  Uploading… {uploadProgress}%
+                </p>
+              )}
+            </div>
+
             {/* Visualizer (FR-030 + FR-031) */}
             <div className="p-5 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
               <div className="flex items-center justify-between mb-3">
@@ -499,7 +780,7 @@ export default function PrecisionPlayer() {
               {/* Play/Stop */}
               <button
                 onClick={handlePlay}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-base mb-4 transition-all duration-200"
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-base mb-3 transition-all duration-200"
                 style={player.isPlaying ? {
                   background: "rgba(239,68,68,0.15)",
                   border: "1px solid rgba(239,68,68,0.3)",
@@ -511,6 +792,54 @@ export default function PrecisionPlayer() {
               >
                 {player.isPlaying ? <><Square size={18} /> Stop</> : <><Play size={18} fill="currentColor" /> Play</>}
               </button>
+
+              {/* Save Sound (account) */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                    Save to account
+                  </span>
+                  <button
+                    onClick={() => setShowSaveInput(v => !v)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all"
+                    style={{ background: "rgba(59,130,246,0.12)", color: "#60A5FA", border: "1px solid rgba(59,130,246,0.25)" }}
+                  >
+                    <Save size={11} /> Save Sound
+                  </button>
+                </div>
+                {showSaveInput && (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder={formatSoundSummary(
+                        customFreq,
+                        waveform,
+                        playMode,
+                        background.layer.type,
+                        background.layer.key,
+                      )}
+                      value={saveNameInput}
+                      onChange={e => setSaveNameInput(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && void saveSound()}
+                      className="flex-1 px-3 py-1.5 rounded-lg text-xs outline-none"
+                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#E8EDF5" }}
+                    />
+                    <button
+                      onClick={() => void saveSound()}
+                      disabled={createSound.isPending}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50"
+                      style={{ background: "rgba(59,130,246,0.15)", color: "#60A5FA" }}
+                    >
+                      {createSound.isPending ? "Saving…" : "Save"}
+                    </button>
+                  </div>
+                )}
+                {!user && (
+                  <p className="text-[10px] mt-1" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>
+                    Sign in to save layered sounds. Local favorites below still work offline.
+                  </p>
+                )}
+              </div>
 
               {/* Timer display */}
               {player.isPlaying && (
@@ -618,7 +947,13 @@ export default function PrecisionPlayer() {
                           setWaveformState(fav.session.waveform);
                           setPlayMode(fav.session.mode);
                           if (fav.session.beatHz) setBeatHz(fav.session.beatHz);
-                          player.play(fav.session);
+                          void player.play(fav.session).then(() =>
+                            background.startBackground(
+                              background.layer.type,
+                              background.layer.key,
+                              background.layer.volume,
+                            ),
+                          );
                         }}
                         className="flex-1 text-left px-2 py-1.5 rounded-lg text-xs transition-all"
                         style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}

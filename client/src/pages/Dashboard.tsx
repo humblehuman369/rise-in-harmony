@@ -4,13 +4,16 @@
  * Bioluminescent Depth theme
  */
 import { useState, useMemo } from "react";
-import { Flame, Clock, Waves, TrendingUp, Calendar, Award, BarChart3, Target, BookOpen, Loader2 } from "lucide-react";
+import { Flame, Clock, Waves, TrendingUp, Calendar, Award, BarChart3, Target, BookOpen, Loader2, Music2, Play, Pencil, Trash2 } from "lucide-react";
 import Layout from "@/components/Layout";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { loadJournalEntries } from "@/components/SessionJournal";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { formatSoundSummary, type BackgroundType } from "@/data/backgroundLoops";
+import { Link } from "wouter";
+import { toast } from "sonner";
 
 // ─── Chakra Map ───────────────────────────────────────────────────────────────
 
@@ -292,6 +295,159 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
   }
   return null;
 };
+
+function MySoundsCard() {
+  const { isAuthenticated } = useAuth();
+  const utils = trpc.useUtils();
+  const soundsQuery = trpc.sounds.list.useQuery(undefined, { enabled: isAuthenticated });
+  const deleteSound = trpc.sounds.delete.useMutation({
+    onSuccess: () => void utils.sounds.list.invalidate(),
+  });
+  const renameSound = trpc.sounds.rename.useMutation({
+    onSuccess: () => void utils.sounds.list.invalidate(),
+  });
+  const [renamingId, setRenamingId] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+
+  if (!isAuthenticated) return null;
+
+  const sounds = soundsQuery.data ?? [];
+
+  const handleRename = async (id: number) => {
+    const name = renameValue.trim();
+    if (!name) return;
+    try {
+      await renameSound.mutateAsync({ id, name });
+      setRenamingId(null);
+      setRenameValue("");
+      toast.success("Sound renamed");
+    } catch {
+      toast.error("Could not rename sound");
+    }
+  };
+
+  const handleDelete = async (id: number, name: string) => {
+    if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    try {
+      await deleteSound.mutateAsync({ id });
+      toast.success("Sound deleted");
+    } catch {
+      toast.error("Could not delete sound");
+    }
+  };
+
+  return (
+    <div className="mx-6 mb-6 glow-card p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Music2 size={16} style={{ color: '#8B5CF6' }} />
+        <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+          My Sounds
+        </div>
+      </div>
+
+      {soundsQuery.isLoading ? (
+        <div className="flex items-center gap-2 text-xs" style={{ color: '#6B7A99' }}>
+          <Loader2 size={14} className="animate-spin" /> Loading sounds…
+        </div>
+      ) : sounds.length === 0 ? (
+        <div>
+          <p className="text-xs mb-3" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
+            No saved sounds yet. Layer a precision tone with a background loop in the Precision Player, then save it to your account.
+          </p>
+          <Link href="/precision">
+            <span className="inline-flex items-center gap-1 text-xs font-semibold cursor-pointer" style={{ color: '#00D4AA' }}>
+              Create a sound →
+            </span>
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {sounds.map(sound => {
+            const summary = formatSoundSummary(
+              sound.freqL,
+              sound.waveform,
+              sound.mode,
+              sound.backgroundType as BackgroundType,
+              sound.backgroundKey,
+            );
+            const created = new Date(sound.createdAt).toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            });
+            return (
+              <div
+                key={sound.id}
+                className="flex items-center gap-3 py-2 border-b last:border-0"
+                style={{ borderColor: 'rgba(255,255,255,0.04)' }}
+              >
+                <div className="flex-1 min-w-0">
+                  {renamingId === sound.id ? (
+                    <div className="flex gap-2">
+                      <input
+                        value={renameValue}
+                        onChange={e => setRenameValue(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && void handleRename(sound.id)}
+                        className="flex-1 px-2 py-1 rounded text-xs outline-none"
+                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#E8EDF5' }}
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => void handleRename(sound.id)}
+                        className="text-xs px-2 py-1 rounded"
+                        style={{ background: 'rgba(0,212,170,0.12)', color: '#00D4AA' }}
+                      >
+                        Save
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-xs font-medium truncate" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+                        {sound.name}
+                      </div>
+                      <div className="text-[10px] truncate" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                        {summary} · {created}
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Link href={`/precision?sound=${sound.id}`}>
+                    <button
+                      className="p-1.5 rounded-lg transition-all"
+                      style={{ background: 'rgba(0,212,170,0.1)', color: '#00D4AA' }}
+                      title="Play"
+                    >
+                      <Play size={12} />
+                    </button>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setRenamingId(sound.id);
+                      setRenameValue(sound.name);
+                    }}
+                    className="p-1.5 rounded-lg transition-all"
+                    style={{ background: 'rgba(255,255,255,0.04)', color: '#8FA3BF' }}
+                    title="Rename"
+                  >
+                    <Pencil size={12} />
+                  </button>
+                  <button
+                    onClick={() => void handleDelete(sound.id, sound.name)}
+                    className="p-1.5 rounded-lg transition-all"
+                    style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444' }}
+                    title="Delete"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<"week" | "month">("week");
@@ -605,6 +761,8 @@ export default function Dashboard() {
             <p className="text-xs" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Your session journal is empty. Play a frequency in the Sound Studio and log your mood to see entries here.</p>
           )}
         </div>
+
+        <MySoundsCard />
 
         {/* Chakra Map */}
         <ChakraMap playedHzThisWeek={playedChakraHzThisWeek} />

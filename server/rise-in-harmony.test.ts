@@ -44,6 +44,12 @@ vi.mock("./db", () => ({
   getPresetsByUser: vi.fn().mockResolvedValue([]),
   createPreset: vi.fn().mockResolvedValue({ id: 1 }),
   deletePreset: vi.fn().mockResolvedValue(undefined),
+  getUserSounds: vi.fn().mockResolvedValue([]),
+  getUserSoundById: vi.fn().mockResolvedValue(undefined),
+  createUserSound: vi.fn().mockResolvedValue(1),
+  renameUserSound: vi.fn().mockResolvedValue(true),
+  deleteUserSound: vi.fn().mockResolvedValue(undefined),
+  getUserUploadKeys: vi.fn().mockResolvedValue([]),
   updateUserOnboarding: vi.fn().mockResolvedValue(undefined),
   updateUserSubscription: vi.fn().mockResolvedValue(undefined),
   logSubscriptionEvent: vi.fn().mockResolvedValue(undefined),
@@ -347,5 +353,107 @@ describe("subscription.completeOnboarding", () => {
       "Test User",
       "sleep"
     );
+  });
+});
+
+describe("sounds router", () => {
+  it("requires auth for list", async () => {
+    const ctx: TrpcContext = {
+      user: null,
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
+    };
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.sounds.list()).rejects.toThrow();
+  });
+
+  it("creates a sound for the authenticated user", async () => {
+    const { createUserSound } = await import("./db");
+    const ctx = makeAuthCtx();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.sounds.create({
+      name: "528 + Rain",
+      freqL: 528,
+      waveform: "sine",
+      mode: "mono",
+      toneVolume: 0.7,
+      backgroundType: "library",
+      backgroundKey: "ambient-rain",
+      backgroundVolume: 0.35,
+    });
+    expect(result.id).toBe(1);
+    expect(createUserSound).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 1,
+        name: "528 + Rain",
+        freqL: 528,
+        backgroundType: "library",
+        backgroundKey: "ambient-rain",
+      }),
+    );
+  });
+
+  it("lists sounds for the authenticated user", async () => {
+    const { getUserSounds } = await import("./db");
+    vi.mocked(getUserSounds).mockResolvedValueOnce([
+      {
+        id: 5,
+        userId: 1,
+        name: "Test mix",
+        freqL: 432,
+        beatHz: null,
+        isoRate: null,
+        isoDuty: null,
+        waveform: "sine",
+        mode: "mono",
+        toneVolume: 0.7,
+        backgroundType: "none",
+        backgroundKey: null,
+        backgroundVolume: 0.35,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+    const ctx = makeAuthCtx();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.sounds.list();
+    expect(result).toHaveLength(1);
+    expect(result[0]?.name).toBe("Test mix");
+  });
+
+  it("deletes only the caller's sound", async () => {
+    const { deleteUserSound } = await import("./db");
+    vi.mocked(deleteUserSound).mockResolvedValueOnce({
+      id: 9,
+      userId: 1,
+      name: "Gone",
+      freqL: 528,
+      beatHz: null,
+      isoRate: null,
+      isoDuty: null,
+      waveform: "sine",
+      mode: "mono",
+      toneVolume: 0.7,
+      backgroundType: "none",
+      backgroundKey: null,
+      backgroundVolume: 0.35,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const ctx = makeAuthCtx();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.sounds.delete({ id: 9 });
+    expect(result.success).toBe(true);
+    expect(deleteUserSound).toHaveBeenCalledWith(9, 1);
+  });
+
+  it("returns NOT_FOUND when deleting a missing sound", async () => {
+    const { deleteUserSound } = await import("./db");
+    vi.mocked(deleteUserSound).mockResolvedValueOnce(undefined);
+    const ctx = makeAuthCtx();
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.sounds.delete({ id: 404 })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
   });
 });
