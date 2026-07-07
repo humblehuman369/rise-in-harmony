@@ -309,7 +309,8 @@ function CreateAlarmModal({ onClose, onSave }: { onClose: () => void; onSave: (a
 
           {soundMode === "frequency" ? (
             <div className="grid grid-cols-2 gap-2">
-              {FREQUENCIES.filter(f => !f.isPremium).map(f => (
+              {/* Recorded sessions are excluded — alarm ring synthesizes by Hz */}
+              {FREQUENCIES.filter(f => !f.isPremium && f.category !== "recorded").map(f => (
                 <button key={f.id} onClick={() => setSelectedFreq(f.id)}
                   className="p-3 rounded-xl text-left transition-all duration-200"
                   style={{

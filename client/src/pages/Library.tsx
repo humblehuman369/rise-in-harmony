@@ -11,7 +11,7 @@ import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFreq
 import { toast } from "sonner";
 import PremiumPaywall from "@/components/PremiumPaywall";
 
-const CATEGORIES = ["all", "chakra", "solfeggio", "binaural"] as const;
+const CATEGORIES = ["all", "chakra", "solfeggio", "binaural", "recorded"] as const;
 type Category = typeof CATEGORIES[number];
 
 const CATEGORY_INFO = {
@@ -19,6 +19,7 @@ const CATEGORY_INFO = {
   solfeggio: { label: "Solfeggio Scale", description: "Ancient 6-tone scale with healing properties" },
   binaural: { label: "Binaural Beats", description: "Two-tone audio for brainwave entrainment" },
   chakra: { label: "Chakra Journey", description: "Seven energy center alignment frequencies · Root to Crown" },
+  recorded: { label: "Recorded Sessions", description: "Studio-mixed Solfeggio + 7.83Hz Schumann binaural recordings · headphones required" },
 };
 
 // The 7 chakra frequencies in ascending order
@@ -164,6 +165,12 @@ function FrequencyCard({ freq, isPlaying, onPlay, showChakraPosition }: {
                 style={{ background: 'rgba(139,92,246,0.15)', color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>
                 <Lock size={8} />
                 PRO
+              </span>
+            )}
+            {freq.audioUrl && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                style={{ background: 'rgba(34,197,94,0.12)', color: '#22C55E', fontFamily: 'DM Sans, sans-serif' }}>
+                RECORDED
               </span>
             )}
           </div>

@@ -20,7 +20,9 @@ export interface Frequency {
   binauralOffset?: number; // Hz offset for right channel (binaural beats)
   /** When true, DDS engine uses isochronic pulse mode instead of binaural */
   isIsochronic?: boolean;
-  category: "solfeggio" | "binaural" | "chakra" | "nature";
+  /** When set, playback loops this pre-mixed recording instead of live DDS synthesis */
+  audioUrl?: string;
+  category: "solfeggio" | "binaural" | "chakra" | "nature" | "recorded";
   description: string;
   benefit: string;
   color: string;
@@ -201,6 +203,31 @@ export const FREQUENCIES: Frequency[] = [
     color: "#22C55E",
     isPremium: true,
   },
+  // Recorded Schumann binaural sessions (Sinta Positivo — All Hertz Frequencies)
+  // Pre-mixed studio recordings: Solfeggio carrier + 7.83Hz Schumann binaural beat.
+  ...([
+    { hz: 174, name: "Foundation", color: "#EF4444", isPremium: true },
+    { hz: 285, name: "Quantum Cognition", color: "#F97316", isPremium: true },
+    { hz: 396, name: "Liberation", color: "#EAB308", isPremium: true },
+    { hz: 417, name: "Transmutation", color: "#84CC16", isPremium: true },
+    { hz: 432, name: "Natural Harmony", color: "#00D4AA", isPremium: false },
+    { hz: 528, name: "Miracle Tone", color: "#06B6D4", isPremium: false },
+    { hz: 639, name: "Connection", color: "#3B82F6", isPremium: true },
+    { hz: 741, name: "Awakening", color: "#8B5CF6", isPremium: true },
+    { hz: 852, name: "Spiritual Order", color: "#A855F7", isPremium: true },
+    { hz: 963, name: "Divine Consciousness", color: "#EC4899", isPremium: true },
+  ] as const).map(({ hz, name, color, isPremium }): Frequency => ({
+    id: `recorded-${hz}`,
+    name: `${name} · Schumann`,
+    hz,
+    binauralOffset: 7.83,
+    audioUrl: `/sounds/binaural-${hz}.mp3`,
+    category: "recorded",
+    description: `${hz}Hz Recorded Session — ${name} + 7.83Hz Schumann binaural`,
+    benefit: `Studio-mixed ${hz}Hz session layered with the Earth's 7.83Hz Schumann resonance as a true binaural beat. Headphones required.`,
+    color,
+    isPremium,
+  })),
 ];
 
 // ── DDS engine constants ──────────────────────────────────────────────────────
@@ -242,14 +269,19 @@ export function useFrequencyPlayer() {
 
   const workletNodeRef = useRef<AudioWorkletNode | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
+  const mediaAudioRef = useRef<HTMLAudioElement | null>(null);
+  const mediaSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ── Tear down the current worklet node (no state changes) ─────────────────
+  // ── Tear down the current audio nodes (no state changes) ──────────────────
   const teardown = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     const node = workletNodeRef.current;
     const gain = gainNodeRef.current;
     if (node) { node.disconnect(); workletNodeRef.current = null; }
+    const media = mediaAudioRef.current;
+    if (media) { media.pause(); media.src = ""; mediaAudioRef.current = null; }
+    if (mediaSourceRef.current) { mediaSourceRef.current.disconnect(); mediaSourceRef.current = null; }
     if (gain) { gain.disconnect(); gainNodeRef.current = null; }
   }, []);
 
@@ -259,7 +291,7 @@ export function useFrequencyPlayer() {
 
     const ctx = sharedCtx;
     const gain = gainNodeRef.current;
-    const node = workletNodeRef.current;
+    const node = workletNodeRef.current ?? mediaAudioRef.current;
 
     if (!ctx || !gain || !node) {
       setIsPlaying(false);
@@ -297,6 +329,36 @@ export function useFrequencyPlayer() {
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0, ctx.currentTime);
     gainNodeRef.current = gain;
+
+    // ── Recorded session path: loop the pre-mixed MP3 through the gain node ──
+    if (freq.audioUrl) {
+      const audio = new Audio(freq.audioUrl);
+      audio.loop = true;
+      audio.crossOrigin = "anonymous";
+      audio.volume = 1; // volume is controlled by the Web Audio gain node
+      mediaAudioRef.current = audio;
+
+      const source = ctx.createMediaElementSource(audio);
+      source.connect(gain);
+      mediaSourceRef.current = source;
+      gain.connect(ctx.destination);
+
+      gain.gain.setTargetAtTime(volume, ctx.currentTime, FADE_TC * 0.5);
+
+      try {
+        await audio.play();
+      } catch (err) {
+        console.error("[Recorded] Failed to start playback:", err);
+        teardown();
+        return;
+      }
+
+      setCurrentFrequency(freq);
+      setIsPlaying(true);
+      setPlayTime(0);
+      timerRef.current = setInterval(() => setPlayTime(t => t + 1), 1000);
+      return;
+    }
 
     // Build DDS worklet node
     const worklet = new AudioWorkletNode(ctx, "dds-processor", {
@@ -369,6 +431,8 @@ export function useFrequencyPlayer() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       workletNodeRef.current?.disconnect();
+      if (mediaAudioRef.current) { mediaAudioRef.current.pause(); mediaAudioRef.current.src = ""; }
+      mediaSourceRef.current?.disconnect();
       gainNodeRef.current?.disconnect();
       // Do NOT close sharedCtx — it is shared across all hook instances
     };

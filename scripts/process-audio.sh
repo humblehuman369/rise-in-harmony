@@ -73,6 +73,42 @@ process_loop "music-ambient" "*01 Slow Current*" 90 -18
 process_loop "music-drone"   "*05 Sinking Slowly Below Consciousness*" 90 -18
 process_loop "music-crystal" "*06 528Hz Shiva Bowl Turning*" 54 -18
 
+# ── Recorded Schumann binaurals (Sinta Positivo — All Hertz Frequencies) ─────
+# Full-length pre-mixed sessions (~2 min each): Solfeggio carrier + 7.83 Hz
+# Schumann binaural beat. Kept full length (no trim); normalized to -20 LUFS
+# because the source files are mastered hot (ReplayGain ≈ -21.5 dB).
+# Usage: process_full <output_name> <source_glob> <lufs>
+process_full() {
+  local out_name="$1"
+  local source_glob="$2"
+  local lufs="$3"
+  local src
+  src=$(find_source "$source_glob")
+  local dest="$OUT/${out_name}.mp3"
+
+  echo "→ $out_name  (full length @ ${lufs} LUFS)  ←  $(basename "$src")"
+
+  ffmpeg -y -hide_banner -loglevel error \
+    -i "$src" \
+    -vn \
+    -af "loudnorm=I=${lufs}:TP=-2.0:LRA=11" \
+    -ar 44100 \
+    -ac 2 \
+    -codec:a libmp3lame \
+    -b:a 160k \
+    "$dest"
+
+  local size
+  size=$(du -h "$dest" | cut -f1)
+  echo "   ✓ $dest ($size)"
+}
+
+for hz in 174 285 396 417 432 528 639 741 852 963; do
+  # Note: the 639 Hz source file has a vendor typo ("SBinaural…"), so match
+  # on the Hz portion of the name only.
+  process_full "binaural-${hz}" "*inaural Frequency ${hz} Hz*" -20
+done
+
 echo ""
 echo "Done. $(ls -1 "$OUT"/*.mp3 | wc -l | tr -d ' ') files in $OUT"
 du -sh "$OUT"
