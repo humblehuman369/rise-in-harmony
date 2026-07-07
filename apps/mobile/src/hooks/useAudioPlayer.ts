@@ -6,14 +6,19 @@
  * binaural entries generate a true stereo pair (200Hz carrier, left/right
  * offset by the beat frequency — headphones required for the effect).
  *
+ * v4: "recorded" catalog entries (pre-mixed Schumann binaural sessions) are
+ * streamed from the web host and looped via expo-audio instead of synthesized.
+ *
  * Public API is unchanged from the MP3 version:
  *   isPlaying / isLoading / volume / error state
  *   play(fadeInMs) / pause / stop / setVolume / setSleepTimer
  */
 import { useEffect, useRef, useState, useCallback } from "react";
+import { createAudioPlayer, type AudioPlayer } from "expo-audio";
 import * as KeepAwake from "expo-keep-awake";
 import type { Frequency } from "@rih/shared-types";
 import { createCatalogVoice, type SynthVoice } from "@/lib/synth";
+import { resolveAssetUrl } from "@/lib/api";
 
 interface AudioPlayerState {
   isPlaying: boolean;
@@ -24,6 +29,7 @@ interface AudioPlayerState {
 
 export function useAudioPlayer(frequency: Frequency | null) {
   const voiceRef = useRef<SynthVoice | null>(null);
+  const mediaPlayerRef = useRef<AudioPlayer | null>(null);
   const sleepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const volumeRef = useRef(0.8);
 
@@ -48,16 +54,65 @@ export function useAudioPlayer(frequency: Frequency | null) {
     }
   }, []);
 
+  const teardownMediaPlayer = useCallback(() => {
+    if (mediaPlayerRef.current) {
+      try {
+        mediaPlayerRef.current.pause();
+        mediaPlayerRef.current.remove();
+      } catch {
+        // already released
+      }
+      mediaPlayerRef.current = null;
+    }
+  }, []);
+
   const stopAll = useCallback(() => {
     clearSleepTimer();
     teardownVoice();
+    teardownMediaPlayer();
     KeepAwake.deactivateKeepAwake().catch(() => {});
     setState((prev) => ({ ...prev, isPlaying: false }));
-  }, [clearSleepTimer, teardownVoice]);
+  }, [clearSleepTimer, teardownVoice, teardownMediaPlayer]);
 
   const play = useCallback(
     async (fadeInMs = 0) => {
       if (!frequency) return;
+
+      // ── Recorded session path: stream + loop the pre-mixed file ──────────
+      if (frequency.audioUrl) {
+        teardownVoice(0.1);
+
+        // Resume if the same track is paused
+        if (mediaPlayerRef.current) {
+          mediaPlayerRef.current.play();
+          KeepAwake.activateKeepAwakeAsync().catch(() => {});
+          setState((prev) => ({ ...prev, isPlaying: true, error: null }));
+          return;
+        }
+
+        setState((prev) => ({ ...prev, isLoading: true, error: null }));
+        try {
+          const p = createAudioPlayer({ uri: resolveAssetUrl(frequency.audioUrl) });
+          p.loop = true;
+          p.volume = volumeRef.current;
+          p.play();
+          mediaPlayerRef.current = p;
+          KeepAwake.activateKeepAwakeAsync().catch(() => {});
+          setState((prev) => ({ ...prev, isPlaying: true, isLoading: false }));
+        } catch {
+          teardownMediaPlayer();
+          setState((prev) => ({
+            ...prev,
+            isPlaying: false,
+            isLoading: false,
+            error: "Couldn't stream this session — check your connection.",
+          }));
+        }
+        return;
+      }
+
+      // ── Live synthesis path ───────────────────────────────────────────────
+      teardownMediaPlayer();
       // Oscillator voices are one-shot: (re)create on every play
       teardownVoice(0.1);
       const voice = createCatalogVoice(frequency, volumeRef.current);
@@ -66,11 +121,13 @@ export function useAudioPlayer(frequency: Frequency | null) {
       KeepAwake.activateKeepAwakeAsync().catch(() => {});
       setState((prev) => ({ ...prev, isPlaying: true, error: null }));
     },
-    [frequency, teardownVoice]
+    [frequency, teardownVoice, teardownMediaPlayer]
   );
 
   const pause = useCallback(async () => {
     teardownVoice();
+    // Media players pause in place so play() resumes from the same position
+    mediaPlayerRef.current?.pause();
     KeepAwake.deactivateKeepAwake().catch(() => {});
     setState((prev) => ({ ...prev, isPlaying: false }));
   }, [teardownVoice]);
@@ -83,6 +140,7 @@ export function useAudioPlayer(frequency: Frequency | null) {
     const clamped = Math.max(0, Math.min(1, vol));
     volumeRef.current = clamped;
     voiceRef.current?.setVolume(clamped);
+    if (mediaPlayerRef.current) mediaPlayerRef.current.volume = clamped;
     setState((prev) => ({ ...prev, volume: clamped }));
   }, []);
 
@@ -102,9 +160,10 @@ export function useAudioPlayer(frequency: Frequency | null) {
     return () => {
       clearSleepTimer();
       teardownVoice();
+      teardownMediaPlayer();
       KeepAwake.deactivateKeepAwake().catch(() => {});
     };
-  }, [frequency?.id, clearSleepTimer, teardownVoice]);
+  }, [frequency?.id, clearSleepTimer, teardownVoice, teardownMediaPlayer]);
 
   return {
     ...state,

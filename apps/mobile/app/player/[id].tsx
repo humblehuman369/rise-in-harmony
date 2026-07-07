@@ -53,7 +53,7 @@ export default function PlayerDetailScreen() {
     }
   }, [frequency, isPremium]);
 
-  const { isPlaying, isLoading, volume, play, pause, setVolume, setSleepTimer } =
+  const { isPlaying, isLoading, volume, error, play, pause, setVolume, setSleepTimer } =
     useAudioPlayer(frequency ?? null);
   const audioOutput = useAudioOutput();
 
@@ -212,17 +212,29 @@ export default function PlayerDetailScreen() {
             second. Works on any speaker, no headphones needed.
           </Text>
         )}
-
-        {/* TrueHz badge */}
-        <TouchableOpacity
-          style={styles.trueHzBadge}
-          onPress={() => router.push("/technology")}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.trueHzBadgeText}>
-            ✓ TrueHz™ Precision Tuning · exact to 0.01 Hz
+        {frequency.category === "recorded" && (
+          <Text style={styles.headphoneHint}>
+            {binauralRouteHint(audioOutput.kind)} Studio-mixed session with a
+            7.83Hz Schumann binaural beat — streamed over the internet.
           </Text>
-        </TouchableOpacity>
+        )}
+
+        {/* TrueHz badge (live synthesis) / Studio Recording badge */}
+        {frequency.category === "recorded" ? (
+          <View style={styles.trueHzBadge}>
+            <Text style={styles.trueHzBadgeText}>♪ Studio Recording · Sinta Positivo</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.trueHzBadge}
+            onPress={() => router.push("/technology")}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.trueHzBadgeText}>
+              ✓ TrueHz™ Precision Tuning · exact to 0.01 Hz
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Play / Pause */}
         <TouchableOpacity
@@ -239,6 +251,8 @@ export default function PlayerDetailScreen() {
             {isLoading ? "⏳" : isPlaying ? "⏸" : "▶"}
           </Text>
         </TouchableOpacity>
+
+        {error && <Text style={styles.errorText}>{error}</Text>}
 
         {/* Waveform visualizer */}
         <View style={styles.waveRow}>
@@ -435,6 +449,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing[6],
   },
   playBtnLoading: { opacity: 0.6 },
+  errorText: {
+    fontSize: fontSizes.xs,
+    color: "#EF4444",
+    textAlign: "center",
+    paddingHorizontal: spacing[8],
+    marginTop: -spacing[4],
+    marginBottom: spacing[4],
+  },
   playBtnIcon: { fontSize: 32 },
   // Volume
   sliderRow: {

@@ -17,6 +17,15 @@ import type { ApiResponse, User } from "@rih/shared-types";
 const API_BASE_URL: string =
   Constants.expoConfig?.extra?.apiUrl ?? "https://www.riseinharmony.com";
 
+/**
+ * Resolve a host-relative asset path (e.g. "/sounds/binaural-528.mp3") to an
+ * absolute URL on the web host. Used for streamed audio assets.
+ */
+export function resolveAssetUrl(path: string): string {
+  if (/^https?:\/\//.test(path)) return path;
+  return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 const TOKEN_KEY = "rih_jwt_token";
 const REFRESH_KEY = "rih_refresh_token";
 

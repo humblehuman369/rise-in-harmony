@@ -196,7 +196,7 @@ export function createVoice(options: VoiceOptions): SynthVoice {
  *   (works on speakers — no headphones needed)
  */
 export function createCatalogVoice(
-  freq: { hz: number; category: "solfeggio" | "binaural" | "isochronic" },
+  freq: { hz: number; category: "solfeggio" | "binaural" | "isochronic" | "recorded" },
   volume: number
 ): SynthVoice {
   switch (freq.category) {
@@ -206,6 +206,10 @@ export function createCatalogVoice(
       return createVoice({ hz: 200, isochronicHz: freq.hz, volume });
     case "solfeggio":
       return createVoice({ hz: freq.hz, volume });
+    case "recorded":
+      // Recorded sessions are streamed pre-mixed files, never synthesized —
+      // callers must route them to the media player path instead.
+      throw new Error("Recorded sessions cannot be synthesized — use streamed playback");
     default: {
       const exhaustive: never = freq.category;
       throw new Error(`Unknown frequency category: ${exhaustive}`);

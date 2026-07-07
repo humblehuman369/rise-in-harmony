@@ -192,6 +192,32 @@ export const FREQUENCIES: Frequency[] = [
     isPremium: true,
     category: "binaural",
   },
+  // Recorded Schumann binaural sessions (Sinta Positivo — All Hertz Frequencies)
+  // Pre-mixed studio recordings: Solfeggio carrier + 7.83Hz Schumann binaural
+  // beat. Streamed from the web host; not synthesized. Headphones required.
+  ...([
+    { hz: 174, name: "Foundation", color: "#6B7280", isPremium: true },
+    { hz: 285, name: "Quantum Cognition", color: "#10B981", isPremium: true },
+    { hz: 396, name: "Liberation", color: "#EF4444", isPremium: true },
+    { hz: 417, name: "Transmutation", color: "#84CC16", isPremium: true },
+    { hz: 432, name: "Natural Harmony", color: "#00D4AA", isPremium: false },
+    { hz: 528, name: "Miracle Tone", color: "#06B6D4", isPremium: false },
+    { hz: 639, name: "Connection", color: "#3B82F6", isPremium: true },
+    { hz: 741, name: "Awakening", color: "#8B5CF6", isPremium: true },
+    { hz: 852, name: "Spiritual Order", color: "#A855F7", isPremium: true },
+    { hz: 963, name: "Divine Consciousness", color: "#EC4899", isPremium: true },
+  ] as const).map(
+    ({ hz, name, color, isPremium }): Frequency => ({
+      id: `recorded-${hz}`,
+      hz,
+      name: `${name} · Schumann`,
+      benefit: `Studio-mixed ${hz}Hz + 7.83Hz Schumann binaural — headphones required`,
+      color,
+      isPremium,
+      category: "recorded",
+      audioUrl: `/sounds/binaural-${hz}.mp3`,
+    })
+  ),
 ];
 
 export const CHAKRA_FREQUENCIES = FREQUENCIES.filter(

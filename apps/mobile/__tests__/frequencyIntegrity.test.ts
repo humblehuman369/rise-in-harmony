@@ -82,6 +82,30 @@ describe("brainwave catalog values are exact", () => {
   });
 });
 
+describe("recorded Schumann sessions are exact and streamable", () => {
+  const RECORDED_HZ = [174, 285, 396, 417, 432, 528, 639, 741, 852, 963];
+
+  it("has exactly the 10 canonical carrier frequencies", () => {
+    const recorded = FREQUENCIES.filter((f) => f.category === "recorded");
+    expect(recorded.map((f) => f.hz)).toEqual(RECORDED_HZ);
+  });
+
+  for (const hz of RECORDED_HZ) {
+    it(`recorded-${hz} → ${hz} Hz carrier with a streamable audioUrl`, () => {
+      const f = FREQUENCIES.find((x) => x.id === `recorded-${hz}`);
+      expect(f).toBeDefined();
+      expect(f!.hz).toBe(hz);
+      expect(f!.category).toBe("recorded");
+      expect(f!.audioUrl).toBe(`/sounds/binaural-${hz}.mp3`);
+    });
+  }
+
+  it("recorded entries never leak into the synthesis-only alarm catalog", () => {
+    const solfeggio = FREQUENCIES.filter((f) => f.category === "solfeggio");
+    expect(solfeggio.every((f) => f.audioUrl === undefined)).toBe(true);
+  });
+});
+
 describe("chakra journey ladder is exact (Root → Crown)", () => {
   it("has 7 chakras in ascending position order", () => {
     expect(CHAKRA_FREQUENCIES).toHaveLength(7);

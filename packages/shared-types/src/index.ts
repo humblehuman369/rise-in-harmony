@@ -106,11 +106,17 @@ export interface Frequency {
   benefit: string;
   color: string;
   isPremium: boolean;
-  category: "solfeggio" | "binaural" | "isochronic";
+  category: "solfeggio" | "binaural" | "isochronic" | "recorded";
   chakraPosition?: number; // 1 (Root) – 7 (Crown)
   chakraName?: string;
   pronunciation?: string;
   affirmation?: string;
+  /**
+   * Recorded sessions only: path to the pre-mixed audio file, relative to the
+   * web host (e.g. "/sounds/binaural-528.mp3"). Playback streams/loops this
+   * file instead of live synthesis.
+   */
+  audioUrl?: string;
 }
 
 // ─── Meditations ──────────────────────────────────────────────────────────────

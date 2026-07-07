@@ -42,7 +42,14 @@ export default function LibraryScreen() {
                 <Text style={[styles.hz, { color: item.color }]}>{item.hz}</Text>
               </View>
               <View style={styles.info}>
-                <Text style={styles.name}>{item.name}</Text>
+                <View style={styles.nameRow}>
+                  <Text style={styles.name}>{item.name}</Text>
+                  {item.category === "recorded" && (
+                    <View style={styles.recordedBadge}>
+                      <Text style={styles.recordedBadgeText}>RECORDED</Text>
+                    </View>
+                  )}
+                </View>
                 <Text style={styles.benefit} numberOfLines={1}>
                   {item.benefit}
                 </Text>
@@ -100,11 +107,24 @@ const styles = StyleSheet.create({
   },
   hz: { fontSize: 11, fontWeight: "700" },
   info: { flex: 1 },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   name: {
     fontSize: fontSizes.base,
     color: colors.textPrimary,
     fontWeight: "600",
     marginBottom: 2,
+  },
+  recordedBadge: {
+    backgroundColor: "rgba(34,197,94,0.12)",
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  recordedBadgeText: {
+    fontSize: 8,
+    fontWeight: "700",
+    color: "#22C55E",
+    letterSpacing: 0.5,
   },
   benefit: { fontSize: fontSizes.xs, color: colors.textMuted },
   lock: { fontSize: fontSizes.base, paddingLeft: spacing[2] },
