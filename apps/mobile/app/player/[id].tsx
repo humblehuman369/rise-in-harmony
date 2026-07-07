@@ -20,6 +20,7 @@ import { colors, fontSizes, spacing, radii } from "@rih/ui-tokens";
 import { FREQUENCIES } from "@rih/shared-utils";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useAudioOutput } from "@/hooks/useAudioOutput";
+import { useRecordedDownload } from "@/hooks/useRecordedDownload";
 import { binauralRouteHint } from "@/lib/audioRoute";
 import { useAuthStore } from "@/store/authStore";
 import { isPremiumUser } from "@rih/shared-utils";
@@ -56,6 +57,7 @@ export default function PlayerDetailScreen() {
   const { isPlaying, isLoading, volume, error, play, pause, setVolume, setSleepTimer } =
     useAudioPlayer(frequency ?? null);
   const audioOutput = useAudioOutput();
+  const download = useRecordedDownload(frequency ?? null);
 
   const [sleepMinutes, setSleepMinutes] = useState(0);
   const [showAffirmation, setShowAffirmation] = useState(false);
@@ -215,7 +217,10 @@ export default function PlayerDetailScreen() {
         {frequency.category === "recorded" && (
           <Text style={styles.headphoneHint}>
             {binauralRouteHint(audioOutput.kind)} Studio-mixed session with a
-            7.83Hz Schumann binaural beat — streamed over the internet.
+            7.83Hz Schumann binaural beat —{" "}
+            {download.status === "downloaded"
+              ? "saved for offline playback."
+              : "streamed over the internet."}
           </Text>
         )}
 
@@ -253,6 +258,44 @@ export default function PlayerDetailScreen() {
         </TouchableOpacity>
 
         {error && <Text style={styles.errorText}>{error}</Text>}
+
+        {/* Offline download (recorded sessions · premium perk) */}
+        {frequency.category === "recorded" && (
+          <View style={styles.downloadRow}>
+            {download.status === "downloaded" ? (
+              <>
+                <View style={[styles.downloadBtn, styles.downloadBtnDone]}>
+                  <Text style={styles.downloadDoneText}>✓ Downloaded</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={download.remove}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.downloadRemoveText}>Remove</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                style={styles.downloadBtn}
+                onPress={() =>
+                  isPremium ? download.download() : router.push("/paywall")
+                }
+                disabled={download.status === "downloading"}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.downloadBtnText}>
+                  {download.status === "downloading"
+                    ? "⏳ Downloading…"
+                    : isPremium
+                      ? "⬇ Download for offline"
+                      : "⬇ Download for offline · 🔒 Premium"}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+        {download.error && <Text style={styles.errorText}>{download.error}</Text>}
 
         {/* Waveform visualizer */}
         <View style={styles.waveRow}>
@@ -456,6 +499,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[8],
     marginTop: -spacing[4],
     marginBottom: spacing[4],
+  },
+  downloadRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[3],
+    marginTop: -spacing[3],
+    marginBottom: spacing[5],
+  },
+  downloadBtn: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    borderRadius: radii.full,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+  },
+  downloadBtnDone: {
+    backgroundColor: "rgba(34,197,94,0.10)",
+    borderColor: "rgba(34,197,94,0.30)",
+  },
+  downloadBtnText: {
+    fontSize: fontSizes.xs,
+    color: colors.textPrimary,
+    fontWeight: "600",
+  },
+  downloadDoneText: {
+    fontSize: fontSizes.xs,
+    color: "#22C55E",
+    fontWeight: "600",
+  },
+  downloadRemoveText: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    textDecorationLine: "underline",
   },
   playBtnIcon: { fontSize: 32 },
   // Volume

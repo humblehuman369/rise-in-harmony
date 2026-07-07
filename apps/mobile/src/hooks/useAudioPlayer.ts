@@ -19,6 +19,7 @@ import * as KeepAwake from "expo-keep-awake";
 import type { Frequency } from "@rih/shared-types";
 import { createCatalogVoice, type SynthVoice } from "@/lib/synth";
 import { resolveAssetUrl } from "@/lib/api";
+import { getDownloadedUri } from "@/lib/recordedDownloads";
 
 interface AudioPlayerState {
   isPlaying: boolean;
@@ -92,7 +93,9 @@ export function useAudioPlayer(frequency: Frequency | null) {
 
         setState((prev) => ({ ...prev, isLoading: true, error: null }));
         try {
-          const p = createAudioPlayer({ uri: resolveAssetUrl(frequency.audioUrl) });
+          // Prefer the offline copy when it exists; fall back to streaming
+          const uri = getDownloadedUri(frequency) ?? resolveAssetUrl(frequency.audioUrl);
+          const p = createAudioPlayer({ uri });
           p.loop = true;
           p.volume = volumeRef.current;
           p.play();
