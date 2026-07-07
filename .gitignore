@@ -109,6 +109,9 @@ temp/
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
 
+# Raw purchased audio source packs (large; keep local only — processed outputs are bundled in app)
+references/audio/incoming/
+
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
 .project-config.json

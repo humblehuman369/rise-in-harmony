@@ -915,8 +915,8 @@ export default function SoundStudio() {
           </div>
           <div className="text-xs leading-relaxed space-y-1" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
             <p><strong style={{ color: "#8FA3BF" }}>Frequency layer</strong> — a pure sine wave at the selected healing Hz, embedded beneath everything else.</p>
-            <p><strong style={{ color: "#8FA3BF" }}>Music layer</strong> — procedural chords tuned to the same root frequency using just-intonation ratios, so every note is harmonically aligned.</p>
-            <p><strong style={{ color: "#8FA3BF" }}>Nature layer</strong> — synthesized soundscapes (no audio files) generated via filtered noise and oscillators, shaped to match the emotional tone of each scene.</p>
+            <p><strong style={{ color: "#8FA3BF" }}>Music layer</strong> — royalty-free ambient, drone, and singing-bowl recordings layered beneath your healing frequency.</p>
+            <p><strong style={{ color: "#8FA3BF" }}>Nature layer</strong> — royalty-free nature recordings (rain, ocean, forest, wind, fire) looped beneath your mix.</p>
           </div>
         </div>
       </div>

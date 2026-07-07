@@ -1,9 +1,10 @@
 /**
  * useMeditationPlayer — layered meditation audio engine
  *
- * Two concurrent layers:
- *   1. Nature soundscape loop (rain / ocean / forest / wind / fire) — expo-audio
- *   2. Optional healing-frequency underlay — live oscillator synthesis
+ * Up to three concurrent layers:
+ *   1. Nature soundscape loop (rain / ocean / forest / wind / fire / bowl) — expo-audio
+ *   2. Music bed from meditation.musicMode (ambient / drone / crystal) — expo-audio
+ *   3. Optional healing-frequency underlay — live oscillator synthesis
  *      (react-native-audio-api), exact Hz instead of a pre-rendered loop
  *
  * Plus a 1-second session timer that:
@@ -13,23 +14,28 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from "expo-audio";
 import * as KeepAwake from "expo-keep-awake";
-import type { Meditation } from "@rih/shared-types";
+import type { Meditation, MusicMode } from "@rih/shared-types";
 import { FREQUENCIES } from "@rih/shared-utils";
 import { createCatalogVoice, type SynthVoice } from "@/lib/synth";
 
-// Nature soundscape loops (bundled). "bowl" and "silence" have no asset —
-// the nature layer stays silent for those soundscapes.
 const NATURE_AUDIO_MAP: Record<string, number | null> = {
   rain: require("../../assets/sounds/ambient-rain.mp3"),
   ocean: require("../../assets/sounds/ambient-ocean.mp3"),
   forest: require("../../assets/sounds/ambient-forest.mp3"),
   wind: require("../../assets/sounds/ambient-wind.mp3"),
   fire: require("../../assets/sounds/ambient-fire.mp3"),
-  bowl: null,
+  bowl: require("../../assets/sounds/ambient-bowl.mp3"),
   silence: null,
 };
 
+const MUSIC_AUDIO_MAP: Partial<Record<MusicMode, number>> = {
+  ambient: require("../../assets/sounds/music-ambient.mp3"),
+  drone: require("../../assets/sounds/music-drone.mp3"),
+  crystal: require("../../assets/sounds/music-crystal.mp3"),
+};
+
 const DEFAULT_NATURE_VOLUME = 0.6;
+const DEFAULT_MUSIC_VOLUME = 0.45;
 const DEFAULT_FREQUENCY_VOLUME = 0.35;
 
 export type MeditationMode = "sound" | "frequency";
@@ -48,9 +54,11 @@ interface MeditationPlayerState {
 
 export function useMeditationPlayer(meditation: Meditation | null, mode: MeditationMode) {
   const naturePlayerRef = useRef<AudioPlayer | null>(null);
+  const musicPlayerRef = useRef<AudioPlayer | null>(null);
   const freqVoiceRef = useRef<SynthVoice | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const natureVolRef = useRef(DEFAULT_NATURE_VOLUME);
+  const musicVolRef = useRef(DEFAULT_MUSIC_VOLUME);
   const freqVolRef = useRef(DEFAULT_FREQUENCY_VOLUME);
 
   const [state, setState] = useState<MeditationPlayerState>({
@@ -88,6 +96,29 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
     }
   }, []);
 
+  const stopMusicPlayer = useCallback(() => {
+    if (musicPlayerRef.current) {
+      try {
+        musicPlayerRef.current.pause();
+        musicPlayerRef.current.remove();
+      } catch {
+        // already released
+      }
+      musicPlayerRef.current = null;
+    }
+  }, []);
+
+  const startMusicPlayer = useCallback((med: Meditation) => {
+    stopMusicPlayer();
+    const source = MUSIC_AUDIO_MAP[med.musicMode];
+    if (source === undefined) return;
+    const p = createAudioPlayer(source);
+    p.loop = true;
+    p.volume = musicVolRef.current;
+    p.play();
+    musicPlayerRef.current = p;
+  }, [stopMusicPlayer]);
+
   const teardownPlayers = useCallback(() => {
     if (naturePlayerRef.current) {
       try {
@@ -98,8 +129,9 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
       }
       naturePlayerRef.current = null;
     }
+    stopMusicPlayer();
     stopFreqVoice();
-  }, [stopFreqVoice]);
+  }, [stopFreqVoice, stopMusicPlayer]);
 
   const stop = useCallback(
     (markComplete = false) => {
@@ -118,6 +150,7 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
   const pause = useCallback(() => {
     clearTick();
     naturePlayerRef.current?.pause();
+    musicPlayerRef.current?.pause();
     // Oscillator voices can't pause — stop and recreate on resume
     stopFreqVoice();
     KeepAwake.deactivateKeepAwake().catch(() => {});
@@ -165,6 +198,12 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
         naturePlayerRef.current = p;
       }
     }
+    // Music bed from meditation.musicMode
+    if (musicPlayerRef.current) {
+      musicPlayerRef.current.play();
+    } else {
+      startMusicPlayer(meditation);
+    }
     // Frequency underlay is a synth voice — always (re)created on play
     if (mode === "frequency" && !freqVoiceRef.current) {
       startFreqVoice(meditation);
@@ -173,7 +212,7 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
     KeepAwake.activateKeepAwakeAsync().catch(() => {});
     startTick();
     setState((prev) => ({ ...prev, isPlaying: true, isComplete: false }));
-  }, [meditation, mode, startTick, startFreqVoice]);
+  }, [meditation, mode, startTick, startFreqVoice, startMusicPlayer]);
 
   const setNatureVolume = useCallback((vol: number) => {
     const clamped = Math.max(0, Math.min(1, vol));

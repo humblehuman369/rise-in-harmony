@@ -1,13 +1,13 @@
 /**
- * useSoundStudio — Layered Ambient Audio Engine (v3 — Real Audio Files)
+ * useSoundStudio — Layered Ambient Audio Engine (v4 — Recorded Music + Nature)
  *
  * Three independent layers blended in real-time:
- *   1. Healing Frequency — pure sine wave at the target Hz (via DDS in Meditation page)
- *   2. Musical Harmony  — soft, stable harmonic drones tuned to the frequency root
- *   3. Nature Soundscape — AI-generated real audio files (rain, ocean, forest, wind, fire)
+ *   1. Healing Frequency — pure sine wave at the target Hz (Web Audio API)
+ *   2. Musical Harmony  — bundled royalty-free ambient/drone/crystal loops
+ *   3. Nature Soundscape — bundled real audio files (rain, ocean, forest, wind, fire, bowl)
  *
- * Nature layer uses HTMLAudioElement for seamless looping of real recordings.
- * Frequency and music layers use Web Audio API oscillators.
+ * Nature and music layers use HTMLAudioElement for seamless looping of real recordings.
+ * Frequency layer uses Web Audio API oscillators.
  * A DynamicsCompressorNode on the master bus prevents level stacking.
  */
 import { useState, useRef, useCallback, useEffect } from "react";
@@ -28,43 +28,21 @@ export interface StudioState {
   masterVolume: number;      // 0–1
 }
 
-// ─── Nature sound file URLs ───────────────────────────────────────────────────
-/** Real high-precision ambient recordings uploaded to webdev storage */
+// ─── Bundled audio file URLs ──────────────────────────────────────────────────
 const NATURE_AUDIO_URLS: Record<string, string> = {
-  rain:   "/manus-storage/ambient-rain_60c52a9d.mp3",
-  ocean:  "/manus-storage/ambient-ocean_d01f891d.mp3",
-  forest: "/manus-storage/ambient-forest_a27b9787.mp3",
-  wind:   "/manus-storage/ambient-wind_755d9689.mp3",
-  fire:   "/manus-storage/ambient-fire_a3cec079.mp3",
+  rain: "/sounds/ambient-rain.mp3",
+  ocean: "/sounds/ambient-ocean.mp3",
+  forest: "/sounds/ambient-forest.mp3",
+  wind: "/sounds/ambient-wind.mp3",
+  fire: "/sounds/ambient-fire.mp3",
+  bowl: "/sounds/ambient-bowl.mp3",
 };
 
-// ─── Musical helpers ──────────────────────────────────────────────────────────
-
-/** Fixed stable drone: root + perfect fifth + octave — always consonant */
-function droneFreqs(rootHz: number): number[] {
-  return [
-    rootHz * 0.5,   // sub-octave (warm foundation)
-    rootHz,         // root
-    rootHz * 1.5,   // perfect fifth (3:2 — most consonant interval)
-    rootHz * 2,     // octave
-  ];
-}
-
-/** Fixed pentatonic ambient chord — 3 stable notes, no random selection */
-function ambientChordFreqs(rootHz: number): number[] {
-  // Root + major third + perfect fifth (a stable major triad in just intonation)
-  return [
-    rootHz * 0.5,       // sub-octave root
-    rootHz,             // root
-    rootHz * (5 / 4),   // major third (5:4)
-    rootHz * (3 / 2),   // perfect fifth (3:2)
-  ];
-}
-
-/** Singing bowl: fundamental + octave only — no harsh upper harmonics */
-function bowlFreqs(rootHz: number): number[] {
-  return [rootHz, rootHz * 2];
-}
+const MUSIC_AUDIO_URLS: Record<Exclude<MusicMode, "none">, string> = {
+  ambient: "/sounds/music-ambient.mp3",
+  drone: "/sounds/music-drone.mp3",
+  crystal: "/sounds/music-crystal.mp3",
+};
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -78,15 +56,14 @@ export function useSoundStudio() {
   const musicGainRef = useRef<GainNode | null>(null);
   const natureGainRef = useRef<GainNode | null>(null);
 
-  // Active oscillators / nodes (kept so we can stop them)
+  // Active oscillators (frequency layer only)
   const freqOscRef = useRef<OscillatorNode | null>(null);
-  const musicNodesRef = useRef<(OscillatorNode | AudioNode)[]>([]);
-  const natureNodesRef = useRef<AudioNode[]>([]);
-  const musicTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // HTMLAudioElement for nature sound real-audio playback
+  // HTMLAudioElement for nature + music real-audio playback
   const natureAudioRef = useRef<HTMLAudioElement | null>(null);
   const natureAudioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const musicAudioRef = useRef<HTMLAudioElement | null>(null);
+  const musicAudioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
 
   const [state, setState] = useState<StudioState>({
     isPlaying: false,
@@ -142,13 +119,18 @@ export function useSoundStudio() {
   }, []);
 
   const stopMusic = useCallback(() => {
-    if (musicTimerRef.current) { clearTimeout(musicTimerRef.current); musicTimerRef.current = null; }
-    musicNodesRef.current.forEach(n => { try { (n as OscillatorNode).stop?.(); } catch {} });
-    musicNodesRef.current = [];
+    if (musicAudioRef.current) {
+      musicAudioRef.current.pause();
+      musicAudioRef.current.currentTime = 0;
+      musicAudioRef.current = null;
+    }
+    if (musicAudioSourceRef.current) {
+      try { musicAudioSourceRef.current.disconnect(); } catch {}
+      musicAudioSourceRef.current = null;
+    }
   }, []);
 
   const stopNature = useCallback(() => {
-    // Stop real audio element
     if (natureAudioRef.current) {
       natureAudioRef.current.pause();
       natureAudioRef.current.currentTime = 0;
@@ -158,12 +140,6 @@ export function useSoundStudio() {
       try { natureAudioSourceRef.current.disconnect(); } catch {}
       natureAudioSourceRef.current = null;
     }
-    // Stop any legacy synthesis nodes (fallback)
-    natureNodesRef.current.forEach(n => {
-      try { (n as AudioBufferSourceNode).stop?.(); } catch {}
-      try { (n as OscillatorNode).stop?.(); } catch {}
-    });
-    natureNodesRef.current = [];
   }, []);
 
   // ── Frequency layer ──────────────────────────────────────────────────────────
@@ -186,114 +162,28 @@ export function useSoundStudio() {
     freqOscRef.current = osc;
   }, [stopFrequency]);
 
-  // ── Music layer — Ambient (stable harmonic chord, slow cross-fade) ────────────
-  const startMusicAmbient = useCallback((ctx: AudioContext, rootHz: number) => {
+  // ── Music layer — bundled royalty-free loops ────────────────────────────────
+  const startMusicAudio = useCallback((ctx: AudioContext, mode: Exclude<MusicMode, "none">, volume: number) => {
     stopMusic();
     if (!musicGainRef.current) return;
 
-    const freqs = ambientChordFreqs(rootHz);
-    // Each note fades in slowly and sustains indefinitely — no random re-triggering
-    freqs.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.value = freq;
+    const url = MUSIC_AUDIO_URLS[mode];
+    const audio = new Audio(url);
+    audio.loop = true;
+    audio.crossOrigin = "anonymous";
+    audio.volume = 1;
 
-      // Very slow vibrato LFO — adds warmth without pitch instability
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.05 + i * 0.02; // 0.05–0.11 Hz (very slow)
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.value = freq * 0.001; // ±0.1% pitch variation — barely perceptible
-      lfo.connect(lfoGain);
-      lfoGain.connect(osc.frequency);
-      lfo.start();
+    const source = ctx.createMediaElementSource(audio);
+    source.connect(musicGainRef.current);
 
-      // Staggered fade-in so notes don't all hit at once
-      const env = ctx.createGain();
-      env.gain.setValueAtTime(0, ctx.currentTime);
-      env.gain.linearRampToValueAtTime(
-        0.18 / freqs.length,
-        ctx.currentTime + 3 + i * 1.5
-      );
+    const now = ctx.currentTime;
+    musicGainRef.current.gain.setValueAtTime(0, now);
+    musicGainRef.current.gain.linearRampToValueAtTime(volume, now + 3);
 
-      osc.connect(env);
-      env.connect(musicGainRef.current!);
-      osc.start();
-      musicNodesRef.current.push(osc, lfo);
-    });
-  }, [stopMusic]);
+    audio.play().catch(() => {});
 
-  // ── Music layer — Drone (deep, stable, warm) ──────────────────────────────────
-  const startMusicDrone = useCallback((ctx: AudioContext, rootHz: number) => {
-    stopMusic();
-    if (!musicGainRef.current) return;
-
-    const freqs = droneFreqs(rootHz);
-    freqs.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.value = freq;
-
-      // Very slow LFO vibrato — adds organic warmth
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.03 + i * 0.015; // 0.03–0.075 Hz
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.value = freq * 0.0008;
-      lfo.connect(lfoGain);
-      lfoGain.connect(osc.frequency);
-      lfo.start();
-
-      // Staggered 4-second fade-in
-      const env = ctx.createGain();
-      env.gain.setValueAtTime(0, ctx.currentTime);
-      env.gain.linearRampToValueAtTime(
-        0.15 / freqs.length,
-        ctx.currentTime + 4 + i * 2
-      );
-
-      osc.connect(env);
-      env.connect(musicGainRef.current!);
-      osc.start();
-      musicNodesRef.current.push(osc, lfo);
-    });
-  }, [stopMusic]);
-
-  // ── Music layer — Crystal/Bowl (soft singing bowl simulation) ────────────────
-  const startMusicCrystal = useCallback((ctx: AudioContext, rootHz: number) => {
-    stopMusic();
-    if (!musicGainRef.current) return;
-
-    const freqs = bowlFreqs(rootHz);
-
-    // Sustain the fundamental and octave as soft, slowly-decaying tones
-    // Re-strike every 12 seconds for a natural bowl resonance feel
-    const strike = () => {
-      if (!musicGainRef.current) return;
-
-      freqs.forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        osc.type = "sine";
-        osc.frequency.value = freq;
-
-        // Bowl-like envelope: fast attack, very long exponential decay
-        const env = ctx.createGain();
-        const now = ctx.currentTime;
-        const peakGain = i === 0 ? 0.22 : 0.10; // fundamental louder than octave
-        env.gain.setValueAtTime(0, now);
-        env.gain.linearRampToValueAtTime(peakGain, now + 0.08);  // 80ms attack
-        env.gain.exponentialRampToValueAtTime(0.001, now + 10);  // 10s decay
-
-        osc.connect(env);
-        env.connect(musicGainRef.current!);
-        osc.start(now);
-        osc.stop(now + 10.1);
-        musicNodesRef.current.push(osc);
-      });
-
-      // Re-strike after 12 seconds (2s silence between ring-outs)
-      musicTimerRef.current = setTimeout(strike, 12000);
-    };
-
-    strike();
+    musicAudioRef.current = audio;
+    musicAudioSourceRef.current = source;
   }, [stopMusic]);
 
   // ── Nature sounds — real audio file playback ─────────────────────────────────
@@ -355,9 +245,9 @@ export function useSoundStudio() {
 
     startFrequency(ctx, s.frequencyHz);
 
-    if (s.musicMode === "ambient") startMusicAmbient(ctx, s.frequencyHz);
-    else if (s.musicMode === "drone") startMusicDrone(ctx, s.frequencyHz);
-    else if (s.musicMode === "crystal") startMusicCrystal(ctx, s.frequencyHz);
+    if (s.musicMode === "ambient") startMusicAudio(ctx, "ambient", s.musicVolume);
+    else if (s.musicMode === "drone") startMusicAudio(ctx, "drone", s.musicVolume);
+    else if (s.musicMode === "crystal") startMusicAudio(ctx, "crystal", s.musicVolume);
 
     if (s.natureSound === "rain") startNatureRain(ctx);
     else if (s.natureSound === "ocean") startNatureOcean(ctx);
@@ -367,7 +257,7 @@ export function useSoundStudio() {
   }, [
     getCtx,
     startFrequency,
-    startMusicAmbient, startMusicDrone, startMusicCrystal,
+    startMusicAudio,
     startNatureRain, startNatureOcean, startNatureForest, startNatureWind, startNatureFire,
   ]);
 
@@ -432,28 +322,24 @@ export function useSoundStudio() {
       const next = { ...prev, frequencyHz: hz };
       if (prev.isPlaying && ctxRef.current) {
         startFrequency(ctxRef.current, hz);
-        // Restart music layer tuned to new root
-        if (prev.musicMode === "ambient") startMusicAmbient(ctxRef.current, hz);
-        else if (prev.musicMode === "drone") startMusicDrone(ctxRef.current, hz);
-        else if (prev.musicMode === "crystal") startMusicCrystal(ctxRef.current, hz);
       }
       return next;
     });
-  }, [startFrequency, startMusicAmbient, startMusicDrone, startMusicCrystal]);
+  }, [startFrequency]);
 
   /** Change music mode — restarts only the music layer */
   const setMusicMode = useCallback((mode: MusicMode) => {
     setState(prev => {
       const next = { ...prev, musicMode: mode };
       if (prev.isPlaying && ctxRef.current) {
-        if (mode === "ambient") startMusicAmbient(ctxRef.current, prev.frequencyHz);
-        else if (mode === "drone") startMusicDrone(ctxRef.current, prev.frequencyHz);
-        else if (mode === "crystal") startMusicCrystal(ctxRef.current, prev.frequencyHz);
+        if (mode === "ambient") startMusicAudio(ctxRef.current, "ambient", prev.musicVolume);
+        else if (mode === "drone") startMusicAudio(ctxRef.current, "drone", prev.musicVolume);
+        else if (mode === "crystal") startMusicAudio(ctxRef.current, "crystal", prev.musicVolume);
         else stopMusic();
       }
       return next;
     });
-  }, [startMusicAmbient, startMusicDrone, startMusicCrystal, stopMusic]);
+  }, [startMusicAudio, stopMusic]);
 
   /** Change nature sound — restarts only the nature layer */
   const setNatureSound = useCallback((sound: NatureSound) => {
