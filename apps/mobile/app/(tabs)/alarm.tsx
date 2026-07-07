@@ -50,25 +50,22 @@ async function loadAlarms(): Promise<Alarm[]> {
   }
 }
 
-// Schedule repeat alarms for each selected day
+// Schedule repeat alarms for each selected day.
+// iOS calendar triggers use 1 = Sunday … 7 = Saturday.
+const TRIGGER_WEEKDAY: Record<AlarmDayOfWeek, number> = {
+  Sun: 1, Mon: 2, Tue: 3, Wed: 4, Thu: 5, Fri: 6, Sat: 7,
+};
+
 async function scheduleRepeatAlarm(alarm: Alarm): Promise<string[]> {
-  const DAY_INDEX: Record<string, number> = {
-    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
-  };
   const ids: string[] = [];
   if (alarm.days.length === 0) {
-    // One-time alarm
+    // One-time alarm — next occurrence of hour:minute
     const id = await scheduleAlarm(alarm);
     if (id) ids.push(id);
   } else {
+    // Weekly repeating trigger per selected day
     for (const day of alarm.days) {
-      const now = new Date();
-      const target = new Date(now);
-      const targetDay = DAY_INDEX[day];
-      const diff = (targetDay - now.getDay() + 7) % 7;
-      target.setDate(now.getDate() + (diff === 0 && (now.getHours() * 60 + now.getMinutes()) >= alarm.hour * 60 + alarm.minute ? 7 : diff));
-      target.setHours(alarm.hour, alarm.minute, 0, 0);
-      const id = await scheduleAlarm({ ...alarm, time: target.toISOString() });
+      const id = await scheduleAlarm(alarm, TRIGGER_WEEKDAY[day]);
       if (id) ids.push(id);
     }
   }

@@ -60,18 +60,49 @@ export function alarmSoundForHz(hz: number): string {
   return `alarm_${match}.wav`;
 }
 
-export async function scheduleAlarm(alarm: Alarm): Promise<string | null> {
+/**
+ * Build the notification trigger for an alarm.
+ * - With `weekday` (1 = Sunday … 7 = Saturday): a repeating weekly calendar
+ *   trigger. This is how repeat alarms fire every week without rescheduling.
+ * - Without: a one-shot date trigger at the next occurrence of hour:minute.
+ * Uses the numeric `hour`/`minute` fields — never string-parses `alarm.time`,
+ * which may be "HH:MM" or an ISO date depending on the caller (a NaN here
+ * crashed the native scheduler: expo-notifications aborts on invalid dates).
+ */
+export function buildAlarmTrigger(
+  alarm: Pick<Alarm, "hour" | "minute">,
+  weekday?: number
+): Notifications.NotificationTriggerInput {
+  if (weekday !== undefined) {
+    return {
+      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+      weekday,
+      hour: alarm.hour,
+      minute: alarm.minute,
+      repeats: true,
+    };
+  }
+  const now = new Date();
+  const date = new Date(now);
+  date.setHours(alarm.hour, alarm.minute, 0, 0);
+  if (date <= now) {
+    date.setDate(date.getDate() + 1);
+  }
+  return {
+    type: Notifications.SchedulableTriggerInputTypes.DATE,
+    date,
+  };
+}
+
+export async function scheduleAlarm(
+  alarm: Alarm,
+  weekday?: number
+): Promise<string | null> {
   const granted = await requestAlarmPermissions();
   if (!granted) return null;
 
-  const [hours, minutes] = alarm.time.split(":").map(Number);
-  const now = new Date();
-  const trigger = new Date(now);
-  trigger.setHours(hours, minutes, 0, 0);
-
-  // If time has already passed today, schedule for tomorrow
-  if (trigger <= now) {
-    trigger.setDate(trigger.getDate() + 1);
+  if (!Number.isFinite(alarm.hour) || !Number.isFinite(alarm.minute)) {
+    return null;
   }
 
   const identifier = await Notifications.scheduleNotificationAsync({
@@ -81,10 +112,7 @@ export async function scheduleAlarm(alarm: Alarm): Promise<string | null> {
       sound: alarmSoundForHz(alarm.frequencyHz),
       data: { alarm },
     },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: trigger,
-    },
+    trigger: buildAlarmTrigger(alarm, weekday),
   });
 
   return identifier;
