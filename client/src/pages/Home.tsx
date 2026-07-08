@@ -78,7 +78,7 @@ export default function Home() {
         <div className="absolute inset-0 z-0">
           <img
             src="/manus-storage/rih-hero-bg_b01c003a.jpg"
-            alt=""
+            alt="Bioluminescent deep ocean scene representing healing frequency vibrations"
             className="w-full h-full object-cover"
             style={{ opacity: 0.55 }}
           />
@@ -407,7 +407,7 @@ export default function Home() {
       <footer className="py-8 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)', background: '#0A0B14' }}>
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="/manus-storage/rih-logo-icon_0fedc44f.png" alt="" className="w-6 h-6 object-contain" />
+            <img src="/manus-storage/rih-logo-icon_0fedc44f.png" alt="Rise In Harmony logo" className="w-6 h-6 object-contain" />
             <span className="text-sm font-medium" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
               Rise In Harmony
             </span>
