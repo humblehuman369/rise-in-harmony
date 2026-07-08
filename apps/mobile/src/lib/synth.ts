@@ -89,27 +89,34 @@ function buildToneStack(
   if (waveform === "bowl") {
     const nyquist = ctx.sampleRate / 2;
     const oscillators: OscillatorNode[] = [];
-    const ratios: number[] = [];
-    for (const partial of BOWL_PARTIALS) {
-      if (hz * partial.ratio >= nyquist) continue;
+    const partialGains: GainNode[] = [];
+
+    // All partials are always created; ones at/above Nyquist are muted via
+    // their gain node so retuning in either direction stays consistent
+    // (no stale frequencies, and muted partials come back on downward retunes).
+    const applyHz = (targetHz: number) => {
+      BOWL_PARTIALS.forEach((partial, i) => {
+        const partialHz = targetHz * partial.ratio;
+        const audible = partialHz < nyquist;
+        oscillators[i].frequency.value = audible ? partialHz : 0;
+        partialGains[i].gain.value = audible ? partial.gain * BOWL_GAIN_NORM : 0;
+      });
+    };
+
+    for (const _partial of BOWL_PARTIALS) {
       const osc = ctx.createOscillator();
       osc.type = "sine";
-      osc.frequency.value = hz * partial.ratio;
       const partialGain = ctx.createGain();
-      partialGain.gain.value = partial.gain * BOWL_GAIN_NORM;
       osc.connect(partialGain);
       partialGain.connect(destination);
       oscillators.push(osc);
-      ratios.push(partial.ratio);
+      partialGains.push(partialGain);
     }
+    applyHz(hz);
+
     return {
       oscillators,
-      retune(nextHz: number) {
-        oscillators.forEach((osc, i) => {
-          const partialHz = nextHz * ratios[i];
-          if (partialHz < nyquist) osc.frequency.value = partialHz;
-        });
-      },
+      retune: applyHz,
     };
   }
 
