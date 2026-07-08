@@ -14,7 +14,9 @@ import { useAlarmNotifications } from "@/hooks/useAlarmNotifications";
 // ─── Mobile browser detection ────────────────────────────────────────────────
 // Mobile browsers suspend a background/locked tab's timers, so web alarms
 // cannot reliably fire on phones. On mobile we replace the notification
-// banners with an honest prompt to install the native app.
+// banners with an honest prompt about the native app.
+// Flip to true (and keep the URL) once the iOS app is live on the App Store.
+const IOS_APP_LIVE = false;
 const APP_STORE_URL = "https://apps.apple.com/app/id6786561356";
 
 function detectMobilePlatform(): "ios" | "android" | null {
@@ -569,7 +571,7 @@ export default function Alarm() {
                   page stays open. The Rise In Harmony app wakes you with your chosen healing
                   frequency reliably, even with the screen locked.
                 </div>
-                {mobilePlatform === "ios" ? (
+                {IOS_APP_LIVE && mobilePlatform === "ios" ? (
                   <a
                     href={APP_STORE_URL}
                     target="_blank"
@@ -581,7 +583,7 @@ export default function Alarm() {
                   </a>
                 ) : (
                   <div className="text-xs font-medium" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
-                    Available now on iPhone — Android coming soon.
+                    The mobile app is in final testing — coming soon to iPhone and Android.
                   </div>
                 )}
               </div>
@@ -639,10 +641,10 @@ export default function Alarm() {
             <AlarmClock size={18} style={{ color: '#F59E0B', flexShrink: 0, marginTop: '1px' }} />
             <div>
               <div className="text-sm font-semibold mb-1" style={{ color: '#F59E0B', fontFamily: 'DM Sans, sans-serif' }}>
-                iOS AlarmKit Integration
+                Native App Alarms
               </div>
               <div className="text-xs leading-relaxed" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-                The native mobile app uses Apple AlarmKit for system-level alarm reliability — breaking through silent mode and Focus settings. Web alarms use browser notifications.
+                The mobile app schedules alarms through the system notification service for exact delivery, even with the screen locked. Web alarms use browser notifications and require this tab to stay open.
               </div>
             </div>
           </div>

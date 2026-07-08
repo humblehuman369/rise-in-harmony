@@ -236,7 +236,7 @@ export default function PlayerDetailScreen() {
             activeOpacity={0.7}
           >
             <Text style={styles.trueHzBadgeText}>
-              ✓ TrueHz™ Precision Tuning · exact to 0.01 Hz
+              ✓ TrueHz™ Precision Tuning · 0.01 Hz resolution
             </Text>
           </TouchableOpacity>
         )}

@@ -137,8 +137,8 @@ export default function PaywallScreen() {
           </View>
           <Text style={styles.trueHzBody}>
             Most frequency apps play compressed recordings — close, but not the
-            real frequency. Every tone here is generated live on your device,
-            mathematically exact to 0.01 Hz.
+            real frequency. Every tone here is generated live on your device
+            with 0.01 Hz tuning resolution.
           </Text>
           <Text style={styles.trueHzTagline}>
             When we say 528 Hz, you get 528.00 Hz.

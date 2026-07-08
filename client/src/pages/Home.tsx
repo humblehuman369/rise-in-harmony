@@ -19,8 +19,8 @@ const features = [
   },
   {
     icon: Waves,
-    title: "12+ Solfeggio Frequencies",
-    description: "The complete Solfeggio scale from 174Hz to 963Hz, plus binaural beats for Alpha, Theta, and Delta brainwave states.",
+    title: `${FREQUENCIES.length} Healing Frequencies`,
+    description: "The complete Solfeggio scale from 174Hz to 963Hz, binaural beats for Alpha, Theta, and Delta brainwave states, plus studio-recorded Schumann sessions.",
     color: "#00D4AA",
   },
   {
@@ -43,30 +43,24 @@ const features = [
   },
   {
     icon: Star,
-    title: "Sleep Analytics",
+    title: "Wellness Analytics",
     description: "Track your healing sessions, streak, and wellness trends. Understand how your morning ritual impacts your day.",
     color: "#F59E0B",
   },
 ];
 
-const testimonials = [
+const useCases = [
   {
-    name: "Kristi G.",
-    role: "Yoga Instructor",
-    text: "I've tried every meditation app. Rise In Harmony is the only one that actually changes how I feel when I wake up. The 528Hz sequence is transformative.",
-    rating: 5,
+    title: "Wake in resonance",
+    text: "Replace the jarring default alarm with a 528Hz sunrise. Progressive fade-in wakes you gently — no cortisol spike, no snooze-button dread.",
   },
   {
-    name: "Brad G.",
-    role: "Software Engineer",
-    text: "The binaural beats for focus are incredible. I use the Alpha wave session every morning before deep work. My productivity has genuinely improved.",
-    rating: 5,
+    title: "Drop into deep work",
+    text: "Alpha binaural beats at 10Hz set a relaxed-alert brainwave state. Layer in rain or a drone bed and let a 90-minute focus block fly by.",
   },
   {
-    name: "Priya D.",
-    role: "Wellness Coach",
-    text: "I recommend this to all my clients. The Chakra awakening sequence is exactly what I was looking for in a morning ritual app.",
-    rating: 5,
+    title: "Unwind into sleep",
+    text: "Delta binaural tones with an ocean layer and a sleep timer that fades everything to silence — a wind-down ritual your evenings will keep.",
   },
 ];
 
@@ -215,7 +209,7 @@ export default function Home() {
               </div>
               <p className="text-sm leading-relaxed" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
                 Most frequency apps play compressed or pitch-shifted recordings.
-                Every tone here is generated live, mathematically exact to 0.01 Hz.
+                Every tone here is generated live with 0.01 Hz tuning resolution.
               </p>
             </div>
             <span className="text-sm font-semibold flex-shrink-0" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
@@ -289,7 +283,7 @@ export default function Home() {
               </h2>
               <p className="text-base leading-relaxed mb-8" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
                 Three powerful frequencies are completely free. Experience the difference
-                before upgrading to the full 12-frequency library.
+                before upgrading to the full {FREQUENCIES.length}-sound library.
               </p>
               <button
                 onClick={() => navigate("/library")}
@@ -335,7 +329,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Rituals — how people use it */}
       <section className="py-24" style={{ background: '#0A0B14' }}>
         <div className="container">
           <div className="text-center mb-16">
@@ -345,22 +339,18 @@ export default function Home() {
               fontWeight: 600,
               color: '#E8EDF5',
             }}>
-              Mornings transformed.
+              Built for your daily rituals.
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((t) => (
-              <div key={t.name} className="glow-card p-6">
-                <div className="flex gap-0.5 mb-4">
-                  {[1,2,3,4,5].map(i => <Star key={i} size={14} fill="#F59E0B" color="#F59E0B" />)}
+            {useCases.map((u) => (
+              <div key={u.title} className="glow-card p-6">
+                <div className="text-sm font-semibold mb-3" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+                  {u.title}
                 </div>
-                <p className="text-sm leading-relaxed mb-6" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
-                  "{t.text}"
+                <p className="text-sm leading-relaxed" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
+                  {u.text}
                 </p>
-                <div>
-                  <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>{t.name}</div>
-                  <div className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>{t.role}</div>
-                </div>
               </div>
             ))}
           </div>
