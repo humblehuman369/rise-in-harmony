@@ -4,9 +4,10 @@
  * Bioluminescent Depth theme
  */
 import { useState, useEffect } from "react";
-import { Plus, AlarmClock, Trash2, Edit3, Bell, BellOff, Waves, Sunrise, Zap, Lock, BellRing, ShieldCheck, Layers, Smartphone } from "lucide-react";
+import { Plus, AlarmClock, Trash2, Edit3, Bell, BellOff, Waves, Sunrise, Zap, Lock, BellRing, ShieldCheck, Layers, Smartphone, Music2, Wind, Droplets, Flame, TreePine, Moon, Mountain, ChevronDown, ChevronUp } from "lucide-react";
 import Layout from "@/components/Layout";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
+import { BACKGROUND_LOOPS, getLibraryLoopUrl } from "@/data/backgroundLoops";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useAlarmNotifications } from "@/hooks/useAlarmNotifications";
@@ -61,6 +62,7 @@ interface Alarm {
   soundType?: "frequency" | "user_sound" | "studio_mix";
   studioMixId?: string;
   studioMixName?: string;
+<<<<<<< Updated upstream
   userSoundId?: number;
   userSoundName?: string;
 }
@@ -79,6 +81,10 @@ function loadAlarms(): Alarm[] {
 
 function persistAlarms(alarms: Alarm[]) {
   localStorage.setItem(ALARMS_STORAGE_KEY, JSON.stringify(alarms));
+=======
+  ambientId?: string;    // if set, use ambient loop as wake sound
+  ambientLabel?: string;
+>>>>>>> Stashed changes
 }
 
 const WAKE_SEQUENCES = [
@@ -147,6 +153,15 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit }: {
               }}>
                 <Layers size={9} />
                 {alarm.studioMixName || 'Studio Mix'}
+              </span>
+            ) : alarm.ambientId ? (
+              <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{
+                background: 'rgba(59,130,246,0.15)',
+                color: '#3B82F6',
+                fontFamily: 'DM Sans, sans-serif',
+              }}>
+                <Music2 size={9} />
+                {alarm.ambientLabel || 'Ambient'}
               </span>
             ) : freq && (
               <span className="text-xs px-2 py-0.5 rounded-full" style={{
@@ -223,9 +238,16 @@ function CreateAlarmModal({ onClose, onSave, prefill, isPremium, onPremiumNeeded
   const [selectedSeq, setSelectedSeq] = useState("gentle");
   const [selectedDays, setSelectedDays] = useState([1, 2, 3, 4, 5]);
   const [fadeIn, setFadeIn] = useState(5);
+<<<<<<< Updated upstream
   const [soundMode, setSoundMode] = useState<SoundTab>("frequency");
   const [selectedMixId, setSelectedMixId] = useState<string | null>(null);
   const [selectedSoundId, setSelectedSoundId] = useState<number | null>(null);
+=======
+  const [soundMode, setSoundMode] = useState<"frequency" | "ambient" | "studio">("frequency");
+  const [selectedMixId, setSelectedMixId] = useState<string | null>(null);
+  const [selectedAmbientId, setSelectedAmbientId] = useState<string | null>(null);
+  const [freqCategory, setFreqCategory] = useState<"solfeggio" | "binaural" | "recorded">("solfeggio");
+>>>>>>> Stashed changes
   const savedMixes = loadSavedMixes();
   const { isAuthenticated } = useAuth();
   const mySounds = trpc.sounds.list.useQuery(undefined, { enabled: isAuthenticated });
@@ -247,6 +269,7 @@ function CreateAlarmModal({ onClose, onSave, prefill, isPremium, onPremiumNeeded
       toast("Please select at least one day");
       return;
     }
+<<<<<<< Updated upstream
     const base = {
       id: Date.now().toString(),
       time, label, frequencyId: selectedFreq, sequenceId: selectedSeq,
@@ -272,6 +295,19 @@ function CreateAlarmModal({ onClose, onSave, prefill, isPremium, onPremiumNeeded
     } else {
       onSave({ ...base, soundType: "frequency" });
     }
+=======
+    const selectedMix = savedMixes.find(m => m.id === selectedMixId);
+    const selectedAmbient = BACKGROUND_LOOPS.find(l => l.id === selectedAmbientId);
+    onSave({
+      id: Date.now().toString(),
+      time, label, frequencyId: selectedFreq, sequenceId: selectedSeq,
+      days: selectedDays, enabled: true, fadeInMinutes: fadeIn,
+      studioMixId: soundMode === "studio" && selectedMixId ? selectedMixId : undefined,
+      studioMixName: soundMode === "studio" && selectedMix ? selectedMix.name : undefined,
+      ambientId: soundMode === "ambient" && selectedAmbientId ? selectedAmbientId : undefined,
+      ambientLabel: soundMode === "ambient" && selectedAmbient ? selectedAmbient.label : undefined,
+    });
+>>>>>>> Stashed changes
     onClose();
     toast("✓ Healing alarm set — your morning ritual awaits");
   };
@@ -351,90 +387,159 @@ function CreateAlarmModal({ onClose, onSave, prefill, isPremium, onPremiumNeeded
           </div>
         </div>
 
-        {/* Sound Source Toggle */}
+        {/* Sound Source Toggle — 3 tabs */}
         <div className="mb-5">
           <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
             Wake Sound
           </label>
-          <div className="flex gap-2 mb-3">
-            <button
-              onClick={() => setSoundMode("frequency")}
-              className="flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200"
-              style={{
-                background: soundMode === "frequency" ? 'rgba(0,212,170,0.15)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${soundMode === "frequency" ? 'rgba(0,212,170,0.4)' : 'rgba(255,255,255,0.06)'}`,
-                color: soundMode === "frequency" ? '#00D4AA' : '#6B7A99',
-                fontFamily: 'DM Sans, sans-serif',
-              }}
-            >
-              <Waves size={14} /> Single Frequency
-            </button>
-            <button
-              onClick={() => setSoundMode("studio")}
-              className="flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200"
-              style={{
-                background: soundMode === "studio" ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${soundMode === "studio" ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.06)'}`,
-                color: soundMode === "studio" ? '#8B5CF6' : '#6B7A99',
-                fontFamily: 'DM Sans, sans-serif',
-              }}
-            >
-              <Layers size={14} /> Studio Mix
-            </button>
+          <div className="flex gap-1.5 mb-3">
+            {([
+              { mode: "frequency", label: "Frequencies", icon: Waves, activeColor: '#00D4AA', activeBg: 'rgba(0,212,170,0.15)', activeBorder: 'rgba(0,212,170,0.4)' },
+              { mode: "ambient", label: "Ambients", icon: Wind, activeColor: '#3B82F6', activeBg: 'rgba(59,130,246,0.15)', activeBorder: 'rgba(59,130,246,0.4)' },
+              { mode: "studio", label: "My Mixes", icon: Layers, activeColor: '#8B5CF6', activeBg: 'rgba(139,92,246,0.15)', activeBorder: 'rgba(139,92,246,0.4)' },
+            ] as const).map(tab => (
+              <button key={tab.mode}
+                onClick={() => setSoundMode(tab.mode)}
+                className="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200"
+                style={{
+                  background: soundMode === tab.mode ? tab.activeBg : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${soundMode === tab.mode ? tab.activeBorder : 'rgba(255,255,255,0.06)'}`,
+                  color: soundMode === tab.mode ? tab.activeColor : '#6B7A99',
+                  fontFamily: 'DM Sans, sans-serif',
+                }}
+              >
+                <tab.icon size={12} /> {tab.label}
+              </button>
+            ))}
           </div>
 
-          {soundMode === "frequency" ? (
-            <div className="grid grid-cols-2 gap-2">
-              {/* Recorded sessions are excluded — alarm ring synthesizes by Hz */}
-              {FREQUENCIES.filter(f => !f.isPremium && f.category !== "recorded").map(f => (
-                <button key={f.id} onClick={() => setSelectedFreq(f.id)}
-                  className="p-3 rounded-xl text-left transition-all duration-200"
-                  style={{
-                    background: selectedFreq === f.id ? `${f.color}18` : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${selectedFreq === f.id ? f.color + '40' : 'rgba(255,255,255,0.06)'}`,
-                  }}>
-                  <div className="font-mono-brand text-sm font-bold" style={{ color: f.color }}>{f.hz}Hz</div>
-                  <div className="text-xs mt-0.5" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>{f.name}</div>
-                </button>
-              ))}
+          {/* ── Frequencies tab ── */}
+          {soundMode === "frequency" && (
+            <div>
+              {/* Category sub-tabs */}
+              <div className="flex gap-1.5 mb-2">
+                {([
+                  { id: "solfeggio", label: "Solfeggio" },
+                  { id: "binaural", label: "Binaural" },
+                  { id: "recorded", label: "Recorded" },
+                ] as const).map(cat => (
+                  <button key={cat.id}
+                    onClick={() => setFreqCategory(cat.id)}
+                    className="flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200"
+                    style={{
+                      background: freqCategory === cat.id ? 'rgba(0,212,170,0.12)' : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${freqCategory === cat.id ? 'rgba(0,212,170,0.3)' : 'rgba(255,255,255,0.05)'}`,
+                      color: freqCategory === cat.id ? '#00D4AA' : '#6B7A99',
+                      fontFamily: 'DM Sans, sans-serif',
+                    }}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {FREQUENCIES.filter(f => f.category === freqCategory).map(f => (
+                  <button key={f.id}
+                    onClick={() => {
+                      if (f.isPremium) { toast("✦ Premium frequency — upgrade to unlock"); return; }
+                      setSelectedFreq(f.id);
+                    }}
+                    className="p-3 rounded-xl text-left transition-all duration-200 relative"
+                    style={{
+                      background: selectedFreq === f.id ? `${f.color}18` : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${selectedFreq === f.id ? f.color + '40' : 'rgba(255,255,255,0.06)'}`,
+                      opacity: f.isPremium ? 0.75 : 1,
+                    }}
+                  >
+                    {f.isPremium && (
+                      <Lock size={9} style={{ color: '#8B5CF6', position: 'absolute', top: 8, right: 8 }} />
+                    )}
+                    <div className="font-mono-brand text-sm font-bold" style={{ color: f.color }}>
+                      {freqCategory === "binaural" ? f.name : `${f.hz}Hz`}
+                    </div>
+                    <div className="text-xs mt-0.5 pr-3" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                      {freqCategory === "binaural" ? (f.binauralOffset ? `${f.binauralOffset}Hz beat` : f.hz + 'Hz') : f.name}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-          ) : savedMixes.length > 0 ? (
-            <div className="space-y-2">
-              {savedMixes.map(mix => (
-                <button
-                  key={mix.id}
-                  onClick={() => setSelectedMixId(mix.id)}
-                  className="w-full p-3 rounded-xl text-left flex items-center gap-3 transition-all duration-200"
-                  style={{
-                    background: selectedMixId === mix.id ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${selectedMixId === mix.id ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.06)'}`,
-                  }}
-                >
-                  <Layers size={16} style={{ color: '#8B5CF6', flexShrink: 0 }} />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>{mix.name}</div>
-                    <div className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-                      {mix.settings.frequencyHz}Hz · {mix.settings.musicMode} · {mix.settings.natureSound}
+          )}
+
+          {/* ── Ambients tab ── */}
+          {soundMode === "ambient" && (
+            <div className="space-y-3">
+              {(['nature', 'music'] as const).map(cat => {
+                const loops = BACKGROUND_LOOPS.filter(l => l.category === cat);
+                const catLabel = cat === 'nature' ? 'Nature Sounds' : 'Music Beds';
+                const catColor = cat === 'nature' ? '#00D4AA' : '#F59E0B';
+                return (
+                  <div key={cat}>
+                    <div className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: catColor, fontFamily: 'DM Sans, sans-serif' }}>
+                      {catLabel}
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {loops.map(loop => (
+                        <button key={loop.id}
+                          onClick={() => setSelectedAmbientId(loop.id)}
+                          className="p-2.5 rounded-xl text-center transition-all duration-200"
+                          style={{
+                            background: selectedAmbientId === loop.id ? `rgba(59,130,246,0.18)` : 'rgba(255,255,255,0.03)',
+                            border: `1px solid ${selectedAmbientId === loop.id ? 'rgba(59,130,246,0.45)' : 'rgba(255,255,255,0.06)'}`,
+                          }}
+                        >
+                          <div className="text-xs font-semibold" style={{ color: selectedAmbientId === loop.id ? '#3B82F6' : '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
+                            {loop.label}
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
-                  {selectedMixId === mix.id && (
-                    <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#8B5CF6' }}>
-                      <div className="w-2 h-2 rounded-full bg-white" />
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Studio Mixes tab ── */}
+          {soundMode === "studio" && (
+            savedMixes.length > 0 ? (
+              <div className="space-y-2">
+                {savedMixes.map(mix => (
+                  <button
+                    key={mix.id}
+                    onClick={() => setSelectedMixId(mix.id)}
+                    className="w-full p-3 rounded-xl text-left flex items-center gap-3 transition-all duration-200"
+                    style={{
+                      background: selectedMixId === mix.id ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${selectedMixId === mix.id ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.06)'}`,
+                    }}
+                  >
+                    <Layers size={16} style={{ color: '#8B5CF6', flexShrink: 0 }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>{mix.name}</div>
+                      <div className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                        {mix.settings.frequencyHz}Hz · {mix.settings.musicMode} · {mix.settings.natureSound}
+                      </div>
                     </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div
-              className="p-4 rounded-xl text-center"
-              style={{ background: 'rgba(139,92,246,0.06)', border: '1px dashed rgba(139,92,246,0.2)' }}
-            >
-              <Layers size={20} style={{ color: '#8B5CF6', margin: '0 auto 8px' }} />
-              <p className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-                No saved mixes yet. Go to <strong style={{ color: '#8B5CF6' }}>Sound Studio</strong> and tap <strong style={{ color: '#8B5CF6' }}>Save Mix</strong> to create one.
-              </p>
-            </div>
+                    {selectedMixId === mix.id && (
+                      <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#8B5CF6' }}>
+                        <div className="w-2 h-2 rounded-full bg-white" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div
+                className="p-4 rounded-xl text-center"
+                style={{ background: 'rgba(139,92,246,0.06)', border: '1px dashed rgba(139,92,246,0.2)' }}
+              >
+                <Layers size={20} style={{ color: '#8B5CF6', margin: '0 auto 8px' }} />
+                <p className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                  No saved mixes yet. Go to <strong style={{ color: '#8B5CF6' }}>Sound Studio</strong> and tap <strong style={{ color: '#8B5CF6' }}>Save Mix</strong> to create one.
+                </p>
+              </div>
+            )
           )}
         </div>
 
