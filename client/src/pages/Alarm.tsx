@@ -57,8 +57,28 @@ interface Alarm {
   days: number[];
   enabled: boolean;
   fadeInMinutes: number;
-  studioMixId?: string;  // if set, use Studio Mix instead of single frequency
+  /** Sound source — "frequency" (default), a saved Sound Creator recipe, or a Studio mix */
+  soundType?: "frequency" | "user_sound" | "studio_mix";
+  studioMixId?: string;
   studioMixName?: string;
+  userSoundId?: number;
+  userSoundName?: string;
+}
+
+const ALARMS_STORAGE_KEY = "rih_alarms_v1";
+
+function loadAlarms(): Alarm[] {
+  try {
+    const raw = localStorage.getItem(ALARMS_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // fall through to defaults
+  }
+  return DEFAULT_ALARMS;
+}
+
+function persistAlarms(alarms: Alarm[]) {
+  localStorage.setItem(ALARMS_STORAGE_KEY, JSON.stringify(alarms));
 }
 
 const WAKE_SEQUENCES = [
@@ -182,7 +202,15 @@ interface AlarmPrefill {
   frequencyHz?: number;
 }
 
-function CreateAlarmModal({ onClose, onSave, prefill }: { onClose: () => void; onSave: (alarm: Alarm) => void; prefill?: AlarmPrefill | null }) {
+type SoundTab = "frequency" | "recorded" | "mysounds" | "studio";
+
+function CreateAlarmModal({ onClose, onSave, prefill, isPremium, onPremiumNeeded }: {
+  onClose: () => void;
+  onSave: (alarm: Alarm) => void;
+  prefill?: AlarmPrefill | null;
+  isPremium: boolean;
+  onPremiumNeeded: () => void;
+}) {
   const prefillTime = prefill?.wakeTime
     ? `${prefill.wakeTime.split(":")[0].padStart(2, "0")}:${prefill.wakeTime.split(":")[1]}`
     : "07:00";
@@ -195,12 +223,23 @@ function CreateAlarmModal({ onClose, onSave, prefill }: { onClose: () => void; o
   const [selectedSeq, setSelectedSeq] = useState("gentle");
   const [selectedDays, setSelectedDays] = useState([1, 2, 3, 4, 5]);
   const [fadeIn, setFadeIn] = useState(5);
-  const [soundMode, setSoundMode] = useState<"frequency" | "studio">("frequency");
+  const [soundMode, setSoundMode] = useState<SoundTab>("frequency");
   const [selectedMixId, setSelectedMixId] = useState<string | null>(null);
+  const [selectedSoundId, setSelectedSoundId] = useState<number | null>(null);
   const savedMixes = loadSavedMixes();
+  const { isAuthenticated } = useAuth();
+  const mySounds = trpc.sounds.list.useQuery(undefined, { enabled: isAuthenticated });
 
   const toggleDay = (d: number) => {
     setSelectedDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
+  };
+
+  const pickFrequency = (f: (typeof FREQUENCIES)[number]) => {
+    if (f.isPremium && !isPremium) {
+      onPremiumNeeded();
+      return;
+    }
+    setSelectedFreq(f.id);
   };
 
   const handleSave = () => {
@@ -208,17 +247,37 @@ function CreateAlarmModal({ onClose, onSave, prefill }: { onClose: () => void; o
       toast("Please select at least one day");
       return;
     }
-    const selectedMix = savedMixes.find(m => m.id === selectedMixId);
-    onSave({
+    const base = {
       id: Date.now().toString(),
       time, label, frequencyId: selectedFreq, sequenceId: selectedSeq,
       days: selectedDays, enabled: true, fadeInMinutes: fadeIn,
-      studioMixId: soundMode === "studio" && selectedMixId ? selectedMixId : undefined,
-      studioMixName: soundMode === "studio" && selectedMix ? selectedMix.name : undefined,
-    });
+    };
+
+    if (soundMode === "studio" && selectedMixId) {
+      const mix = savedMixes.find(m => m.id === selectedMixId);
+      onSave({
+        ...base,
+        soundType: "studio_mix",
+        studioMixId: selectedMixId,
+        studioMixName: mix?.name,
+      });
+    } else if (soundMode === "mysounds" && selectedSoundId != null) {
+      const s = mySounds.data?.find(x => x.id === selectedSoundId);
+      onSave({
+        ...base,
+        soundType: "user_sound",
+        userSoundId: selectedSoundId,
+        userSoundName: s?.name,
+      });
+    } else {
+      onSave({ ...base, soundType: "frequency" });
+    }
     onClose();
     toast("✓ Healing alarm set — your morning ritual awaits");
   };
+
+  const synthFrequencies = FREQUENCIES.filter(f => f.category !== "recorded");
+  const recordedFrequencies = FREQUENCIES.filter(f => f.category === "recorded");
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"

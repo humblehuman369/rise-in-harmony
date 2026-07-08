@@ -81,7 +81,8 @@ export function useAlarmNotifications() {
     return 24 * 60 * 60 * 1000;
   }, []);
 
-  // Schedule a browser notification for an alarm
+  // Schedule an alarm: in-app firing always works while the tab is open;
+  // the browser Notification additionally fires when permission is granted.
   const scheduleNotification = useCallback((alarm: {
     id: string;
     label: string;
@@ -91,9 +92,10 @@ export function useAlarmNotifications() {
     frequencyHz: number;
     frequencyName: string;
     enabled: boolean;
+    /** Called at fire time — the Alarm page uses this to start the wake sound */
+    onFire?: (alarmId: string) => void;
   }) => {
     if (!alarm.enabled) return;
-    if (permission !== "granted") return;
 
     // Clear any existing timeout for this alarm
     const existing = scheduledRef.current.get(alarm.id);
@@ -112,22 +114,28 @@ export function useAlarmNotifications() {
         timeOfDay: alarm.time,
       });
 
-      // Fire the notification
-      try {
-        const notification = new Notification(`⏰ Rise In Harmony — ${alarm.label}`, {
-          body: `${alarm.frequencyHz}Hz ${alarm.frequencyName} is ready to guide your morning.`,
-          icon: "/favicon.ico",
-          tag: `rih-alarm-${alarm.id}`,
-          requireInteraction: true,
-          silent: false,
-        });
+      // Start the in-app wake experience (plays the actual healing sound)
+      alarm.onFire?.(alarm.id);
 
-        notification.onclick = () => {
-          window.focus();
-          notification.close();
-        };
-      } catch {
-        // Notification API failed silently — in-app toast as fallback
+      // Fire the browser notification too, when permitted
+      if (Notification.permission === "granted") {
+        try {
+          const notification = new Notification(`⏰ Rise In Harmony — ${alarm.label}`, {
+            body: `${alarm.frequencyHz}Hz ${alarm.frequencyName} is ready to guide your morning.`,
+            icon: "/favicon.ico",
+            tag: `rih-alarm-${alarm.id}`,
+            requireInteraction: true,
+            silent: false,
+          });
+
+          notification.onclick = () => {
+            window.focus();
+            notification.close();
+          };
+        } catch {
+          // Notification API failed silently — the in-app experience covers it
+        }
+      } else if (!alarm.onFire) {
         toast(`⏰ ${alarm.label} — Time to rise in harmony!`, {
           duration: 10000,
           action: { label: "Dismiss", onClick: () => {} },
