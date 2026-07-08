@@ -8,6 +8,9 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   resendApiKey: process.env.RESEND_API_KEY ?? "",
-  stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
-  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
+  // RIH_-prefixed on purpose: the Manus platform reserves STRIPE_SECRET_KEY /
+  // STRIPE_WEBHOOK_SECRET and injects its own values, which would silently
+  // route payments to the wrong Stripe account. No fallback by design.
+  stripeSecretKey: process.env.RIH_STRIPE_SECRET_KEY ?? "",
+  stripeWebhookSecret: process.env.RIH_STRIPE_WEBHOOK_SECRET ?? "",
 };

@@ -1,19 +1,26 @@
 /**
  * One-time (idempotent) Stripe product/price setup for Rise In Harmony.
  *
- * Usage: STRIPE_SECRET_KEY=sk_... pnpm tsx scripts/setup-stripe.ts
+ * Usage: RIH_STRIPE_SECRET_KEY=sk_... pnpm tsx scripts/setup-stripe.ts
  *
- * Creates (or verifies) three prices identified by lookup_key. Safe to re-run:
- * existing lookup_keys are left untouched.
+ * Creates (or verifies) three prices identified by lookup_key plus the
+ * production webhook endpoint. Safe to re-run.
+ *
+ * NOTE: deliberately does NOT read STRIPE_SECRET_KEY — hosting platforms
+ * (Manus) reserve that name and inject their own key, which would create
+ * everything on the wrong Stripe account.
  */
 import Stripe from "stripe";
 
-const key = process.env.STRIPE_SECRET_KEY;
+const key = process.env.RIH_STRIPE_SECRET_KEY;
 if (!key) {
-  console.error("STRIPE_SECRET_KEY is required");
+  console.error("RIH_STRIPE_SECRET_KEY is required (STRIPE_SECRET_KEY is intentionally ignored)");
   process.exit(1);
 }
 const stripe = new Stripe(key);
+
+// Fail loudly if this key doesn't belong to the Rise In Harmony account.
+const EXPECTED_ACCOUNT = "acct_1TqyXfIxQ2pUcCoN";
 
 type PriceSpec = {
   lookupKey: string;
@@ -111,6 +118,14 @@ async function ensureWebhook() {
 }
 
 async function main() {
+  const account = await stripe.accounts.retrieve();
+  console.log(`Connected to Stripe account: ${account.id} (${account.settings?.dashboard?.display_name ?? "unnamed"})`);
+  if (account.id !== EXPECTED_ACCOUNT) {
+    console.error(
+      `ABORT: this key belongs to ${account.id}, not the Rise In Harmony account (${EXPECTED_ACCOUNT}).`,
+    );
+    process.exit(1);
+  }
   for (const spec of SPECS) {
     await ensurePrice(spec);
   }
