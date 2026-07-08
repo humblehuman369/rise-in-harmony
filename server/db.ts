@@ -63,10 +63,14 @@ export async function upsertUser(user: InsertUser): Promise<{ isNewUser: boolean
   values.lastSignedIn = new Date();
   updateSet.lastSignedIn = new Date();
 
+  const isAdminEmail =
+    typeof user.email === "string" &&
+    ENV.adminEmails.includes(user.email.trim().toLowerCase());
+
   if (user.role !== undefined) {
     values.role = user.role;
     updateSet.role = user.role;
-  } else if (user.openId === ENV.ownerOpenId) {
+  } else if (user.openId === ENV.ownerOpenId || isAdminEmail) {
     values.role = "admin";
     updateSet.role = "admin";
   }
@@ -128,15 +132,25 @@ export async function getUserByStripeCustomerId(
   return rows[0];
 }
 
-/** Count of lifetime subscribers, used to enforce the founder seat cap. */
-export async function countLifetimeUsers(): Promise<number> {
+/**
+ * Count of PURCHASED founder lifetime seats (admin comps excluded),
+ * used to enforce the 500-seat founder cap.
+ */
+export async function countFounderUsers(): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   const rows = await db
     .select({ count: sql<number>`count(*)` })
     .from(users)
-    .where(eq(users.subscriptionTier, "lifetime"));
+    .where(eq(users.isFounder, true));
   return Number(rows[0]?.count ?? 0);
+}
+
+/** Mark a user as a purchased founder seat. */
+export async function setFounder(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ isFounder: true }).where(eq(users.id, userId));
 }
 
 export async function updateUserSubscription(

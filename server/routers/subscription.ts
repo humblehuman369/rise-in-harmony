@@ -3,6 +3,7 @@ import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import {
   getUserById,
   logSubscriptionEvent,
+  setFounder,
   updateUserOnboarding,
   updateUserSubscription,
 } from "../db";
@@ -104,6 +105,11 @@ export const subscriptionRouter = router({
 
       if (!isNaN(userId) && tier !== null) {
         await updateUserSubscription(userId, tier, expiresAt, app_user_id);
+        // A store-purchased lifetime (not a promotional comp) consumes one of
+        // the capped founder seats
+        if (tier === "lifetime" && !isPromotionalGrant) {
+          await setFounder(userId);
+        }
       }
 
       await logSubscriptionEvent({

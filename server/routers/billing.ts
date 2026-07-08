@@ -7,7 +7,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
-import { countLifetimeUsers, getUserById, setStripeCustomerId } from "../db";
+import { countFounderUsers, getUserById, setStripeCustomerId } from "../db";
 import {
   FOUNDER_SEAT_CAP,
   getPriceId,
@@ -46,7 +46,7 @@ export const billingRouter = router({
     let founderSeatsRemaining: number | null = null;
     if (configured) {
       try {
-        const sold = await countLifetimeUsers();
+        const sold = await countFounderUsers();
         founderSeatsRemaining = Math.max(0, FOUNDER_SEAT_CAP - sold);
       } catch {
         founderSeatsRemaining = null;
@@ -69,7 +69,7 @@ export const billingRouter = router({
 
       // Enforce the founder cap server-side before creating a session
       if (tier === "lifetime") {
-        const sold = await countLifetimeUsers();
+        const sold = await countFounderUsers();
         if (sold >= FOUNDER_SEAT_CAP) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",

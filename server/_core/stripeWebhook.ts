@@ -14,6 +14,7 @@ import type Stripe from "stripe";
 import {
   getUserByStripeCustomerId,
   logSubscriptionEvent,
+  setFounder,
   updateUserSubscription,
 } from "../db";
 import { getStripe, isStripeConfigured } from "../stripe";
@@ -51,6 +52,9 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
           ? null
           : new Date(Date.now() + 45 * 24 * 60 * 60 * 1000);
       await updateUserSubscription(userId, tier, expiresAt);
+      // A paid lifetime checkout consumes one of the capped founder seats
+      // (admin comps never set this flag)
+      if (tier === "lifetime") await setFounder(userId);
       await logSubscriptionEvent({
         userId,
         eventType: `stripe.${event.type}`,

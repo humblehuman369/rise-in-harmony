@@ -42,7 +42,8 @@ vi.mock("./db", () => ({
   getUserAlarms: vi.fn().mockResolvedValue([]),
   setStripeCustomerId: vi.fn().mockResolvedValue(undefined),
   getUserByStripeCustomerId: vi.fn().mockResolvedValue(undefined),
-  countLifetimeUsers: vi.fn().mockResolvedValue(0),
+  countFounderUsers: vi.fn().mockResolvedValue(0),
+  setFounder: vi.fn().mockResolvedValue(undefined),
   updateAlarm: vi.fn().mockResolvedValue(undefined),
   deleteAlarm: vi.fn().mockResolvedValue(undefined),
   getPresetsByUser: vi.fn().mockResolvedValue([]),
@@ -382,8 +383,9 @@ describe("revenuecatWebhook promotional grants", () => {
     );
   });
 
-  it("maps a lifetime promotional grant to lifetime", async () => {
-    const { updateUserSubscription } = await import("./db");
+  it("maps a lifetime promotional grant to lifetime WITHOUT consuming a founder seat", async () => {
+    const { updateUserSubscription, setFounder } = await import("./db");
+    vi.mocked(setFounder).mockClear();
     const ctx = makeAuthCtx();
     const caller = appRouter.createCaller(ctx);
     await caller.subscription.revenuecatWebhook({
@@ -396,6 +398,25 @@ describe("revenuecatWebhook promotional grants", () => {
       },
     });
     expect(updateUserSubscription).toHaveBeenCalledWith(1, "lifetime", null, "1");
+    // Promotional comps must never consume a capped founder seat
+    expect(setFounder).not.toHaveBeenCalled();
+  });
+
+  it("marks a store-purchased lifetime as a founder seat", async () => {
+    const { setFounder } = await import("./db");
+    vi.mocked(setFounder).mockClear();
+    const ctx = makeAuthCtx();
+    const caller = appRouter.createCaller(ctx);
+    await caller.subscription.revenuecatWebhook({
+      event: {
+        type: "INITIAL_PURCHASE",
+        app_user_id: "1",
+        product_id: "rih_founder_lifetime",
+        store: "APP_STORE",
+        period_type: "NORMAL",
+      },
+    });
+    expect(setFounder).toHaveBeenCalledWith(1);
   });
 
   it("does not touch the tier for non-promotional NON_RENEWING_PURCHASE", async () => {

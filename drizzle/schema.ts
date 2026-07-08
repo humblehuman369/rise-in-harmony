@@ -29,6 +29,9 @@ export const users = mysqlTable("users", {
   subscriptionExpiresAt: timestamp("subscriptionExpiresAt"),
   revenuecatUserId: varchar("revenuecatUserId", { length: 128 }),
   stripeCustomerId: varchar("stripeCustomerId", { length: 64 }),
+  // True only for PURCHASED lifetime (founder) seats — admin comps stay false
+  // so they never consume the capped founder allotment.
+  isFounder: boolean("isFounder").default(false).notNull(),
   // JSON blob from the onboarding quiz (goal, wake time, experience, headphones)
   onboardingProfile: json("onboardingProfile"),
   // Email deduplication timestamps

@@ -13,4 +13,12 @@ export const ENV = {
   // route payments to the wrong Stripe account. No fallback by design.
   stripeSecretKey: process.env.RIH_STRIPE_SECRET_KEY ?? "",
   stripeWebhookSecret: process.env.RIH_STRIPE_WEBHOOK_SECRET ?? "",
+  /**
+   * Comma-separated emails promoted to admin on sign-in — a reliable
+   * alternative to OWNER_OPEN_ID (which the platform may not inject).
+   */
+  adminEmails: (process.env.RIH_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map(e => e.trim().toLowerCase())
+    .filter(Boolean),
 };
