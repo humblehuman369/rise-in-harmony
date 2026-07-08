@@ -82,10 +82,39 @@ async function ensurePrice(spec: PriceSpec) {
   console.log(`+ created ${spec.lookupKey} → ${price.id} (product ${product.id})`);
 }
 
+const WEBHOOK_URL = "https://www.riseinharmony.com/api/stripe/webhook";
+const WEBHOOK_EVENTS: Stripe.WebhookEndpointCreateParams.EnabledEvent[] = [
+  "checkout.session.completed",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+];
+
+async function ensureWebhook() {
+  const existing = await stripe.webhookEndpoints.list({ limit: 100 });
+  const found = existing.data.find(w => w.url === WEBHOOK_URL);
+  if (found) {
+    console.log(`✓ webhook already exists (${found.id})`);
+    console.log("  (signing secret is only shown at creation — see the Stripe dashboard)");
+    return;
+  }
+  const webhook = await stripe.webhookEndpoints.create({
+    url: WEBHOOK_URL,
+    enabled_events: WEBHOOK_EVENTS,
+    description: "Rise In Harmony web billing",
+  });
+  console.log(`+ created webhook ${webhook.id}`);
+  console.log("");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log(`  STRIPE_WEBHOOK_SECRET = ${webhook.secret}`);
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("  Copy this into the Manus environment settings.");
+}
+
 async function main() {
   for (const spec of SPECS) {
     await ensurePrice(spec);
   }
+  await ensureWebhook();
   console.log("Stripe setup complete.");
 }
 
