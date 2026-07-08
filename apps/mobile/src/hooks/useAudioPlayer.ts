@@ -21,6 +21,9 @@ import { createCatalogVoice, type SynthVoice } from "@/lib/synth";
 import { resolveAssetUrl } from "@/lib/api";
 import { getDownloadedUri } from "@/lib/recordedDownloads";
 
+/** Tone character for synthesized catalog frequencies (recorded sessions are unaffected). */
+export type ToneTimbre = "pure" | "bowl";
+
 interface AudioPlayerState {
   isPlaying: boolean;
   isLoading: boolean;
@@ -33,6 +36,9 @@ export function useAudioPlayer(frequency: Frequency | null) {
   const mediaPlayerRef = useRef<AudioPlayer | null>(null);
   const sleepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const volumeRef = useRef(0.8);
+  const timbreRef = useRef<ToneTimbre>("pure");
+
+  const [timbre, setTimbreState] = useState<ToneTimbre>("pure");
 
   const [state, setState] = useState<AudioPlayerState>({
     isPlaying: false,
@@ -118,7 +124,11 @@ export function useAudioPlayer(frequency: Frequency | null) {
       teardownMediaPlayer();
       // Oscillator voices are one-shot: (re)create on every play
       teardownVoice(0.1);
-      const voice = createCatalogVoice(frequency, volumeRef.current);
+      const voice = createCatalogVoice(
+        frequency,
+        volumeRef.current,
+        timbreRef.current === "bowl" ? "bowl" : "sine"
+      );
       voice.start(Math.max(fadeInMs / 1000, 0.05));
       voiceRef.current = voice;
       KeepAwake.activateKeepAwakeAsync().catch(() => {});
@@ -147,6 +157,25 @@ export function useAudioPlayer(frequency: Frequency | null) {
     setState((prev) => ({ ...prev, volume: clamped }));
   }, []);
 
+  const setTimbre = useCallback(
+    (t: ToneTimbre) => {
+      timbreRef.current = t;
+      setTimbreState(t);
+      // Rebuild a running synth voice with a short crossfade so the change is audible
+      if (voiceRef.current && frequency && !frequency.audioUrl) {
+        teardownVoice(0.2);
+        const voice = createCatalogVoice(
+          frequency,
+          volumeRef.current,
+          t === "bowl" ? "bowl" : "sine"
+        );
+        voice.start(0.3);
+        voiceRef.current = voice;
+      }
+    },
+    [frequency, teardownVoice]
+  );
+
   const setSleepTimer = useCallback(
     (minutes: number) => {
       clearSleepTimer();
@@ -170,10 +199,12 @@ export function useAudioPlayer(frequency: Frequency | null) {
 
   return {
     ...state,
+    timbre,
     play,
     pause,
     stop,
     setVolume,
     setSleepTimer,
+    setTimbre,
   };
 }

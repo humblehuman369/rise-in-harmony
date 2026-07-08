@@ -2,7 +2,30 @@
  * Pure synthesis math helpers — no native imports so they are unit-testable.
  */
 
-export type Waveform = "sine" | "square" | "triangle" | "sawtooth";
+export type Waveform = "sine" | "square" | "triangle" | "sawtooth" | "bowl";
+
+/** Waveforms an OscillatorNode can produce natively (bowl is additive). */
+export type OscillatorWaveform = Exclude<Waveform, "bowl">;
+
+/**
+ * Singing-bowl additive partials: fundamental stays at the exact tuned Hz,
+ * a detuned twin creates the slow "shimmer" beating of a rubbed bowl, and
+ * quieter, slightly inharmonic overtones give the metallic body.
+ *
+ * MUST stay in sync with BOWL_PARTIALS in client/public/dds-processor.js
+ * (the web AudioWorklet cannot import from this package).
+ */
+export const BOWL_PARTIALS: ReadonlyArray<{ ratio: number; gain: number }> = [
+  { ratio: 1, gain: 1 }, // fundamental — the precision-tuned frequency
+  { ratio: 1.005, gain: 0.55 }, // detuned twin → slow shimmer beating
+  { ratio: 2, gain: 0.28 }, // octave ring
+  { ratio: 3.01, gain: 0.14 }, // slightly inharmonic metallic body
+  { ratio: 4.19, gain: 0.07 }, // high sheen
+];
+
+/** Normalization so the summed bowl partials never exceed unity gain. */
+export const BOWL_GAIN_NORM =
+  1 / BOWL_PARTIALS.reduce((sum, p) => sum + p.gain, 0);
 
 /** ResoNate SRS FR-001: custom frequency 1–22000 Hz at 0.01 Hz resolution */
 export const MIN_HZ = 1;

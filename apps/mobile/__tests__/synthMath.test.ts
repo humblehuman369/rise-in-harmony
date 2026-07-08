@@ -7,6 +7,8 @@ import {
   clampBeatHz,
   binauralPair,
   brainwaveBand,
+  BOWL_PARTIALS,
+  BOWL_GAIN_NORM,
   MIN_HZ,
   MAX_HZ,
   MIN_BEAT_HZ,
@@ -52,6 +54,29 @@ describe("binauralPair", () => {
 
   it("clamps the beat before offsetting", () => {
     expect(binauralPair(200, 500)).toEqual([200, 240]);
+  });
+});
+
+describe("BOWL_PARTIALS", () => {
+  it("keeps the fundamental at the exact tuned frequency and full gain", () => {
+    expect(BOWL_PARTIALS[0]).toEqual({ ratio: 1, gain: 1 });
+  });
+
+  it("includes a slightly detuned twin for the shimmer beating", () => {
+    const twin = BOWL_PARTIALS.find((p) => p.ratio > 1 && p.ratio < 1.02);
+    expect(twin).toBeDefined();
+  });
+
+  it("orders overtones quieter than the fundamental", () => {
+    for (const partial of BOWL_PARTIALS.slice(1)) {
+      expect(partial.gain).toBeLessThan(1);
+    }
+  });
+
+  it("normalizes so the summed partial gains equal unity", () => {
+    const total =
+      BOWL_PARTIALS.reduce((sum, p) => sum + p.gain, 0) * BOWL_GAIN_NORM;
+    expect(total).toBeCloseTo(1, 10);
   });
 });
 

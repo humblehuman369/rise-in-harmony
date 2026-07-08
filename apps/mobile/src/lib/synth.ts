@@ -13,6 +13,7 @@
 import {
   AudioContext,
   AudioManager,
+  type AudioNode,
   type GainNode,
   type OscillatorNode,
   type ConstantSourceNode,
@@ -21,6 +22,8 @@ import {
   clampHz,
   clampBeatHz,
   binauralPair,
+  BOWL_PARTIALS,
+  BOWL_GAIN_NORM,
   type Waveform,
 } from "./synthMath";
 
@@ -66,6 +69,62 @@ export interface SynthVoice {
   readonly isRunning: boolean;
 }
 
+interface ToneStack {
+  oscillators: OscillatorNode[];
+  retune(hz: number): void;
+}
+
+/**
+ * Build the sound source for one channel. Standard waveforms are a single
+ * native oscillator; "bowl" is an additive stack of sine partials whose
+ * fundamental sits at the exact requested Hz (singing-bowl timbre without
+ * sacrificing frequency precision).
+ */
+function buildToneStack(
+  ctx: AudioContext,
+  hz: number,
+  waveform: Waveform,
+  destination: AudioNode
+): ToneStack {
+  if (waveform === "bowl") {
+    const nyquist = ctx.sampleRate / 2;
+    const oscillators: OscillatorNode[] = [];
+    const ratios: number[] = [];
+    for (const partial of BOWL_PARTIALS) {
+      if (hz * partial.ratio >= nyquist) continue;
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = hz * partial.ratio;
+      const partialGain = ctx.createGain();
+      partialGain.gain.value = partial.gain * BOWL_GAIN_NORM;
+      osc.connect(partialGain);
+      partialGain.connect(destination);
+      oscillators.push(osc);
+      ratios.push(partial.ratio);
+    }
+    return {
+      oscillators,
+      retune(nextHz: number) {
+        oscillators.forEach((osc, i) => {
+          const partialHz = nextHz * ratios[i];
+          if (partialHz < nyquist) osc.frequency.value = partialHz;
+        });
+      },
+    };
+  }
+
+  const osc = ctx.createOscillator();
+  osc.type = waveform;
+  osc.frequency.value = hz;
+  osc.connect(destination);
+  return {
+    oscillators: [osc],
+    retune(nextHz: number) {
+      osc.frequency.value = nextHz;
+    },
+  };
+}
+
 export function createVoice(options: VoiceOptions): SynthVoice {
   const ctx = getContext();
   const waveform = options.waveform ?? "sine";
@@ -78,34 +137,30 @@ export function createVoice(options: VoiceOptions): SynthVoice {
 
   const oscillators: OscillatorNode[] = [];
   const extraSources: (OscillatorNode | ConstantSourceNode)[] = [];
+  let retuneLeft: (hz: number) => void = () => {};
+  let retuneRight: ((hz: number) => void) | null = null;
   let running = false;
 
   // ── Build the voice graph ─────────────────────────────────────────────────
   if (beatHz !== undefined) {
-    // Binaural: two oscillators hard-panned left/right
+    // Binaural: two tone stacks hard-panned left/right
     const [leftHz, rightHz] = binauralPair(options.hz, beatHz);
 
-    const leftOsc = ctx.createOscillator();
-    leftOsc.type = waveform;
-    leftOsc.frequency.value = leftHz;
     const leftPan = ctx.createStereoPanner();
     leftPan.pan.value = -1;
-    leftOsc.connect(leftPan);
     leftPan.connect(envelope);
+    const leftStack = buildToneStack(ctx, leftHz, waveform, leftPan);
 
-    const rightOsc = ctx.createOscillator();
-    rightOsc.type = waveform;
-    rightOsc.frequency.value = rightHz;
     const rightPan = ctx.createStereoPanner();
     rightPan.pan.value = 1;
-    rightOsc.connect(rightPan);
     rightPan.connect(envelope);
+    const rightStack = buildToneStack(ctx, rightHz, waveform, rightPan);
 
-    oscillators.push(leftOsc, rightOsc);
+    oscillators.push(...leftStack.oscillators, ...rightStack.oscillators);
+    retuneLeft = leftStack.retune;
+    retuneRight = rightStack.retune;
   } else {
-    const osc = ctx.createOscillator();
-    osc.type = waveform;
-    osc.frequency.value = clampHz(options.hz);
+    let toneDestination: AudioNode = envelope;
 
     if (options.isochronicHz !== undefined) {
       // Isochronic: gate the tone with a 0..1 square modulation
@@ -125,13 +180,14 @@ export function createVoice(options: VoiceOptions): SynthVoice {
       offset.offset.value = 0.5;
       offset.connect(gate.gain);
 
-      osc.connect(gate);
       gate.connect(envelope);
       extraSources.push(lfo, offset);
-    } else {
-      osc.connect(envelope);
+      toneDestination = gate;
     }
-    oscillators.push(osc);
+
+    const stack = buildToneStack(ctx, clampHz(options.hz), waveform, toneDestination);
+    oscillators.push(...stack.oscillators);
+    retuneLeft = stack.retune;
   }
 
   return {
@@ -159,10 +215,10 @@ export function createVoice(options: VoiceOptions): SynthVoice {
     setFrequency(hz: number) {
       if (beatHz !== undefined) {
         const [leftHz, rightHz] = binauralPair(hz, beatHz);
-        if (oscillators[0]) oscillators[0].frequency.value = leftHz;
-        if (oscillators[1]) oscillators[1].frequency.value = rightHz;
-      } else if (oscillators[0]) {
-        oscillators[0].frequency.value = clampHz(hz);
+        retuneLeft(leftHz);
+        retuneRight?.(rightHz);
+      } else {
+        retuneLeft(clampHz(hz));
       }
     },
 
@@ -197,15 +253,16 @@ export function createVoice(options: VoiceOptions): SynthVoice {
  */
 export function createCatalogVoice(
   freq: { hz: number; category: "solfeggio" | "binaural" | "isochronic" | "recorded" },
-  volume: number
+  volume: number,
+  waveform: Waveform = "sine"
 ): SynthVoice {
   switch (freq.category) {
     case "binaural":
-      return createVoice({ hz: 200, binauralBeatHz: freq.hz, volume });
+      return createVoice({ hz: 200, binauralBeatHz: freq.hz, volume, waveform });
     case "isochronic":
-      return createVoice({ hz: 200, isochronicHz: freq.hz, volume });
+      return createVoice({ hz: 200, isochronicHz: freq.hz, volume, waveform });
     case "solfeggio":
-      return createVoice({ hz: freq.hz, volume });
+      return createVoice({ hz: freq.hz, volume, waveform });
     case "recorded":
       // Recorded sessions are streamed pre-mixed files, never synthesized —
       // callers must route them to the media player path instead.

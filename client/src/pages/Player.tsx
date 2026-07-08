@@ -216,7 +216,7 @@ function formatTime(seconds: number) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Player() {
-  const { isPlaying, currentFrequency, volume, playTime, togglePlay, setVolume } = useFrequencyPlayer();
+  const { isPlaying, currentFrequency, volume, playTime, timbre, togglePlay, setVolume, setTimbre } = useFrequencyPlayer();
   const [selectedIndex, setSelectedIndex] = useState(4); // 432Hz default
   const [isMuted, setIsMuted] = useState(false);
   const [prevVolume, setPrevVolume] = useState(0.6);
@@ -441,6 +441,38 @@ export default function Player() {
                 <ChevronRight size={20} />
               </button>
             </div>
+
+            {/* Tone character — synthesized tones only (recorded sessions are pre-mixed) */}
+            {!selected.audioUrl && (
+              <div className="flex items-center gap-2 mt-6">
+                <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                  Tone
+                </span>
+                {([
+                  { id: "pure", label: "Tuning Fork" },
+                  { id: "bowl", label: "Singing Bowl" },
+                ] as const).map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTimbre(t.id)}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200"
+                    style={timbre === t.id ? {
+                      background: `${selected.color}20`,
+                      border: `1px solid ${selected.color}50`,
+                      color: selected.color,
+                      fontFamily: 'DM Sans, sans-serif',
+                    } : {
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      color: '#6B7A99',
+                      fontFamily: 'DM Sans, sans-serif',
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Volume */}
             <div className="flex items-center gap-3 mt-6 w-full max-w-xs">

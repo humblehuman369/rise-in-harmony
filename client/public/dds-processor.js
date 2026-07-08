@@ -6,10 +6,29 @@
  * to eliminate long-term frequency drift during sessions > 2 hours.
  *
  * Supports: sine, square, triangle, sawtooth waveforms (FR-003)
+ * Supports: "bowl" singing-bowl timbre — additive sine partials with the
+ *           fundamental at the exact tuned Hz (precision is preserved)
  * Supports: isochronic tone mode with configurable pulse rate + duty cycle (FR-021)
  * Supports: binaural mode with independent L/R frequencies (FR-020)
  * Phase-continuous: frequency changes via atomic phase increment update — no clicks (FR-002)
  */
+/**
+ * Singing-bowl additive partials: fundamental stays at the exact tuned Hz,
+ * a detuned twin creates the slow "shimmer" beating of a rubbed bowl, and
+ * quieter, slightly inharmonic overtones give the metallic body.
+ *
+ * MUST stay in sync with BOWL_PARTIALS in apps/mobile/src/lib/synthMath.ts
+ * (this worklet runs in an isolated scope and cannot import shared modules).
+ */
+const BOWL_PARTIALS = [
+  { ratio: 1, gain: 1 },        // fundamental — the precision-tuned frequency
+  { ratio: 1.005, gain: 0.55 }, // detuned twin → slow shimmer beating
+  { ratio: 2, gain: 0.28 },     // octave ring
+  { ratio: 3.01, gain: 0.14 },  // slightly inharmonic metallic body
+  { ratio: 4.19, gain: 0.07 },  // high sheen
+];
+const BOWL_GAIN_NORM = 1 / BOWL_PARTIALS.reduce((sum, p) => sum + p.gain, 0);
+
 class DDSProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
@@ -27,8 +46,12 @@ class DDSProcessor extends AudioWorkletProcessor {
     this._targetAmplitude = 1.0;
     this._ampSmooth = 0.0005; // ~10ms at 48kHz
 
-    // Waveform: 'sine' | 'square' | 'triangle' | 'sawtooth'
+    // Waveform: 'sine' | 'square' | 'triangle' | 'sawtooth' | 'bowl'
     this._waveform = 'sine';
+
+    // Bowl mode: one phase accumulator per additive partial, per channel
+    this._bowlPhasesL = new Float64Array(BOWL_PARTIALS.length);
+    this._bowlPhasesR = new Float64Array(BOWL_PARTIALS.length);
 
     // Isochronic mode
     this._isochronic = false;
@@ -81,6 +104,23 @@ class DDSProcessor extends AudioWorkletProcessor {
     }
   }
 
+  /**
+   * One additive singing-bowl sample. Advances the per-partial phase array
+   * in place. Partials at or above Nyquist are skipped to avoid aliasing.
+   */
+  _bowlSample(phases, freq, sr) {
+    let s = 0;
+    const nyquist = sr / 2;
+    for (let p = 0; p < BOWL_PARTIALS.length; p++) {
+      const partialFreq = freq * BOWL_PARTIALS[p].ratio;
+      if (partialFreq >= nyquist) continue;
+      s += Math.sin(phases[p] * 2 * Math.PI) * BOWL_PARTIALS[p].gain;
+      phases[p] += partialFreq / sr;
+      if (phases[p] >= 1.0) phases[p] -= 1.0;
+    }
+    return s * BOWL_GAIN_NORM;
+  }
+
   process(inputs, outputs) {
     const output = outputs[0];
     if (!output || output.length === 0) return true;
@@ -107,17 +147,28 @@ class DDSProcessor extends AudioWorkletProcessor {
       }
 
       const amp = this._amplitude * isoEnv;
+      const isBowl = this._waveform === 'bowl';
 
       // Left channel
-      const sL = this._sample(this._phaseL, this._waveform) * amp;
-      this._phaseL += dtL;
-      if (this._phaseL >= 1.0) this._phaseL -= 1.0;
+      let sL;
+      if (isBowl) {
+        sL = this._bowlSample(this._bowlPhasesL, this._freqL, sr) * amp;
+      } else {
+        sL = this._sample(this._phaseL, this._waveform) * amp;
+        this._phaseL += dtL;
+        if (this._phaseL >= 1.0) this._phaseL -= 1.0;
+      }
 
       if (this._mode === 'binaural') {
         // Right channel — independent frequency
-        const sR = this._sample(this._phaseR, this._waveform) * amp;
-        this._phaseR += dtR;
-        if (this._phaseR >= 1.0) this._phaseR -= 1.0;
+        let sR;
+        if (isBowl) {
+          sR = this._bowlSample(this._bowlPhasesR, this._freqR, sr) * amp;
+        } else {
+          sR = this._sample(this._phaseR, this._waveform) * amp;
+          this._phaseR += dtR;
+          if (this._phaseR >= 1.0) this._phaseR -= 1.0;
+        }
         left[i] = sL;
         right[i] = sR;
       } else {

@@ -54,8 +54,18 @@ export default function PlayerDetailScreen() {
     }
   }, [frequency, isPremium]);
 
-  const { isPlaying, isLoading, volume, error, play, pause, setVolume, setSleepTimer } =
-    useAudioPlayer(frequency ?? null);
+  const {
+    isPlaying,
+    isLoading,
+    volume,
+    error,
+    timbre,
+    play,
+    pause,
+    setVolume,
+    setSleepTimer,
+    setTimbre,
+  } = useAudioPlayer(frequency ?? null);
   const audioOutput = useAudioOutput();
   const download = useRecordedDownload(frequency ?? null);
 
@@ -297,6 +307,40 @@ export default function PlayerDetailScreen() {
         )}
         {download.error && <Text style={styles.errorText}>{download.error}</Text>}
 
+        {/* Tone character — synthesized tones only (recorded sessions are pre-mixed) */}
+        {frequency.category !== "recorded" && (
+          <View style={styles.toneRow}>
+            {(
+              [
+                { id: "pure", label: "Tuning Fork" },
+                { id: "bowl", label: "Singing Bowl" },
+              ] as const
+            ).map((t) => (
+              <TouchableOpacity
+                key={t.id}
+                style={[
+                  styles.toneChip,
+                  timbre === t.id && {
+                    backgroundColor: frequency.color + "25",
+                    borderColor: frequency.color + "60",
+                  },
+                ]}
+                onPress={() => setTimbre(t.id)}
+                activeOpacity={0.75}
+              >
+                <Text
+                  style={[
+                    styles.toneChipText,
+                    timbre === t.id && { color: frequency.color },
+                  ]}
+                >
+                  {t.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         {/* Waveform visualizer */}
         <View style={styles.waveRow}>
           {waveAnims.map((anim, i) => (
@@ -535,6 +579,26 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
   playBtnIcon: { fontSize: 32 },
+  // Tone character
+  toneRow: {
+    flexDirection: "row",
+    gap: spacing[2],
+    marginTop: -spacing[2],
+    marginBottom: spacing[5],
+  },
+  toneChip: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    borderRadius: radii.full,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  toneChipText: {
+    fontSize: fontSizes.sm,
+    color: colors.textMuted,
+    fontWeight: "600",
+  },
   // Volume
   sliderRow: {
     flexDirection: "row",

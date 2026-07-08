@@ -17,7 +17,7 @@
  */
 import { useState, useRef, useCallback, useEffect } from "react";
 
-export type Waveform = "sine" | "square" | "triangle" | "sawtooth";
+export type Waveform = "sine" | "square" | "triangle" | "sawtooth" | "bowl";
 export type PlayMode = "mono" | "binaural" | "isochronic";
 
 export interface PrecisionSession {

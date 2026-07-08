@@ -10,7 +10,7 @@ import {
   renameUserSound,
 } from "../db";
 
-const waveformSchema = z.enum(["sine", "square", "triangle", "sawtooth"]);
+const waveformSchema = z.enum(["sine", "square", "triangle", "sawtooth", "bowl"]);
 const modeSchema = z.enum(["mono", "binaural", "isochronic"]);
 const backgroundTypeSchema = z.enum(["none", "library", "upload"]);
 

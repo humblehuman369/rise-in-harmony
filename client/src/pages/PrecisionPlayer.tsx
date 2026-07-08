@@ -53,12 +53,13 @@ const PRESETS: Array<{ label: string; session: PrecisionSession; color: string }
   { label: "Gamma 40 Hz beat (200 Hz base)", color: "#F59E0B", session: { freqL: 200, beatHz: 40, waveform: "sine", mode: "binaural", name: "Gamma 40 Hz" } },
 ];
 
-const WAVEFORMS: Waveform[] = ["sine", "square", "triangle", "sawtooth"];
+const WAVEFORMS: Waveform[] = ["sine", "square", "triangle", "sawtooth", "bowl"];
 const WAVEFORM_LABELS: Record<Waveform, string> = {
   sine: "Sine",
   square: "Square",
   triangle: "Triangle",
   sawtooth: "Sawtooth",
+  bowl: "Bowl",
 };
 
 const SLEEP_OPTIONS = [5, 10, 15, 20, 30, 45, 60, 90, 120];
@@ -479,7 +480,7 @@ export default function PrecisionPlayer() {
               <div className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
                 Waveform
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 {WAVEFORMS.map(w => (
                   <button
                     key={w}
@@ -498,7 +499,12 @@ export default function PrecisionPlayer() {
                   </button>
                 ))}
               </div>
-              {waveform !== "sine" && (
+              {waveform === "bowl" && (
+                <p className="text-xs mt-2" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                  ◡ Singing bowl — layered overtones and a slow shimmer, with the fundamental locked at the exact tuned Hz.
+                </p>
+              )}
+              {waveform !== "sine" && waveform !== "bowl" && (
                 <p className="text-xs mt-2" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
                   ✦ Sine wave is recommended for healing and meditation applications.
                 </p>

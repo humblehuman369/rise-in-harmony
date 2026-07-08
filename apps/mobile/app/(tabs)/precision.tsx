@@ -54,6 +54,7 @@ const WAVEFORMS: Array<{ id: Waveform; label: string; symbol: string }> = [
   { id: "square", label: "Square", symbol: "⊓" },
   { id: "triangle", label: "Triangle", symbol: "△" },
   { id: "sawtooth", label: "Saw", symbol: "◿" },
+  { id: "bowl", label: "Bowl", symbol: "◡" },
 ];
 
 const MODES: Array<{ id: PlayMode; label: string }> = [
@@ -310,6 +311,13 @@ export default function PrecisionScreen() {
             );
           })}
         </View>
+
+        {waveform === "bowl" && (
+          <Text style={styles.hint}>
+            Singing bowl — layered overtones and slow shimmer, fundamental locked
+            at the exact Hz
+          </Text>
+        )}
 
         {/* Mode */}
         <Text style={styles.sectionLabel}>MODE</Text>

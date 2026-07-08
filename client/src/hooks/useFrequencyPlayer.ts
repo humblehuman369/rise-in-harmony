@@ -14,6 +14,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { getLibraryLoopUrl } from "@/data/backgroundLoops";
 
+/** Tone character for synthesized catalog frequencies (recorded sessions are unaffected). */
+export type ToneTimbre = "pure" | "bowl";
+
 export interface Frequency {
   id: string;
   name: string;
@@ -267,7 +270,9 @@ export function useFrequencyPlayer() {
   const [currentFrequency, setCurrentFrequency] = useState<Frequency | null>(null);
   const [volume, setVolumeState] = useState(0.6);
   const [playTime, setPlayTime] = useState(0);
+  const [timbre, setTimbreState] = useState<ToneTimbre>("pure");
 
+  const timbreRef = useRef<ToneTimbre>("pure");
   const workletNodeRef = useRef<AudioWorkletNode | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
   const mediaAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -392,7 +397,10 @@ export function useFrequencyPlayer() {
     });
 
     worklet.port.postMessage({ type: "setFreq", freqL, freqR });
-    worklet.port.postMessage({ type: "setWaveform", waveform: "sine" });
+    worklet.port.postMessage({
+      type: "setWaveform",
+      waveform: timbreRef.current === "bowl" ? "bowl" : "sine",
+    });
     worklet.port.postMessage({ type: "setMode", mode });
     worklet.port.postMessage({ type: "setIsochronic", enabled: freq.isIsochronic === true });
 
@@ -427,6 +435,16 @@ export function useFrequencyPlayer() {
     }
   }, []);
 
+  // ── Tone timbre (tuning fork ↔ singing bowl) — switches live ──────────────
+  const setTimbre = useCallback((t: ToneTimbre) => {
+    timbreRef.current = t;
+    setTimbreState(t);
+    workletNodeRef.current?.port.postMessage({
+      type: "setWaveform",
+      waveform: t === "bowl" ? "bowl" : "sine",
+    });
+  }, []);
+
   // ── Cleanup on unmount ────────────────────────────────────────────────────
   useEffect(() => {
     return () => {
@@ -444,9 +462,11 @@ export function useFrequencyPlayer() {
     currentFrequency,
     volume,
     playTime,
+    timbre,
     playFrequency,
     stopAudio,
     togglePlay,
     setVolume,
+    setTimbre,
   };
 }
