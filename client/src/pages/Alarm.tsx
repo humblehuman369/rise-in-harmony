@@ -62,13 +62,12 @@ interface Alarm {
   soundType?: "frequency" | "user_sound" | "studio_mix";
   studioMixId?: string;
   studioMixName?: string;
-<<<<<<< Updated upstream
   userSoundId?: number;
   userSoundName?: string;
+  ambientId?: string;    // if set, use ambient loop as wake sound
+  ambientLabel?: string;
 }
-
 const ALARMS_STORAGE_KEY = "rih_alarms_v1";
-
 function loadAlarms(): Alarm[] {
   try {
     const raw = localStorage.getItem(ALARMS_STORAGE_KEY);
@@ -78,13 +77,8 @@ function loadAlarms(): Alarm[] {
   }
   return DEFAULT_ALARMS;
 }
-
 function persistAlarms(alarms: Alarm[]) {
   localStorage.setItem(ALARMS_STORAGE_KEY, JSON.stringify(alarms));
-=======
-  ambientId?: string;    // if set, use ambient loop as wake sound
-  ambientLabel?: string;
->>>>>>> Stashed changes
 }
 
 const WAKE_SEQUENCES = [
@@ -217,7 +211,7 @@ interface AlarmPrefill {
   frequencyHz?: number;
 }
 
-type SoundTab = "frequency" | "recorded" | "mysounds" | "studio";
+type SoundTab = "frequency" | "recorded" | "mysounds" | "studio" | "ambient";
 
 function CreateAlarmModal({ onClose, onSave, prefill, isPremium, onPremiumNeeded }: {
   onClose: () => void;
@@ -238,16 +232,11 @@ function CreateAlarmModal({ onClose, onSave, prefill, isPremium, onPremiumNeeded
   const [selectedSeq, setSelectedSeq] = useState("gentle");
   const [selectedDays, setSelectedDays] = useState([1, 2, 3, 4, 5]);
   const [fadeIn, setFadeIn] = useState(5);
-<<<<<<< Updated upstream
   const [soundMode, setSoundMode] = useState<SoundTab>("frequency");
   const [selectedMixId, setSelectedMixId] = useState<string | null>(null);
   const [selectedSoundId, setSelectedSoundId] = useState<number | null>(null);
-=======
-  const [soundMode, setSoundMode] = useState<"frequency" | "ambient" | "studio">("frequency");
-  const [selectedMixId, setSelectedMixId] = useState<string | null>(null);
   const [selectedAmbientId, setSelectedAmbientId] = useState<string | null>(null);
   const [freqCategory, setFreqCategory] = useState<"solfeggio" | "binaural" | "recorded">("solfeggio");
->>>>>>> Stashed changes
   const savedMixes = loadSavedMixes();
   const { isAuthenticated } = useAuth();
   const mySounds = trpc.sounds.list.useQuery(undefined, { enabled: isAuthenticated });
@@ -269,13 +258,11 @@ function CreateAlarmModal({ onClose, onSave, prefill, isPremium, onPremiumNeeded
       toast("Please select at least one day");
       return;
     }
-<<<<<<< Updated upstream
     const base = {
       id: Date.now().toString(),
       time, label, frequencyId: selectedFreq, sequenceId: selectedSeq,
       days: selectedDays, enabled: true, fadeInMinutes: fadeIn,
     };
-
     if (soundMode === "studio" && selectedMixId) {
       const mix = savedMixes.find(m => m.id === selectedMixId);
       onSave({
@@ -292,22 +279,16 @@ function CreateAlarmModal({ onClose, onSave, prefill, isPremium, onPremiumNeeded
         userSoundId: selectedSoundId,
         userSoundName: s?.name,
       });
+    } else if (soundMode === "ambient" && selectedAmbientId) {
+      const ambient = BACKGROUND_LOOPS.find(l => l.id === selectedAmbientId);
+      onSave({
+        ...base,
+        ambientId: selectedAmbientId,
+        ambientLabel: ambient?.label,
+      });
     } else {
       onSave({ ...base, soundType: "frequency" });
     }
-=======
-    const selectedMix = savedMixes.find(m => m.id === selectedMixId);
-    const selectedAmbient = BACKGROUND_LOOPS.find(l => l.id === selectedAmbientId);
-    onSave({
-      id: Date.now().toString(),
-      time, label, frequencyId: selectedFreq, sequenceId: selectedSeq,
-      days: selectedDays, enabled: true, fadeInMinutes: fadeIn,
-      studioMixId: soundMode === "studio" && selectedMixId ? selectedMixId : undefined,
-      studioMixName: soundMode === "studio" && selectedMix ? selectedMix.name : undefined,
-      ambientId: soundMode === "ambient" && selectedAmbientId ? selectedAmbientId : undefined,
-      ambientLabel: soundMode === "ambient" && selectedAmbient ? selectedAmbient.label : undefined,
-    });
->>>>>>> Stashed changes
     onClose();
     toast("✓ Healing alarm set — your morning ritual awaits");
   };
@@ -879,7 +860,7 @@ export default function Alarm() {
       </div>
 
       {showCreate && (
-        <CreateAlarmModal onClose={() => setShowCreate(false)} onSave={saveAlarm} prefill={prefill} />
+        <CreateAlarmModal onClose={() => setShowCreate(false)} onSave={saveAlarm} prefill={prefill} isPremium={isPremium} onPremiumNeeded={() => setShowAlarmPaywall(true)} />
       )}
 
       {showAlarmPaywall && (
