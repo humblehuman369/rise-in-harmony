@@ -6,6 +6,7 @@
  */
 import { useState, useEffect } from "react";
 import { X, BookOpen, Smile, Meh, Frown, Laugh, Angry } from "lucide-react";
+import { trackMoodLogged } from "@/hooks/useAnalytics";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,6 +88,7 @@ export default function SessionJournal({
       durationMinutes,
     };
     saveJournalEntry(entry);
+    trackMoodLogged(selectedMood, frequencyHz);
     setSaved(true);
     onSaved?.(entry);
   };

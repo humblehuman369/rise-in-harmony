@@ -9,6 +9,7 @@ import {
   InsertUserSound,
   Session,
   StudioPreset,
+  User,
   UserSound,
   alarms,
   sessions,
@@ -88,13 +89,54 @@ export async function getUserById(id: number) {
   return result[0];
 }
 
-export async function updateUserOnboarding(userId: number, goal: string): Promise<void> {
+export async function updateUserOnboarding(
+  userId: number,
+  goal: string,
+  profile?: Record<string, unknown>,
+): Promise<void> {
   const db = await getDb();
   if (!db) return;
   await db
     .update(users)
-    .set({ onboardingGoal: goal, onboardingCompleted: true })
+    .set({
+      onboardingGoal: goal,
+      onboardingCompleted: true,
+      ...(profile ? { onboardingProfile: profile } : {}),
+    })
     .where(eq(users.id, userId));
+}
+
+export async function setStripeCustomerId(
+  userId: number,
+  stripeCustomerId: string,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ stripeCustomerId }).where(eq(users.id, userId));
+}
+
+export async function getUserByStripeCustomerId(
+  stripeCustomerId: string,
+): Promise<User | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select()
+    .from(users)
+    .where(eq(users.stripeCustomerId, stripeCustomerId))
+    .limit(1);
+  return rows[0];
+}
+
+/** Count of lifetime subscribers, used to enforce the founder seat cap. */
+export async function countLifetimeUsers(): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(users)
+    .where(eq(users.subscriptionTier, "lifetime"));
+  return Number(rows[0]?.count ?? 0);
 }
 
 export async function updateUserSubscription(
@@ -509,7 +551,8 @@ export async function markReEngagementEmailSent(userId: number): Promise<boolean
 
 export async function logSubscriptionEvent(data: {
   userId?: number;
-  revenuecatUserId: string;
+  /** RevenueCat app_user_id for mobile events; omitted for Stripe web events */
+  revenuecatUserId?: string;
   eventType: string;
   productId?: string;
   expiresAt?: Date;

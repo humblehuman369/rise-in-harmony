@@ -1,12 +1,16 @@
 /**
  * PremiumPaywall — Upgrade modal for locked premium frequencies
- * Shows pricing tiers, feature list, and free trial CTA
+ * Shows pricing tiers, feature list, and Stripe Checkout CTA
  * Bioluminescent Depth theme
  */
 import { useState } from "react";
-import { X, Sparkles, Check, Lock, Zap, Music, Waves, Star } from "lucide-react";
+import { X, Sparkles, Check, Lock, Zap, Music, Waves, Star, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { getLoginUrl } from "@/const";
+import { trackUpgradeTapped } from "@/hooks/useAnalytics";
 
 // ─── Pricing tiers ────────────────────────────────────────────────────────────
 
@@ -41,10 +45,10 @@ const PLANS = [
 ];
 
 const PREMIUM_FEATURES = [
-  { Icon: Music,  text: "All 13 healing frequencies (8 premium unlocked)" },
+  { Icon: Music,  text: "All 25 healing frequencies & recorded sessions" },
   { Icon: Waves,  text: "Sound Studio with music & nature layers" },
   { Icon: Zap,    text: "7-Chakra guided morning sequence" },
-  { Icon: Star,   text: "Binaural Focus & Chakra Awakening alarms" },
+  { Icon: Star,   text: "Unlimited healing alarms" },
   { Icon: Sparkles, text: "Unlimited session journal & mood history" },
 ];
 
@@ -65,13 +69,40 @@ export default function PremiumPaywall({
   const pricingVariant = useFeatureFlag<string>("pricing-test", "control");
   const defaultPlan = pricingVariant === "lifetime-highlight" ? "lifetime" : "annual";
   const [selectedPlan, setSelectedPlan] = useState(defaultPlan);
+  const { user } = useAuth();
+  const billingConfig = trpc.billing.config.useQuery();
+  const createCheckout = trpc.billing.createCheckoutSession.useMutation();
 
-  const handleStartTrial = () => {
-    toast("✦ Free trial — coming in the native app launch (Phase 2)");
-    onClose();
+  const founderSeatsRemaining = billingConfig.data?.founderSeatsRemaining ?? null;
+  const founderSoldOut = founderSeatsRemaining !== null && founderSeatsRemaining <= 0;
+
+  const handleStartTrial = async () => {
+    const tier = selectedPlan as "monthly" | "annual" | "lifetime";
+    trackUpgradeTapped(tier === "annual" ? "yearly" : tier);
+
+    if (!user) {
+      window.location.href = getLoginUrl();
+      return;
+    }
+    if (!billingConfig.data?.enabled) {
+      toast("✦ Checkout is almost ready — try again shortly.");
+      return;
+    }
+    try {
+      const { url } = await createCheckout.mutateAsync({ tier });
+      if (url) window.location.href = url;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not start checkout");
+    }
   };
 
   const plan = PLANS.find(p => p.id === selectedPlan)!;
+  const ctaLabel =
+    selectedPlan === "annual"
+      ? "Start 7-Day Free Trial"
+      : selectedPlan === "lifetime"
+        ? "Claim Founder Lifetime"
+        : "Subscribe Monthly";
 
   return (
     <div
@@ -194,10 +225,20 @@ export default function PremiumPaywall({
             ))}
           </div>
 
+          {/* Founder seat counter */}
+          {selectedPlan === "lifetime" && founderSeatsRemaining !== null && (
+            <p className="text-center text-[10px] mb-2" style={{ color: "#F59E0B", fontFamily: "DM Sans, sans-serif" }}>
+              {founderSoldOut
+                ? "All founder seats have been claimed"
+                : `${founderSeatsRemaining} of 500 founder seats remaining`}
+            </p>
+          )}
+
           {/* CTA */}
           <button
             onClick={handleStartTrial}
-            className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98]"
+            disabled={createCheckout.isPending || (selectedPlan === "lifetime" && founderSoldOut)}
+            className="w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
             style={{
               background: `linear-gradient(135deg, ${plan.color}, ${plan.color}CC)`,
               color: "#0A0B14",
@@ -205,12 +246,16 @@ export default function PremiumPaywall({
               boxShadow: `0 0 24px ${plan.color}35`,
             }}
           >
-            <Sparkles size={16} />
-            Start 7-Day Free Trial
+            {createCheckout.isPending ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            {createCheckout.isPending ? "Opening secure checkout…" : ctaLabel}
           </button>
 
           <p className="text-center text-[10px] mt-3" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>
-            No charge for 7 days · Cancel anytime · Secure payment
+            {selectedPlan === "annual"
+              ? "No charge for 7 days · Cancel anytime · Secure payment via Stripe"
+              : selectedPlan === "lifetime"
+                ? "One-time payment · Yours forever · Secure payment via Stripe"
+                : "Cancel anytime · Secure payment via Stripe"}
           </p>
         </div>
       </div>

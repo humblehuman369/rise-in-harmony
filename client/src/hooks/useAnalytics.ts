@@ -36,10 +36,40 @@ export function useAnalytics(userId?: number, userEmail?: string) {
 
 // ─── Core Event Tracking Functions ───────────────────────────────────────────
 
+/** Fired when the onboarding quiz is first shown */
+export function trackOnboardingStarted() {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("onboarding_started");
+}
+
 /** Fired when a user completes onboarding and selects a goal */
 export function trackOnboardingComplete(goal: string) {
   if (!POSTHOG_KEY) return;
   posthog.capture("onboarding_completed", { goal });
+}
+
+/** Fired when the user's first alarm is set (the activation metric) */
+export function trackFirstAlarmSet(frequencyHz: number, wakeTime: string) {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("first_alarm_set", { frequencyHz, wakeTime });
+}
+
+/** Fired when a mood is logged after a session */
+export function trackMoodLogged(moodRating: number, frequencyHz: number) {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("mood_logged", { moodRating, frequencyHz });
+}
+
+/** Fired on return from a successful Stripe checkout */
+export function trackSubscriptionPurchased(source: "stripe_checkout") {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("subscription_purchased", { source });
+}
+
+/** Fired when a moment-triggered paywall is shown (streak, insight, alarm limit, program) */
+export function trackPaywallTriggered(trigger: "streak_7" | "second_alarm" | "insight_card" | "program_day_8") {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("paywall_shown", { source: "moment_trigger", trigger });
 }
 
 /** Fired when a frequency session starts */

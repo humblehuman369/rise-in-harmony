@@ -39,6 +39,10 @@ vi.mock("./db", () => ({
   }),
   createAlarm: vi.fn().mockResolvedValue({ id: 1 }),
   getAlarmsByUser: vi.fn().mockResolvedValue([]),
+  getUserAlarms: vi.fn().mockResolvedValue([]),
+  setStripeCustomerId: vi.fn().mockResolvedValue(undefined),
+  getUserByStripeCustomerId: vi.fn().mockResolvedValue(undefined),
+  countLifetimeUsers: vi.fn().mockResolvedValue(0),
   updateAlarm: vi.fn().mockResolvedValue(undefined),
   deleteAlarm: vi.fn().mockResolvedValue(undefined),
   getPresetsByUser: vi.fn().mockResolvedValue([]),
@@ -192,6 +196,62 @@ describe("alarms.create", () => {
         fadeInMinutes: 5,
       })
     ).rejects.toThrow();
+  });
+
+  it("blocks a second alarm for free-tier users", async () => {
+    const { getUserAlarms } = await import("./db");
+    vi.mocked(getUserAlarms).mockResolvedValueOnce([{ id: 1 } as never]);
+    const ctx = makeAuthCtx();
+    const caller = appRouter.createCaller(ctx);
+    await expect(
+      caller.alarms.create({
+        label: "Second Alarm",
+        hour: 8,
+        minute: 0,
+        days: [1],
+        soundType: "frequency",
+        fadeInMinutes: 5,
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("allows unlimited alarms for premium users", async () => {
+    const { getUserById, getUserAlarms } = await import("./db");
+    vi.mocked(getUserById).mockResolvedValueOnce({
+      id: 1,
+      subscriptionTier: "premium",
+    } as never);
+    vi.mocked(getUserAlarms).mockResolvedValueOnce([{ id: 1 }, { id: 2 }] as never);
+    const ctx = makeAuthCtx();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.alarms.create({
+      label: "Third Alarm",
+      hour: 9,
+      minute: 0,
+      days: [1],
+      soundType: "frequency",
+      fadeInMinutes: 5,
+    });
+    expect(result).toHaveProperty("id");
+  });
+});
+
+// ─── Billing tests ────────────────────────────────────────────────────────────
+describe("billing", () => {
+  it("reports billing disabled when Stripe is not configured", async () => {
+    const ctx = makeAuthCtx();
+    const caller = appRouter.createCaller(ctx);
+    const config = await caller.billing.config();
+    expect(config.enabled).toBe(false);
+    expect(config.founderSeatCap).toBe(500);
+  });
+
+  it("rejects checkout when Stripe is not configured", async () => {
+    const ctx = makeAuthCtx();
+    const caller = appRouter.createCaller(ctx);
+    await expect(
+      caller.billing.createCheckoutSession({ tier: "annual" })
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
   });
 });
 

@@ -10,6 +10,10 @@ import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useAlarmNotifications } from "@/hooks/useAlarmNotifications";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { trackPaywallTriggered } from "@/hooks/useAnalytics";
+import PremiumPaywall from "@/components/PremiumPaywall";
 
 // ─── Mobile browser detection ────────────────────────────────────────────────
 // Mobile browsers suspend a background/locked tab's timers, so web alarms
@@ -173,10 +177,21 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit }: {
   );
 }
 
-function CreateAlarmModal({ onClose, onSave }: { onClose: () => void; onSave: (alarm: Alarm) => void }) {
-  const [time, setTime] = useState("07:00");
+interface AlarmPrefill {
+  wakeTime?: string;
+  frequencyHz?: number;
+}
+
+function CreateAlarmModal({ onClose, onSave, prefill }: { onClose: () => void; onSave: (alarm: Alarm) => void; prefill?: AlarmPrefill | null }) {
+  const prefillTime = prefill?.wakeTime
+    ? `${prefill.wakeTime.split(":")[0].padStart(2, "0")}:${prefill.wakeTime.split(":")[1]}`
+    : "07:00";
+  const prefillFreqId = prefill?.frequencyHz
+    ? FREQUENCIES.find(f => f.hz === prefill.frequencyHz && !f.isPremium)?.id ?? "432hz"
+    : "432hz";
+  const [time, setTime] = useState(prefillTime);
   const [label, setLabel] = useState("Morning Harmony");
-  const [selectedFreq, setSelectedFreq] = useState("432hz");
+  const [selectedFreq, setSelectedFreq] = useState(prefillFreqId);
   const [selectedSeq, setSelectedSeq] = useState("gentle");
   const [selectedDays, setSelectedDays] = useState([1, 2, 3, 4, 5]);
   const [fadeIn, setFadeIn] = useState(5);
@@ -429,8 +444,36 @@ function CreateAlarmModal({ onClose, onSave }: { onClose: () => void; onSave: (a
 export default function Alarm() {
   const [alarms, setAlarms] = useState<Alarm[]>(DEFAULT_ALARMS);
   const [showCreate, setShowCreate] = useState(false);
+  const [showAlarmPaywall, setShowAlarmPaywall] = useState(false);
   const { permission, requestPermission, scheduleNotification, cancelNotification, isGranted, isSupported } = useAlarmNotifications();
   const mobilePlatform = detectMobilePlatform();
+  const { isAuthenticated } = useAuth();
+  const subStatus = trpc.subscription.status.useQuery(undefined, { enabled: isAuthenticated });
+  const isPremium = subStatus.data?.isPremium ?? false;
+  const [prefill, setPrefill] = useState<AlarmPrefill | null>(null);
+
+  // Onboarding quiz handoff: open the create modal pre-filled once
+  useEffect(() => {
+    const raw = localStorage.getItem("rih_alarm_prefill");
+    if (!raw) return;
+    localStorage.removeItem("rih_alarm_prefill");
+    try {
+      setPrefill(JSON.parse(raw));
+      setShowCreate(true);
+    } catch {
+      // malformed prefill — ignore
+    }
+  }, []);
+
+  // Free tier includes one alarm; the second creation attempt is a proof-moment paywall
+  const handleAddAlarm = () => {
+    if (!isPremium && alarms.length >= 1) {
+      trackPaywallTriggered("second_alarm");
+      setShowAlarmPaywall(true);
+      return;
+    }
+    setShowCreate(true);
+  };
 
   // Schedule notifications for all enabled alarms whenever alarms or permission changes
   useEffect(() => {
@@ -503,7 +546,7 @@ export default function Alarm() {
               </h1>
             </div>
             <button
-              onClick={() => setShowCreate(true)}
+              onClick={handleAddAlarm}
               className="btn-teal flex items-center gap-2 px-5 py-2.5 text-sm font-semibold"
             >
               <Plus size={16} />
@@ -672,7 +715,14 @@ export default function Alarm() {
       </div>
 
       {showCreate && (
-        <CreateAlarmModal onClose={() => setShowCreate(false)} onSave={saveAlarm} />
+        <CreateAlarmModal onClose={() => setShowCreate(false)} onSave={saveAlarm} prefill={prefill} />
+      )}
+
+      {showAlarmPaywall && (
+        <PremiumPaywall
+          triggerFrequencyName="Unlimited alarms are a Premium feature"
+          onClose={() => setShowAlarmPaywall(false)}
+        />
       )}
     </Layout>
   );

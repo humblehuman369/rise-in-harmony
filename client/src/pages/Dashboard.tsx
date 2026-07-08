@@ -3,7 +3,7 @@
  * Streak tracking, session history, frequency usage, mood trends
  * Bioluminescent Depth theme
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Flame, Clock, Waves, TrendingUp, Calendar, Award, BarChart3, Target, BookOpen, Loader2, Music2, Play, Pencil, Trash2 } from "lucide-react";
 import Layout from "@/components/Layout";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
@@ -14,6 +14,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { formatSoundSummary, type BackgroundType } from "@/data/backgroundLoops";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import { trackSubscriptionPurchased, trackPaywallTriggered } from "@/hooks/useAnalytics";
+import PremiumPaywall from "@/components/PremiumPaywall";
 
 // ─── Chakra Map ───────────────────────────────────────────────────────────────
 
@@ -449,9 +451,49 @@ function MySoundsCard() {
   );
 }
 
+function ManageSubscription() {
+  const { isAuthenticated } = useAuth();
+  const subStatus = trpc.subscription.status.useQuery(undefined, { enabled: isAuthenticated });
+  const createPortal = trpc.billing.createPortalSession.useMutation();
+
+  // Post-checkout return: confirm success once
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("billing") === "success") {
+      trackSubscriptionPurchased("stripe_checkout");
+      toast.success("Welcome to Premium ✦", {
+        description: "Your subscription is active. Enjoy the full library.",
+      });
+      window.history.replaceState({}, "", "/dashboard");
+    }
+  }, []);
+
+  if (!isAuthenticated || !subStatus.data?.isPremium) return null;
+
+  return (
+    <button
+      onClick={async () => {
+        try {
+          const { url } = await createPortal.mutateAsync();
+          if (url) window.location.href = url;
+        } catch {
+          toast.error("Could not open billing management");
+        }
+      }}
+      disabled={createPortal.isPending}
+      className="text-xs px-3 py-2 rounded-lg transition-all disabled:opacity-60"
+      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}
+    >
+      {subStatus.data.tier === "lifetime" ? "✦ Founder" : "Manage subscription"}
+    </button>
+  );
+}
+
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<"week" | "month">("week");
   const { isAuthenticated } = useAuth();
+  const [showStreakPaywall, setShowStreakPaywall] = useState(false);
+  const subStatus = trpc.subscription.status.useQuery(undefined, { enabled: isAuthenticated });
 
   // Server stats (when logged in)
   const { data: serverStats, isLoading: statsLoading } = trpc.sessions.stats.useQuery(
@@ -534,6 +576,16 @@ export default function Dashboard() {
         })()
       : 7;
 
+  // Moment-triggered paywall: 7-day streak reached, free tier, shown once
+  useEffect(() => {
+    if (!isAuthenticated || subStatus.data?.isPremium) return;
+    if (currentStreak >= 7 && !localStorage.getItem("rih_pw_streak7_shown")) {
+      localStorage.setItem("rih_pw_streak7_shown", "true");
+      trackPaywallTriggered("streak_7");
+      setShowStreakPaywall(true);
+    }
+  }, [isAuthenticated, subStatus.data?.isPremium, currentStreak]);
+
   // Determine which chakra Hz values were played this week (last 7 days)
   const playedChakraHzThisWeek = useMemo(() => {
     const weekAgo = Date.now() - 7 * 86400000;
@@ -548,14 +600,24 @@ export default function Dashboard() {
     <Layout>
       <div className="min-h-screen" style={{ background: '#0A0B14' }}>
         {/* Header */}
-        <div className="px-6 pt-8 pb-6">
-          <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-            Wellness Analytics
+        <div className="px-6 pt-8 pb-6 flex items-end justify-between gap-4 flex-wrap">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+              Wellness Analytics
+            </div>
+            <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5' }}>
+              Your Journey
+            </h1>
           </div>
-          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5' }}>
-            Your Journey
-          </h1>
+          <ManageSubscription />
         </div>
+
+        {showStreakPaywall && (
+          <PremiumPaywall
+            triggerFrequencyName={`${currentStreak}-day streak — protect it with Premium`}
+            onClose={() => setShowStreakPaywall(false)}
+          />
+        )}
 
         {/* Stats grid */}
         <div className="px-6 mb-6 grid grid-cols-2 lg:grid-cols-4 gap-4">

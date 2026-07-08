@@ -20,11 +20,16 @@ export const subscriptionRouter = router({
     };
   }),
 
-  // Complete onboarding — save goal and mark done, send welcome email
+  // Complete onboarding — save goal + quiz profile, mark done, send welcome email
   completeOnboarding: protectedProcedure
-    .input(z.object({ goal: z.string().min(1).max(64) }))
+    .input(
+      z.object({
+        goal: z.string().min(1).max(64),
+        profile: z.record(z.string(), z.unknown()).optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      await updateUserOnboarding(ctx.user.id, input.goal);
+      await updateUserOnboarding(ctx.user.id, input.goal, input.profile);
       // Fire welcome email asynchronously (don't block response)
       if (ctx.user.email) {
         sendWelcomeEmail(ctx.user.email, ctx.user.name || "Friend", input.goal).catch(console.error);

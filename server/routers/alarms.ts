@@ -1,6 +1,10 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
-import { createAlarm, deleteAlarm, getUserAlarms, updateAlarm } from "../db";
+import { createAlarm, deleteAlarm, getUserAlarms, getUserById, updateAlarm } from "../db";
+
+/** Free tier includes exactly one alarm; Premium/Lifetime are unlimited. */
+const FREE_ALARM_LIMIT = 1;
 
 export const alarmsRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
@@ -23,6 +27,18 @@ export const alarmsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const user = await getUserById(ctx.user.id);
+      const isPremium =
+        user?.subscriptionTier === "premium" || user?.subscriptionTier === "lifetime";
+      if (!isPremium) {
+        const existing = await getUserAlarms(ctx.user.id);
+        if (existing.length >= FREE_ALARM_LIMIT) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "FREE_ALARM_LIMIT",
+          });
+        }
+      }
       const id = await createAlarm({
         userId: ctx.user.id,
         label: input.label,

@@ -28,6 +28,9 @@ export const users = mysqlTable("users", {
     .notNull(),
   subscriptionExpiresAt: timestamp("subscriptionExpiresAt"),
   revenuecatUserId: varchar("revenuecatUserId", { length: 128 }),
+  stripeCustomerId: varchar("stripeCustomerId", { length: 64 }),
+  // JSON blob from the onboarding quiz (goal, wake time, experience, headphones)
+  onboardingProfile: json("onboardingProfile"),
   // Email deduplication timestamps
   welcomeEmailSentAt: timestamp("welcomeEmailSentAt"),
   lastStreakMilestoneEmailAt: timestamp("lastStreakMilestoneEmailAt"),
