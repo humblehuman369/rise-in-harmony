@@ -7,6 +7,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { Play, AlarmClock, Waves, Sparkles, ChevronRight, Star, Shield, Zap } from "lucide-react";
 import Layout from "@/components/Layout";
+import PricingSection from "@/components/PricingSection";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { toast } from "sonner";
 
@@ -387,7 +388,7 @@ export default function Home() {
               Start Free — No Sign Up
             </button>
             <button
-              onClick={() => toast("Premium — $7.99/month or $49.99/year. Coming soon!")}
+              onClick={() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" })}
               className="flex items-center gap-2 px-10 py-4 text-base font-semibold rounded-full transition-all duration-200"
               style={{
                 background: 'rgba(139,92,246,0.12)',
@@ -397,11 +398,14 @@ export default function Home() {
               }}
             >
               <Sparkles size={18} />
-              Go Premium — $7.99/mo
+              Go Premium — from $4.17/mo
             </button>
           </div>
         </div>
       </section>
+
+      {/* Pricing */}
+      <PricingSection />
 
       {/* Footer */}
       <footer className="py-8 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)', background: '#0A0B14' }}>
