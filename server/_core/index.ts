@@ -42,6 +42,18 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerSoundsUpload(app);
+  // Temporary debug endpoint — remove after confirming env vars
+  app.get("/api/debug-env", (_req, res) => {
+    res.json({
+      RIH_STRIPE_SECRET_KEY_present: !!process.env.RIH_STRIPE_SECRET_KEY,
+      RIH_STRIPE_SECRET_KEY_prefix: (process.env.RIH_STRIPE_SECRET_KEY || "").slice(0, 7) || "(empty)",
+      RIH_STRIPE_WEBHOOK_SECRET_present: !!process.env.RIH_STRIPE_WEBHOOK_SECRET,
+      RIH_STRIPE_WEBHOOK_SECRET_prefix: (process.env.RIH_STRIPE_WEBHOOK_SECRET || "").slice(0, 8) || "(empty)",
+      STRIPE_SECRET_KEY_present: !!process.env.STRIPE_SECRET_KEY,
+      NODE_ENV: process.env.NODE_ENV,
+    });
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
