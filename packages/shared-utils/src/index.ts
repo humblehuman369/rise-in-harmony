@@ -194,20 +194,21 @@ export const FREQUENCIES: Frequency[] = [
   },
   // Recorded Schumann binaural sessions (Sinta Positivo — All Hertz Frequencies)
   // Pre-mixed studio recordings: Solfeggio carrier + 7.83Hz Schumann binaural
-  // beat. Streamed from the web host; not synthesized. Headphones required.
+  // beat. Served from Manus storage (S3/CloudFront) via the /manus-storage
+  // proxy on the web host; not synthesized. Headphones required.
   ...([
-    { hz: 174, name: "Foundation", color: "#6B7280", isPremium: true },
-    { hz: 285, name: "Quantum Cognition", color: "#10B981", isPremium: true },
-    { hz: 396, name: "Liberation", color: "#EF4444", isPremium: true },
-    { hz: 417, name: "Transmutation", color: "#84CC16", isPremium: true },
-    { hz: 432, name: "Natural Harmony", color: "#00D4AA", isPremium: false },
-    { hz: 528, name: "Miracle Tone", color: "#06B6D4", isPremium: false },
-    { hz: 639, name: "Connection", color: "#3B82F6", isPremium: true },
-    { hz: 741, name: "Awakening", color: "#8B5CF6", isPremium: true },
-    { hz: 852, name: "Spiritual Order", color: "#A855F7", isPremium: true },
-    { hz: 963, name: "Divine Consciousness", color: "#EC4899", isPremium: true },
+    { hz: 174, name: "Foundation", color: "#6B7280", isPremium: true, key: "binaural-174_7724fc00" },
+    { hz: 285, name: "Quantum Cognition", color: "#10B981", isPremium: true, key: "binaural-285_6609f8ba" },
+    { hz: 396, name: "Liberation", color: "#EF4444", isPremium: true, key: "binaural-396_e0297d89" },
+    { hz: 417, name: "Transmutation", color: "#84CC16", isPremium: true, key: "binaural-417_8c90d437" },
+    { hz: 432, name: "Natural Harmony", color: "#00D4AA", isPremium: false, key: "binaural-432_f5a497d0" },
+    { hz: 528, name: "Miracle Tone", color: "#06B6D4", isPremium: false, key: "binaural-528_e2b21090" },
+    { hz: 639, name: "Connection", color: "#3B82F6", isPremium: true, key: "binaural-639_22da3d79" },
+    { hz: 741, name: "Awakening", color: "#8B5CF6", isPremium: true, key: "binaural-741_8aa6ae82" },
+    { hz: 852, name: "Spiritual Order", color: "#A855F7", isPremium: true, key: "binaural-852_2d0302ae" },
+    { hz: 963, name: "Divine Consciousness", color: "#EC4899", isPremium: true, key: "binaural-963_6aeda3b9" },
   ] as const).map(
-    ({ hz, name, color, isPremium }): Frequency => ({
+    ({ hz, name, color, isPremium, key }): Frequency => ({
       id: `recorded-${hz}`,
       hz,
       name: `${name} · Schumann`,
@@ -215,7 +216,7 @@ export const FREQUENCIES: Frequency[] = [
       color,
       isPremium,
       category: "recorded",
-      audioUrl: `/sounds/binaural-${hz}.mp3`,
+      audioUrl: `/manus-storage/${key}.mp3`,
     })
   ),
 ];

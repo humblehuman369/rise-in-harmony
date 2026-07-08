@@ -12,6 +12,7 @@
  *   NFR-FREQ-004  Double-precision phase accumulation
  */
 import { useState, useRef, useCallback, useEffect } from "react";
+import { getLibraryLoopUrl } from "@/data/backgroundLoops";
 
 export interface Frequency {
   id: string;
@@ -221,7 +222,7 @@ export const FREQUENCIES: Frequency[] = [
     name: `${name} · Schumann`,
     hz,
     binauralOffset: 7.83,
-    audioUrl: `/sounds/binaural-${hz}.mp3`,
+    audioUrl: getLibraryLoopUrl(`binaural-${hz}`),
     category: "recorded",
     description: `${hz}Hz Recorded Session — ${name} + 7.83Hz Schumann binaural`,
     benefit: `Studio-mixed ${hz}Hz session layered with the Earth's 7.83Hz Schumann resonance as a true binaural beat. Headphones required.`,

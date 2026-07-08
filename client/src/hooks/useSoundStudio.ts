@@ -11,6 +11,7 @@
  * A DynamicsCompressorNode on the master bus prevents level stacking.
  */
 import { useState, useRef, useCallback, useEffect } from "react";
+import { getLibraryLoopUrl } from "@/data/backgroundLoops";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,23 +32,23 @@ export interface StudioState {
   masterVolume: number;      // 0–1
 }
 
-// ─── Bundled audio file URLs ──────────────────────────────────────────────────
+// ─── Audio file URLs (served from Manus storage via getLibraryLoopUrl) ───────
 const NATURE_AUDIO_URLS: Record<string, string> = {
-  rain: "/sounds/ambient-rain.mp3",
-  ocean: "/sounds/ambient-ocean.mp3",
-  forest: "/sounds/ambient-forest.mp3",
-  wind: "/sounds/ambient-wind.mp3",
-  fire: "/sounds/ambient-fire.mp3",
-  river: "/sounds/ambient-river.mp3",
-  night: "/sounds/ambient-night.mp3",
-  cave: "/sounds/ambient-cave.mp3",
-  bowl: "/sounds/ambient-bowl.mp3",
+  rain: getLibraryLoopUrl("ambient-rain"),
+  ocean: getLibraryLoopUrl("ambient-ocean"),
+  forest: getLibraryLoopUrl("ambient-forest"),
+  wind: getLibraryLoopUrl("ambient-wind"),
+  fire: getLibraryLoopUrl("ambient-fire"),
+  river: getLibraryLoopUrl("ambient-river"),
+  night: getLibraryLoopUrl("ambient-night"),
+  cave: getLibraryLoopUrl("ambient-cave"),
+  bowl: getLibraryLoopUrl("ambient-bowl"),
 };
 
 const MUSIC_AUDIO_URLS: Record<Exclude<MusicMode, "none">, string> = {
-  ambient: "/sounds/music-ambient.mp3",
-  drone: "/sounds/music-drone.mp3",
-  crystal: "/sounds/music-crystal.mp3",
+  ambient: getLibraryLoopUrl("music-ambient"),
+  drone: getLibraryLoopUrl("music-drone"),
+  crystal: getLibraryLoopUrl("music-crystal"),
 };
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────

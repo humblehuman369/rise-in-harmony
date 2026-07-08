@@ -115,6 +115,7 @@ references/audio/incoming/
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
 .project-config.json
+# Web audio is served from Manus storage (S3/CloudFront), not static deploy.
+# Mobile bundled audio MUST stay in git — Metro require()s it and EAS builds from GitHub.
 client/public/sounds/
-apps/mobile/assets/sounds/
 references/audio/processed/

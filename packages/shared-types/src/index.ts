@@ -113,8 +113,8 @@ export interface Frequency {
   affirmation?: string;
   /**
    * Recorded sessions only: path to the pre-mixed audio file, relative to the
-   * web host (e.g. "/sounds/binaural-528.mp3"). Playback streams/loops this
-   * file instead of live synthesis.
+   * web host (e.g. "/manus-storage/binaural-528_<hash>.mp3"). Playback
+   * streams/loops this file instead of live synthesis.
    */
   audioUrl?: string;
 }

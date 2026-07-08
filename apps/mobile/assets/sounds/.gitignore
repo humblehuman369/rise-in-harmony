@@ -1,0 +1,7 @@
+# Audio files are bundled via EAS from the GitHub repo directly.
+# They are excluded from the webdev checkpoint system (too large).
+# Push audio files directly to GitHub using git push from your local machine.
+*.mp3
+*.wav
+*.ogg
+*.m4a
