@@ -3,8 +3,8 @@
  * Create, manage, and configure healing frequency alarms
  * Bioluminescent Depth theme
  */
-import { useState, useEffect } from "react";
-import { Plus, AlarmClock, Trash2, Edit3, Bell, BellOff, Waves, Sunrise, Zap, Lock, BellRing, ShieldCheck, Layers, Smartphone, Music2, Wind, Droplets, Flame, TreePine, Moon, Mountain, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Plus, AlarmClock, Trash2, Edit3, Bell, BellOff, Waves, Sunrise, Zap, Lock, BellRing, ShieldCheck, Layers, Smartphone, Music2, Wind, Droplets, Flame, TreePine, Moon, Mountain, ChevronDown, ChevronUp, Play, Square } from "lucide-react";
 import Layout from "@/components/Layout";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { BACKGROUND_LOOPS, getLibraryLoopUrl } from "@/data/backgroundLoops";
@@ -237,6 +237,31 @@ function CreateAlarmModal({ onClose, onSave, prefill, isPremium, onPremiumNeeded
   const [selectedSoundId, setSelectedSoundId] = useState<number | null>(null);
   const [selectedAmbientId, setSelectedAmbientId] = useState<string | null>(null);
   const [freqCategory, setFreqCategory] = useState<"solfeggio" | "binaural" | "recorded">("solfeggio");
+  // ── Audio preview ────────────────────────────────────────────────────────
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const stopPreview = useCallback(() => {
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current.src = "";
+      previewAudioRef.current = null;
+    }
+    setPreviewId(null);
+  }, []);
+  const togglePreview = useCallback((id: string, url: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (previewId === id) { stopPreview(); return; }
+    stopPreview();
+    const audio = new Audio(url);
+    audio.loop = true;
+    audio.volume = 0.7;
+    previewAudioRef.current = audio;
+    setPreviewId(id);
+    audio.play().catch(() => setPreviewId(null));
+    audio.onended = () => setPreviewId(null);
+  }, [previewId, stopPreview]);
+  // Stop preview when modal unmounts
+  useEffect(() => stopPreview, [stopPreview]);
   const savedMixes = loadSavedMixes();
   const { isAuthenticated } = useAuth();
   const mySounds = trpc.sounds.list.useQuery(undefined, { enabled: isAuthenticated });
@@ -419,30 +444,49 @@ function CreateAlarmModal({ onClose, onSave, prefill, isPremium, onPremiumNeeded
                 ))}
               </div>
               <div className="grid grid-cols-2 gap-2">
-                {FREQUENCIES.filter(f => f.category === freqCategory).map(f => (
-                  <button key={f.id}
-                    onClick={() => {
-                      if (f.isPremium) { toast("✦ Premium frequency — upgrade to unlock"); return; }
-                      setSelectedFreq(f.id);
-                    }}
-                    className="p-3 rounded-xl text-left transition-all duration-200 relative"
-                    style={{
-                      background: selectedFreq === f.id ? `${f.color}18` : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${selectedFreq === f.id ? f.color + '40' : 'rgba(255,255,255,0.06)'}`,
-                      opacity: f.isPremium ? 0.75 : 1,
-                    }}
-                  >
-                    {f.isPremium && (
-                      <Lock size={9} style={{ color: '#8B5CF6', position: 'absolute', top: 8, right: 8 }} />
-                    )}
-                    <div className="font-mono-brand text-sm font-bold" style={{ color: f.color }}>
-                      {freqCategory === "binaural" ? f.name : `${f.hz}Hz`}
-                    </div>
-                    <div className="text-xs mt-0.5 pr-3" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-                      {freqCategory === "binaural" ? (f.binauralOffset ? `${f.binauralOffset}Hz beat` : f.hz + 'Hz') : f.name}
-                    </div>
-                  </button>
-                ))}
+                {FREQUENCIES.filter(f => f.category === freqCategory).map(f => {
+                  const previewKey = `freq:${f.id}`;
+                  const isPreviewing = previewId === previewKey;
+                  const previewUrl = f.audioUrl ?? getLibraryLoopUrl(`binaural-${f.hz}`);
+                  return (
+                    <button key={f.id}
+                      onClick={() => {
+                        if (f.isPremium) { toast("✦ Premium frequency — upgrade to unlock"); return; }
+                        setSelectedFreq(f.id);
+                      }}
+                      className="p-3 rounded-xl text-left transition-all duration-200 relative"
+                      style={{
+                        background: selectedFreq === f.id ? `${f.color}18` : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${selectedFreq === f.id ? f.color + '40' : 'rgba(255,255,255,0.06)'}`,
+                        opacity: f.isPremium ? 0.75 : 1,
+                      }}
+                    >
+                      {f.isPremium ? (
+                        <Lock size={9} style={{ color: '#8B5CF6', position: 'absolute', top: 8, right: 8 }} />
+                      ) : (
+                        <button
+                          onClick={(e) => togglePreview(previewKey, previewUrl, e)}
+                          className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-150"
+                          style={{
+                            background: isPreviewing ? f.color : 'rgba(255,255,255,0.08)',
+                            border: `1px solid ${isPreviewing ? f.color : 'rgba(255,255,255,0.12)'}`,
+                          }}
+                          title={isPreviewing ? 'Stop preview' : 'Preview'}
+                        >
+                          {isPreviewing
+                            ? <Square size={7} fill={"#0A0B14"} style={{ color: '#0A0B14' }} />
+                            : <Play size={7} fill={"currentColor"} style={{ color: f.color }} />}
+                        </button>
+                      )}
+                      <div className="font-mono-brand text-sm font-bold" style={{ color: f.color }}>
+                        {freqCategory === "binaural" ? f.name : `${f.hz}Hz`}
+                      </div>
+                      <div className="text-xs mt-0.5 pr-6" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                        {freqCategory === "binaural" ? (f.binauralOffset ? `${f.binauralOffset}Hz beat` : f.hz + 'Hz') : f.name}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -460,20 +504,38 @@ function CreateAlarmModal({ onClose, onSave, prefill, isPremium, onPremiumNeeded
                       {catLabel}
                     </div>
                     <div className="grid grid-cols-3 gap-1.5">
-                      {loops.map(loop => (
-                        <button key={loop.id}
-                          onClick={() => setSelectedAmbientId(loop.id)}
-                          className="p-2.5 rounded-xl text-center transition-all duration-200"
-                          style={{
-                            background: selectedAmbientId === loop.id ? `rgba(59,130,246,0.18)` : 'rgba(255,255,255,0.03)',
-                            border: `1px solid ${selectedAmbientId === loop.id ? 'rgba(59,130,246,0.45)' : 'rgba(255,255,255,0.06)'}`,
-                          }}
-                        >
-                          <div className="text-xs font-semibold" style={{ color: selectedAmbientId === loop.id ? '#3B82F6' : '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
-                            {loop.label}
-                          </div>
-                        </button>
-                      ))}
+                      {loops.map(loop => {
+                        const previewKey = `ambient:${loop.id}`;
+                        const isPreviewing = previewId === previewKey;
+                        const loopColor = cat === 'nature' ? '#00D4AA' : '#F59E0B';
+                        return (
+                          <button key={loop.id}
+                            onClick={() => setSelectedAmbientId(loop.id)}
+                            className="p-2.5 rounded-xl text-center transition-all duration-200 relative"
+                            style={{
+                              background: selectedAmbientId === loop.id ? `rgba(59,130,246,0.18)` : 'rgba(255,255,255,0.03)',
+                              border: `1px solid ${selectedAmbientId === loop.id ? 'rgba(59,130,246,0.45)' : 'rgba(255,255,255,0.06)'}`,
+                            }}
+                          >
+                            <button
+                              onClick={(e) => togglePreview(previewKey, getLibraryLoopUrl(loop.id), e)}
+                              className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center transition-all duration-150"
+                              style={{
+                                background: isPreviewing ? loopColor : 'rgba(255,255,255,0.08)',
+                                border: `1px solid ${isPreviewing ? loopColor : 'rgba(255,255,255,0.12)'}`,
+                              }}
+                              title={isPreviewing ? 'Stop preview' : 'Preview'}
+                            >
+                              {isPreviewing
+                                ? <Square size={6} fill={"#0A0B14"} style={{ color: '#0A0B14' }} />
+                                : <Play size={6} fill={"currentColor"} style={{ color: loopColor }} />}
+                            </button>
+                            <div className="text-xs font-semibold pt-1" style={{ color: selectedAmbientId === loop.id ? '#3B82F6' : '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
+                              {loop.label}
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 );
