@@ -23,15 +23,17 @@ export const TIER_LOOKUP_KEYS: Record<BillingTier, string> = {
 let _stripe: Stripe | null = null;
 
 export function isStripeConfigured(): boolean {
-  return ENV.stripeSecretKey.length > 0;
+  // Read process.env directly (not the cached ENV object) so tests can stub it.
+  return (process.env.RIH_STRIPE_SECRET_KEY ?? "").length > 0;
 }
 
 export function getStripe(): Stripe {
+  const key = process.env.RIH_STRIPE_SECRET_KEY ?? ENV.stripeSecretKey;
+  if (!key) {
+    throw new Error("RIH_STRIPE_SECRET_KEY is not configured");
+  }
   if (!_stripe) {
-    if (!ENV.stripeSecretKey) {
-      throw new Error("STRIPE_SECRET_KEY is not configured");
-    }
-    _stripe = new Stripe(ENV.stripeSecretKey);
+    _stripe = new Stripe(key);
   }
   return _stripe;
 }

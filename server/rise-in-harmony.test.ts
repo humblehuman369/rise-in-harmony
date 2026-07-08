@@ -238,6 +238,16 @@ describe("alarms.create", () => {
 
 // ─── Billing tests ────────────────────────────────────────────────────────────
 describe("billing", () => {
+  let savedKey: string | undefined;
+  beforeEach(() => {
+    savedKey = process.env.RIH_STRIPE_SECRET_KEY;
+    delete process.env.RIH_STRIPE_SECRET_KEY;
+  });
+  afterEach(() => {
+    if (savedKey !== undefined) process.env.RIH_STRIPE_SECRET_KEY = savedKey;
+    else delete process.env.RIH_STRIPE_SECRET_KEY;
+  });
+
   it("reports billing disabled when Stripe is not configured", async () => {
     const ctx = makeAuthCtx();
     const caller = appRouter.createCaller(ctx);
