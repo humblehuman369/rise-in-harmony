@@ -2,7 +2,7 @@
  * Rise In Harmony — Server-side unit tests
  * Tests for sessions, alarms, and subscription routers
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
@@ -338,6 +338,16 @@ describe("admin router", () => {
 });
 
 describe("revenuecatWebhook promotional grants", () => {
+  let savedSecret: string | undefined;
+  beforeEach(() => {
+    savedSecret = process.env.REVENUECAT_WEBHOOK_SECRET;
+    delete process.env.REVENUECAT_WEBHOOK_SECRET;
+  });
+  afterEach(() => {
+    if (savedSecret !== undefined) process.env.REVENUECAT_WEBHOOK_SECRET = savedSecret;
+    else delete process.env.REVENUECAT_WEBHOOK_SECRET;
+  });
+
   it("maps a PROMOTIONAL NON_RENEWING_PURCHASE to premium", async () => {
     const { updateUserSubscription } = await import("./db");
     const ctx = makeAuthCtx();
