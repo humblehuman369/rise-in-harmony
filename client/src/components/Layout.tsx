@@ -17,15 +17,15 @@ import { getLoginUrl } from "@/const";
 // ─── Nav definitions ──────────────────────────────────────────────────────────
 
 const primaryNavItems = [
-  { href: "/", icon: Home, label: "Home" },
   { href: "/alarm", icon: AlarmClock, label: "Alarm" },
   { href: "/player", icon: Music2, label: "Player" },
-  { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
+  { href: "/meditation", icon: Headphones, label: "Meditate" },
+  { href: "/studio", icon: Layers, label: "Studio" },
 ];
 
 const secondaryNavItems = [
-  { href: "/studio", icon: Layers, label: "Studio" },
-  { href: "/meditation", icon: Headphones, label: "Meditate" },
+  { href: "/", icon: Home, label: "Home" },
+  { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
   { href: "/library", icon: BookOpen, label: "Library" },
   { href: "/precision", icon: Activity, label: "Precision" },
   { href: "/settings", icon: Settings, label: "Settings" },
