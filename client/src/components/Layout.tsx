@@ -1,13 +1,35 @@
 /**
  * Layout — Bioluminescent Depth Theme
- * Persistent dark sidebar on desktop, bottom tab bar on mobile
- * Navigation: Home, Player, Alarm, Library, Dashboard
+ * Persistent dark sidebar on desktop, large bottom tab bar on mobile
+ * Mobile: 5 primary tabs + "More" drawer for secondary pages
  */
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, Music2, AlarmClock, BookOpen, BarChart3, Settings, Layers, Headphones, Activity, ShieldCheck, LogIn, LogOut, User } from "lucide-react";
+import {
+  Home, Music2, AlarmClock, BookOpen, BarChart3, Settings,
+  Layers, Headphones, Activity, ShieldCheck, LogIn, LogOut,
+  User, MoreHorizontal, X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+
+// ─── Nav definitions ──────────────────────────────────────────────────────────
+
+const primaryNavItems = [
+  { href: "/", icon: Home, label: "Home" },
+  { href: "/alarm", icon: AlarmClock, label: "Alarm" },
+  { href: "/player", icon: Music2, label: "Player" },
+  { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
+];
+
+const secondaryNavItems = [
+  { href: "/studio", icon: Layers, label: "Studio" },
+  { href: "/meditation", icon: Headphones, label: "Meditate" },
+  { href: "/library", icon: BookOpen, label: "Library" },
+  { href: "/precision", icon: Activity, label: "Precision" },
+  { href: "/settings", icon: Settings, label: "Settings" },
+];
 
 const baseNavItems = [
   { href: "/", icon: Home, label: "Home" },
@@ -25,11 +47,19 @@ const adminNavItem = { href: "/admin", icon: ShieldCheck, label: "Admin" };
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
+  const [moreOpen, setMoreOpen] = useState(false);
+
   const navItems = user?.role === "admin" ? [...baseNavItems, adminNavItem] : baseNavItems;
+  const allSecondary = user?.role === "admin"
+    ? [...secondaryNavItems, adminNavItem]
+    : secondaryNavItems;
+
+  // Is the current page one of the secondary ones? If so, highlight "More"
+  const isSecondaryActive = allSecondary.some(item => item.href === location);
 
   return (
     <div className="flex min-h-screen" style={{ background: '#0A0B14' }}>
-      {/* Desktop Sidebar */}
+      {/* ── Desktop Sidebar ──────────────────────────────────────────────── */}
       <aside className="hidden lg:flex flex-col w-64 fixed inset-y-0 left-0 z-40"
         style={{
           background: '#11142A',
@@ -65,16 +95,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Link key={href} href={href}>
                 <div className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group",
-                  active
-                    ? "text-[#0A0B14]"
-                    : "text-[#6B7A99] hover:text-[#E8EDF5]"
+                  active ? "text-[#0A0B14]" : "text-[#6B7A99] hover:text-[#E8EDF5]"
                 )}
                   style={active ? {
                     background: 'linear-gradient(135deg, #00D4AA, #00B894)',
                     boxShadow: '0 0 20px rgba(0,212,170,0.3)',
-                  } : {
-                    background: 'transparent',
-                  }}
+                  } : { background: 'transparent' }}
                   onMouseEnter={e => {
                     if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
                   }}
@@ -193,102 +219,214 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 lg:ml-64 pb-20 lg:pb-0">
+      {/* ── Main content ─────────────────────────────────────────────────── */}
+      <main className="flex-1 lg:ml-64 pb-24 lg:pb-0">
         {children}
       </main>
 
-      {/* Mobile bottom tab bar */}
-      <nav
-        className="lg:hidden fixed bottom-0 inset-x-0 z-40 flex items-center justify-around"
+      {/* ── Mobile: "More" backdrop ──────────────────────────────────────── */}
+      {moreOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-40"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setMoreOpen(false)}
+        />
+      )}
+
+      {/* ── Mobile: "More" drawer ────────────────────────────────────────── */}
+      <div
+        className="lg:hidden fixed inset-x-0 z-50 transition-transform duration-300 ease-out"
         style={{
-          background: 'rgba(13, 15, 30, 0.97)',
-          backdropFilter: 'blur(24px)',
-          borderTop: '1px solid rgba(255,255,255,0.08)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-          boxShadow: '0 -8px 32px rgba(0,0,0,0.4)',
+          bottom: '80px',
+          transform: moreOpen ? 'translateY(0)' : 'translateY(calc(100% + 80px))',
         }}
       >
-        {navItems.map(({ href, icon: Icon, label }) => {
-          const active = location === href;
-          return (
-            <Link key={href} href={href}>
-              <div
-                className="relative flex flex-col items-center gap-0.5 px-2 py-3 transition-all duration-200"
-                style={{ minWidth: '52px' }}
-              >
-                {/* Active top indicator */}
-                {active && (
+        <div
+          className="mx-3 rounded-2xl overflow-hidden"
+          style={{
+            background: 'rgba(17,20,42,0.98)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 -16px 48px rgba(0,0,0,0.6)',
+          }}
+        >
+          {/* Drawer header */}
+          <div className="flex items-center justify-between px-5 py-4"
+            style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <span className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+              More Pages
+            </span>
+            <button
+              onClick={() => setMoreOpen(false)}
+              className="w-7 h-7 rounded-full flex items-center justify-center transition-all"
+              style={{ background: 'rgba(255,255,255,0.08)', color: '#8FA3BF' }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          {/* Secondary nav grid */}
+          <div className="grid grid-cols-4 gap-1 p-3">
+            {allSecondary.map(({ href, icon: Icon, label }) => {
+              const active = location === href;
+              return (
+                <Link key={href} href={href}>
                   <div
-                    className="absolute top-0 left-1/2 -translate-x-1/2 rounded-full"
+                    onClick={() => setMoreOpen(false)}
+                    className="flex flex-col items-center gap-2 py-4 rounded-xl transition-all duration-150 active:scale-95"
                     style={{
-                      width: '24px',
-                      height: '2px',
-                      background: 'linear-gradient(90deg, #00D4AA, #8B5CF6)',
-                      boxShadow: '0 0 8px rgba(0,212,170,0.6)',
+                      background: active ? 'rgba(0,212,170,0.12)' : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${active ? 'rgba(0,212,170,0.3)' : 'rgba(255,255,255,0.05)'}`,
                     }}
-                  />
-                )}
-                {/* Icon with glow when active */}
+                  >
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{
+                        background: active
+                          ? 'linear-gradient(135deg, #00D4AA, #00B894)'
+                          : 'rgba(255,255,255,0.06)',
+                        boxShadow: active ? '0 0 16px rgba(0,212,170,0.35)' : 'none',
+                      }}
+                    >
+                      <Icon
+                        size={20}
+                        strokeWidth={active ? 2.5 : 1.8}
+                        style={{ color: active ? '#0A0B14' : '#8FA3BF' }}
+                      />
+                    </div>
+                    <span
+                      className="text-[10px] font-semibold text-center leading-tight"
+                      style={{
+                        color: active ? '#00D4AA' : '#6B7A99',
+                        fontFamily: 'DM Sans, sans-serif',
+                      }}
+                    >
+                      {label}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Sign in/out row */}
+          <div className="px-3 pb-3">
+            {isAuthenticated ? (
+              <button
+                onClick={() => { logout(); setMoreOpen(false); }}
+                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-medium transition-all"
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: '#8FA3BF',
+                  fontFamily: 'DM Sans, sans-serif',
+                }}
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
+            ) : (
+              <a
+                href={getLoginUrl()}
+                onClick={() => setMoreOpen(false)}
+                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-semibold transition-all"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(0,212,170,0.18), rgba(0,212,170,0.08))',
+                  border: '1px solid rgba(0,212,170,0.3)',
+                  color: '#00D4AA',
+                  fontFamily: 'DM Sans, sans-serif',
+                }}
+              >
+                <LogIn size={16} />
+                Sign In
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Mobile bottom tab bar (large, finger-friendly) ───────────────── */}
+      <nav
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40"
+        style={{
+          background: 'rgba(11,13,28,0.98)',
+          backdropFilter: 'blur(24px)',
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          boxShadow: '0 -4px 24px rgba(0,0,0,0.5)',
+        }}
+      >
+        <div className="flex items-stretch h-20">
+          {/* Primary nav tabs */}
+          {primaryNavItems.map(({ href, icon: Icon, label }) => {
+            const active = location === href;
+            return (
+              <Link key={href} href={href} className="flex-1">
                 <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200"
-                  style={active ? {
-                    background: 'rgba(0,212,170,0.12)',
-                    boxShadow: '0 0 12px rgba(0,212,170,0.2)',
-                  } : {}}
+                  className="flex flex-col items-center justify-center h-full gap-1.5 transition-all duration-200 active:scale-95"
+                  style={{ minWidth: 0 }}
                 >
-                  <Icon
-                    size={18}
-                    strokeWidth={active ? 2.5 : 1.8}
-                    style={{ color: active ? '#00D4AA' : '#6B7A99' }}
-                  />
+                  {/* Icon container */}
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200"
+                    style={active ? {
+                      background: 'linear-gradient(135deg, #00D4AA, #00B894)',
+                      boxShadow: '0 4px 16px rgba(0,212,170,0.4)',
+                    } : {
+                      background: 'transparent',
+                    }}
+                  >
+                    <Icon
+                      size={22}
+                      strokeWidth={active ? 2.5 : 1.8}
+                      style={{ color: active ? '#0A0B14' : '#6B7A99' }}
+                    />
+                  </div>
+                  {/* Label */}
+                  <span
+                    className="text-[11px] font-semibold leading-none"
+                    style={{
+                      color: active ? '#00D4AA' : '#4A5568',
+                      fontFamily: 'DM Sans, sans-serif',
+                    }}
+                  >
+                    {label}
+                  </span>
                 </div>
-                <span
-                  className="text-[9px] font-semibold"
-                  style={{
-                    fontFamily: 'DM Sans, sans-serif',
-                    color: active ? '#00D4AA' : '#4A5568',
-                    letterSpacing: '0.03em',
-                  }}
-                >
-                  {label}
-                </span>
-              </div>
-            </Link>
-          );
-        })}
-        {/* Mobile login/logout button */}
-        {isAuthenticated ? (
+              </Link>
+            );
+          })}
+
+          {/* More button */}
           <button
-            onClick={() => logout()}
-            className="relative flex flex-col items-center gap-0.5 px-2 py-3 transition-all duration-200"
-            style={{ minWidth: '52px' }}
+            className="flex-1 flex flex-col items-center justify-center h-full gap-1.5 transition-all duration-200 active:scale-95"
+            onClick={() => setMoreOpen(v => !v)}
           >
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: 'rgba(0,212,170,0.08)' }}>
-              <LogOut size={16} strokeWidth={1.8} style={{ color: '#6B7A99' }} />
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200"
+              style={isSecondaryActive || moreOpen ? {
+                background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+                boxShadow: '0 4px 16px rgba(139,92,246,0.4)',
+              } : {
+                background: 'transparent',
+              }}
+            >
+              {moreOpen ? (
+                <X size={22} strokeWidth={2} style={{ color: isSecondaryActive || moreOpen ? '#fff' : '#6B7A99' }} />
+              ) : (
+                <MoreHorizontal size={22} strokeWidth={1.8} style={{ color: isSecondaryActive ? '#A78BFA' : '#6B7A99' }} />
+              )}
             </div>
-            <span className="text-[9px] font-semibold"
-              style={{ fontFamily: 'DM Sans, sans-serif', color: '#4A5568', letterSpacing: '0.03em' }}>
-              Sign Out
+            <span
+              className="text-[11px] font-semibold leading-none"
+              style={{
+                color: isSecondaryActive || moreOpen ? '#A78BFA' : '#4A5568',
+                fontFamily: 'DM Sans, sans-serif',
+              }}
+            >
+              More
             </span>
           </button>
-        ) : (
-          <a
-            href={getLoginUrl()}
-            className="relative flex flex-col items-center gap-0.5 px-2 py-3 transition-all duration-200"
-            style={{ minWidth: '52px' }}
-          >
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: 'rgba(0,212,170,0.12)', boxShadow: '0 0 10px rgba(0,212,170,0.15)' }}>
-              <LogIn size={16} strokeWidth={1.8} style={{ color: '#00D4AA' }} />
-            </div>
-            <span className="text-[9px] font-semibold"
-              style={{ fontFamily: 'DM Sans, sans-serif', color: '#00D4AA', letterSpacing: '0.03em' }}>
-              Sign In
-            </span>
-          </a>
-        )}
+        </div>
       </nav>
     </div>
   );
