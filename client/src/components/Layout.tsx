@@ -4,10 +4,11 @@
  * Navigation: Home, Player, Alarm, Library, Dashboard
  */
 import { Link, useLocation } from "wouter";
-import { Home, Music2, AlarmClock, BookOpen, BarChart3, Settings, Layers, Headphones, Activity, ShieldCheck } from "lucide-react";
+import { Home, Music2, AlarmClock, BookOpen, BarChart3, Settings, Layers, Headphones, Activity, ShieldCheck, LogIn, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 
 const baseNavItems = [
   { href: "/", icon: Home, label: "Home" },
@@ -24,7 +25,7 @@ const adminNavItem = { href: "/admin", icon: ShieldCheck, label: "Admin" };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const navItems = user?.role === "admin" ? [...baseNavItems, adminNavItem] : baseNavItems;
 
   return (
@@ -90,7 +91,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Bottom settings */}
+        {/* Bottom section */}
         <div className="px-3 pb-6">
           <div className="mx-3 mb-4" style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />
           <button
@@ -139,25 +140,55 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
 
-          {/* Premium badge */}
-          <div className="mt-4 mx-1 p-3 rounded-xl" style={{
-            background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(0,212,170,0.08))',
-            border: '1px solid rgba(139,92,246,0.2)',
-          }}>
-            <div className="text-xs font-semibold mb-1" style={{ color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>✦ Rise Premium</div>
-            <div className="text-xs leading-relaxed" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-              Unlock 12+ healing frequencies & unlimited alarms
-            </div>
-            <button
-              onClick={() => toast("Premium subscription — coming soon!")}
-              className="mt-2 w-full text-xs font-semibold py-1.5 rounded-lg transition-all duration-200"
-              style={{
-                background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
-                color: '#fff',
-              }}
-            >
-              Upgrade — $7.99/mo
-            </button>
+          {/* User profile / Sign In */}
+          <div className="mt-3 mx-1">
+            {isAuthenticated && user ? (
+              <div className="p-3 rounded-xl" style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.06)',
+              }}>
+                <div className="flex items-center gap-2.5 mb-2">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg, #00D4AA, #8B5CF6)' }}>
+                    <User size={13} style={{ color: '#0A0B14' }} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold truncate" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+                      {user.name || 'User'}
+                    </div>
+                    <div className="text-[10px] truncate" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                      {user.email || ''}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => logout()}
+                  className="flex items-center gap-2 w-full text-xs py-1.5 px-2 rounded-lg transition-all duration-150"
+                  style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLElement).style.color = '#E8EDF5'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
+                >
+                  <LogOut size={13} />
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <a
+                href={getLoginUrl()}
+                className="flex items-center justify-center gap-2 w-full text-sm font-semibold py-2.5 rounded-xl transition-all duration-200"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(0,212,170,0.15), rgba(0,212,170,0.08))',
+                  border: '1px solid rgba(0,212,170,0.25)',
+                  color: '#00D4AA',
+                  fontFamily: 'DM Sans, sans-serif',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(0,212,170,0.25), rgba(0,212,170,0.15))'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(0,212,170,0.15), rgba(0,212,170,0.08))'; }}
+              >
+                <LogIn size={15} />
+                Sign In
+              </a>
+            )}
           </div>
         </div>
       </aside>
@@ -226,6 +257,38 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </Link>
           );
         })}
+        {/* Mobile login/logout button */}
+        {isAuthenticated ? (
+          <button
+            onClick={() => logout()}
+            className="relative flex flex-col items-center gap-0.5 px-2 py-3 transition-all duration-200"
+            style={{ minWidth: '52px' }}
+          >
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: 'rgba(0,212,170,0.08)' }}>
+              <LogOut size={16} strokeWidth={1.8} style={{ color: '#6B7A99' }} />
+            </div>
+            <span className="text-[9px] font-semibold"
+              style={{ fontFamily: 'DM Sans, sans-serif', color: '#4A5568', letterSpacing: '0.03em' }}>
+              Sign Out
+            </span>
+          </button>
+        ) : (
+          <a
+            href={getLoginUrl()}
+            className="relative flex flex-col items-center gap-0.5 px-2 py-3 transition-all duration-200"
+            style={{ minWidth: '52px' }}
+          >
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: 'rgba(0,212,170,0.12)', boxShadow: '0 0 10px rgba(0,212,170,0.15)' }}>
+              <LogIn size={16} strokeWidth={1.8} style={{ color: '#00D4AA' }} />
+            </div>
+            <span className="text-[9px] font-semibold"
+              style={{ fontFamily: 'DM Sans, sans-serif', color: '#00D4AA', letterSpacing: '0.03em' }}>
+              Sign In
+            </span>
+          </a>
+        )}
       </nav>
     </div>
   );
