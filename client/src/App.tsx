@@ -19,6 +19,7 @@ import OnboardingModal from "./components/OnboardingModal";
 import { useOnboarding } from "./hooks/useOnboarding";
 import Technology from "./pages/Technology";
 import Admin from "./pages/Admin";
+import Settings from "./pages/Settings";
 import { useAuth } from "./_core/hooks/useAuth";
 import { useLocalSessionImport } from "./hooks/useLocalSessionImport";
 import { useAnalytics } from "./hooks/useAnalytics";
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/technology" component={Technology} />
       <Route path="/admin" component={Admin} />
+      <Route path="/settings" component={Settings} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

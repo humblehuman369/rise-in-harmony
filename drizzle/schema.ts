@@ -39,6 +39,8 @@ export const users = mysqlTable("users", {
   lastStreakMilestoneEmailAt: timestamp("lastStreakMilestoneEmailAt"),
   lastStreakMilestoneDays: int("lastStreakMilestoneDays").default(0).notNull(),
   lastReEngagementEmailAt: timestamp("lastReEngagementEmailAt"),
+  // User preferences (audio, notifications, theme)
+  preferences: json("preferences"),
   // Timestamps
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

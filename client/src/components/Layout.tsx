@@ -6,7 +6,6 @@
 import { Link, useLocation } from "wouter";
 import { Home, Music2, AlarmClock, BookOpen, BarChart3, Settings, Layers, Headphones, Activity, ShieldCheck, LogIn, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 
@@ -94,16 +93,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Bottom section */}
         <div className="px-3 pb-6">
           <div className="mx-3 mb-4" style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />
-          <button
-            onClick={() => toast("Settings coming in Phase 2 — stay tuned!")}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full transition-all duration-200"
-            style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLElement).style.color = '#E8EDF5'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
-          >
-            <Settings size={18} strokeWidth={1.8} />
-            <span className="text-sm font-medium">Settings</span>
-          </button>
+          <Link href="/settings">
+            <div
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full transition-all duration-200 cursor-pointer"
+              style={{ color: location === '/settings' ? '#00D4AA' : '#6B7A99', background: location === '/settings' ? 'rgba(0,212,170,0.08)' : 'transparent', fontFamily: 'DM Sans, sans-serif' }}
+              onMouseEnter={e => { if (location !== '/settings') { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLElement).style.color = '#E8EDF5'; } }}
+              onMouseLeave={e => { if (location !== '/settings') { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6B7A99'; } }}
+            >
+              <Settings size={18} strokeWidth={location === '/settings' ? 2.5 : 1.8} />
+              <span className="text-sm font-medium">Settings</span>
+            </div>
+          </Link>
 
           {/* Legal links */}
           <div className="flex flex-wrap gap-x-1 px-3 mt-1">

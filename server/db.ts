@@ -93,6 +93,35 @@ export async function getUserById(id: number) {
   return result[0];
 }
 
+export async function updateUserProfile(
+  userId: number,
+  fields: { name?: string },
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set(fields).where(eq(users.id, userId));
+}
+
+export async function updateUserPreferences(
+  userId: number,
+  prefs: Record<string, unknown>,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await getUserById(userId);
+  const current = (existing?.preferences as Record<string, unknown>) ?? {};
+  await db
+    .update(users)
+    .set({ preferences: { ...current, ...prefs } })
+    .where(eq(users.id, userId));
+}
+
+export async function deleteUserAccount(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(users).where(eq(users.id, userId));
+}
+
 export async function updateUserOnboarding(
   userId: number,
   goal: string,
