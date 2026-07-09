@@ -3,6 +3,7 @@
  * Persistent dark sidebar on desktop, horizontally scrollable bottom tab bar on mobile
  * Mobile: all nav items in a single scrollable row — swipe left to reveal more
  */
+import { useRef, useCallback, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Home, Music2, AlarmClock, BookOpen, BarChart3, Settings,
@@ -43,6 +44,17 @@ const baseNavItems = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showLeftFade, setShowLeftFade] = useState(false);
+  const [showRightFade, setShowRightFade] = useState(true);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setShowLeftFade(scrollLeft > 8);
+    setShowRightFade(scrollLeft < scrollWidth - clientWidth - 8);
+  }, []);
 
   const navItems = user?.role === "admin" ? [...baseNavItems, adminNavItem] : baseNavItems;
   const allMobileItems = user?.role === "admin"
@@ -218,7 +230,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* ── Mobile horizontally scrollable bottom tab bar ────────────────── */}
       <nav
-        className="lg:hidden fixed bottom-0 inset-x-0 z-40"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 relative"
         style={{
           background: 'rgba(11,13,28,0.98)',
           backdropFilter: 'blur(24px)',
@@ -227,8 +239,38 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           boxShadow: '0 -4px 24px rgba(0,0,0,0.5)',
         }}
       >
+        {/* Left fade — appears when scrolled right */}
+        {showLeftFade && (
+          <div
+            className="pointer-events-none absolute bottom-0 left-0 z-50 lg:hidden"
+            style={{
+              width: '48px',
+              height: '80px',
+              background: 'linear-gradient(to right, rgba(11,13,28,0.95) 0%, transparent 100%)',
+              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+              transition: 'opacity 150ms ease',
+            }}
+          />
+        )}
+
+        {/* Right fade — disappears when reaching the end */}
+        {showRightFade && (
+          <div
+            className="pointer-events-none absolute bottom-0 right-0 z-50 lg:hidden"
+            style={{
+              width: '48px',
+              height: '80px',
+              background: 'linear-gradient(to left, rgba(11,13,28,0.95) 0%, transparent 100%)',
+              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+              transition: 'opacity 150ms ease',
+            }}
+          />
+        )}
+
         {/* Scroll container — hides scrollbar but stays swipeable */}
         <div
+          ref={scrollRef}
+          onScroll={handleScroll}
           className="rih-nav flex items-stretch h-20 overflow-x-auto"
           style={{
             scrollbarWidth: 'none',          /* Firefox */
@@ -317,16 +359,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </a>
           )}
 
-          {/* Right fade hint — visual cue that more items exist */}
-          <div
-            className="pointer-events-none fixed bottom-0 right-0 z-50 lg:hidden"
-            style={{
-              width: '48px',
-              height: '80px',
-              background: 'linear-gradient(to left, rgba(11,13,28,0.95) 0%, transparent 100%)',
-              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-            }}
-          />
         </div>
       </nav>
     </div>
