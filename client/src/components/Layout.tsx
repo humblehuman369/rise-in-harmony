@@ -1,14 +1,12 @@
 /**
  * Layout — Bioluminescent Depth Theme
- * Persistent dark sidebar on desktop, large bottom tab bar on mobile
- * Mobile: 5 primary tabs + "More" drawer for secondary pages
+ * Persistent dark sidebar on desktop, horizontally scrollable bottom tab bar on mobile
+ * Mobile: all nav items in a single scrollable row — swipe left to reveal more
  */
-import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Home, Music2, AlarmClock, BookOpen, BarChart3, Settings,
-  Layers, Headphones, Activity, ShieldCheck, LogIn, LogOut,
-  User, MoreHorizontal, X,
+  Layers, Headphones, Activity, ShieldCheck, LogIn, LogOut, User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -16,20 +14,20 @@ import { getLoginUrl } from "@/const";
 
 // ─── Nav definitions ──────────────────────────────────────────────────────────
 
-const primaryNavItems = [
+// Mobile order: most-used first, secondary items revealed by scrolling right
+const mobileNavItems = [
   { href: "/alarm", icon: AlarmClock, label: "Alarm" },
   { href: "/player", icon: Music2, label: "Player" },
   { href: "/meditation", icon: Headphones, label: "Meditate" },
   { href: "/studio", icon: Layers, label: "Studio" },
-];
-
-const secondaryNavItems = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
   { href: "/library", icon: BookOpen, label: "Library" },
   { href: "/precision", icon: Activity, label: "Precision" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
+
+const adminNavItem = { href: "/admin", icon: ShieldCheck, label: "Admin" };
 
 const baseNavItems = [
   { href: "/", icon: Home, label: "Home" },
@@ -42,20 +40,14 @@ const baseNavItems = [
   { href: "/precision", icon: Activity, label: "Precision" },
 ];
 
-const adminNavItem = { href: "/admin", icon: ShieldCheck, label: "Admin" };
-
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
-  const [moreOpen, setMoreOpen] = useState(false);
 
   const navItems = user?.role === "admin" ? [...baseNavItems, adminNavItem] : baseNavItems;
-  const allSecondary = user?.role === "admin"
-    ? [...secondaryNavItems, adminNavItem]
-    : secondaryNavItems;
-
-  // Is the current page one of the secondary ones? If so, highlight "More"
-  const isSecondaryActive = allSecondary.some(item => item.href === location);
+  const allMobileItems = user?.role === "admin"
+    ? [...mobileNavItems, adminNavItem]
+    : mobileNavItems;
 
   return (
     <div className="flex min-h-screen" style={{ background: '#0A0B14' }}>
@@ -224,127 +216,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      {/* ── Mobile: "More" backdrop ──────────────────────────────────────── */}
-      {moreOpen && (
-        <div
-          className="lg:hidden fixed inset-0 z-40"
-          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
-          onClick={() => setMoreOpen(false)}
-        />
-      )}
-
-      {/* ── Mobile: "More" drawer ────────────────────────────────────────── */}
-      <div
-        className="lg:hidden fixed inset-x-0 z-50 transition-transform duration-300 ease-out"
-        style={{
-          bottom: '80px',
-          transform: moreOpen ? 'translateY(0)' : 'translateY(calc(100% + 80px))',
-        }}
-      >
-        <div
-          className="mx-3 rounded-2xl overflow-hidden"
-          style={{
-            background: 'rgba(17,20,42,0.98)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: '0 -16px 48px rgba(0,0,0,0.6)',
-          }}
-        >
-          {/* Drawer header */}
-          <div className="flex items-center justify-between px-5 py-4"
-            style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <span className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
-              More Pages
-            </span>
-            <button
-              onClick={() => setMoreOpen(false)}
-              className="w-7 h-7 rounded-full flex items-center justify-center transition-all"
-              style={{ background: 'rgba(255,255,255,0.08)', color: '#8FA3BF' }}
-            >
-              <X size={14} />
-            </button>
-          </div>
-
-          {/* Secondary nav grid */}
-          <div className="grid grid-cols-4 gap-1 p-3">
-            {allSecondary.map(({ href, icon: Icon, label }) => {
-              const active = location === href;
-              return (
-                <Link key={href} href={href}>
-                  <div
-                    onClick={() => setMoreOpen(false)}
-                    className="flex flex-col items-center gap-2 py-4 rounded-xl transition-all duration-150 active:scale-95"
-                    style={{
-                      background: active ? 'rgba(0,212,170,0.12)' : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${active ? 'rgba(0,212,170,0.3)' : 'rgba(255,255,255,0.05)'}`,
-                    }}
-                  >
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center"
-                      style={{
-                        background: active
-                          ? 'linear-gradient(135deg, #00D4AA, #00B894)'
-                          : 'rgba(255,255,255,0.06)',
-                        boxShadow: active ? '0 0 16px rgba(0,212,170,0.35)' : 'none',
-                      }}
-                    >
-                      <Icon
-                        size={20}
-                        strokeWidth={active ? 2.5 : 1.8}
-                        style={{ color: active ? '#0A0B14' : '#8FA3BF' }}
-                      />
-                    </div>
-                    <span
-                      className="text-[10px] font-semibold text-center leading-tight"
-                      style={{
-                        color: active ? '#00D4AA' : '#6B7A99',
-                        fontFamily: 'DM Sans, sans-serif',
-                      }}
-                    >
-                      {label}
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Sign in/out row */}
-          <div className="px-3 pb-3">
-            {isAuthenticated ? (
-              <button
-                onClick={() => { logout(); setMoreOpen(false); }}
-                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-medium transition-all"
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  color: '#8FA3BF',
-                  fontFamily: 'DM Sans, sans-serif',
-                }}
-              >
-                <LogOut size={16} />
-                Sign Out
-              </button>
-            ) : (
-              <a
-                href={getLoginUrl()}
-                onClick={() => setMoreOpen(false)}
-                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-semibold transition-all"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(0,212,170,0.18), rgba(0,212,170,0.08))',
-                  border: '1px solid rgba(0,212,170,0.3)',
-                  color: '#00D4AA',
-                  fontFamily: 'DM Sans, sans-serif',
-                }}
-              >
-                <LogIn size={16} />
-                Sign In
-              </a>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Mobile bottom tab bar (large, finger-friendly) ───────────────── */}
+      {/* ── Mobile horizontally scrollable bottom tab bar ────────────────── */}
       <nav
         className="lg:hidden fixed bottom-0 inset-x-0 z-40"
         style={{
@@ -355,15 +227,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           boxShadow: '0 -4px 24px rgba(0,0,0,0.5)',
         }}
       >
-        <div className="flex items-stretch h-20">
-          {/* Primary nav tabs */}
-          {primaryNavItems.map(({ href, icon: Icon, label }) => {
+        {/* Scroll container — hides scrollbar but stays swipeable */}
+        <div
+          className="rih-nav flex items-stretch h-20 overflow-x-auto"
+          style={{
+            scrollbarWidth: 'none',          /* Firefox */
+            msOverflowStyle: 'none',         /* IE/Edge */
+            WebkitOverflowScrolling: 'touch',
+            scrollSnapType: 'x proximity',
+          }}
+        >
+          {/* Hide webkit scrollbar via inline style injection */}
+          <style>{`.rih-nav::-webkit-scrollbar { display: none; }`}</style>
+
+          {/* Nav items */}
+          {allMobileItems.map(({ href, icon: Icon, label }) => {
             const active = location === href;
             return (
-              <Link key={href} href={href} className="flex-1">
+              <Link key={href} href={href}>
                 <div
-                  className="flex flex-col items-center justify-center h-full gap-1.5 transition-all duration-200 active:scale-95"
-                  style={{ minWidth: 0 }}
+                  className="flex flex-col items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 flex-shrink-0"
+                  style={{
+                    width: '76px',
+                    height: '80px',
+                    scrollSnapAlign: 'start',
+                  }}
                 >
                   {/* Icon container */}
                   <div
@@ -396,36 +284,49 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             );
           })}
 
-          {/* More button */}
-          <button
-            className="flex-1 flex flex-col items-center justify-center h-full gap-1.5 transition-all duration-200 active:scale-95"
-            onClick={() => setMoreOpen(v => !v)}
-          >
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200"
-              style={isSecondaryActive || moreOpen ? {
-                background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
-                boxShadow: '0 4px 16px rgba(139,92,246,0.4)',
-              } : {
-                background: 'transparent',
-              }}
+          {/* Sign in / out — pinned at the end of the scroll */}
+          {isAuthenticated ? (
+            <button
+              onClick={() => logout()}
+              className="flex flex-col items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 flex-shrink-0"
+              style={{ width: '76px', height: '80px' }}
             >
-              {moreOpen ? (
-                <X size={22} strokeWidth={2} style={{ color: isSecondaryActive || moreOpen ? '#fff' : '#6B7A99' }} />
-              ) : (
-                <MoreHorizontal size={22} strokeWidth={1.8} style={{ color: isSecondaryActive ? '#A78BFA' : '#6B7A99' }} />
-              )}
-            </div>
-            <span
-              className="text-[11px] font-semibold leading-none"
-              style={{
-                color: isSecondaryActive || moreOpen ? '#A78BFA' : '#4A5568',
-                fontFamily: 'DM Sans, sans-serif',
-              }}
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                style={{ background: 'transparent' }}>
+                <LogOut size={22} strokeWidth={1.8} style={{ color: '#6B7A99' }} />
+              </div>
+              <span className="text-[11px] font-semibold leading-none"
+                style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
+                Sign Out
+              </span>
+            </button>
+          ) : (
+            <a
+              href={getLoginUrl()}
+              className="flex flex-col items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 flex-shrink-0"
+              style={{ width: '76px', height: '80px' }}
             >
-              More
-            </span>
-          </button>
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                style={{ background: 'rgba(0,212,170,0.1)', boxShadow: '0 0 12px rgba(0,212,170,0.15)' }}>
+                <LogIn size={22} strokeWidth={1.8} style={{ color: '#00D4AA' }} />
+              </div>
+              <span className="text-[11px] font-semibold leading-none"
+                style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+                Sign In
+              </span>
+            </a>
+          )}
+
+          {/* Right fade hint — visual cue that more items exist */}
+          <div
+            className="pointer-events-none fixed bottom-0 right-0 z-50 lg:hidden"
+            style={{
+              width: '48px',
+              height: '80px',
+              background: 'linear-gradient(to left, rgba(11,13,28,0.95) 0%, transparent 100%)',
+              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+            }}
+          />
         </div>
       </nav>
     </div>
