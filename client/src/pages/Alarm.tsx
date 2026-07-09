@@ -486,6 +486,17 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
 
+          {/* ── Alarm Name ── */}
+          <div className="mb-5">
+            <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Alarm Name</label>
+            <input
+              type="text" value={label} onChange={e => setLabel(e.target.value)} placeholder="e.g. Morning Harmony"
+              autoFocus
+              className="w-full px-4 py-3 rounded-xl text-sm"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,212,170,0.25)', color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif', outline: 'none' }}
+            />
+          </div>
+
           {/* ── iOS drum-roll time picker ── */}
           <div className="mb-6">
             <label className="block text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -533,16 +544,6 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                 {String(hour12).padStart(2, '0')}:{String(minute).padStart(2, '0')} {isAM ? 'AM' : 'PM'}
               </div>
             </div>
-          </div>
-
-          {/* ── Label ── */}
-          <div className="mb-5">
-            <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Label</label>
-            <input
-              type="text" value={label} onChange={e => setLabel(e.target.value)} placeholder="Morning Harmony"
-              className="w-full px-4 py-3 rounded-xl text-sm"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}
-            />
           </div>
 
           {/* ── Repeat days ── */}
