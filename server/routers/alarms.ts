@@ -63,6 +63,41 @@ export const alarmsRouter = router({
       return { success: true };
     }),
 
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        label: z.string().max(128).optional(),
+        hour: z.number().min(0).max(23),
+        minute: z.number().min(0).max(59),
+        days: z.array(z.number().min(0).max(6)),
+        soundType: z.enum(["frequency", "studio_mix"]).default("frequency"),
+        frequencyHz: z.number().optional(),
+        frequencyName: z.string().optional(),
+        studioMixName: z.string().optional(),
+        wakeSequence: z.string().optional(),
+        fadeInMinutes: z.number().min(1).max(30).default(5),
+        isEnabled: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...fields } = input;
+      await updateAlarm(id, ctx.user.id, {
+        label: fields.label,
+        hour: fields.hour,
+        minute: fields.minute,
+        days: fields.days as number[],
+        soundType: fields.soundType,
+        frequencyHz: fields.frequencyHz,
+        frequencyName: fields.frequencyName,
+        studioMixName: fields.studioMixName,
+        wakeSequence: fields.wakeSequence ?? "gentle",
+        fadeInMinutes: fields.fadeInMinutes,
+        ...(fields.isEnabled !== undefined ? { isEnabled: fields.isEnabled } : {}),
+      });
+      return { success: true };
+    }),
+
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {

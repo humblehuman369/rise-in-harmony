@@ -126,3 +126,17 @@
 - [x] Hardware disclaimer + headphone recommendation + medical disclaimer (NFR-FREQ-003)
 - [x] Full preset library: all 9 Solfeggio + 432 Hz + 4 binaural brainwave states (FR-010)
 - [x] Precision Player page at /precision with sidebar nav link
+
+## In Progress — iOS-Style Alarm Management
+
+- [x] Add trpc.alarms.update procedure (edit all alarm fields server-side)
+- [x] AlarmCard: swipe-to-reveal delete action (iOS-style red delete button on swipe left)
+- [x] AlarmCard: tap anywhere on card opens edit sheet (iOS behaviour)
+- [x] EditAlarmSheet: full-screen bottom sheet with drum-roll time picker (hour/minute/AM-PM scrollers)
+- [x] EditAlarmSheet: repeat day selector (pill buttons, Su–Sa)
+- [x] EditAlarmSheet: sound/frequency picker (reuse existing tabs)
+- [x] EditAlarmSheet: label text field
+- [x] EditAlarmSheet: fade-in duration selector
+- [x] EditAlarmSheet: delete button at bottom (red, with confirmation)
+- [x] Wire edit save to trpc.alarms.update and optimistic UI update
+- [x] Wire delete to trpc.alarms.delete with swipe gesture + confirmation
