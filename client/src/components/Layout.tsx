@@ -230,7 +230,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* ── Mobile horizontally scrollable bottom tab bar ────────────────── */}
       <nav
-        className="lg:hidden fixed bottom-0 inset-x-0 z-40 relative"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40"
         style={{
           background: 'rgba(11,13,28,0.98)',
           backdropFilter: 'blur(24px)',
@@ -239,6 +239,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           boxShadow: '0 -4px 24px rgba(0,0,0,0.5)',
         }}
       >
+        {/* Inner wrapper provides relative context for the fade overlays */}
+        <div className="relative">
         {/* Left fade — appears when scrolled right */}
         {showLeftFade && (
           <div
@@ -359,7 +361,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </a>
           )}
 
-        </div>
+        </div>{/* end scroll container */}
+        </div>{/* end relative wrapper */}
       </nav>
     </div>
   );
