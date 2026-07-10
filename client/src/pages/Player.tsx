@@ -216,7 +216,9 @@ function formatTime(seconds: number) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Player() {
-  const { isPlaying, currentFrequency, volume, playTime, timbre, togglePlay, setVolume, setTimbre } = useFrequencyPlayer();
+  const { isPlaying, currentFrequency, volume, playTime, timbre, togglePlay, setVolume, setTimbre, audioContextSuspended, unlockAudio } = useFrequencyPlayer(
+    (msg) => toast.error(msg, { duration: 6000 })
+  );
   const [selectedIndex, setSelectedIndex] = useState(4); // 432Hz default
   const [isMuted, setIsMuted] = useState(false);
   const [prevVolume, setPrevVolume] = useState(0.6);
@@ -281,7 +283,24 @@ export default function Player() {
           onClose={() => setShowPaywall(false)}
         />
       )}
-      <div className="min-h-screen flex flex-col" style={{ background: '#0A0B14' }}>
+      <div className="min-h-screen flex flex-col" style={{ background: '#0A0B14' }} onClick={unlockAudio}>
+        {/* Tap-to-enable audio banner — shown when AudioContext is suspended by autoplay policy */}
+        {audioContextSuspended && (
+          <div
+            className="flex items-center justify-center gap-3 px-4 py-3 text-sm font-medium cursor-pointer"
+            style={{
+              background: 'linear-gradient(90deg, rgba(245,158,11,0.15) 0%, rgba(245,158,11,0.08) 100%)',
+              borderBottom: '1px solid rgba(245,158,11,0.3)',
+              color: '#F59E0B',
+              fontFamily: 'DM Sans, sans-serif',
+            }}
+            onClick={unlockAudio}
+          >
+            <span style={{ fontSize: '1.1rem' }}>🔇</span>
+            <span>Tap here to enable audio, then press play</span>
+            <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>(browser autoplay blocked)</span>
+          </div>
+        )}
         {/* Header */}
         <div className="px-6 pt-8 pb-4">
           <div className="flex items-start justify-between mb-2">

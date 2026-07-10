@@ -12,6 +12,7 @@
  */
 import { useState, useRef, useCallback, useEffect } from "react";
 import { getLibraryLoopUrl } from "@/data/backgroundLoops";
+import type { AudioErrorCallback } from "./useFrequencyPlayer";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,6 +72,9 @@ export function useSoundStudio() {
   const natureAudioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
   const musicAudioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+
+  const [audioContextSuspended, setAudioContextSuspended] = useState(false);
+  const onErrorRef = useRef<AudioErrorCallback | null>(null);
 
   const [state, setState] = useState<StudioState>({
     isPlaying: false,
@@ -345,6 +349,20 @@ export function useSoundStudio() {
     });
   }, [startNatureAudio, stopNature]);
 
+  const unlockAudio = useCallback(async () => {
+    const ctx = ctxRef.current;
+    if (ctx && ctx.state === "suspended") {
+      try {
+        await ctx.resume();
+        setAudioContextSuspended(false);
+      } catch {}
+    }
+  }, []);
+
+  const registerErrorCallback = useCallback((cb: AudioErrorCallback | null) => {
+    onErrorRef.current = cb;
+  }, []);
+
   // Cleanup
   useEffect(() => {
     return () => {
@@ -362,6 +380,9 @@ export function useSoundStudio() {
     setFrequency,
     setMusicMode,
     setNatureSound,
+    audioContextSuspended,
+    unlockAudio,
+    registerErrorCallback,
   };
 }
 

@@ -213,7 +213,13 @@ function LayerFader({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function SoundStudio() {
-  const { state, toggle, setLayerVolume, setFrequency, setMusicMode, setNatureSound } = useSoundStudio();
+  const { state, toggle, setLayerVolume, setFrequency, setMusicMode, setNatureSound, audioContextSuspended, unlockAudio, registerErrorCallback } = useSoundStudio();
+
+  // Register error callback to show toasts for audio failures
+  useEffect(() => {
+    registerErrorCallback((msg) => toast.error(msg, { duration: 6000 }));
+    return () => registerErrorCallback(null);
+  }, [registerErrorCallback]);
   const [activePreset, setActivePreset] = useState<string | null>(null);
 
   // ── Session Journal state ──────────────────────────────────────────────────
@@ -385,7 +391,24 @@ export default function SoundStudio() {
 
   return (
     <Layout>
-      <div className="min-h-screen pb-24" style={{ background: "#0A0B14" }}>
+      <div className="min-h-screen pb-24" style={{ background: "#0A0B14" }} onClick={unlockAudio}>
+        {/* Tap-to-enable audio banner — shown when AudioContext is suspended by autoplay policy */}
+        {audioContextSuspended && (
+          <div
+            className="flex items-center justify-center gap-3 px-4 py-3 text-sm font-medium cursor-pointer"
+            style={{
+              background: 'linear-gradient(90deg, rgba(245,158,11,0.15) 0%, rgba(245,158,11,0.08) 100%)',
+              borderBottom: '1px solid rgba(245,158,11,0.3)',
+              color: '#F59E0B',
+              fontFamily: 'DM Sans, sans-serif',
+            }}
+            onClick={unlockAudio}
+          >
+            <span style={{ fontSize: '1.1rem' }}>🔇</span>
+            <span>Tap here to enable audio, then press play</span>
+            <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>(browser autoplay blocked)</span>
+          </div>
+        )}
         {/* Header */}
         <div className="px-6 pt-8 pb-4">
           <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>

@@ -14,6 +14,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { getLibraryLoopUrl } from "@/data/backgroundLoops";
 
+/** Callback fired when a user-facing audio error occurs */
+export type AudioErrorCallback = (msg: string) => void;
+
 /** Tone character for synthesized catalog frequencies (recorded sessions are unaffected). */
 export type ToneTimbre = "pure" | "bowl";
 
@@ -265,12 +268,13 @@ async function getSharedContext(): Promise<AudioContext> {
  * Same public API as the original OscillatorNode version.
  * Internally uses the DDS AudioWorklet for double-precision synthesis.
  */
-export function useFrequencyPlayer() {
+export function useFrequencyPlayer(onError?: AudioErrorCallback) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentFrequency, setCurrentFrequency] = useState<Frequency | null>(null);
   const [volume, setVolumeState] = useState(0.6);
   const [playTime, setPlayTime] = useState(0);
   const [timbre, setTimbreState] = useState<ToneTimbre>("pure");
+  const [audioContextSuspended, setAudioContextSuspended] = useState(false);
 
   const timbreRef = useRef<ToneTimbre>("pure");
   const workletNodeRef = useRef<AudioWorkletNode | null>(null);
@@ -326,8 +330,16 @@ export function useFrequencyPlayer() {
     let ctx: AudioContext;
     try {
       ctx = await getSharedContext();
+      setAudioContextSuspended(false);
     } catch (err) {
       console.error("[DDS] Failed to initialise AudioContext:", err);
+      // Check if the context is suspended (autoplay policy)
+      if (sharedCtx && sharedCtx.state === "suspended") {
+        setAudioContextSuspended(true);
+        onError?.("Tap anywhere on the page to enable audio, then press play again.");
+      } else {
+        onError?.("Could not start audio. Please check your browser permissions and try again.");
+      }
       return;
     }
 
@@ -356,6 +368,13 @@ export function useFrequencyPlayer() {
       } catch (err) {
         console.error("[Recorded] Failed to start playback:", err);
         teardown();
+        const isAutoplayBlocked = (err as Error)?.name === "NotAllowedError";
+        if (isAutoplayBlocked) {
+          setAudioContextSuspended(true);
+          onError?.("Tap anywhere on the page to enable audio, then press play again.");
+        } else {
+          onError?.("Audio file could not be loaded. Please check your connection and try again.");
+        }
         return;
       }
 
@@ -457,12 +476,24 @@ export function useFrequencyPlayer() {
     };
   }, []);
 
+  // ── Unlock AudioContext on user interaction ──────────────────────────────
+  const unlockAudio = useCallback(async () => {
+    if (sharedCtx && sharedCtx.state === "suspended") {
+      try {
+        await sharedCtx.resume();
+        setAudioContextSuspended(false);
+      } catch {}
+    }
+  }, []);
+
   return {
     isPlaying,
     currentFrequency,
     volume,
     playTime,
     timbre,
+    audioContextSuspended,
+    unlockAudio,
     playFrequency,
     stopAudio,
     togglePlay,
