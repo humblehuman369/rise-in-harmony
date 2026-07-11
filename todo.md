@@ -92,6 +92,11 @@
 - [ ] Google Play Console setup (app listing, data safety form)
 - [ ] EAS production build + submit to both stores
 
+## Completed — Planetary Frequencies Content (Learn Page)
+
+- [x] Add all 11 planetary frequency entries to cosmos Journey in learningContent.ts (Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto added; Sun, Moon, Mercury descriptions updated)
+- [x] Update cosmos Journey description with "Music of the Spheres" editorial intro
+
 ## In Progress — Meditation Audio Redesign
 
 - [x] Redesign ambient audio engine — replace noisy procedural synthesis with smooth soundscapes

@@ -496,6 +496,144 @@ export default function PrecisionPlayer() {
               </div>
             </div>
 
+            {/* ── Sound Engine card: Waveform + Play Mode (merged) ─────────── */}
+            <div className="p-5 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                Sound Engine
+              </div>
+
+              {/* Waveform row */}
+              <div className="mb-5">
+                <div className="text-[10px] uppercase tracking-widest mb-2" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>Waveform</div>
+                <div className="grid grid-cols-5 gap-2">
+                  {WAVEFORMS.map(w => (
+                    <button
+                      key={w}
+                      onClick={() => handleWaveform(w)}
+                      className="py-2 rounded-xl text-sm font-medium transition-all duration-200"
+                      style={waveform === w ? {
+                        background: "linear-gradient(135deg, #00D4AA, #00B894)",
+                        color: "#0A0B14",
+                      } : {
+                        background: "rgba(255,255,255,0.04)",
+                        color: "#6B7A99",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                      }}
+                    >
+                      {WAVEFORM_LABELS[w]}
+                    </button>
+                  ))}
+                </div>
+                {waveform === "bowl" && (
+                  <p className="text-xs mt-2" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                    ◡ Singing bowl — layered overtones and a slow shimmer, with the fundamental locked at the exact tuned Hz.
+                  </p>
+                )}
+                {waveform !== "sine" && waveform !== "bowl" && (
+                  <p className="text-xs mt-2" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                    ✦ Sine wave is recommended for healing and meditation applications.
+                  </p>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="mb-4" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }} />
+
+              {/* Play Mode row */}
+              <div>
+                <div className="text-[10px] uppercase tracking-widest mb-2" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>Play Mode</div>
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  {(["mono", "binaural", "isochronic"] as PlayMode[]).map(m => (
+                    <button
+                      key={m}
+                      onClick={() => setPlayMode(m)}
+                      className="py-2 rounded-xl text-sm font-medium capitalize transition-all duration-200"
+                      style={playMode === m ? {
+                        background: "linear-gradient(135deg, #8B5CF6, #6D28D9)",
+                        color: "#fff",
+                      } : {
+                        background: "rgba(255,255,255,0.04)",
+                        color: "#6B7A99",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                      }}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+
+                {playMode === "binaural" && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
+                        Beat frequency: <strong style={{ color: "#E8EDF5" }}>{beatHz.toFixed(1)} Hz</strong>
+                      </span>
+                      <span className="text-xs" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                        L: {customFreq.toFixed(2)} Hz · R: {(customFreq + beatHz).toFixed(2)} Hz
+                      </span>
+                    </div>
+                    <Slider
+                      min={0.5}
+                      max={50}
+                      step={0.5}
+                      value={[beatHz]}
+                      onValueChange={([v]) => {
+                        setBeatHz(v);
+                        if (player.isPlaying) player.setFrequency(customFreq, customFreq + v);
+                      }}
+                    />
+                    <div className="flex justify-between text-xs mt-1" style={{ color: "#3A4A6B" }}>
+                      <span>0.5 Hz (Delta)</span>
+                      <span>10 Hz (Alpha)</span>
+                      <span>50 Hz (Gamma)</span>
+                    </div>
+                    <p className="text-xs mt-2" style={{ color: "#F59E0B", fontFamily: "DM Sans, sans-serif" }}>
+                      ⚠ Stereo headphones required — binaural beats do not work on speakers.
+                    </p>
+                  </div>
+                )}
+
+                {playMode === "isochronic" && (
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
+                          Pulse rate: <strong style={{ color: "#E8EDF5" }}>{isoRate.toFixed(1)} Hz</strong>
+                        </span>
+                      </div>
+                      <Slider
+                        min={0.5}
+                        max={40}
+                        step={0.5}
+                        value={[isoRate]}
+                        onValueChange={([v]) => {
+                          setIsoRate(v);
+                          if (player.isPlaying) player.setIsochronic(v, isoDuty);
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
+                          Duty cycle: <strong style={{ color: "#E8EDF5" }}>{Math.round(isoDuty * 100)}%</strong>
+                        </span>
+                      </div>
+                      <Slider
+                        min={0.1}
+                        max={0.9}
+                        step={0.05}
+                        value={[isoDuty]}
+                        onValueChange={([v]) => {
+                          setIsoDuty(v);
+                          if (player.isPlaying) player.setIsochronic(isoRate, v);
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Visualizer (FR-030 + FR-031) */}
             <div className="p-5 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
               <div className="flex items-center justify-between mb-3">
@@ -535,141 +673,8 @@ export default function PrecisionPlayer() {
                 </p>
               )}
             </div>
-          </div>
 
-            {/* Waveform selector (FR-003) */}
-            <div className="p-5 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <div className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
-                Waveform
-              </div>
-              <div className="grid grid-cols-5 gap-2">
-                {WAVEFORMS.map(w => (
-                  <button
-                    key={w}
-                    onClick={() => handleWaveform(w)}
-                    className="py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
-                    style={waveform === w ? {
-                      background: "linear-gradient(135deg, #00D4AA, #00B894)",
-                      color: "#0A0B14",
-                    } : {
-                      background: "rgba(255,255,255,0.04)",
-                      color: "#6B7A99",
-                      border: "1px solid rgba(255,255,255,0.06)",
-                    }}
-                  >
-                    {WAVEFORM_LABELS[w]}
-                  </button>
-                ))}
-              </div>
-              {waveform === "bowl" && (
-                <p className="text-xs mt-2" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
-                  ◡ Singing bowl — layered overtones and a slow shimmer, with the fundamental locked at the exact tuned Hz.
-                </p>
-              )}
-              {waveform !== "sine" && waveform !== "bowl" && (
-                <p className="text-xs mt-2" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
-                  ✦ Sine wave is recommended for healing and meditation applications.
-                </p>
-              )}
-            </div>
-
-            {/* Play mode selector */}
-            <div className="p-5 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <div className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
-                Play Mode
-              </div>
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                {(["mono", "binaural", "isochronic"] as PlayMode[]).map(m => (
-                  <button
-                    key={m}
-                    onClick={() => setPlayMode(m)}
-                    className="py-2.5 rounded-xl text-sm font-medium capitalize transition-all duration-200"
-                    style={playMode === m ? {
-                      background: "linear-gradient(135deg, #8B5CF6, #6D28D9)",
-                      color: "#fff",
-                    } : {
-                      background: "rgba(255,255,255,0.04)",
-                      color: "#6B7A99",
-                      border: "1px solid rgba(255,255,255,0.06)",
-                    }}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
-
-              {playMode === "binaural" && (
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
-                      Beat frequency: <strong style={{ color: "#E8EDF5" }}>{beatHz.toFixed(1)} Hz</strong>
-                    </span>
-                    <span className="text-xs" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
-                      L: {customFreq.toFixed(2)} Hz · R: {(customFreq + beatHz).toFixed(2)} Hz
-                    </span>
-                  </div>
-                  <Slider
-                    min={0.5}
-                    max={50}
-                    step={0.5}
-                    value={[beatHz]}
-                    onValueChange={([v]) => {
-                      setBeatHz(v);
-                      if (player.isPlaying) player.setFrequency(customFreq, customFreq + v);
-                    }}
-                  />
-                  <div className="flex justify-between text-xs mt-1" style={{ color: "#3A4A6B" }}>
-                    <span>0.5 Hz (Delta)</span>
-                    <span>10 Hz (Alpha)</span>
-                    <span>50 Hz (Gamma)</span>
-                  </div>
-                  <p className="text-xs mt-2" style={{ color: "#F59E0B", fontFamily: "DM Sans, sans-serif" }}>
-                    ⚠ Stereo headphones required — binaural beats do not work on speakers.
-                  </p>
-                </div>
-              )}
-
-              {playMode === "isochronic" && (
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
-                        Pulse rate: <strong style={{ color: "#E8EDF5" }}>{isoRate.toFixed(1)} Hz</strong>
-                      </span>
-                    </div>
-                    <Slider
-                      min={0.5}
-                      max={40}
-                      step={0.5}
-                      value={[isoRate]}
-                      onValueChange={([v]) => {
-                        setIsoRate(v);
-                        if (player.isPlaying) player.setIsochronic(v, isoDuty);
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
-                        Duty cycle: <strong style={{ color: "#E8EDF5" }}>{Math.round(isoDuty * 100)}%</strong>
-                      </span>
-                    </div>
-                    <Slider
-                      min={0.1}
-                      max={0.9}
-                      step={0.05}
-                      value={[isoDuty]}
-                      onValueChange={([v]) => {
-                        setIsoDuty(v);
-                        if (player.isPlaying) player.setIsochronic(isoRate, v);
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Background layer */}
+            {/* Background layer — full-width card with room to breathe */}
             <div className="p-5 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
               <div className="flex items-center justify-between mb-3">
                 <div className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
@@ -794,7 +799,7 @@ export default function PrecisionPlayer() {
                 </p>
               )}
             </div>
-
+          </div>
 
           {/* ── Right column: Playback + Presets + Favorites ─────────────── */}
           <div className="flex flex-col gap-5">
