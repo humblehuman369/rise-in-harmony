@@ -123,7 +123,7 @@ export default function PrecisionPlayer() {
   const [playMode, setPlayMode] = useState<PlayMode>("mono");
   const [sleepMinutes, setSleepMinutes] = useState<number | null>(null);
   const [vizMode, setVizMode] = useState<"oscilloscope" | "spectrum" | "both">("both");
-  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
+  const [disclaimerOpen, setDisclaimerOpen] = useState(true);
 
   // Favorites
   const [favorites, setFavorites] = useState<Favorite[]>(loadFavorites);
@@ -426,7 +426,7 @@ export default function PrecisionPlayer() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" onClickCapture={() => setDisclaimerOpen(false)}>
           {/* ── Left column: Controls ─────────────────────────────────────── */}
           <div className="lg:col-span-2 flex flex-col gap-5">
 
