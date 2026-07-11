@@ -1,10 +1,20 @@
 import { Tabs } from "expo-router";
 import { View, StyleSheet } from "react-native";
 import { colors } from "@rih/ui-tokens";
+import {
+  Home,
+  Music2,
+  Gauge,
+  Waves,
+  Sliders,
+  AlarmClock,
+  BarChart2,
+} from "lucide-react-native";
 
-// Tab bar icons using simple SVG-based components
+// Tab bar icon wrapper with active highlight
 function TabIcon({
   focused,
+  color,
   children,
 }: {
   focused: boolean;
@@ -36,7 +46,7 @@ export default function TabLayout() {
           title: "Home",
           tabBarIcon: ({ focused, color }) => (
             <TabIcon focused={focused} color={color}>
-              {/* Home icon placeholder — replace with lucide-react-native */}
+              <Home size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
             </TabIcon>
           ),
         }}
@@ -47,7 +57,7 @@ export default function TabLayout() {
           title: "Player",
           tabBarIcon: ({ focused, color }) => (
             <TabIcon focused={focused} color={color}>
-              {/* Play icon placeholder */}
+              <Music2 size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
             </TabIcon>
           ),
         }}
@@ -58,7 +68,7 @@ export default function TabLayout() {
           title: "Precision",
           tabBarIcon: ({ focused, color }) => (
             <TabIcon focused={focused} color={color}>
-              {/* Tuning-fork icon placeholder */}
+              <Gauge size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
             </TabIcon>
           ),
         }}
@@ -69,7 +79,7 @@ export default function TabLayout() {
           title: "Meditate",
           tabBarIcon: ({ focused, color }) => (
             <TabIcon focused={focused} color={color}>
-              {/* Meditation icon placeholder */}
+              <Waves size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
             </TabIcon>
           ),
         }}
@@ -80,13 +90,13 @@ export default function TabLayout() {
           title: "Studio",
           tabBarIcon: ({ focused, color }) => (
             <TabIcon focused={focused} color={color}>
-              {/* Studio icon placeholder */}
+              <Sliders size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
             </TabIcon>
           ),
         }}
       />
       {/* Library duplicates the Player grid; keep it routable (linked from
-          Home) but out of the tab bar so we stay at 6 tabs. */}
+          Home) but out of the tab bar so we stay at 7 tabs. */}
       <Tabs.Screen name="library" options={{ href: null }} />
       <Tabs.Screen
         name="alarm"
@@ -94,7 +104,7 @@ export default function TabLayout() {
           title: "Alarm",
           tabBarIcon: ({ focused, color }) => (
             <TabIcon focused={focused} color={color}>
-              {/* Alarm icon placeholder */}
+              <AlarmClock size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
             </TabIcon>
           ),
         }}
@@ -105,7 +115,7 @@ export default function TabLayout() {
           title: "Dashboard",
           tabBarIcon: ({ focused, color }) => (
             <TabIcon focused={focused} color={color}>
-              {/* Chart icon placeholder */}
+              <BarChart2 size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
             </TabIcon>
           ),
         }}

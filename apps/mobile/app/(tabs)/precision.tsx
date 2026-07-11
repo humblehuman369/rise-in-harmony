@@ -2,7 +2,7 @@
  * Precision Player Screen — /precision
  * Custom frequency generator: any Hz from 1–22,000 at 0.01 resolution,
  * four waveforms, and pure / true-binaural / isochronic modes.
- * Favorites persist locally (AsyncStorage).
+ * Sprint 2 (R-05): Favorites sync with server API; AsyncStorage is offline fallback.
  */
 import {
   View,
@@ -36,6 +36,7 @@ import {
 import { useAuthStore } from "@/store/authStore";
 import { trackSessionStarted, trackSessionEnded } from "@/hooks/useAnalytics";
 import SessionJournal from "@/components/SessionJournal";
+import { soundsApi, type ServerSound } from "@/lib/api";
 
 const FAVORITES_KEY = "rih_precision_favorites";
 const JOURNAL_MIN_SEC = 30;
@@ -124,11 +125,35 @@ export default function PrecisionScreen() {
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [favName, setFavName] = useState("");
   const [journalOpen, setJournalOpen] = useState(false);
+  const [syncingFavs, setSyncingFavs] = useState(false);
   const lastPlayTimeRef = useRef(0);
 
+  // Load favorites: prefer server (authenticated), fall back to AsyncStorage
   useEffect(() => {
-    loadFavorites().then(setFavorites);
-  }, []);
+    async function loadAll() {
+      if (user) {
+        // Authenticated — fetch from server
+        const serverFavs = await soundsApi.list();
+        if (serverFavs) {
+          const mapped: Favorite[] = serverFavs.map((s: ServerSound) => ({
+            id: String(s.id),
+            name: s.name,
+            hz: s.freqL,
+            waveform: s.waveform as Waveform,
+            mode: s.mode as PlayMode,
+            beatHz: s.beatHz ?? 10,
+          }));
+          setFavorites(mapped);
+          // Sync to AsyncStorage for offline access
+          await persistFavorites(mapped);
+          return;
+        }
+      }
+      // Unauthenticated or server unavailable — use local cache
+      loadFavorites().then(setFavorites);
+    }
+    loadAll();
+  }, [user]);
 
   const currentConfig = useCallback(
     () => ({ hz, waveform, mode, beatHz }),
@@ -200,20 +225,53 @@ export default function PrecisionScreen() {
 
   const saveFavorite = useCallback(async () => {
     const name = favName.trim() || `${hz} Hz`;
-    const fav: Favorite = {
-      id: `fav_${Date.now()}`,
-      name,
-      hz,
-      waveform,
-      mode,
-      beatHz,
-    };
-    const updated = [fav, ...favorites].slice(0, 30);
-    setFavorites(updated);
-    await persistFavorites(updated);
-    setFavName("");
-    setSaveModalOpen(false);
-  }, [favName, hz, waveform, mode, beatHz, favorites]);
+    setSyncingFavs(true);
+    try {
+      if (user) {
+        // Save to server
+        const result = await soundsApi.create({
+          name,
+          freqL: hz,
+          beatHz: mode !== "pure" ? beatHz : undefined,
+          waveform,
+          mode: mode === "pure" ? "mono" : mode,
+          toneVolume: 0.7,
+        });
+        if (result) {
+          const fav: Favorite = {
+            id: String(result.id),
+            name,
+            hz,
+            waveform,
+            mode,
+            beatHz,
+          };
+          const updated = [fav, ...favorites].slice(0, 30);
+          setFavorites(updated);
+          await persistFavorites(updated);
+          setFavName("");
+          setSaveModalOpen(false);
+          return;
+        }
+      }
+      // Offline fallback
+      const fav: Favorite = {
+        id: `fav_${Date.now()}`,
+        name,
+        hz,
+        waveform,
+        mode,
+        beatHz,
+      };
+      const updated = [fav, ...favorites].slice(0, 30);
+      setFavorites(updated);
+      await persistFavorites(updated);
+      setFavName("");
+      setSaveModalOpen(false);
+    } finally {
+      setSyncingFavs(false);
+    }
+  }, [favName, hz, waveform, mode, beatHz, favorites, user]);
 
   const loadFavorite = useCallback(
     (fav: Favorite) => {
@@ -234,8 +292,12 @@ export default function PrecisionScreen() {
       const updated = favorites.filter((f) => f.id !== id);
       setFavorites(updated);
       await persistFavorites(updated);
+      // Also delete from server if authenticated and id is numeric
+      if (user && /^\d+$/.test(id)) {
+        await soundsApi.delete(Number(id));
+      }
     },
-    [favorites]
+    [favorites, user]
   );
 
   const showBeat = mode !== "pure";

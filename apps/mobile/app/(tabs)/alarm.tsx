@@ -1,6 +1,7 @@
 /**
  * Alarm Tab Screen
  * Healing alarm scheduler — create, toggle, and delete frequency-based alarms.
+ * Sprint 2: Added Wake Sequence selector (Gentle Morning + Chakra Awakening).
  */
 import {
   View,
@@ -34,7 +35,59 @@ import type { Alarm, AlarmDayOfWeek } from "@rih/shared-types";
 
 const ALARMS_STORAGE_KEY = "rih_alarms";
 
-// Persist alarms to AsyncStorage
+// ─── Wake Sequence types ────────────────────────────────────────────────────
+
+type WakeSequenceId = "none" | "gentle-morning" | "chakra-awakening";
+
+interface WakeSequence {
+  id: WakeSequenceId;
+  label: string;
+  description: string;
+  isPremium: boolean;
+  color: string;
+  steps: Array<{ hz: number; name: string; durationMin: number }>;
+}
+
+const WAKE_SEQUENCES: WakeSequence[] = [
+  {
+    id: "none",
+    label: "Single Frequency",
+    description: "Wake to one chosen frequency",
+    isPremium: false,
+    color: colors.textMuted,
+    steps: [],
+  },
+  {
+    id: "gentle-morning",
+    label: "Gentle Morning",
+    description: "432 Hz → 528 Hz progressive fade-in",
+    isPremium: false,
+    color: "#00D4AA",
+    steps: [
+      { hz: 432, name: "Natural Harmony", durationMin: 3 },
+      { hz: 528, name: "Miracle Tone", durationMin: 2 },
+    ],
+  },
+  {
+    id: "chakra-awakening",
+    label: "Chakra Awakening",
+    description: "Root → Crown — 7-chakra morning progression",
+    isPremium: true,
+    color: "#8B5CF6",
+    steps: [
+      { hz: 396, name: "Root", durationMin: 1 },
+      { hz: 417, name: "Sacral", durationMin: 1 },
+      { hz: 528, name: "Solar Plexus", durationMin: 1 },
+      { hz: 639, name: "Heart", durationMin: 1 },
+      { hz: 741, name: "Throat", durationMin: 1 },
+      { hz: 852, name: "Third Eye", durationMin: 1 },
+      { hz: 963, name: "Crown", durationMin: 1 },
+    ],
+  },
+];
+
+// ─── Storage helpers ─────────────────────────────────────────────────────────
+
 async function saveAlarms(alarms: Alarm[]) {
   try {
     await AsyncStorage.setItem(ALARMS_STORAGE_KEY, JSON.stringify(alarms));
@@ -59,11 +112,9 @@ const TRIGGER_WEEKDAY: Record<AlarmDayOfWeek, number> = {
 async function scheduleRepeatAlarm(alarm: Alarm): Promise<string[]> {
   const ids: string[] = [];
   if (alarm.days.length === 0) {
-    // One-time alarm — next occurrence of hour:minute
     const id = await scheduleAlarm(alarm);
     if (id) ids.push(id);
   } else {
-    // Weekly repeating trigger per selected day
     for (const day of alarm.days) {
       const id = await scheduleAlarm(alarm, TRIGGER_WEEKDAY[day]);
       if (id) ids.push(id);
@@ -74,7 +125,6 @@ async function scheduleRepeatAlarm(alarm: Alarm): Promise<string[]> {
 
 const DAYS: AlarmDayOfWeek[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 // Only solfeggio tones have bundled notification sounds (alarm_<hz>.wav).
-// Beat-based entries (binaural/isochronic) can't play as notification audio.
 const ALARM_FREQUENCIES = FREQUENCIES.filter((f) => f.category === "solfeggio");
 const DEFAULT_FREQUENCY = FREQUENCIES.find((f) => f.id === "528") ?? FREQUENCIES[0];
 
@@ -96,7 +146,8 @@ export default function AlarmScreen() {
   const userIsPremium = isPremiumUser(user?.subscriptionTier ?? "free");
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [creating, setCreating] = useState(false);
-  // New alarm form state — time is held as a Date for the native picker
+
+  // New alarm form state
   const [newTime, setNewTime] = useState(() => {
     const d = new Date();
     d.setHours(7, 0, 0, 0);
@@ -104,15 +155,14 @@ export default function AlarmScreen() {
   });
   const newHour = newTime.getHours();
   const newMinute = newTime.getMinutes();
-  // Android shows the picker as a one-shot dialog; iOS renders it inline
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
   const [newDays, setNewDays] = useState<AlarmDayOfWeek[]>(["Mon", "Tue", "Wed", "Thu", "Fri"]);
   const [newFreqId, setNewFreqId] = useState(DEFAULT_FREQUENCY.id);
   const [newFadeMin, setNewFadeMin] = useState(5);
+  const [newSequenceId, setNewSequenceId] = useState<WakeSequenceId>("none");
 
   useAlarmNotifications();
 
-  // Load persisted alarms on mount
   useEffect(() => {
     loadAlarms().then(setAlarms);
   }, []);
@@ -138,16 +188,22 @@ export default function AlarmScreen() {
       return;
     }
     const freq = FREQUENCIES.find((f) => f.id === newFreqId) ?? DEFAULT_FREQUENCY;
+    const sequence = WAKE_SEQUENCES.find((s) => s.id === newSequenceId);
+    const label =
+      newSequenceId !== "none" && sequence
+        ? `${sequence.label} Wake Sequence`
+        : `${freq.hz}Hz Healing Alarm`;
+
     const alarm: Alarm = {
       id: generateId(),
       userId: 0,
-      label: `${freq.hz}Hz Healing Alarm`,
+      label,
       hour: newHour,
       minute: newMinute,
       days: newDays,
       frequencyHz: freq.hz,
       frequencyName: freq.name,
-      studioMixName: null,
+      studioMixName: newSequenceId !== "none" ? newSequenceId : null,
       fadeInMinutes: newFadeMin,
       isActive: true,
       time: `${newHour.toString().padStart(2, "0")}:${newMinute.toString().padStart(2, "0")}`,
@@ -160,15 +216,13 @@ export default function AlarmScreen() {
       setAlarms(updated);
       setCreating(false);
     }
-  }, [newHour, newMinute, newDays, newFreqId, newFadeMin]);
+  }, [newHour, newMinute, newDays, newFreqId, newFadeMin, newSequenceId]);
 
   const toggleAlarm = useCallback(async (alarm: Alarm) => {
     if (alarm.isActive) {
-      // Deactivate — cancel all scheduled notifications for this alarm
       const stored = await loadAlarms();
       const target = stored.find((a) => a.id === alarm.id);
       if (target) {
-        // Cancel by re-fetching scheduled notifications and cancelling matching ones
         const scheduled = await Notifications.getAllScheduledNotificationsAsync();
         for (const notif of scheduled) {
           const data = notif.content.data as { alarm?: Alarm };
@@ -183,7 +237,6 @@ export default function AlarmScreen() {
       await saveAlarms(updated);
       setAlarms(updated);
     } else {
-      // Reactivate — reschedule
       const ids = await scheduleRepeatAlarm({ ...alarm, isActive: true });
       if (ids.length > 0) {
         const updated = (await loadAlarms()).map((a) =>
@@ -202,7 +255,6 @@ export default function AlarmScreen() {
         text: "Delete",
         style: "destructive",
         onPress: async () => {
-          // Cancel scheduled notifications for this alarm
           const scheduled = await Notifications.getAllScheduledNotificationsAsync();
           for (const notif of scheduled) {
             const data = notif.content.data as { alarm?: Alarm };
@@ -219,6 +271,7 @@ export default function AlarmScreen() {
   }, []);
 
   const selectedFreq = FREQUENCIES.find((f) => f.id === newFreqId) ?? DEFAULT_FREQUENCY;
+  const selectedSequence = WAKE_SEQUENCES.find((s) => s.id === newSequenceId) ?? WAKE_SEQUENCES[0];
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -241,7 +294,7 @@ export default function AlarmScreen() {
         {/* Create form */}
         {creating && (
           <View style={styles.form}>
-            {/* Time picker — native spinner (iOS inline, Android dialog) */}
+            {/* Time picker */}
             <Text style={styles.sectionLabel}>Wake Time</Text>
             {Platform.OS === "ios" ? (
               <View style={styles.timePickerWrap}>
@@ -302,38 +355,96 @@ export default function AlarmScreen() {
               ))}
             </View>
 
-            {/* Frequency selector */}
-            <Text style={styles.sectionLabel}>Healing Frequency</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.freqScroll}
-            >
-              {ALARM_FREQUENCIES.map((f) => {
-                const locked = f.isPremium && !userIsPremium;
+            {/* ── Wake Sequence selector (Sprint 2 — R-04) ─────────────── */}
+            <Text style={styles.sectionLabel}>Wake Sequence</Text>
+            <View style={styles.sequenceGrid}>
+              {WAKE_SEQUENCES.map((seq) => {
+                const locked = seq.isPremium && !userIsPremium;
+                const isActive = newSequenceId === seq.id;
                 return (
                   <TouchableOpacity
-                    key={f.id}
+                    key={seq.id}
                     style={[
-                      styles.freqChip,
-                      newFreqId === f.id && {
-                        backgroundColor: f.color + "25",
-                        borderColor: f.color + "60",
+                      styles.sequenceCard,
+                      isActive && {
+                        borderColor: seq.color + "80",
+                        backgroundColor: seq.color + "12",
                       },
                     ]}
                     onPress={() =>
-                      locked ? router.push("/paywall") : setNewFreqId(f.id)
+                      locked ? router.push("/paywall") : setNewSequenceId(seq.id)
                     }
+                    activeOpacity={0.8}
                   >
-                    <Text style={[styles.freqChipHz, { color: f.color }]}>
-                      {locked ? "🔒 " : ""}
-                      {f.hz}Hz
-                    </Text>
-                    <Text style={styles.freqChipName}>{f.name}</Text>
+                    <View style={styles.sequenceCardHeader}>
+                      <Text style={[styles.sequenceLabel, isActive && { color: seq.color }]}>
+                        {locked ? "🔒 " : ""}{seq.label}
+                      </Text>
+                      {seq.isPremium && !locked && (
+                        <View style={[styles.premiumBadge, { backgroundColor: seq.color + "25" }]}>
+                          <Text style={[styles.premiumBadgeText, { color: seq.color }]}>PRO</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.sequenceDesc}>{seq.description}</Text>
+                    {seq.steps.length > 0 && (
+                      <View style={styles.sequenceSteps}>
+                        {seq.steps.map((step, i) => (
+                          <View key={i} style={styles.sequenceStep}>
+                            <View
+                              style={[
+                                styles.sequenceStepDot,
+                                { backgroundColor: seq.color },
+                              ]}
+                            />
+                            <Text style={styles.sequenceStepText}>
+                              {step.hz}Hz · {step.name}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
                   </TouchableOpacity>
                 );
               })}
-            </ScrollView>
+            </View>
+
+            {/* Frequency selector — shown only when no sequence is selected */}
+            {newSequenceId === "none" && (
+              <>
+                <Text style={styles.sectionLabel}>Healing Frequency</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.freqScroll}
+                >
+                  {ALARM_FREQUENCIES.map((f) => {
+                    const locked = f.isPremium && !userIsPremium;
+                    return (
+                      <TouchableOpacity
+                        key={f.id}
+                        style={[
+                          styles.freqChip,
+                          newFreqId === f.id && {
+                            backgroundColor: f.color + "25",
+                            borderColor: f.color + "60",
+                          },
+                        ]}
+                        onPress={() =>
+                          locked ? router.push("/paywall") : setNewFreqId(f.id)
+                        }
+                      >
+                        <Text style={[styles.freqChipHz, { color: f.color }]}>
+                          {locked ? "🔒 " : ""}
+                          {f.hz}Hz
+                        </Text>
+                        <Text style={styles.freqChipName}>{f.name}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </>
+            )}
 
             {/* Fade-in */}
             <Text style={styles.sectionLabel}>
@@ -365,15 +476,33 @@ export default function AlarmScreen() {
             <View
               style={[
                 styles.previewCard,
-                { borderColor: selectedFreq.color + "40" },
+                {
+                  borderColor:
+                    newSequenceId !== "none"
+                      ? selectedSequence.color + "40"
+                      : selectedFreq.color + "40",
+                },
               ]}
             >
               <Text style={styles.previewTime}>
                 {formatTime(newHour, newMinute)}
               </Text>
-              <Text style={[styles.previewFreq, { color: selectedFreq.color }]}>
-                {selectedFreq.hz}Hz · {selectedFreq.name}
-              </Text>
+              {newSequenceId !== "none" ? (
+                <>
+                  <Text
+                    style={[styles.previewFreq, { color: selectedSequence.color }]}
+                  >
+                    {selectedSequence.label}
+                  </Text>
+                  <Text style={styles.previewDays}>
+                    {selectedSequence.steps.length} frequencies · {selectedSequence.steps.reduce((a, s) => a + s.durationMin, 0)} min
+                  </Text>
+                </>
+              ) : (
+                <Text style={[styles.previewFreq, { color: selectedFreq.color }]}>
+                  {selectedFreq.hz}Hz · {selectedFreq.name}
+                </Text>
+              )}
               <Text style={styles.previewDays}>
                 {newDays.length === 7
                   ? "Every day"
@@ -537,6 +666,62 @@ const styles = StyleSheet.create({
   },
   dayChipText: { fontSize: fontSizes.sm, color: colors.textMuted, fontWeight: "600" },
   dayChipTextActive: { color: colors.teal },
+  // Wake sequence cards
+  sequenceGrid: {
+    gap: spacing[3],
+  },
+  sequenceCard: {
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(255,255,255,0.03)",
+    padding: spacing[4],
+  },
+  sequenceCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: spacing[1],
+  },
+  sequenceLabel: {
+    fontSize: fontSizes.sm,
+    color: colors.textPrimary,
+    fontWeight: "700",
+  },
+  premiumBadge: {
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+  },
+  premiumBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  sequenceDesc: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    marginBottom: spacing[2],
+  },
+  sequenceSteps: {
+    gap: spacing[1],
+    marginTop: spacing[1],
+  },
+  sequenceStep: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[2],
+  },
+  sequenceStepDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  sequenceStepText: {
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  // Frequency selector
   freqScroll: { marginHorizontal: -spacing[2] },
   freqChip: {
     paddingHorizontal: spacing[3],

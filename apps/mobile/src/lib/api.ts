@@ -115,3 +115,93 @@ export const api = {
 export function getCurrentUser() {
   return api.get<User>("/api/auth/me");
 }
+
+// ─── Precision Player Sounds API ─────────────────────────────────────────────
+// These helpers call the tRPC sounds router via the batch endpoint.
+// They are used by the Precision Player screen to sync favorites server-side.
+
+export interface ServerSound {
+  id: number;
+  name: string;
+  freqL: number;
+  beatHz: number | null;
+  isoRate: number | null;
+  isoDuty: number | null;
+  waveform: string;
+  mode: string;
+  toneVolume: number;
+  backgroundType: string;
+  backgroundKey: string | null;
+  backgroundVolume: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateSoundInput {
+  name: string;
+  freqL: number;
+  beatHz?: number;
+  waveform: string;
+  mode: string;
+  toneVolume?: number;
+  backgroundType?: string;
+  backgroundKey?: string;
+  backgroundVolume?: number;
+}
+
+async function trpcQuery<T>(
+  procedure: string,
+  input?: unknown
+): Promise<T | null> {
+  try {
+    const headers = await getAuthHeaders();
+    const url = `${API_BASE_URL}/api/trpc/${procedure}${
+      input !== undefined
+        ? `?input=${encodeURIComponent(JSON.stringify({ "0": { json: input } }))}`
+        : ""
+    }`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { "Content-Type": "application/json", ...headers },
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    // tRPC batch response: [{ result: { data: { json: T } } }]
+    return (json as Array<{ result: { data: { json: T } } }>)[0]?.result?.data
+      ?.json ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function trpcMutation<T>(
+  procedure: string,
+  input: unknown
+): Promise<T | null> {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_BASE_URL}/api/trpc/${procedure}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers },
+      body: JSON.stringify({ "0": { json: input } }),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return (json as Array<{ result: { data: { json: T } } }>)[0]?.result?.data
+      ?.json ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export const soundsApi = {
+  list: () => trpcQuery<ServerSound[]>("sounds.list"),
+  create: (input: CreateSoundInput) =>
+    trpcMutation<{ id: number }>("sounds.create", {
+      ...input,
+      toneVolume: input.toneVolume ?? 0.7,
+      backgroundType: input.backgroundType ?? "none",
+      backgroundVolume: input.backgroundVolume ?? 0.35,
+    }),
+  delete: (id: number) => trpcMutation<{ success: boolean }>("sounds.delete", { id }),
+};
