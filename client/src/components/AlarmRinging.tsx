@@ -57,7 +57,7 @@ interface AlarmRingingProps {
   onSnooze: () => void;
 }
 
-const FALLBACK_FREQ = FREQUENCIES.find(f => f.id === "432hz") ?? FREQUENCIES[0];
+const FALLBACK_FREQ = FREQUENCIES.find(f => f.id === "432") ?? FREQUENCIES[0];
 
 export default function AlarmRinging({
   label,

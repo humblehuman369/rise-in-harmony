@@ -42,7 +42,7 @@ export interface Frequency {
 
 export const FREQUENCIES: Frequency[] = [
   {
-    id: "174hz",
+    id: "174",
     name: "Foundation",
     hz: 174,
     category: "solfeggio",
@@ -52,7 +52,7 @@ export const FREQUENCIES: Frequency[] = [
     isPremium: false,
   },
   {
-    id: "285hz",
+    id: "285",
     name: "Quantum Cognition",
     hz: 285,
     category: "solfeggio",
@@ -62,7 +62,7 @@ export const FREQUENCIES: Frequency[] = [
     isPremium: true,
   },
   {
-    id: "396hz",
+    id: "396",
     name: "Liberation",
     hz: 396,
     category: "solfeggio",
@@ -74,7 +74,7 @@ export const FREQUENCIES: Frequency[] = [
     chakraPosition: 1,
   },
   {
-    id: "417hz",
+    id: "417",
     name: "Transmutation",
     hz: 417,
     category: "solfeggio",
@@ -86,7 +86,7 @@ export const FREQUENCIES: Frequency[] = [
     chakraPosition: 2,
   },
   {
-    id: "432hz",
+    id: "432",
     name: "Natural Harmony",
     hz: 432,
     category: "solfeggio",
@@ -96,7 +96,7 @@ export const FREQUENCIES: Frequency[] = [
     isPremium: false,
   },
   {
-    id: "528hz",
+    id: "528",
     name: "Miracle Tone",
     hz: 528,
     category: "solfeggio",
@@ -108,7 +108,7 @@ export const FREQUENCIES: Frequency[] = [
     chakraPosition: 3,
   },
   {
-    id: "639hz",
+    id: "639",
     name: "Connection",
     hz: 639,
     category: "solfeggio",
@@ -120,7 +120,7 @@ export const FREQUENCIES: Frequency[] = [
     chakraPosition: 4,
   },
   {
-    id: "741hz",
+    id: "741",
     name: "Awakening",
     hz: 741,
     category: "solfeggio",
@@ -132,7 +132,7 @@ export const FREQUENCIES: Frequency[] = [
     chakraPosition: 5,
   },
   {
-    id: "852hz",
+    id: "852",
     name: "Spiritual Order",
     hz: 852,
     category: "solfeggio",
@@ -144,7 +144,7 @@ export const FREQUENCIES: Frequency[] = [
     chakraPosition: 6,
   },
   {
-    id: "963hz",
+    id: "963",
     name: "Divine Consciousness",
     hz: 963,
     category: "solfeggio",
@@ -156,7 +156,7 @@ export const FREQUENCIES: Frequency[] = [
     chakraPosition: 7,
   },
   {
-    id: "binaural-alpha",
+    id: "alpha",
     name: "Alpha Waves",
     hz: 200,
     binauralOffset: 10,
@@ -167,7 +167,7 @@ export const FREQUENCIES: Frequency[] = [
     isPremium: false,
   },
   {
-    id: "binaural-theta",
+    id: "theta",
     name: "Theta Waves",
     hz: 200,
     binauralOffset: 6,
@@ -178,7 +178,7 @@ export const FREQUENCIES: Frequency[] = [
     isPremium: true,
   },
   {
-    id: "binaural-delta",
+    id: "delta",
     name: "Delta Waves",
     hz: 200,
     binauralOffset: 3,

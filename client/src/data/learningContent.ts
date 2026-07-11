@@ -48,7 +48,7 @@ export const JOURNEYS: Journey[] = [
     iconType: "sparkles",
     entries: [
       {
-        id: "174hz",
+        id: "174",
         name: "Relief & Stability",
         hz: 174,
         description: "174Hz — The deepest extended Solfeggio tone.",
@@ -57,7 +57,7 @@ export const JOURNEYS: Journey[] = [
         isPremium: false,
       },
       {
-        id: "285hz",
+        id: "285",
         name: "Regeneration & Vitality",
         hz: 285,
         description: "285Hz — Quantum Cognition.",
@@ -66,7 +66,7 @@ export const JOURNEYS: Journey[] = [
         isPremium: true,
       },
       {
-        id: "396hz",
+        id: "396",
         name: "Release & Grounding",
         hz: 396,
         description: "396Hz — Root Chakra (Mūlādhāra).",
@@ -75,7 +75,7 @@ export const JOURNEYS: Journey[] = [
         isPremium: false,
       },
       {
-        id: "417hz",
+        id: "417",
         name: "Renewal & Change",
         hz: 417,
         description: "417Hz — Sacral Chakra (Svādhiṣṭhāna).",
@@ -84,7 +84,7 @@ export const JOURNEYS: Journey[] = [
         isPremium: true,
       },
       {
-        id: "528hz",
+        id: "528",
         name: "Love & Healing",
         hz: 528,
         description: "528Hz — Solar Plexus Chakra (Maṇipūra) / The Miracle Tone.",
@@ -93,7 +93,7 @@ export const JOURNEYS: Journey[] = [
         isPremium: false,
       },
       {
-        id: "639hz",
+        id: "639",
         name: "Connection & Harmony",
         hz: 639,
         description: "639Hz — Heart Chakra (Anāhata).",
@@ -102,7 +102,7 @@ export const JOURNEYS: Journey[] = [
         isPremium: true,
       },
       {
-        id: "741hz",
+        id: "741",
         name: "Cleansing & Expression",
         hz: 741,
         description: "741Hz — Throat Chakra (Viśuddha).",
@@ -111,7 +111,7 @@ export const JOURNEYS: Journey[] = [
         isPremium: true,
       },
       {
-        id: "852hz",
+        id: "852",
         name: "Intuition & Awakening",
         hz: 852,
         description: "852Hz — Third Eye Chakra (Ājñā).",
@@ -120,7 +120,7 @@ export const JOURNEYS: Journey[] = [
         isPremium: true,
       },
       {
-        id: "963hz",
+        id: "963",
         name: "Awakening & Unity",
         hz: 963,
         description: "963Hz — Crown Chakra (Sahasrāra).",
@@ -139,7 +139,7 @@ export const JOURNEYS: Journey[] = [
     iconType: "brain",
     entries: [
       {
-        id: "binaural-delta",
+        id: "delta",
         name: "Delta (0.5–4 Hz)",
         hz: 200,
         binauralOffset: 3,
@@ -149,7 +149,7 @@ export const JOURNEYS: Journey[] = [
         isPremium: true,
       },
       {
-        id: "binaural-theta",
+        id: "theta",
         name: "Theta (4–8 Hz)",
         hz: 200,
         binauralOffset: 6,
@@ -159,7 +159,7 @@ export const JOURNEYS: Journey[] = [
         isPremium: true,
       },
       {
-        id: "binaural-alpha",
+        id: "alpha",
         name: "Alpha (8–12 Hz)",
         hz: 200,
         binauralOffset: 10,

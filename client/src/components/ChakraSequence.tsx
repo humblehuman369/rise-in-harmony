@@ -30,7 +30,7 @@ const CHAKRA_STEPS: ChakraStep[] = [
     name: "Root",
     sanskrit: "Mūlādhāra",
     hz: 396,
-    frequencyId: "396hz",
+    frequencyId: "396",
     color: "#EF4444",
     glowColor: "#EF444480",
     element: "Earth",
@@ -41,7 +41,7 @@ const CHAKRA_STEPS: ChakraStep[] = [
     name: "Sacral",
     sanskrit: "Svādhiṣṭhāna",
     hz: 417,
-    frequencyId: "417hz",
+    frequencyId: "417",
     color: "#F97316",
     glowColor: "#F9731680",
     element: "Water",
@@ -52,7 +52,7 @@ const CHAKRA_STEPS: ChakraStep[] = [
     name: "Solar Plexus",
     sanskrit: "Maṇipūra",
     hz: 528,
-    frequencyId: "528hz",
+    frequencyId: "528",
     color: "#EAB308",
     glowColor: "#EAB30880",
     element: "Fire",
@@ -63,7 +63,7 @@ const CHAKRA_STEPS: ChakraStep[] = [
     name: "Heart",
     sanskrit: "Anāhata",
     hz: 639,
-    frequencyId: "639hz",
+    frequencyId: "639",
     color: "#00D4AA",
     glowColor: "#00D4AA80",
     element: "Air",
@@ -74,7 +74,7 @@ const CHAKRA_STEPS: ChakraStep[] = [
     name: "Throat",
     sanskrit: "Viśuddha",
     hz: 741,
-    frequencyId: "741hz",
+    frequencyId: "741",
     color: "#3B82F6",
     glowColor: "#3B82F680",
     element: "Sound",
@@ -85,7 +85,7 @@ const CHAKRA_STEPS: ChakraStep[] = [
     name: "Third Eye",
     sanskrit: "Ājñā",
     hz: 852,
-    frequencyId: "852hz",
+    frequencyId: "852",
     color: "#8B5CF6",
     glowColor: "#8B5CF680",
     element: "Light",
@@ -96,7 +96,7 @@ const CHAKRA_STEPS: ChakraStep[] = [
     name: "Crown",
     sanskrit: "Sahasrāra",
     hz: 963,
-    frequencyId: "963hz",
+    frequencyId: "963",
     color: "#EC4899",
     glowColor: "#EC489980",
     element: "Thought",
@@ -237,7 +237,7 @@ export default function ChakraSequence({ onClose, autoStart = false, autoStartDu
 
   // Find the matching frequency from the FREQUENCIES array
   const getFreqForChakra = useCallback((step: ChakraStep): Frequency => {
-    return FREQUENCIES.find(f => f.id === step.frequencyId) || FREQUENCIES[4]; // fallback to 432hz
+    return FREQUENCIES.find(f => f.id === step.frequencyId) || FREQUENCIES[4]; // fallback to 432
   }, []);
 
   const advanceStep = useCallback(() => {

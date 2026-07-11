@@ -33,7 +33,7 @@ const INTENTIONS: Intention[] = [
     description: "Unwind, fall asleep, and restore",
     icon: Moon,
     color: "#8B5CF6",
-    entryIds: ["binaural-delta", "binaural-theta", "174hz"],
+    entryIds: ["delta", "theta", "174"],
   },
   {
     id: "focus",
@@ -41,7 +41,7 @@ const INTENTIONS: Intention[] = [
     description: "Concentrate and enter flow",
     icon: Brain,
     color: "#3B82F6",
-    entryIds: ["binaural-alpha", "beta-focus", "planet-mercury", "alpha-isochronic"],
+    entryIds: ["alpha", "beta-focus", "planet-mercury", "alpha-isochronic"],
   },
   {
     id: "release",
@@ -49,7 +49,7 @@ const INTENTIONS: Intention[] = [
     description: "Let go of fear, guilt, and tension",
     icon: Heart,
     color: "#00D4AA",
-    entryIds: ["396hz", "417hz", "meridian-lung"],
+    entryIds: ["396", "417", "meridian-lung"],
   },
   {
     id: "energy",
@@ -57,7 +57,7 @@ const INTENTIONS: Intention[] = [
     description: "Wake up bright and purposeful",
     icon: Zap,
     color: "#F59E0B",
-    entryIds: ["528hz", "planet-sun", "gamma-insight"],
+    entryIds: ["528", "planet-sun", "gamma-insight"],
   },
   {
     id: "spiritual",
@@ -65,7 +65,7 @@ const INTENTIONS: Intention[] = [
     description: "Meditate, expand, and connect",
     icon: Sparkles,
     color: "#EC4899",
-    entryIds: ["963hz", "852hz", "schumann", "angel-111"],
+    entryIds: ["963", "852", "schumann", "angel-111"],
   },
   {
     id: "grounding",
@@ -73,7 +73,7 @@ const INTENTIONS: Intention[] = [
     description: "Settle anxiety and feel present",
     icon: Waves,
     color: "#22C55E",
-    entryIds: ["schumann", "396hz", "meridian-stomach"],
+    entryIds: ["schumann", "396", "meridian-stomach"],
   },
 ];
 
@@ -112,7 +112,7 @@ function recommend(intention: Intention, hasHeadphones: boolean): JourneyEntry[]
     picks.push(...speakerSafe);
   }
   if (picks.length === 0) {
-    const fallback = ALL_ENTRIES["396hz"];
+    const fallback = ALL_ENTRIES["396"];
     if (fallback) picks.push(fallback);
   }
   return picks;

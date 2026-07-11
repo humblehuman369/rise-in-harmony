@@ -34,7 +34,7 @@ const GOALS: Goal[] = [
     description: "Fall asleep faster and wake up refreshed",
     icon: Moon,
     color: "#8B5CF6",
-    recommendedFreqId: "binaural-theta",
+    recommendedFreqId: "theta",
     recommendedHz: 200,
     recommendedName: "Theta Waves",
     recommendedBenefit: "6Hz binaural beat guides your brain into deep, restorative sleep states.",
@@ -45,7 +45,7 @@ const GOALS: Goal[] = [
     description: "Release tension and find inner calm",
     icon: Heart,
     color: "#00D4AA",
-    recommendedFreqId: "432hz",
+    recommendedFreqId: "432",
     recommendedHz: 432,
     recommendedName: "Natural Harmony",
     recommendedBenefit: "432Hz aligns with nature's own frequency, dissolving anxiety and promoting deep calm.",
@@ -56,7 +56,7 @@ const GOALS: Goal[] = [
     description: "Enhance concentration and mental clarity",
     icon: Brain,
     color: "#3B82F6",
-    recommendedFreqId: "binaural-alpha",
+    recommendedFreqId: "alpha",
     recommendedHz: 200,
     recommendedName: "Alpha Waves",
     recommendedBenefit: "10Hz alpha binaural beat puts your brain in the ideal zone for creative flow and focus.",
@@ -67,7 +67,7 @@ const GOALS: Goal[] = [
     description: "Wake up gently and align your energy",
     icon: Zap,
     color: "#F59E0B",
-    recommendedFreqId: "528hz",
+    recommendedFreqId: "528",
     recommendedHz: 528,
     recommendedName: "Miracle Tone",
     recommendedBenefit: "528Hz — the Miracle Tone — is the perfect morning frequency for energy and intention.",
@@ -78,7 +78,7 @@ const GOALS: Goal[] = [
     description: "Deepen meditation and expand consciousness",
     icon: Sparkles,
     color: "#EC4899",
-    recommendedFreqId: "963hz",
+    recommendedFreqId: "963",
     recommendedHz: 963,
     recommendedName: "Divine Consciousness",
     recommendedBenefit: "963Hz — the highest Solfeggio tone — is traditionally used to connect with higher states of awareness.",
@@ -89,7 +89,7 @@ const GOALS: Goal[] = [
     description: "Support your body's natural recovery",
     icon: Waves,
     color: "#EF4444",
-    recommendedFreqId: "174hz",
+    recommendedFreqId: "174",
     recommendedHz: 174,
     recommendedName: "Foundation",
     recommendedBenefit: "174Hz is the deepest Solfeggio tone — it reduces pain and promotes cellular healing.",
@@ -102,13 +102,13 @@ const WAKE_TIMES = ["5:30", "6:00", "6:30", "7:00", "7:30", "8:00"];
 
 /** Speaker-safe swaps for headphone-dependent (binaural) recommendations. */
 const SPEAKER_SAFE_SWAP: Record<string, Pick<Goal, "recommendedFreqId" | "recommendedHz" | "recommendedName" | "recommendedBenefit">> = {
-  "binaural-theta": {
-    recommendedFreqId: "432hz",
+  "theta": {
+    recommendedFreqId: "432",
     recommendedHz: 432,
     recommendedName: "Natural Harmony",
     recommendedBenefit: "432Hz aligns with nature's frequency for calm, restful evenings — no headphones needed.",
   },
-  "binaural-alpha": {
+  "alpha": {
     recommendedFreqId: "alpha-isochronic",
     recommendedHz: 10,
     recommendedName: "Alpha Isochronic",

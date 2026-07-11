@@ -68,7 +68,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#F97316",
     soundscape: "forest",   // gentle, uplifting — birds, soft breeze
     musicMode: "ambient",   // stable harmonic chords, no random events
-    recommendedFrequencyId: "432hz",
+    recommendedFrequencyId: "432",
     recommendedFrequencyLabel: "432Hz Natural Harmony",
     frequencyRationale: "432Hz aligns with nature's resonance, making it the ideal companion for a morning practice rooted in the natural world.",
     affirmation: "I awaken with clarity, gratitude, and open energy.",
@@ -96,7 +96,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#8B5CF6",
     soundscape: "forest",   // changed from "bowl" — forest is gentler and more uplifting for morning
     musicMode: "crystal",   // soft singing bowl strikes — infrequent, meditative
-    recommendedFrequencyId: "528hz",
+    recommendedFrequencyId: "528",
     recommendedFrequencyLabel: "528Hz Miracle Tone",
     frequencyRationale: "528Hz, the 'Love Frequency,' resonates with the Solar Plexus — the center of personal power — making it the anchor for a full chakra activation sequence.",
     affirmation: "All my energy centers are open, balanced, and flowing freely.",
@@ -158,7 +158,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#3B82F6",
     soundscape: "ocean",    // slow wave rhythm mirrors the 4-7-8 breath cycle
     musicMode: "ambient",   // soft harmonic chords — warm and supportive
-    recommendedFrequencyId: "417hz",
+    recommendedFrequencyId: "417",
     recommendedFrequencyLabel: "417Hz Transmutation",
     frequencyRationale: "417Hz facilitates change and clears traumatic experiences — ideal for interrupting an anxiety cycle and resetting your nervous system.",
     affirmation: "I am calm. I am safe. My breath is my anchor.",
@@ -218,7 +218,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#8B5CF6",
     soundscape: "river",    // slow gentle river — continuous and less distracting for mantra
     musicMode: "crystal",   // soft bowl strikes support the mantra rhythm
-    recommendedFrequencyId: "741hz",
+    recommendedFrequencyId: "741",
     recommendedFrequencyLabel: "741Hz Awakening",
     frequencyRationale: "741Hz activates the Throat Chakra — the center of authentic expression — amplifying the vibrational power of mantra repetition.",
     affirmation: "So Hum — I am that. I am connected to all that is.",
@@ -249,7 +249,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#8B5CF6",
     soundscape: "night",    // soft night crickets — classic sleep-onset ambience
     musicMode: "drone",     // deep, continuous — most hypnotic for sleep
-    recommendedFrequencyId: "binaural-delta",
+    recommendedFrequencyId: "delta",
     recommendedFrequencyLabel: "Delta Binaural (3Hz)",
     frequencyRationale: "Delta binaural beats (3Hz) mirror the brainwave state of deep, dreamless sleep — gently guiding your brain toward the frequency of rest.",
     affirmation: "I release this day completely. I am safe, warm, and deeply at rest.",
@@ -279,7 +279,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#7C3AED",
     soundscape: "ocean",    // slow, rhythmic waves — ideal for the hypnagogic state
     musicMode: "ambient",   // soft harmonic chords — warm and enveloping
-    recommendedFrequencyId: "binaural-theta",
+    recommendedFrequencyId: "theta",
     recommendedFrequencyLabel: "Theta Waves (6Hz)",
     frequencyRationale: "Theta binaural beats (6Hz) correspond to the hypnagogic state between waking and sleeping — the exact state Yoga Nidra cultivates.",
     affirmation: "I am awake in my sleep. I am resting in pure awareness.",
@@ -311,7 +311,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#F43F5E",
     soundscape: "forest",   // nurturing, warm — perfect for heart-opening practice
     musicMode: "ambient",   // soft harmonic chords — warm and supportive
-    recommendedFrequencyId: "639hz",
+    recommendedFrequencyId: "639",
     recommendedFrequencyLabel: "639Hz Connection",
     frequencyRationale: "639Hz opens the Heart Chakra and is specifically associated with harmonizing relationships and cultivating unconditional love — a perfect match for Metta practice.",
     affirmation: "May I be happy. May I be healthy. May I be at peace.",
@@ -340,7 +340,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#3B82F6",
     soundscape: "ocean",    // changed from "rain" — ocean's slow wave rhythm is more cleansing/releasing
     musicMode: "ambient",   // warm harmonic chords — supportive without being intrusive
-    recommendedFrequencyId: "396hz",
+    recommendedFrequencyId: "396",
     recommendedFrequencyLabel: "396Hz Liberation",
     frequencyRationale: "396Hz is specifically designed to liberate guilt, fear, and grief — it works directly on the emotional body to facilitate release and healing.",
     affirmation: "I allow myself to feel. Feeling is healing. I am safe to let go.",
@@ -372,7 +372,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#A855F7",
     soundscape: "cave",     // slow water drops in a vast cave — deep, spacious, inward
     musicMode: "crystal",   // soft bowl strikes — infrequent, meditative, supports inner focus
-    recommendedFrequencyId: "852hz",
+    recommendedFrequencyId: "852",
     recommendedFrequencyLabel: "852Hz Spiritual Order",
     frequencyRationale: "852Hz is directly associated with the Third Eye Chakra (Ājñā) — it awakens intuition and dissolves illusions, making it the natural companion for this practice.",
     affirmation: "I trust my inner vision. My intuition guides me clearly and truly.",
@@ -402,7 +402,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#A855F7",
     soundscape: "cave",     // vast cave resonance — a sense of infinite spaciousness
     musicMode: "crystal",   // soft bowl strikes — infrequent, transcendent quality
-    recommendedFrequencyId: "963hz",
+    recommendedFrequencyId: "963",
     recommendedFrequencyLabel: "963Hz Divine Consciousness",
     frequencyRationale: "963Hz is the highest Solfeggio frequency — traditionally associated with the Crown Chakra, divine consciousness, and universal oneness.",
     affirmation: "I am one with all that is. I am the universe experiencing itself.",
@@ -439,7 +439,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#1E1B4B",
     soundscape: "ocean",    // slow wave rhythm — the most hypnotic long-form bed
     musicMode: "drone",     // continuous, no chord changes across the full hour
-    recommendedFrequencyId: "binaural-delta",
+    recommendedFrequencyId: "delta",
     recommendedFrequencyLabel: "Delta Binaural (3Hz)",
     frequencyRationale: "Delta (0.5–4Hz) is the brainwave signature of deep, dreamless sleep. Held steadily for a full hour, the 3Hz binaural beat gives the brain a long, uninterrupted runway to entrain fully — something shorter sessions can only begin.",
     affirmation: "I release the day. The sound carries me. I rest completely.",
@@ -465,7 +465,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#4C1D95",
     soundscape: "wind",     // vast, spacious, non-intrusive over long durations
     musicMode: "crystal",   // infrequent bowl strikes — punctuation, not distraction
-    recommendedFrequencyId: "852hz",
+    recommendedFrequencyId: "852",
     recommendedFrequencyLabel: "852Hz Intuition & Awakening",
     frequencyRationale: "852Hz is traditionally associated with the Third Eye — inner vision and spiritual order. Sustained for a full hour by the DDS engine, it becomes a still point the mind can rest against for the entire sit.",
     affirmation: "I am the open sky. Everything arises and passes within me.",

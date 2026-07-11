@@ -85,8 +85,8 @@ const WAKE_SEQUENCES = [
 const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 const DEFAULT_ALARMS: Alarm[] = [
-  { id: "1", time: "06:30", label: "Morning Harmony", frequencyId: "432hz", sequenceId: "gentle", days: [1, 2, 3, 4, 5], enabled: true, fadeInMinutes: 5 },
-  { id: "2", time: "07:00", label: "Weekend Rise", frequencyId: "528hz", sequenceId: "gentle", days: [0, 6], enabled: false, fadeInMinutes: 3 },
+  { id: "1", time: "06:30", label: "Morning Harmony", frequencyId: "432", sequenceId: "gentle", days: [1, 2, 3, 4, 5], enabled: true, fadeInMinutes: 5 },
+  { id: "2", time: "07:00", label: "Weekend Rise", frequencyId: "528", sequenceId: "gentle", days: [0, 6], enabled: false, fadeInMinutes: 3 },
 ];
 
 // ─── iOS drum-roll time picker ────────────────────────────────────────────────
@@ -389,8 +389,8 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
   const [label, setLabel] = useState(editingAlarm?.label ?? "Morning Harmony");
   const [selectedFreq, setSelectedFreq] = useState(
     editingAlarm?.frequencyId ?? (prefill?.frequencyHz
-      ? FREQUENCIES.find(f => f.hz === prefill.frequencyHz && !f.isPremium)?.id ?? "432hz"
-      : "432hz")
+      ? FREQUENCIES.find(f => f.hz === prefill.frequencyHz && !f.isPremium)?.id ?? "432"
+      : "432")
   );
   const [selectedSeq, setSelectedSeq] = useState(editingAlarm?.sequenceId ?? "gentle");
   const [selectedDays, setSelectedDays] = useState(editingAlarm?.days ?? [1, 2, 3, 4, 5]);
