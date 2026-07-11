@@ -1220,6 +1220,30 @@ export default function FrequencyStudio() {
         </div>
       </div>
 
+      {/* ── Floating Play Bar (always visible) ──────────────────── */}
+      <div className="fixed bottom-20 lg:bottom-4 left-0 lg:left-64 right-0 z-30 px-4 pointer-events-none"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+        <div className="max-w-md mx-auto pointer-events-auto">
+          <button onClick={handlePlay}
+            className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all active:scale-[0.97] shadow-lg"
+            style={player.isPlaying ? {
+              background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+              backdropFilter: 'blur(20px)', color: '#EF4444',
+            } : {
+              background: 'rgba(0,212,170,0.12)', border: '1px solid rgba(0,212,170,0.3)',
+              backdropFilter: 'blur(20px)', color: '#00D4AA',
+            }}>
+            {player.isPlaying ? <Square size={18} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
+            <span className="text-sm font-semibold" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              {player.isPlaying ? `Stop — ${customFreq.toFixed(customFreq % 1 === 0 ? 0 : 2)} Hz` : `Play ${customFreq.toFixed(customFreq % 1 === 0 ? 0 : 2)} Hz`}
+            </span>
+            {player.isPlaying && (
+              <span className="text-xs font-mono" style={{ color: 'rgba(255,255,255,0.5)' }}>{formatTime(player.playTime)}</span>
+            )}
+          </button>
+        </div>
+      </div>
+
       {/* Overlays */}
       {showBreathing && <BreathingGuide onClose={() => setShowBreathing(false)} accentColor="#00D4AA" />}
       {showJournal && (
