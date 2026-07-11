@@ -161,8 +161,9 @@ function MeditationPlayer({
   const [mode, setMode] = useState<"sound" | "frequency">("frequency");
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [volume, setVolume] = useState(0.6);
-  const [freqVolume, setFreqVolume] = useState(0.35);
+  // Default mix: 25% frequency / 75% music (ambient) per product spec
+  const [volume, setVolume] = useState(0.75);
+  const [freqVolume, setFreqVolume] = useState(0.25);
   const [currentStep, setCurrentStep] = useState(0);
   const [showGuidance, setShowGuidance] = useState(true);
 
@@ -283,7 +284,7 @@ function MeditationPlayer({
       setStudioNatureSound(meditation.soundscape === "silence" ? "none" : meditation.soundscape);
       setStudioMusicMode(meditation.musicMode);
       setLayerVolume("nature", volume);
-      setLayerVolume("music", volume * 0.7);
+      setLayerVolume("music", volume);
       studioPlay();
 
       // Start frequency if in frequency mode
@@ -494,7 +495,7 @@ function MeditationPlayer({
                 onValueChange={([v]) => {
                   setVolume(v / 100);
                   setLayerVolume("nature", v / 100);
-                  setLayerVolume("music", (v / 100) * 0.7);
+                  setLayerVolume("music", v / 100);
                 }}
                 min={0} max={100} step={1}
                 className="flex-1"

@@ -8,6 +8,7 @@ import { Link, useLocation } from "wouter";
 import {
   Home, Music2, AlarmClock, BookOpen, BarChart3, Settings,
   Layers, Headphones, Activity, ShieldCheck, LogIn, LogOut, User,
+  GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -24,6 +25,7 @@ const mobileNavItems = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
   { href: "/library", icon: BookOpen, label: "Library" },
+  { href: "/learn", icon: GraduationCap, label: "Learn" },
   { href: "/precision", icon: Activity, label: "Precision" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
@@ -37,6 +39,7 @@ const baseNavItems = [
   { href: "/meditation", icon: Headphones, label: "Meditate" },
   { href: "/alarm", icon: AlarmClock, label: "Alarm" },
   { href: "/library", icon: BookOpen, label: "Library" },
+  { href: "/learn", icon: GraduationCap, label: "Learn" },
   { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
   { href: "/precision", icon: Activity, label: "Precision" },
 ];
