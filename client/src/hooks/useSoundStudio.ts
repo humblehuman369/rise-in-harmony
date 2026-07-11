@@ -4,14 +4,16 @@
  * Three independent layers blended in real-time:
  *   1. Healing Frequency — pure sine wave at the target Hz (Web Audio API)
  *   2. Musical Harmony  — bundled royalty-free ambient/drone/crystal loops
- *   3. Nature Soundscape — bundled real audio files (rain, ocean, forest, wind, fire, bowl)
+ *   3. Nature Soundscape — procedurally synthesized textures (rain, ocean, forest, wind, fire, river, night, cave, bowl)
  *
- * Nature and music layers use HTMLAudioElement for seamless looping of real recordings.
+ * Music layer uses HTMLAudioElement for looping of real recordings.
+ * Nature layer is procedurally synthesized (natureSynth) — endless, never-looping textures.
  * Frequency layer uses Web Audio API oscillators.
  * A DynamicsCompressorNode on the master bus prevents level stacking.
  */
 import { useState, useRef, useCallback, useEffect } from "react";
 import { getLibraryLoopUrl } from "@/data/backgroundLoops";
+import { startNatureSynth, type NatureSynthHandle } from "@/lib/natureSynth";
 import type { AudioErrorCallback } from "./useFrequencyPlayer";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -34,18 +36,6 @@ export interface StudioState {
 }
 
 // ─── Audio file URLs (served from Manus storage via getLibraryLoopUrl) ───────
-const NATURE_AUDIO_URLS: Record<string, string> = {
-  rain: getLibraryLoopUrl("ambient-rain"),
-  ocean: getLibraryLoopUrl("ambient-ocean"),
-  forest: getLibraryLoopUrl("ambient-forest"),
-  wind: getLibraryLoopUrl("ambient-wind"),
-  fire: getLibraryLoopUrl("ambient-fire"),
-  river: getLibraryLoopUrl("ambient-river"),
-  night: getLibraryLoopUrl("ambient-night"),
-  cave: getLibraryLoopUrl("ambient-cave"),
-  bowl: getLibraryLoopUrl("ambient-bowl"),
-};
-
 const MUSIC_AUDIO_URLS: Record<Exclude<MusicMode, "none">, string> = {
   ambient: getLibraryLoopUrl("music-ambient"),
   drone: getLibraryLoopUrl("music-drone"),
@@ -67,9 +57,9 @@ export function useSoundStudio() {
   // Active oscillators (frequency layer only)
   const freqOscRef = useRef<OscillatorNode | null>(null);
 
-  // HTMLAudioElement for nature + music real-audio playback
-  const natureAudioRef = useRef<HTMLAudioElement | null>(null);
-  const natureAudioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  // Procedural synth handle for the nature layer (never loops — synthesized live)
+  const natureSynthRef = useRef<NatureSynthHandle | null>(null);
+  // HTMLAudioElement for music real-audio playback
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
   const musicAudioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
 
@@ -142,14 +132,9 @@ export function useSoundStudio() {
   }, []);
 
   const stopNature = useCallback(() => {
-    if (natureAudioRef.current) {
-      natureAudioRef.current.pause();
-      natureAudioRef.current.currentTime = 0;
-      natureAudioRef.current = null;
-    }
-    if (natureAudioSourceRef.current) {
-      try { natureAudioSourceRef.current.disconnect(); } catch {}
-      natureAudioSourceRef.current = null;
+    if (natureSynthRef.current) {
+      try { natureSynthRef.current.stop(); } catch {}
+      natureSynthRef.current = null;
     }
   }, []);
 
@@ -197,29 +182,22 @@ export function useSoundStudio() {
     musicAudioSourceRef.current = source;
   }, [stopMusic]);
 
-  // ── Nature sounds — real audio file playback ─────────────────────────────────
+  // ── Nature sounds — procedural synthesis (endless, no loop seams) ────────────
 
   /**
-   * Start a real audio file for the nature layer.
-   * Uses HTMLAudioElement connected into the Web Audio graph via
-   * createMediaElementSource so volume is controlled by natureGainRef.
-   * The audio element loops seamlessly.
+   * Start a procedurally synthesized nature soundscape.
+   * Replaces MP3 loop playback: HTMLAudioElement MP3 looping is never gapless
+   * (codec padding causes an audible restart), and short source files made the
+   * seam obvious. The synth generates continuous, non-repeating texture live.
    */
   const startNatureAudio = useCallback((ctx: AudioContext, soundKey: string) => {
     stopNature();
     if (!natureGainRef.current) return;
 
-    const url = NATURE_AUDIO_URLS[soundKey];
-    if (!url) return;
+    const handle = startNatureSynth(ctx, soundKey);
+    if (!handle) return;
 
-    const audio = new Audio(url);
-    audio.loop = true;
-    audio.crossOrigin = "anonymous";
-    audio.volume = 1; // volume controlled by Web Audio gain node
-
-    // Connect into the Web Audio graph so it respects natureGainRef
-    const source = ctx.createMediaElementSource(audio);
-    source.connect(natureGainRef.current);
+    handle.output.connect(natureGainRef.current);
 
     // Soft fade-in via the nature gain node
     const now = ctx.currentTime;
@@ -229,12 +207,7 @@ export function useSoundStudio() {
       now + 3  // 3-second fade-in
     );
 
-    audio.play().catch(() => {
-      // Autoplay blocked — will play on next user interaction
-    });
-
-    natureAudioRef.current = audio;
-    natureAudioSourceRef.current = source;
+    natureSynthRef.current = handle;
   }, [stopNature, state.natureVolume]);
 
   // ── Master play / stop ───────────────────────────────────────────────────────

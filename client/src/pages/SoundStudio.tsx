@@ -73,6 +73,10 @@ const NATURE_SOUNDS: { id: NatureSound; label: string; Icon: React.ElementType; 
   { id: "forest", label: "Forest", Icon: TreePine, color: "#22C55E" },
   { id: "wind", label: "Wind", Icon: Wind, color: "#94A3B8" },
   { id: "fire", label: "Fire", Icon: Flame, color: "#F97316" },
+  { id: "river", label: "River", Icon: Waves, color: "#38BDF8" },
+  { id: "night", label: "Night", Icon: Moon, color: "#818CF8" },
+  { id: "cave", label: "Cave", Icon: Minus, color: "#A78BFA" },
+  { id: "bowl", label: "Bowl", Icon: Music, color: "#FBBF24" },
 ];
 
 // ─── Waveform visualizer ──────────────────────────────────────────────────────
@@ -939,7 +943,7 @@ export default function SoundStudio() {
           <div className="text-xs leading-relaxed space-y-1" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
             <p><strong style={{ color: "#8FA3BF" }}>Frequency layer</strong> — a pure sine wave at the selected healing Hz, embedded beneath everything else.</p>
             <p><strong style={{ color: "#8FA3BF" }}>Music layer</strong> — royalty-free ambient, drone, and singing-bowl recordings layered beneath your healing frequency.</p>
-            <p><strong style={{ color: "#8FA3BF" }}>Nature layer</strong> — royalty-free nature recordings (rain, ocean, forest, wind, fire) looped beneath your mix.</p>
+            <p><strong style={{ color: "#8FA3BF" }}>Nature layer</strong> — living soundscapes synthesized in real time. Nothing is looped or recorded — every raindrop, wave, and crackle is generated fresh, so the texture never repeats.</p>
           </div>
         </div>
       </div>
