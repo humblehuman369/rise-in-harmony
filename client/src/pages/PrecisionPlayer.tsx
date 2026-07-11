@@ -496,6 +496,46 @@ export default function PrecisionPlayer() {
               </div>
             </div>
 
+            {/* Visualizer (FR-030 + FR-031) — moved above Sound Engine */}
+            <div className="p-5 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                  Signal Analysis
+                </div>
+                <div className="flex gap-1">
+                  {(["oscilloscope", "spectrum", "both"] as const).map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setVizMode(v)}
+                      className="px-2 py-1 rounded-lg text-xs font-medium capitalize transition-all"
+                      style={vizMode === v ? {
+                        background: "rgba(0,212,170,0.15)",
+                        color: "#00D4AA",
+                        border: "1px solid rgba(0,212,170,0.3)",
+                      } : {
+                        background: "transparent",
+                        color: "#6B7A99",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                      }}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <PrecisionVisualizer
+                analyserNode={analyserNode}
+                isPlaying={player.isPlaying}
+                targetHz={targetHz}
+                mode={vizMode}
+              />
+              {!player.isPlaying && (
+                <p className="text-xs text-center mt-2" style={{ color: "#3A4A6B", fontFamily: "DM Sans, sans-serif" }}>
+                  Start playback to see live signal analysis
+                </p>
+              )}
+            </div>
+
             {/* ── Sound Engine card: Waveform + Play Mode (merged) ─────────── */}
             <div className="p-5 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
               <div className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
@@ -632,46 +672,6 @@ export default function PrecisionPlayer() {
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* Visualizer (FR-030 + FR-031) */}
-            <div className="p-5 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
-                  Signal Analysis
-                </div>
-                <div className="flex gap-1">
-                  {(["oscilloscope", "spectrum", "both"] as const).map(v => (
-                    <button
-                      key={v}
-                      onClick={() => setVizMode(v)}
-                      className="px-2 py-1 rounded-lg text-xs font-medium capitalize transition-all"
-                      style={vizMode === v ? {
-                        background: "rgba(0,212,170,0.15)",
-                        color: "#00D4AA",
-                        border: "1px solid rgba(0,212,170,0.3)",
-                      } : {
-                        background: "transparent",
-                        color: "#6B7A99",
-                        border: "1px solid rgba(255,255,255,0.06)",
-                      }}
-                    >
-                      {v}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <PrecisionVisualizer
-                analyserNode={analyserNode}
-                isPlaying={player.isPlaying}
-                targetHz={targetHz}
-                mode={vizMode}
-              />
-              {!player.isPlaying && (
-                <p className="text-xs text-center mt-2" style={{ color: "#3A4A6B", fontFamily: "DM Sans, sans-serif" }}>
-                  Start playback to see live signal analysis
-                </p>
-              )}
             </div>
 
             {/* Background layer — full-width card with room to breathe */}
