@@ -747,6 +747,7 @@ export default function FrequencyStudio() {
                 Sound Engine
               </span>
               {/* Waveform */}
+              <span className="text-[10px] font-medium uppercase tracking-wider block mb-1.5" style={{ color: "#4A5568" }}>Waveform</span>
               <div className="flex flex-wrap gap-1.5 mb-4">
                 {WAVEFORMS.map(w => (
                   <button key={w} onClick={() => handleWaveform(w)}
@@ -761,6 +762,7 @@ export default function FrequencyStudio() {
                 ))}
               </div>
               {/* Play Mode */}
+              <span className="text-[10px] font-medium uppercase tracking-wider block mb-1.5" style={{ color: "#4A5568" }}>Play Mode</span>
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {(["mono", "binaural", "isochronic"] as PlayMode[]).map(m => (
                   <button key={m} onClick={() => handlePlayMode(m)}
