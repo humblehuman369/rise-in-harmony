@@ -484,10 +484,13 @@ export default function FrequencyBrowser({
 
                       {/* Right side: heart + arrow */}
                       <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                        {/* Heart toggle */}
-                        <button
+                        {/* Heart toggle — uses div+role to avoid nested <button> */}
+                        <div
+                          role="button"
+                          tabIndex={0}
                           onClick={(e) => handleToggleFavorite(e, freq)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-90"
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggleFavorite(e as any, freq); } }}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-90 cursor-pointer"
                           style={{
                             background: isFav
                               ? "rgba(236,72,153,0.15)"
@@ -507,7 +510,7 @@ export default function FrequencyBrowser({
                               transition: "color 0.15s, fill 0.15s",
                             }}
                           />
-                        </button>
+                        </div>
 
                         {/* Load arrow */}
                         {!isLocked && (
