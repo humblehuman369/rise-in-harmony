@@ -412,7 +412,13 @@ export default function PrecisionPlayer() {
               style={{ color: "#F59E0B", transform: disclaimerOpen ? "rotate(180deg)" : "rotate(0deg)" }}
             />
           </button>
-          {disclaimerOpen && (
+          <div
+            style={{
+              maxHeight: disclaimerOpen ? "300px" : "0px",
+              overflow: "hidden",
+              transition: "max-height 280ms cubic-bezier(0.23, 1, 0.32, 1)",
+            }}
+          >
             <div className="px-4 pb-4 pl-[43px]">
               <p className="text-xs leading-relaxed" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
                 Built-in phone and laptop speakers roll off significantly below ~150 Hz — frequencies such as 174 Hz may be inaudible or distorted without headphones.
@@ -423,7 +429,7 @@ export default function PrecisionPlayer() {
                 </span>
               </p>
             </div>
-          )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" onClickCapture={() => setDisclaimerOpen(false)}>
