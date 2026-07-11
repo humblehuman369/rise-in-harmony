@@ -33,15 +33,15 @@ const mobileNavItems = [
 const adminNavItem = { href: "/admin", icon: ShieldCheck, label: "Admin" };
 
 const baseNavItems = [
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/player", icon: Music2, label: "Player" },
-  { href: "/studio", icon: Layers, label: "Studio" },
-  { href: "/meditation", icon: Headphones, label: "Meditate" },
   { href: "/alarm", icon: AlarmClock, label: "Alarm" },
+  { href: "/player", icon: Music2, label: "Player" },
+  { href: "/meditation", icon: Headphones, label: "Meditate" },
+  { href: "/studio", icon: Layers, label: "Studio" },
   { href: "/library", icon: BookOpen, label: "Library" },
   { href: "/learn", icon: GraduationCap, label: "Learn" },
-  { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
   { href: "/precision", icon: Activity, label: "Precision" },
+  { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
+  { href: "/", icon: Home, label: "Home" },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
