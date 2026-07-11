@@ -356,7 +356,7 @@ function MySoundsCard() {
           <p className="text-xs mb-3" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
             No saved sounds yet. Layer a precision tone with a background loop in the Precision Player, then save it to your account.
           </p>
-          <Link href="/precision">
+          <Link href="/studio">
             <span className="inline-flex items-center gap-1 text-xs font-semibold cursor-pointer" style={{ color: '#00D4AA' }}>
               Create a sound →
             </span>
@@ -413,7 +413,7 @@ function MySoundsCard() {
                   )}
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <Link href={`/precision?sound=${sound.id}`}>
+                  <Link href={`/studio?sound=${sound.id}`}>
                     <button
                       className="p-1.5 rounded-lg transition-all"
                       style={{ background: 'rgba(0,212,170,0.1)', color: '#00D4AA' }}

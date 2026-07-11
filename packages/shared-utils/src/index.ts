@@ -241,9 +241,9 @@ export function calculateStreak(sessionDatesUtc: Date[]): number {
     Math.floor(d.getTime() / (1000 * 60 * 60 * 24));
 
   const today = toDay(new Date());
-  const uniqueDays = [
-    ...new Set(sessionDatesUtc.map((d) => toDay(d))),
-  ].sort((a, b) => b - a); // descending
+  const uniqueDays = Array.from(
+    new Set(sessionDatesUtc.map((d) => toDay(d))),
+  ).sort((a, b) => b - a); // descending
 
   // Streak must include today or yesterday
   if (uniqueDays[0] < today - 1) return 0;

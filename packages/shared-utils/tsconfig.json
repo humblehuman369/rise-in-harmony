@@ -3,6 +3,8 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "downlevelIteration": true,
+    "lib": ["ES2022"],
     "strict": true,
     "declaration": true,
     "declarationMap": true,

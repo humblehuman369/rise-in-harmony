@@ -182,7 +182,7 @@ export default function Technology() {
 
           {/* CTA */}
           <button
-            onClick={() => navigate("/precision")}
+            onClick={() => navigate("/studio")}
             className="btn-teal w-full py-3.5 text-base font-semibold mb-8"
           >
             Try the Precision Player →

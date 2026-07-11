@@ -157,3 +157,14 @@
 - [x] EditAlarmSheet: delete button at bottom (red, with confirmation)
 - [x] Wire edit save to trpc.alarms.update and optimistic UI update
 - [x] Wire delete to trpc.alarms.delete with swipe gesture + confirmation
+
+## Completed — Merge Studio + Precision into Unified "Frequency Studio"
+
+- [x] Build unified FrequencyStudio.tsx page with nature synth and music layer hooks
+- [x] Update App.tsx routing: /studio → FrequencyStudio, /precision redirects to /studio
+- [x] Update Layout.tsx navigation: remove Precision nav item, keep Studio
+- [x] Update Dashboard and Technology links from /precision to /studio
+- [x] Fix pre-existing shared-utils TS error (Set iteration → Array.from)
+- [x] Verify TypeScript compiles with 0 errors
+- [x] Run test suite and confirm all 29 tests pass
+- [ ] Remove old SoundStudio.tsx and PrecisionPlayer.tsx pages (kept for reference)

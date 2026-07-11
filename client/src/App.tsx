@@ -9,12 +9,12 @@ import Player from "./pages/Player";
 import Alarm from "./pages/Alarm";
 import Library from "./pages/Library";
 import Dashboard from "./pages/Dashboard";
-import SoundStudio from "./pages/SoundStudio";
+import FrequencyStudio from "./pages/FrequencyStudio";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import About from "./pages/About";
 import Meditation from "./pages/Meditation";
-import PrecisionPlayer from "./pages/PrecisionPlayer";
+
 import OnboardingModal from "./components/OnboardingModal";
 import { useOnboarding } from "./hooks/useOnboarding";
 import Technology from "./pages/Technology";
@@ -30,12 +30,12 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/player" component={Player} />
-      <Route path="/studio" component={SoundStudio} />
+      <Route path="/studio" component={FrequencyStudio} />
       <Route path="/alarm" component={Alarm} />
       <Route path="/library" component={Library} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/meditation" component={Meditation} />
-      <Route path="/precision" component={PrecisionPlayer} />
+      <Route path="/precision">{() => { window.location.replace("/studio"); return null; }}</Route>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
       <Route path="/about" component={About} />

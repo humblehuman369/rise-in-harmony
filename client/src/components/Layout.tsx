@@ -7,7 +7,7 @@ import { useRef, useCallback, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Home, Music2, AlarmClock, BookOpen, BarChart3, Settings,
-  Layers, Headphones, Activity, ShieldCheck, LogIn, LogOut, User,
+  Layers, Headphones, ShieldCheck, LogIn, LogOut, User,
   GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,7 +24,6 @@ const mobileNavItems = [
   { href: "/studio", icon: Layers, label: "Studio" },
   { href: "/library", icon: BookOpen, label: "Library" },
   { href: "/learn", icon: GraduationCap, label: "Learn" },
-  { href: "/precision", icon: Activity, label: "Precision" },
   { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
   { href: "/", icon: Home, label: "Home" },
   { href: "/settings", icon: Settings, label: "Settings" },
@@ -39,7 +38,6 @@ const baseNavItems = [
   { href: "/studio", icon: Layers, label: "Studio" },
   { href: "/library", icon: BookOpen, label: "Library" },
   { href: "/learn", icon: GraduationCap, label: "Learn" },
-  { href: "/precision", icon: Activity, label: "Precision" },
   { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
   { href: "/", icon: Home, label: "Home" },
 ];
