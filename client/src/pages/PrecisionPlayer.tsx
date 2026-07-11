@@ -19,7 +19,7 @@
  *   NFR-FREQ-004  Double-precision phase accumulation
  */
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Play, Square, AlertCircle, Star, StarOff, Plus, Minus, Clock, Activity, Upload, Save, Loader2, Music2, ChevronDown } from "lucide-react";
+import { Play, Square, AlertCircle, Star, StarOff, Plus, Minus, Clock, Activity, Upload, Save, Loader2, Music2, ChevronDown, Headphones } from "lucide-react";
 import Layout from "@/components/Layout";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
@@ -404,6 +404,7 @@ export default function PrecisionPlayer() {
           >
             <AlertCircle size={16} className="flex-shrink-0" style={{ color: "#F59E0B" }} />
             <span className="flex-1 text-sm font-medium" style={{ color: "#F59E0B", fontFamily: "DM Sans, sans-serif" }}>
+              <Headphones size={14} className="inline-block mr-1.5 flex-shrink-0" style={{ color: "#F59E0B", verticalAlign: "middle" }} />
               Headphones recommended for best results
             </span>
             <ChevronDown
