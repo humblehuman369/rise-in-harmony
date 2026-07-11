@@ -18,6 +18,7 @@ import PrecisionPlayer from "./pages/PrecisionPlayer";
 import OnboardingModal from "./components/OnboardingModal";
 import { useOnboarding } from "./hooks/useOnboarding";
 import Technology from "./pages/Technology";
+import Learn from "./pages/Learn";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import { useAuth } from "./_core/hooks/useAuth";
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/terms" component={Terms} />
       <Route path="/about" component={About} />
       <Route path="/technology" component={Technology} />
+      <Route path="/learn" component={Learn} />
       <Route path="/admin" component={Admin} />
       <Route path="/settings" component={Settings} />
       <Route path="/404" component={NotFound} />

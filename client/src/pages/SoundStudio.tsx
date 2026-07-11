@@ -73,6 +73,10 @@ const NATURE_SOUNDS: { id: NatureSound; label: string; Icon: React.ElementType; 
   { id: "forest", label: "Forest", Icon: TreePine, color: "#22C55E" },
   { id: "wind", label: "Wind", Icon: Wind, color: "#94A3B8" },
   { id: "fire", label: "Fire", Icon: Flame, color: "#F97316" },
+  { id: "river", label: "River", Icon: Waves, color: "#38BDF8" },
+  { id: "night", label: "Night", Icon: Moon, color: "#818CF8" },
+  { id: "cave", label: "Cave", Icon: Minus, color: "#A78BFA" },
+  { id: "bowl", label: "Bowl", Icon: Music, color: "#FBBF24" },
 ];
 
 // ─── Waveform visualizer ──────────────────────────────────────────────────────
@@ -422,60 +426,6 @@ export default function SoundStudio() {
           </p>
         </div>
 
-        {/* Waveform + Play button */}
-        <div
-          className="mx-6 mb-6 rounded-2xl overflow-hidden relative"
-          style={{
-            background: "linear-gradient(135deg, #0D0F1E, #12152A)",
-            border: `1px solid ${selectedFreq.color}20`,
-            boxShadow: `0 0 40px ${selectedFreq.color}10`,
-          }}
-        >
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{ background: `radial-gradient(ellipse at 50% 50%, ${selectedFreq.color}08 0%, transparent 70%)` }}
-          />
-          <div className="relative p-5">
-            {/* Frequency label */}
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <span
-                  className="text-3xl font-bold font-mono-brand"
-                  style={{ color: selectedFreq.color }}
-                >
-                  {state.frequencyHz}
-                </span>
-                <span className="text-lg ml-1" style={{ color: selectedFreq.color + "80" }}>Hz</span>
-                <div className="text-sm mt-0.5" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
-                  {selectedFreq.name}
-                  {state.musicMode !== "none" && (
-                    <span style={{ color: "#6B7A99" }}> · {MUSIC_MODES.find(m => m.id === state.musicMode)?.label}</span>
-                  )}
-                  {state.natureSound !== "none" && (
-                    <span style={{ color: "#6B7A99" }}> · {NATURE_SOUNDS.find(n => n.id === state.natureSound)?.label}</span>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={handleToggle}
-                className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95"
-                style={{
-                  background: state.isPlaying
-                    ? `linear-gradient(135deg, ${selectedFreq.color}, ${selectedFreq.color}CC)`
-                    : "rgba(255,255,255,0.08)",
-                  boxShadow: state.isPlaying ? `0 0 24px ${selectedFreq.color}60` : "none",
-                  color: state.isPlaying ? "#0A0B14" : "#E8EDF5",
-                }}
-              >
-                {state.isPlaying ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" style={{ marginLeft: "2px" }} />}
-              </button>
-            </div>
-
-            {/* Waveform */}
-            <WaveformVisualizer isPlaying={state.isPlaying} color={selectedFreq.color} />
-          </div>
-        </div>
-
         {/* Presets */}
         <div className="px-6 mb-6">
           <div className="flex items-center justify-between mb-3">
@@ -596,6 +546,60 @@ export default function SoundStudio() {
                 </span>
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Waveform + Play button */}
+        <div
+          className="mx-6 mb-6 rounded-2xl overflow-hidden relative"
+          style={{
+            background: "linear-gradient(135deg, #0D0F1E, #12152A)",
+            border: `1px solid ${selectedFreq.color}20`,
+            boxShadow: `0 0 40px ${selectedFreq.color}10`,
+          }}
+        >
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: `radial-gradient(ellipse at 50% 50%, ${selectedFreq.color}08 0%, transparent 70%)` }}
+          />
+          <div className="relative p-5">
+            {/* Frequency label */}
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <span
+                  className="text-3xl font-bold font-mono-brand"
+                  style={{ color: selectedFreq.color }}
+                >
+                  {state.frequencyHz}
+                </span>
+                <span className="text-lg ml-1" style={{ color: selectedFreq.color + "80" }}>Hz</span>
+                <div className="text-sm mt-0.5" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
+                  {selectedFreq.name}
+                  {state.musicMode !== "none" && (
+                    <span style={{ color: "#6B7A99" }}> · {MUSIC_MODES.find(m => m.id === state.musicMode)?.label}</span>
+                  )}
+                  {state.natureSound !== "none" && (
+                    <span style={{ color: "#6B7A99" }}> · {NATURE_SOUNDS.find(n => n.id === state.natureSound)?.label}</span>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={handleToggle}
+                className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95"
+                style={{
+                  background: state.isPlaying
+                    ? `linear-gradient(135deg, ${selectedFreq.color}, ${selectedFreq.color}CC)`
+                    : "rgba(255,255,255,0.08)",
+                  boxShadow: state.isPlaying ? `0 0 24px ${selectedFreq.color}60` : "none",
+                  color: state.isPlaying ? "#0A0B14" : "#E8EDF5",
+                }}
+              >
+                {state.isPlaying ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" style={{ marginLeft: "2px" }} />}
+              </button>
+            </div>
+
+            {/* Waveform */}
+            <WaveformVisualizer isPlaying={state.isPlaying} color={selectedFreq.color} />
           </div>
         </div>
 
@@ -939,7 +943,7 @@ export default function SoundStudio() {
           <div className="text-xs leading-relaxed space-y-1" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
             <p><strong style={{ color: "#8FA3BF" }}>Frequency layer</strong> — a pure sine wave at the selected healing Hz, embedded beneath everything else.</p>
             <p><strong style={{ color: "#8FA3BF" }}>Music layer</strong> — royalty-free ambient, drone, and singing-bowl recordings layered beneath your healing frequency.</p>
-            <p><strong style={{ color: "#8FA3BF" }}>Nature layer</strong> — royalty-free nature recordings (rain, ocean, forest, wind, fire) looped beneath your mix.</p>
+            <p><strong style={{ color: "#8FA3BF" }}>Nature layer</strong> — living soundscapes synthesized in real time. Nothing is looped or recorded — every raindrop, wave, and crackle is generated fresh, so the texture never repeats.</p>
           </div>
         </div>
       </div>

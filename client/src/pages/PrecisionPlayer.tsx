@@ -123,6 +123,7 @@ export default function PrecisionPlayer() {
   const [playMode, setPlayMode] = useState<PlayMode>("mono");
   const [sleepMinutes, setSleepMinutes] = useState<number | null>(null);
   const [vizMode, setVizMode] = useState<"oscilloscope" | "spectrum" | "both">("both");
+  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
 
   // Favorites
   const [favorites, setFavorites] = useState<Favorite[]>(loadFavorites);
@@ -131,8 +132,7 @@ export default function PrecisionPlayer() {
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [saveNameInput, setSaveNameInput] = useState("");
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [pendingUploads, setPendingUploads] = useState<Array<{ key: string; label: string }>>([])
-  const [headphonesOpen, setHeadphonesOpen] = useState(false);
+  const [pendingUploads, setPendingUploads] = useState<Array<{ key: string; label: string }>>([]);
 
   const applySavedSound = useCallback((sound: {
     freqL: number;
@@ -398,8 +398,9 @@ export default function PrecisionPlayer() {
         <div className="rounded-xl mb-6 overflow-hidden"
           style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>
           <button
-            onClick={() => setHeadphonesOpen(o => !o)}
-            className="w-full flex items-center gap-3 p-4 text-left transition-colors hover:bg-yellow-500/5"
+            onClick={() => setDisclaimerOpen(o => !o)}
+            aria-expanded={disclaimerOpen}
+            className="w-full flex items-center gap-3 p-4 text-left transition-colors hover:bg-white/[0.02]"
           >
             <AlertCircle size={16} className="flex-shrink-0" style={{ color: "#F59E0B" }} />
             <span className="flex-1 text-sm font-medium" style={{ color: "#F59E0B", fontFamily: "DM Sans, sans-serif" }}>
@@ -407,16 +408,13 @@ export default function PrecisionPlayer() {
             </span>
             <ChevronDown
               size={16}
-              style={{
-                color: "#F59E0B",
-                transition: "transform 200ms ease",
-                transform: headphonesOpen ? "rotate(180deg)" : "rotate(0deg)",
-              }}
+              className="flex-shrink-0 transition-transform duration-200"
+              style={{ color: "#F59E0B", transform: disclaimerOpen ? "rotate(180deg)" : "rotate(0deg)" }}
             />
           </button>
-          {headphonesOpen && (
-            <div className="px-4 pb-4" style={{ borderTop: "1px solid rgba(245,158,11,0.12)" }}>
-              <p className="text-xs leading-relaxed pt-3" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
+          {disclaimerOpen && (
+            <div className="px-4 pb-4 pl-[43px]">
+              <p className="text-xs leading-relaxed" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
                 Built-in phone and laptop speakers roll off significantly below ~150 Hz — frequencies such as 174 Hz may be inaudible or distorted without headphones.
                 For binaural beats, <strong style={{ color: "#E8EDF5" }}>stereo headphones are required</strong> — the effect only works when each ear receives a different tone.
                 Frequency accuracy is limited by your device's audio hardware; use quality headphones with a flat frequency response (20 Hz – 20 kHz) for the most precise experience.
@@ -491,7 +489,7 @@ export default function PrecisionPlayer() {
               </div>
             </div>
 
-            {/* Visualizer (FR-030 + FR-031) — moved directly under Frequency box */}
+            {/* Visualizer (FR-030 + FR-031) */}
             <div className="p-5 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
               <div className="flex items-center justify-between mb-3">
                 <div className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
@@ -530,6 +528,7 @@ export default function PrecisionPlayer() {
                 </p>
               )}
             </div>
+          </div>
 
             {/* Waveform selector (FR-003) */}
             <div className="p-5 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
@@ -789,7 +788,6 @@ export default function PrecisionPlayer() {
               )}
             </div>
 
-          </div>
 
           {/* ── Right column: Playback + Presets + Favorites ─────────────── */}
           <div className="flex flex-col gap-5">

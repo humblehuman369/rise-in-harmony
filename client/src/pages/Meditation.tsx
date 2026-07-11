@@ -161,8 +161,9 @@ function MeditationPlayer({
   const [mode, setMode] = useState<"sound" | "frequency">("frequency");
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [volume, setVolume] = useState(0.6);
-  const [freqVolume, setFreqVolume] = useState(0.35);
+  // Default mix: 25% frequency / 75% music (ambient) per product spec
+  const [volume, setVolume] = useState(0.75);
+  const [freqVolume, setFreqVolume] = useState(0.25);
   const [currentStep, setCurrentStep] = useState(0);
   const [showGuidance, setShowGuidance] = useState(true);
 
@@ -237,16 +238,20 @@ function MeditationPlayer({
     });
     workletNodeRef.current = worklet;
 
-    const freqL = recommendedFreq.hz;
+    // Isochronic presets store the pulse rate in `hz` (e.g. 10Hz Alpha) and
+    // pulse a comfortable audible carrier; binaural presets store the carrier
+    // in `hz` with the beat in `binauralOffset` (mirrors useFrequencyPlayer).
+    const isIso = recommendedFreq.isIsochronic === true;
+    const freqL = isIso ? 200 : recommendedFreq.hz;
     const freqR = recommendedFreq.binauralOffset !== undefined
       ? recommendedFreq.hz + recommendedFreq.binauralOffset
-      : recommendedFreq.hz;
+      : freqL;
     const playMode = recommendedFreq.binauralOffset !== undefined ? 'binaural' : 'mono';
 
     worklet.port.postMessage({ type: 'setFreq', freqL, freqR });
     worklet.port.postMessage({ type: 'setWaveform', waveform: 'sine' });
     worklet.port.postMessage({ type: 'setMode', mode: playMode });
-    worklet.port.postMessage({ type: 'setIsochronic', enabled: false });
+    worklet.port.postMessage({ type: 'setIsochronic', enabled: isIso, rate: isIso ? recommendedFreq.hz : undefined });
 
     worklet.connect(gain);
     gain.connect(ctx.destination);
@@ -283,7 +288,7 @@ function MeditationPlayer({
       setStudioNatureSound(meditation.soundscape === "silence" ? "none" : meditation.soundscape);
       setStudioMusicMode(meditation.musicMode);
       setLayerVolume("nature", volume);
-      setLayerVolume("music", volume * 0.7);
+      setLayerVolume("music", volume);
       studioPlay();
 
       // Start frequency if in frequency mode
@@ -494,7 +499,7 @@ function MeditationPlayer({
                 onValueChange={([v]) => {
                   setVolume(v / 100);
                   setLayerVolume("nature", v / 100);
-                  setLayerVolume("music", (v / 100) * 0.7);
+                  setLayerVolume("music", v / 100);
                 }}
                 min={0} max={100} step={1}
                 className="flex-1"
@@ -570,7 +575,7 @@ export default function Meditation() {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-4"
             style={{ background: 'rgba(0,212,170,0.1)', border: '1px solid rgba(0,212,170,0.2)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
             <Sparkles size={12} />
-            12 Guided Meditations
+            {MEDITATIONS.length} Guided Meditations
           </div>
           <h1 className="mb-2" style={{
             fontFamily: 'Cormorant Garamond, serif',
