@@ -22,11 +22,11 @@ const mobileNavItems = [
   { href: "/player", icon: Music2, label: "Player" },
   { href: "/meditation", icon: Headphones, label: "Meditate" },
   { href: "/studio", icon: Layers, label: "Studio" },
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
   { href: "/library", icon: BookOpen, label: "Library" },
   { href: "/learn", icon: GraduationCap, label: "Learn" },
   { href: "/precision", icon: Activity, label: "Precision" },
+  { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
+  { href: "/", icon: Home, label: "Home" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
 

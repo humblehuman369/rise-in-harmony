@@ -132,6 +132,18 @@
 - [x] Full preset library: all 9 Solfeggio + 432 Hz + 4 binaural brainwave states (FR-010)
 - [x] Precision Player page at /precision with sidebar nav link
 
+## Completed — Healing Frequencies Browser Favorites
+
+- [x] Add healingFavorites DB table (userId, frequencyId, hz, name, category, createdAt)
+- [x] Create server/routers/healingFavorites.ts with list, toggle, remove procedures
+- [x] Register healingFavoritesRouter in server/routers.ts
+- [x] Rewrite FrequencyBrowser.tsx with heart-toggle on every card
+- [x] Add dedicated ★ Favorites tab to FrequencyBrowser
+- [x] Server sync for authenticated users via trpc.healingFavorites.list/toggle
+- [x] localStorage fallback for guest users
+- [x] Empty state for Favorites tab
+- [x] Footer banners for premium upsell and sign-in prompt
+
 ## In Progress — iOS-Style Alarm Management
 
 - [x] Add trpc.alarms.update procedure (edit all alarm fields server-side)
