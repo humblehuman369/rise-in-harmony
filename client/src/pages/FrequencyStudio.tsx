@@ -679,8 +679,29 @@ export default function FrequencyStudio() {
                 <button onClick={() => setBrowserOpen(true)}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all"
                   style={{ background: "rgba(0,212,170,0.1)", color: "#00D4AA", border: "1px solid rgba(0,212,170,0.2)" }}>
-                  <Library size={11} /> Browse 100+
+                  <Library size={11} /> More Frequencies
                 </button>
+              </div>
+              {/* Quick-select frequency chips */}
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {[174, 285, 396, 417, 432, 528, 639, 741, 852, 963].map(hz => (
+                  <button key={hz} onClick={() => {
+                    setCustomFreq(hz);
+                    setCustomFreqInput(hz.toFixed(2));
+                    if (player.isPlaying) {
+                      const freqR = playMode === "binaural" ? hz + beatHz : undefined;
+                      player.setFrequency(hz, freqR);
+                    }
+                  }}
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all"
+                    style={customFreq === hz ? {
+                      background: "rgba(0,212,170,0.18)", color: "#00D4AA", border: "1px solid rgba(0,212,170,0.4)",
+                    } : {
+                      background: "rgba(255,255,255,0.04)", color: "#8FA3BF", border: "1px solid rgba(255,255,255,0.08)",
+                    }}>
+                    {hz} Hz
+                  </button>
+                ))}
               </div>
               <div className="flex items-center gap-2 mb-3">
                 <button onClick={() => nudgeFreq(-1)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"

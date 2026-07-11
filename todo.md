@@ -168,3 +168,8 @@
 - [x] Verify TypeScript compiles with 0 errors
 - [x] Run test suite and confirm all 29 tests pass
 - [ ] Remove old SoundStudio.tsx and PrecisionPlayer.tsx pages (kept for reference)
+
+## In Progress — Frequency Studio UX Improvements
+
+- [x] Rename "Browse 100+" button to "More Frequencies"
+- [x] Add quick-select frequency chips (174, 285, 396, 417, 432, 528, 639, 741, 852, 963 Hz) above the frequency input
