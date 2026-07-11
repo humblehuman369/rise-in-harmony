@@ -1,6 +1,6 @@
 /**
  * Meditation Catalog
- * 12 popular guided meditation styles, each with:
+ * 12 popular guided meditation styles + 3 long-form 60-minute vocal-free journeys, each with:
  *  - soundscape: ambient nature/music layers (generated via Web Audio API)
  *  - recommendedFrequencyId: the best healing frequency pairing from FREQUENCIES catalog
  *  - category: for tab filtering
@@ -416,6 +416,91 @@ export const MEDITATIONS: MeditationTrack[] = [
       "There is no separation between you and the space around you. You are the awareness in which all things arise.",
       "Rest here. No doing. No seeking. Just being — vast, open, and at peace.",
       "When you are ready, feel the light condensing back into your body. Feel your feet on the floor. Return slowly.",
+    ],
+    isPremium: true,
+  },
+
+  // ─── 60-MINUTE VOCAL-FREE JOURNEYS ───────────────────────────────────────────
+  // Long-form, instrumental-only tracks. No spoken guidance — the on-screen
+  // prompts are sparse, poetic anchors shown roughly every 12 minutes.
+  // All tones are rendered live by the DDS engine (precision-tuned, drift-free
+  // for sessions >2h per NFR-FREQ-004), so a 60-minute session costs nothing
+  // in storage and never loses tuning accuracy to lossy compression.
+  {
+    id: "deep-descent-60",
+    title: "The Deep Descent",
+    subtitle: "60-minute journey into Delta",
+    category: "sleep",
+    durationMinutes: 60,
+    description: "A mesmerizing, vocal-free hour that carries your brainwaves from waking awareness down into the slow Delta rhythm of deep, dreamless sleep. Slow ocean waves and a deep drone envelop a precision-tuned 3Hz Delta binaural beat — nothing to follow, nothing to do. Simply lie down and let the sound take you under.",
+    benefit: "Deep sleep induction, physical restoration, complete mental stillness — with zero verbal distraction",
+    icon: "Moon",
+    color: "#4338CA",
+    colorSecondary: "#1E1B4B",
+    soundscape: "ocean",    // slow wave rhythm — the most hypnotic long-form bed
+    musicMode: "drone",     // continuous, no chord changes across the full hour
+    recommendedFrequencyId: "binaural-delta",
+    recommendedFrequencyLabel: "Delta Binaural (3Hz)",
+    frequencyRationale: "Delta (0.5–4Hz) is the brainwave signature of deep, dreamless sleep. Held steadily for a full hour, the 3Hz binaural beat gives the brain a long, uninterrupted runway to entrain fully — something shorter sessions can only begin.",
+    affirmation: "I release the day. The sound carries me. I rest completely.",
+    guidance: [
+      "Lie down, put on headphones, close your eyes. There is nothing to follow — only sound.",
+      "Let the waves set your breathing. Long, slow, effortless.",
+      "You are drifting deeper. Let every thought dissolve into the drone.",
+      "Delta is carrying you now. There is nowhere to be.",
+      "Rest. The sound will hold you until morning.",
+    ],
+    isPremium: true,
+  },
+  {
+    id: "infinite-horizon-60",
+    title: "Infinite Horizon",
+    subtitle: "60-minute open-awareness field",
+    category: "spiritual",
+    durationMinutes: 60,
+    description: "A vast, vocal-free hour built for deep meditation and inner journeying. Spacious wind and rare crystal-bowl strikes surround the 852Hz Third Eye frequency — a shimmering, unmoving horizon of sound that invites awareness to open wider and wider without ever being told where to go.",
+    benefit: "Sustains hour-long meditation, deepens intuition, creates a stable acoustic field for inner work",
+    icon: "Eye",
+    color: "#8B5CF6",
+    colorSecondary: "#4C1D95",
+    soundscape: "wind",     // vast, spacious, non-intrusive over long durations
+    musicMode: "crystal",   // infrequent bowl strikes — punctuation, not distraction
+    recommendedFrequencyId: "852hz",
+    recommendedFrequencyLabel: "852Hz Intuition & Awakening",
+    frequencyRationale: "852Hz is traditionally associated with the Third Eye — inner vision and spiritual order. Sustained for a full hour by the DDS engine, it becomes a still point the mind can rest against for the entire sit.",
+    affirmation: "I am the open sky. Everything arises and passes within me.",
+    guidance: [
+      "Settle into your posture. This hour asks nothing of you.",
+      "Rest your attention on the tone. Let it be your only landmark.",
+      "Awareness is widening. Let the horizon keep opening.",
+      "You are the stillness beneath the sound.",
+      "Remain. There is no end to this space.",
+    ],
+    isPremium: true,
+  },
+  {
+    id: "flow-current-60",
+    title: "The Flow Current",
+    subtitle: "60-minute deep work companion",
+    category: "focus",
+    durationMinutes: 60,
+    description: "A vocal-free hour engineered for uninterrupted deep work and creative flow. A gentle river and a stable drone carry a precision 10Hz Alpha isochronic pulse — speaker-safe, so no headphones are required. Press play, open your work, and let the current keep your mind in the channel.",
+    benefit: "Sustains focus for a full deep-work block, reduces mental drift, works without headphones",
+    icon: "Target",
+    color: "#06B6D4",
+    colorSecondary: "#0E7490",
+    soundscape: "river",    // steady flow — non-distracting over a full hour
+    musicMode: "drone",     // stable harmonic bed, no changes to pull attention
+    recommendedFrequencyId: "alpha-isochronic",
+    recommendedFrequencyLabel: "Alpha Isochronic (10Hz)",
+    frequencyRationale: "10Hz Alpha is the brainwave state of relaxed alertness — the flow channel. Isochronic pulses entrain without headphones, making this the ideal hour-long companion for desks and studios.",
+    affirmation: "I am in the current. My attention flows without effort.",
+    guidance: [
+      "Begin your work. The current is running.",
+      "If attention drifts, let the pulse draw it back.",
+      "You are in the channel. Stay with the stream.",
+      "Effortless. Continuous. Flowing.",
+      "The hour is yours. Finish strong.",
     ],
     isPremium: true,
   },
