@@ -43,6 +43,13 @@
       "when": 1783570288230,
       "tag": "0005_mean_invisible_woman",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1783797979107,
+      "tag": "0006_lively_switch",
+      "breakpoints": true
     }
   ]
 }

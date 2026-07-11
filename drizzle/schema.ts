@@ -7,6 +7,7 @@ import {
   mysqlTable,
   text,
   timestamp,
+  unique,
   varchar,
 } from "drizzle-orm/mysql-core";
 
@@ -163,6 +164,26 @@ export const userSounds = mysqlTable("user_sounds", {
 
 export type UserSound = typeof userSounds.$inferSelect;
 export type InsertUserSound = typeof userSounds.$inferInsert;
+
+// ─── Healing Frequency Browser Favorites ────────────────────────────────────
+
+export const healingFavorites = mysqlTable(
+  "healing_favorites",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    frequencyId: varchar("frequencyId", { length: 64 }).notNull(),
+    hz: float("hz").notNull(),
+    name: varchar("name", { length: 128 }).notNull(),
+    category: varchar("category", { length: 64 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [unique().on(t.userId, t.frequencyId)],
+);
+export type HealingFavorite = typeof healingFavorites.$inferSelect;
+export type InsertHealingFavorite = typeof healingFavorites.$inferInsert;
 
 // ─── Subscription Events (RevenueCat webhook log) ─────────────────────────────
 
