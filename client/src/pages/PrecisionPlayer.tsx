@@ -19,7 +19,9 @@
  *   NFR-FREQ-004  Double-precision phase accumulation
  */
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Play, Square, AlertCircle, Star, StarOff, Plus, Minus, Clock, Activity, Upload, Save, Loader2, Music2, ChevronDown, Headphones } from "lucide-react";
+import { Play, Square, AlertCircle, Star, StarOff, Plus, Minus, Clock, Activity, Upload, Save, Loader2, Music2, ChevronDown, Headphones, Library } from "lucide-react";
+import FrequencyBrowser from "@/components/FrequencyBrowser";
+import type { HealingFrequency } from "@/data/healingFrequencies";
 import Layout from "@/components/Layout";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
@@ -124,6 +126,11 @@ export default function PrecisionPlayer() {
   const [sleepMinutes, setSleepMinutes] = useState<number | null>(null);
   const [vizMode, setVizMode] = useState<"oscilloscope" | "spectrum" | "both">("both");
   const [disclaimerOpen, setDisclaimerOpen] = useState(true);
+  const [browserOpen, setBrowserOpen] = useState(false);
+
+  // Premium status for frequency browser
+  const subStatus = trpc.subscription.status.useQuery(undefined, { enabled: !!user });
+  const isPremium = subStatus.data?.isPremium ?? false;
 
   // Favorites
   const [favorites, setFavorites] = useState<Favorite[]>(loadFavorites);
@@ -378,6 +385,20 @@ export default function PrecisionPlayer() {
 
   const targetHz = playMode === "binaural" ? beatHz : customFreq;
 
+  // ── Healing Frequency Browser handler ────────────────────────────────────
+  const handleBrowserSelect = useCallback((freq: HealingFrequency) => {
+    // Binaural entries have a beatHz suggestion; default to mono otherwise
+    const hz = freq.hz;
+    setCustomFreq(hz);
+    setCustomFreqInput(hz.toFixed(2));
+    // Keep current waveform and mode unless it's a binaural entry
+    if (player.isPlaying) {
+      const freqR = playMode === "binaural" ? hz + beatHz : undefined;
+      player.setFrequency(hz, freqR);
+    }
+    toast(`Loaded ${freq.name} — ${hz} Hz`, { description: freq.description.slice(0, 80) + "…" });
+  }, [player, playMode, beatHz]);
+
   return (
     <Layout>
       <div className="container py-8 max-w-4xl">
@@ -503,6 +524,29 @@ export default function PrecisionPlayer() {
                 <span>Slider range: 1–2000 Hz</span>
                 <span>2000 Hz</span>
               </div>
+
+              {/* Healing Frequency Browser trigger */}
+              <button
+                onClick={() => setBrowserOpen(true)}
+                className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 active:scale-[0.98]"
+                style={{
+                  background: "rgba(0,212,170,0.06)",
+                  border: "1px solid rgba(0,212,170,0.15)",
+                  color: "#00D4AA",
+                  fontFamily: "DM Sans, sans-serif",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = "rgba(0,212,170,0.12)";
+                  e.currentTarget.style.borderColor = "rgba(0,212,170,0.3)";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = "rgba(0,212,170,0.06)";
+                  e.currentTarget.style.borderColor = "rgba(0,212,170,0.15)";
+                }}
+              >
+                <Library size={14} />
+                Browse 100 Healing Frequencies
+              </button>
             </div>
 
             {/* Visualizer (FR-030 + FR-031) — moved above Sound Engine */}
@@ -1047,6 +1091,13 @@ export default function PrecisionPlayer() {
           </div>
         </div>
       </div>
+      <FrequencyBrowser
+        isOpen={browserOpen}
+        onClose={() => setBrowserOpen(false)}
+        onSelect={handleBrowserSelect}
+        isPremiumUser={isPremium}
+        currentHz={customFreq}
+      />
     </Layout>
   );
 }
