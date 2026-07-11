@@ -1225,7 +1225,7 @@ export default function FrequencyStudio() {
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="max-w-md mx-auto pointer-events-auto">
           <button onClick={handlePlay}
-            className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all active:scale-[0.97] shadow-lg"
+            className={`w-full flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all active:scale-[0.97] shadow-lg ${player.isPlaying ? 'animate-[playPulse_2.5s_ease-in-out_infinite]' : ''}`}
             style={player.isPlaying ? {
               background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
               backdropFilter: 'blur(20px)', color: '#EF4444',
