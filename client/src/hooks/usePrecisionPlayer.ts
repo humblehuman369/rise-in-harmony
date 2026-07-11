@@ -14,6 +14,13 @@
  *   FR-041  Sleep timer with fade-out
  *   NFR-FREQ-004  Double-precision phase accumulation (JS number = IEEE 754 double)
  *   NFR-FREQ-002  Phase-continuous — no artifacts on parameter changes
+ *
+ * Bug fixes (v1.1):
+ *   - stopAudio(false) fade-out timeout is now stored and cancelled on next play/stop
+ *     → prevents stale timeout from nulling a newly-created worklet node
+ *   - Added setMode() live-update helper (posts setMode + setIsochronic to worklet)
+ *     → Play Mode now switches without requiring stop/restart
+ *   - stopAudio always clears the fade-out timer ref before scheduling a new one
  */
 import { useState, useRef, useCallback, useEffect } from "react";
 
@@ -40,7 +47,7 @@ export interface PrecisionSession {
 }
 
 const WORKLET_URL = "/dds-processor.js";
-const FADE_TIME_CONSTANT = 0.3; // seconds (≈ 1.2s to reach ~0)
+const FADE_TC = 0.3; // seconds (≈ 1.2s to reach ~0)
 
 export function usePrecisionPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -49,15 +56,36 @@ export function usePrecisionPlayer() {
   const [playTime, setPlayTime] = useState(0);
   const [isWorkletReady, setIsWorkletReady] = useState(false);
 
-  const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioCtxRef    = useRef<AudioContext | null>(null);
   const workletNodeRef = useRef<AudioWorkletNode | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const sleepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gainNodeRef    = useRef<GainNode | null>(null);
+  const analyserRef    = useRef<AnalyserNode | null>(null);
+  const timerRef       = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sleepTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Stores the fade-out disconnect timeout so it can be cancelled on next play/stop */
+  const fadeOutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const workletLoadedRef = useRef(false);
 
-  // ── Internal: ensure AudioContext + Worklet are ready ──────────────────────
+  // ── Internal helpers ──────────────────────────────────────────────────────
+
+  /** Cancel any pending fade-out disconnect timer */
+  const cancelFadeOut = useCallback(() => {
+    if (fadeOutTimerRef.current !== null) {
+      clearTimeout(fadeOutTimerRef.current);
+      fadeOutTimerRef.current = null;
+    }
+  }, []);
+
+  /** Disconnect and null the current worklet node immediately */
+  const teardownWorklet = useCallback(() => {
+    const node = workletNodeRef.current;
+    if (node) {
+      try { node.disconnect(); } catch { /* already disconnected */ }
+      workletNodeRef.current = null;
+    }
+  }, []);
+
+  // ── Ensure AudioContext + Worklet are ready ───────────────────────────────
   const ensureContext = useCallback(async () => {
     if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
       audioCtxRef.current = new (
@@ -79,14 +107,17 @@ export function usePrecisionPlayer() {
 
   // ── Stop ──────────────────────────────────────────────────────────────────
   const stopAudio = useCallback((immediate = false) => {
+    // Always cancel any in-flight fade-out timer first
+    cancelFadeOut();
+
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     if (sleepTimerRef.current) { clearTimeout(sleepTimerRef.current); sleepTimerRef.current = null; }
 
-    const ctx = audioCtxRef.current;
+    const ctx  = audioCtxRef.current;
     const gain = gainNodeRef.current;
-    const node = workletNodeRef.current;
 
-    if (!ctx || !gain || !node) {
+    if (!ctx || !gain || !workletNodeRef.current) {
+      teardownWorklet();
       setIsPlaying(false);
       return;
     }
@@ -94,28 +125,33 @@ export function usePrecisionPlayer() {
     if (immediate) {
       gain.gain.cancelScheduledValues(ctx.currentTime);
       gain.gain.setValueAtTime(0, ctx.currentTime);
-      node.disconnect();
-      workletNodeRef.current = null;
+      teardownWorklet();
       setIsPlaying(false);
     } else {
       // Smooth fade-out (FR-004)
       gain.gain.cancelScheduledValues(ctx.currentTime);
       gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
-      gain.gain.setTargetAtTime(0, ctx.currentTime, FADE_TIME_CONSTANT);
-      setTimeout(() => {
-        node.disconnect();
-        workletNodeRef.current = null;
-        setIsPlaying(false);
+      gain.gain.setTargetAtTime(0, ctx.currentTime, FADE_TC);
+
+      // Capture the node reference NOW so the timeout always disconnects the
+      // correct node even if play() is called before the timeout fires.
+      const nodeToDisconnect = workletNodeRef.current;
+      workletNodeRef.current = null; // prevent new stop/play from double-disconnecting
+      setIsPlaying(false);           // UI responds immediately
+
+      fadeOutTimerRef.current = setTimeout(() => {
+        fadeOutTimerRef.current = null;
+        try { nodeToDisconnect.disconnect(); } catch { /* already gone */ }
       }, 1500);
     }
-  }, []);
+  }, [cancelFadeOut, teardownWorklet]);
 
   // ── Play ──────────────────────────────────────────────────────────────────
   const play = useCallback(async (s: PrecisionSession) => {
-    // Stop existing audio cleanly
-    if (workletNodeRef.current) {
-      stopAudio(true);
-    }
+    // Cancel any pending fade-out and tear down any existing node immediately
+    cancelFadeOut();
+    teardownWorklet();
+
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
 
     const ctx = await ensureContext();
@@ -126,7 +162,7 @@ export function usePrecisionPlayer() {
     gainNodeRef.current = gain;
 
     const analyser = ctx.createAnalyser();
-    analyser.fftSize = 8192;           // high resolution FFT (FR-031)
+    analyser.fftSize = 8192;
     analyser.smoothingTimeConstant = 0.6;
     analyserRef.current = analyser;
 
@@ -137,18 +173,17 @@ export function usePrecisionPlayer() {
     });
     workletNodeRef.current = worklet;
 
-    // Wait for the worklet processor to signal it is ready before sending parameters
+    // Wait for the worklet processor to signal ready before sending parameters
     await new Promise<void>((resolve) => {
       const onReady = (e: MessageEvent) => {
-        if (e.data?.type === 'ready') {
-          worklet.port.removeEventListener('message', onReady);
+        if (e.data?.type === "ready") {
+          worklet.port.removeEventListener("message", onReady);
           resolve();
         }
       };
-      worklet.port.addEventListener('message', onReady);
+      worklet.port.addEventListener("message", onReady);
       worklet.port.start();
-      // Fallback: resolve after 50ms if ready message was missed
-      setTimeout(resolve, 50);
+      setTimeout(resolve, 50); // fallback if ready message was missed
     });
 
     // Configure the DDS processor
@@ -159,7 +194,10 @@ export function usePrecisionPlayer() {
 
     worklet.port.postMessage({ type: "setFreq", freqL, freqR });
     worklet.port.postMessage({ type: "setWaveform", waveform: s.waveform });
-    worklet.port.postMessage({ type: "setMode", mode: s.mode === "binaural" ? "binaural" : "mono" });
+    worklet.port.postMessage({
+      type: "setMode",
+      mode: s.mode === "binaural" ? "binaural" : "mono",
+    });
 
     if (s.mode === "isochronic") {
       worklet.port.postMessage({
@@ -177,14 +215,14 @@ export function usePrecisionPlayer() {
     analyser.connect(ctx.destination);
 
     // Smooth fade-in (FR-004)
-    gain.gain.setTargetAtTime(volume, ctx.currentTime, FADE_TIME_CONSTANT * 0.5);
+    gain.gain.setTargetAtTime(volume, ctx.currentTime, FADE_TC * 0.5);
 
     setSession(s);
     setIsPlaying(true);
     setPlayTime(0);
 
     timerRef.current = setInterval(() => setPlayTime(t => t + 1), 1000);
-  }, [ensureContext, stopAudio, volume]);
+  }, [cancelFadeOut, teardownWorklet, ensureContext, volume]);
 
   // ── Change frequency without stopping (phase-continuous, FR-002) ──────────
   const setFrequency = useCallback((freqL: number, freqR?: number) => {
@@ -202,6 +240,46 @@ export function usePrecisionPlayer() {
     if (!workletNodeRef.current) return;
     workletNodeRef.current.port.postMessage({ type: "setWaveform", waveform });
     setSession(prev => prev ? { ...prev, waveform } : prev);
+  }, []);
+
+  // ── Change play mode live (FR-020 / FR-021) ───────────────────────────────
+  /**
+   * Hot-swap the play mode while audio is running.
+   * Sends the appropriate worklet messages so the DSP switches without a restart.
+   */
+  const setMode = useCallback((
+    mode: PlayMode,
+    opts?: { freqL?: number; beatHz?: number; isoRate?: number; isoDuty?: number }
+  ) => {
+    const node = workletNodeRef.current;
+    if (!node) return;
+
+    node.port.postMessage({
+      type: "setMode",
+      mode: mode === "binaural" ? "binaural" : "mono",
+    });
+
+    if (mode === "binaural") {
+      const freqL = opts?.freqL ?? 0;
+      const beat  = opts?.beatHz ?? 10;
+      node.port.postMessage({ type: "setFreq", freqL, freqR: freqL + beat });
+      node.port.postMessage({ type: "setIsochronic", enabled: false });
+    } else if (mode === "isochronic") {
+      node.port.postMessage({
+        type: "setIsochronic",
+        enabled: true,
+        rate: opts?.isoRate ?? 10,
+        duty: opts?.isoDuty ?? 0.5,
+      });
+    } else {
+      // mono
+      node.port.postMessage({ type: "setIsochronic", enabled: false });
+      if (opts?.freqL !== undefined) {
+        node.port.postMessage({ type: "setFreq", freqL: opts.freqL, freqR: opts.freqL });
+      }
+    }
+
+    setSession(prev => prev ? { ...prev, mode } : prev);
   }, []);
 
   // ── Volume ────────────────────────────────────────────────────────────────
@@ -233,12 +311,13 @@ export function usePrecisionPlayer() {
   // ── Cleanup ───────────────────────────────────────────────────────────────
   useEffect(() => {
     return () => {
+      cancelFadeOut();
       if (timerRef.current) clearInterval(timerRef.current);
       if (sleepTimerRef.current) clearTimeout(sleepTimerRef.current);
-      workletNodeRef.current?.disconnect();
+      teardownWorklet();
       audioCtxRef.current?.close();
     };
-  }, []);
+  }, [cancelFadeOut, teardownWorklet]);
 
   return {
     isPlaying,
@@ -251,6 +330,7 @@ export function usePrecisionPlayer() {
     stopAudio,
     setFrequency,
     setWaveform,
+    setMode,
     setVolume,
     setSleepTimer,
     setIsochronic,

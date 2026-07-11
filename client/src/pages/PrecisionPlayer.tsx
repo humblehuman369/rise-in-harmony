@@ -157,6 +157,7 @@ export default function PrecisionPlayer() {
     background.selectBackground(
       sound.backgroundType as BackgroundType,
       sound.backgroundKey,
+      player.isPlaying,
     );
     background.setBackgroundVolume(sound.backgroundVolume);
   }, [player, background]);
@@ -251,6 +252,14 @@ export default function PrecisionPlayer() {
     }
   }, [customFreq, player, playMode, beatHz]);
 
+  // ── Play Mode change (live hot-swap via setMode) ───────────────────────────
+  const handlePlayMode = useCallback((m: PlayMode) => {
+    setPlayMode(m);
+    if (player.isPlaying) {
+      player.setMode(m, { freqL: customFreq, beatHz, isoRate, isoDuty });
+    }
+  }, [player, customFreq, beatHz, isoRate, isoDuty]);
+
   // ── Waveform change (phase-continuous) ───────────────────────────────────
   const handleWaveform = useCallback((w: Waveform) => {
     setWaveformState(w);
@@ -343,7 +352,7 @@ export default function PrecisionPlayer() {
       const result = await uploadSoundMp3(file, setUploadProgress);
       const label = file.name.replace(/\.mp3$/i, "");
       setPendingUploads(prev => [{ key: result.key, label }, ...prev.filter(u => u.key !== result.key)]);
-      background.selectBackground("upload", result.key);
+      background.selectBackground("upload", result.key, player.isPlaying);
       toast.success(`Uploaded "${label}"`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Upload failed");
@@ -586,7 +595,7 @@ export default function PrecisionPlayer() {
                   {(["mono", "binaural", "isochronic"] as PlayMode[]).map(m => (
                     <button
                       key={m}
-                      onClick={() => setPlayMode(m)}
+                      onClick={() => handlePlayMode(m)}
                       className="py-2 rounded-xl text-sm font-medium capitalize transition-all duration-200"
                       style={playMode === m ? {
                         background: "linear-gradient(135deg, #8B5CF6, #6D28D9)",
@@ -703,7 +712,7 @@ export default function PrecisionPlayer() {
 
               <div className="flex flex-wrap gap-1.5 mb-3">
                 <button
-                  onClick={() => background.selectBackground("none", null)}
+                  onClick={() => background.selectBackground("none", null, player.isPlaying)}
                   className="px-2.5 py-1.5 rounded-lg text-xs transition-all"
                   style={background.layer.type === "none" ? {
                     background: "rgba(0,212,170,0.15)",
@@ -720,7 +729,7 @@ export default function PrecisionPlayer() {
                 {BACKGROUND_LOOPS.map(loop => (
                   <button
                     key={loop.id}
-                    onClick={() => background.selectBackground("library", loop.id)}
+                    onClick={() => background.selectBackground("library", loop.id, player.isPlaying)}
                     className="px-2.5 py-1.5 rounded-lg text-xs transition-all"
                     style={
                       background.layer.type === "library" && background.layer.key === loop.id
@@ -750,7 +759,7 @@ export default function PrecisionPlayer() {
                     {uploadOptions.map(upload => (
                       <button
                         key={upload.key}
-                        onClick={() => background.selectBackground("upload", upload.key)}
+                        onClick={() => background.selectBackground("upload", upload.key, player.isPlaying)}
                         className="px-2.5 py-1.5 rounded-lg text-xs transition-all"
                         style={
                           background.layer.type === "upload" && background.layer.key === upload.key
