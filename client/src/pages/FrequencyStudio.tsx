@@ -656,10 +656,10 @@ export default function FrequencyStudio() {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-2"
             style={{ background: "rgba(0,212,170,0.1)", border: "1px solid rgba(0,212,170,0.2)", color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}>
             <Activity size={12} />
-            Frequency Studio — DDS Precision Engine
+            Precision Frequency Studio — DDS Precision Engine
           </div>
           <h1 className="text-2xl font-semibold mb-0.5" style={{ fontFamily: "Cormorant Garamond, serif", color: "#E8EDF5" }}>
-            Frequency Studio
+            Precision Frequency Studio
           </h1>
           <p className="text-xs" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
             Double-precision synthesis · Layered ambient mixing · ±0.05 Hz accuracy
