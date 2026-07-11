@@ -115,6 +115,7 @@ export default function PrecisionScreen() {
 
   const [hz, setHz] = useState(432);
   const [hzText, setHzText] = useState("432");
+  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
   const [waveform, setWaveform] = useState<Waveform>("sine");
   const [mode, setMode] = useState<PlayMode>("pure");
   const [beatHz, setBeatHz] = useState(10);
@@ -250,6 +251,34 @@ export default function PrecisionScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Hardware disclaimer — collapsible accordion (mirrors web) */}
+        <View style={styles.disclaimerCard}>
+          <TouchableOpacity
+            style={styles.disclaimerHeader}
+            onPress={() => setDisclaimerOpen((o) => !o)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.disclaimerIcon}>⚠</Text>
+            <Text style={styles.disclaimerTitle}>
+              Headphones recommended for best results
+            </Text>
+            <Text style={styles.disclaimerChevron}>
+              {disclaimerOpen ? "▲" : "▼"}
+            </Text>
+          </TouchableOpacity>
+          {disclaimerOpen && (
+            <Text style={styles.disclaimerBody}>
+              Built-in phone speakers roll off significantly below ~150 Hz —
+              frequencies such as 174 Hz may be inaudible or distorted without
+              headphones. For binaural beats, stereo headphones are required —
+              the effect only works when each ear receives a different tone.
+              Frequency accuracy is limited by your device's audio hardware.
+              {"\n\n"}Note: Sound healing claims are not validated by mainstream
+              medicine. This app is for wellness and entertainment purposes only.
+            </Text>
+          )}
+        </View>
+
         {/* Hz display + input */}
         <View style={styles.hzCard}>
           <View style={styles.hzRow}>
@@ -544,6 +573,41 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   scroll: { paddingHorizontal: spacing[5], paddingBottom: spacing[12] },
+  disclaimerCard: {
+    backgroundColor: "rgba(245,158,11,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(245,158,11,0.2)",
+    borderRadius: radii.lg,
+    marginBottom: spacing[5],
+    overflow: "hidden",
+  },
+  disclaimerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: spacing[4],
+    gap: spacing[2],
+  },
+  disclaimerIcon: {
+    fontSize: fontSizes.sm,
+    color: "#F59E0B",
+  },
+  disclaimerTitle: {
+    flex: 1,
+    fontSize: fontSizes.sm,
+    fontWeight: "600",
+    color: "#F59E0B",
+  },
+  disclaimerChevron: {
+    fontSize: fontSizes.xs,
+    color: "#F59E0B",
+  },
+  disclaimerBody: {
+    fontSize: fontSizes.xs,
+    lineHeight: 18,
+    color: colors.textDim,
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[4],
+  },
   // Hz card
   hzCard: {
     backgroundColor: colors.bgCard,

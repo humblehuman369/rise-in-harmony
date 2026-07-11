@@ -19,7 +19,7 @@
  *   NFR-FREQ-004  Double-precision phase accumulation
  */
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Play, Square, AlertCircle, Star, StarOff, Plus, Minus, Clock, Activity, Upload, Save, Loader2, Music2 } from "lucide-react";
+import { Play, Square, AlertCircle, Star, StarOff, Plus, Minus, Clock, Activity, Upload, Save, Loader2, Music2, ChevronDown } from "lucide-react";
 import Layout from "@/components/Layout";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
@@ -123,6 +123,7 @@ export default function PrecisionPlayer() {
   const [playMode, setPlayMode] = useState<PlayMode>("mono");
   const [sleepMinutes, setSleepMinutes] = useState<number | null>(null);
   const [vizMode, setVizMode] = useState<"oscilloscope" | "spectrum" | "both">("both");
+  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
 
   // Favorites
   const [favorites, setFavorites] = useState<Favorite[]>(loadFavorites);
@@ -393,23 +394,36 @@ export default function PrecisionPlayer() {
           </a>
         </div>
 
-        {/* Hardware disclaimer (NFR-FREQ-003) */}
-        <div className="flex items-start gap-3 p-4 rounded-xl mb-6"
+        {/* Hardware disclaimer (NFR-FREQ-003) — collapsible accordion */}
+        <div className="rounded-xl mb-6 overflow-hidden"
           style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>
-          <AlertCircle size={16} className="flex-shrink-0 mt-0.5" style={{ color: "#F59E0B" }} />
-          <div>
-            <p className="text-sm font-medium mb-1" style={{ color: "#F59E0B", fontFamily: "DM Sans, sans-serif" }}>
+          <button
+            onClick={() => setDisclaimerOpen(o => !o)}
+            aria-expanded={disclaimerOpen}
+            className="w-full flex items-center gap-3 p-4 text-left transition-colors hover:bg-white/[0.02]"
+          >
+            <AlertCircle size={16} className="flex-shrink-0" style={{ color: "#F59E0B" }} />
+            <span className="flex-1 text-sm font-medium" style={{ color: "#F59E0B", fontFamily: "DM Sans, sans-serif" }}>
               Headphones recommended for best results
-            </p>
-            <p className="text-xs leading-relaxed" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
-              Built-in phone and laptop speakers roll off significantly below ~150 Hz — frequencies such as 174 Hz may be inaudible or distorted without headphones.
-              For binaural beats, <strong style={{ color: "#E8EDF5" }}>stereo headphones are required</strong> — the effect only works when each ear receives a different tone.
-              Frequency accuracy is limited by your device's audio hardware; use quality headphones with a flat frequency response (20 Hz – 20 kHz) for the most precise experience.
-              <br /><span className="italic mt-1 block" style={{ color: "#6B7A99" }}>
-                Note: Sound healing claims are not validated by mainstream medicine. This app is for wellness and entertainment purposes only.
-              </span>
-            </p>
-          </div>
+            </span>
+            <ChevronDown
+              size={16}
+              className="flex-shrink-0 transition-transform duration-200"
+              style={{ color: "#F59E0B", transform: disclaimerOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+            />
+          </button>
+          {disclaimerOpen && (
+            <div className="px-4 pb-4 pl-[43px]">
+              <p className="text-xs leading-relaxed" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
+                Built-in phone and laptop speakers roll off significantly below ~150 Hz — frequencies such as 174 Hz may be inaudible or distorted without headphones.
+                For binaural beats, <strong style={{ color: "#E8EDF5" }}>stereo headphones are required</strong> — the effect only works when each ear receives a different tone.
+                Frequency accuracy is limited by your device's audio hardware; use quality headphones with a flat frequency response (20 Hz – 20 kHz) for the most precise experience.
+                <br /><span className="italic mt-1 block" style={{ color: "#6B7A99" }}>
+                  Note: Sound healing claims are not validated by mainstream medicine. This app is for wellness and entertainment purposes only.
+                </span>
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -474,6 +488,47 @@ export default function PrecisionPlayer() {
                 <span>2000 Hz</span>
               </div>
             </div>
+
+            {/* Visualizer (FR-030 + FR-031) */}
+            <div className="p-5 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                  Signal Analysis
+                </div>
+                <div className="flex gap-1">
+                  {(["oscilloscope", "spectrum", "both"] as const).map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setVizMode(v)}
+                      className="px-2 py-1 rounded-lg text-xs font-medium capitalize transition-all"
+                      style={vizMode === v ? {
+                        background: "rgba(0,212,170,0.15)",
+                        color: "#00D4AA",
+                        border: "1px solid rgba(0,212,170,0.3)",
+                      } : {
+                        background: "transparent",
+                        color: "#6B7A99",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                      }}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <PrecisionVisualizer
+                analyserNode={analyserNode}
+                isPlaying={player.isPlaying}
+                targetHz={targetHz}
+                mode={vizMode}
+              />
+              {!player.isPlaying && (
+                <p className="text-xs text-center mt-2" style={{ color: "#3A4A6B", fontFamily: "DM Sans, sans-serif" }}>
+                  Start playback to see live signal analysis
+                </p>
+              )}
+            </div>
+          </div>
 
             {/* Waveform selector (FR-003) */}
             <div className="p-5 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
@@ -733,46 +788,6 @@ export default function PrecisionPlayer() {
               )}
             </div>
 
-            {/* Visualizer (FR-030 + FR-031) */}
-            <div className="p-5 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
-                  Signal Analysis
-                </div>
-                <div className="flex gap-1">
-                  {(["oscilloscope", "spectrum", "both"] as const).map(v => (
-                    <button
-                      key={v}
-                      onClick={() => setVizMode(v)}
-                      className="px-2 py-1 rounded-lg text-xs font-medium capitalize transition-all"
-                      style={vizMode === v ? {
-                        background: "rgba(0,212,170,0.15)",
-                        color: "#00D4AA",
-                        border: "1px solid rgba(0,212,170,0.3)",
-                      } : {
-                        background: "transparent",
-                        color: "#6B7A99",
-                        border: "1px solid rgba(255,255,255,0.06)",
-                      }}
-                    >
-                      {v}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <PrecisionVisualizer
-                analyserNode={analyserNode}
-                isPlaying={player.isPlaying}
-                targetHz={targetHz}
-                mode={vizMode}
-              />
-              {!player.isPlaying && (
-                <p className="text-xs text-center mt-2" style={{ color: "#3A4A6B", fontFamily: "DM Sans, sans-serif" }}>
-                  Start playback to see live signal analysis
-                </p>
-              )}
-            </div>
-          </div>
 
           {/* ── Right column: Playback + Presets + Favorites ─────────────── */}
           <div className="flex flex-col gap-5">
