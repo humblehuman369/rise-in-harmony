@@ -17,7 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback } from "react";
 import { useFocusEffect } from "expo-router";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
-import { CHAKRA_FREQUENCIES, formatStreakLabel, calculateStreak } from "@rih/shared-utils";
+import { CHAKRA_FREQUENCIES, FREQUENCIES, formatStreakLabel, calculateStreak } from "@rih/shared-utils";
 import { useAuthStore } from "@/store/authStore";
 import { api } from "@/lib/api";
 import { loadJournalEntries, averageMood } from "@/lib/journal";
@@ -261,6 +261,18 @@ export default function DashboardScreen() {
           </View>
         </View>
 
+        {/* Mood Trend */}
+        <MoodTrendSection sessions={recentSessions} />
+
+        {/* Top Frequencies */}
+        <TopFrequenciesSection sessions={recentSessions} />
+
+        {/* Recent Sessions */}
+        <RecentSessionsSection sessions={recentSessions} />
+
+        {/* Weekly Goals */}
+        <WeeklyGoalsSection totalMinutes={totalMin} streak={streak} />
+
         {!user && (
           <Text style={styles.note}>
             Sign in to sync sessions across devices and unlock detailed analytics.
@@ -308,6 +320,327 @@ function StreakCalendar({ sessions }: { sessions: Session[] }) {
     </View>
   );
 }
+
+// ─── Mood Trend Section ──────────────────────────────────────────────────────
+function MoodTrendSection({ sessions }: { sessions: Session[] }) {
+  const DAY_LABELS_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  const day = now.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  startOfWeek.setDate(now.getDate() + mondayOffset);
+  startOfWeek.setHours(0, 0, 0, 0);
+  const moodBuckets: number[] = [0, 0, 0, 0, 0, 0, 0];
+  const moodCounts: number[] = [0, 0, 0, 0, 0, 0, 0];
+  for (const s of sessions) {
+    const d = new Date(s.startedAt);
+    if (d < startOfWeek) continue;
+    const dayIndex = (d.getDay() + 6) % 7;
+    if (s.moodRating) {
+      moodBuckets[dayIndex] += s.moodRating;
+      moodCounts[dayIndex]++;
+    }
+  }
+  const avgMoods = moodBuckets.map((sum, i) =>
+    moodCounts[i] > 0 ? Math.round((sum / moodCounts[i]) * 10) / 10 : 0
+  );
+  const maxMood = Math.max(...avgMoods, 1);
+  const BAR_H = 60;
+  return (
+    <View style={sectionStyles.section}>
+      <Text style={sectionStyles.sectionTitle}>Mood Trend</Text>
+      <View style={sectionStyles.card}>
+        <View style={sectionStyles.barChart}>
+          {avgMoods.map((mood, i) => {
+            const barColor = mood >= 4 ? colors.teal : mood >= 3 ? "#8B5CF6" : mood > 0 ? "#6B7A99" : "rgba(255,255,255,0.05)";
+            return (
+              <View key={i} style={sectionStyles.barCol}>
+                <Text style={[sectionStyles.barValue, { color: barColor }]}>
+                  {mood > 0 ? mood : ""}
+                </Text>
+                <View style={[sectionStyles.barTrack, { height: BAR_H }]}>
+                  <View
+                    style={[
+                      sectionStyles.barFill,
+                      { height: (mood / maxMood) * BAR_H, backgroundColor: barColor },
+                    ]}
+                  />
+                </View>
+                <Text style={sectionStyles.barLabel}>{DAY_LABELS_SHORT[i]}</Text>
+              </View>
+            );
+          })}
+        </View>
+        {avgMoods.every((m) => m === 0) && (
+          <Text style={sectionStyles.emptyText}>
+            Log your mood after sessions to see your trend here.
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
+// ─── Top Frequencies Section ──────────────────────────────────────────────────
+function TopFrequenciesSection({ sessions }: { sessions: Session[] }) {
+  const freqMap = new Map<number, { name: string; count: number; color: string }>();
+  for (const s of sessions) {
+    const existing = freqMap.get(s.frequencyHz);
+    const freq = FREQUENCIES.find((f) => f.hz === s.frequencyHz);
+    const color = freq?.color ?? "#6B7A99";
+    if (existing) {
+      existing.count++;
+    } else {
+      freqMap.set(s.frequencyHz, {
+        name: s.frequencyName ?? `${s.frequencyHz} Hz`,
+        count: 1,
+        color,
+      });
+    }
+  }
+  const top = Array.from(freqMap.entries())
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 5);
+  const maxCount = top.length > 0 ? top[0][1].count : 1;
+  return (
+    <View style={sectionStyles.section}>
+      <Text style={sectionStyles.sectionTitle}>Top Frequencies</Text>
+      <View style={sectionStyles.card}>
+        {top.length > 0 ? (
+          top.map(([hz, info]) => (
+            <View key={hz} style={sectionStyles.freqRow}>
+              <View style={[sectionStyles.freqDot, { backgroundColor: info.color + "20", borderColor: info.color + "50" }]}>
+                <Text style={[sectionStyles.freqHz, { color: info.color }]}>{hz}</Text>
+              </View>
+              <View style={sectionStyles.freqBarWrap}>
+                <Text style={sectionStyles.freqName} numberOfLines={1}>{info.name}</Text>
+                <View style={sectionStyles.freqTrack}>
+                  <View
+                    style={[
+                      sectionStyles.freqFill,
+                      { width: `${(info.count / maxCount) * 100}%` as any, backgroundColor: info.color },
+                    ]}
+                  />
+                </View>
+              </View>
+              <Text style={[sectionStyles.freqCount, { color: info.color }]}>{info.count}x</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={sectionStyles.emptyText}>
+            Complete sessions to see your most-used frequencies here.
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
+// ─── Recent Sessions Section ──────────────────────────────────────────────────
+const MOOD_LABELS: Record<number, string> = { 1: "Low", 2: "Okay", 3: "Good", 4: "Great", 5: "Amazing" };
+function RecentSessionsSection({ sessions }: { sessions: Session[] }) {
+  const recent = sessions.slice(0, 5);
+  return (
+    <View style={sectionStyles.section}>
+      <Text style={sectionStyles.sectionTitle}>Recent Sessions</Text>
+      <View style={sectionStyles.card}>
+        {recent.length > 0 ? (
+          recent.map((s, i) => {
+            const freq = FREQUENCIES.find((f) => f.hz === s.frequencyHz);
+            const color = freq?.color ?? "#6B7A99";
+            const diff = Date.now() - new Date(s.startedAt).getTime();
+            const relTime =
+              diff < 3600000
+                ? `${Math.round(diff / 60000)}m ago`
+                : diff < 86400000
+                ? `${Math.round(diff / 3600000)}h ago`
+                : `${Math.round(diff / 86400000)}d ago`;
+            return (
+              <View
+                key={s.id}
+                style={[
+                  sectionStyles.sessionRow,
+                  i < recent.length - 1 && sectionStyles.sessionRowBorder,
+                ]}
+              >
+                <View style={[sectionStyles.sessionDot, { backgroundColor: color + "15" }]}>
+                  <Text style={[sectionStyles.sessionHz, { color }]}>{s.frequencyHz}</Text>
+                </View>
+                <View style={sectionStyles.sessionInfo}>
+                  <Text style={sectionStyles.sessionName} numberOfLines={1}>
+                    {s.frequencyName ?? `${s.frequencyHz} Hz`} — {Math.round(s.durationSeconds / 60)}min
+                  </Text>
+                  <Text style={sectionStyles.sessionTime}>{relTime}</Text>
+                </View>
+                {s.moodRating && (
+                  <View style={sectionStyles.moodBadge}>
+                    <Text style={sectionStyles.moodBadgeText}>
+                      {MOOD_LABELS[s.moodRating] ?? "Good"}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            );
+          })
+        ) : (
+          <Text style={sectionStyles.emptyText}>
+            Your session history is empty. Play a frequency to get started.
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
+// ─── Weekly Goals Section ─────────────────────────────────────────────────────
+function WeeklyGoalsSection({ totalMinutes, streak }: { totalMinutes: number; streak: number }) {
+  const goals = [
+    { label: "Total minutes", current: totalMinutes, target: 150, color: colors.teal },
+    { label: "Streak days", current: streak, target: 14, color: "#8B5CF6" },
+    { label: "Sessions this week", current: Math.min(streak, 7), target: 7, color: "#F59E0B" },
+  ];
+  return (
+    <View style={sectionStyles.section}>
+      <Text style={sectionStyles.sectionTitle}>Weekly Goals</Text>
+      <View style={sectionStyles.card}>
+        {goals.map((goal) => (
+          <View key={goal.label} style={sectionStyles.goalRow}>
+            <View style={sectionStyles.goalHeader}>
+              <Text style={sectionStyles.goalLabel}>{goal.label}</Text>
+              <Text style={[sectionStyles.goalValue, { color: goal.color }]}>
+                {goal.current} / {goal.target}
+              </Text>
+            </View>
+            <View style={sectionStyles.goalTrack}>
+              <View
+                style={[
+                  sectionStyles.goalFill,
+                  {
+                    width: `${Math.min((goal.current / goal.target) * 100, 100)}%` as any,
+                    backgroundColor: goal.color,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ─── Shared section styles ────────────────────────────────────────────────────
+const sectionStyles = StyleSheet.create({
+  section: { marginBottom: spacing[5] },
+  sectionTitle: {
+    fontSize: fontSizes.base,
+    color: colors.textSecondary,
+    fontWeight: "600",
+    paddingHorizontal: spacing[5],
+    marginBottom: spacing[3],
+  },
+  card: {
+    marginHorizontal: spacing[5],
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.bgBorder,
+    borderRadius: radii.xl,
+    padding: spacing[4],
+    ...shadows.sm,
+  },
+  emptyText: {
+    fontSize: fontSizes.xs,
+    color: colors.textDim,
+    textAlign: "center",
+    paddingVertical: spacing[3],
+  },
+  // Mood/bar chart
+  barChart: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+  },
+  barCol: { flex: 1, alignItems: "center", justifyContent: "flex-end" },
+  barValue: { fontSize: 9, fontWeight: "600", marginBottom: 2, height: 12 },
+  barTrack: {
+    width: 16,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  barFill: { width: "100%", borderRadius: 4 },
+  barLabel: { fontSize: 10, color: colors.textMuted, marginTop: spacing[1], fontWeight: "500" },
+  // Top frequencies
+  freqRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[3],
+    marginBottom: spacing[3],
+  },
+  freqDot: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  freqHz: { fontSize: 9, fontWeight: "700" },
+  freqBarWrap: { flex: 1 },
+  freqName: { fontSize: fontSizes.xs, color: colors.textSecondary, marginBottom: 4 },
+  freqTrack: {
+    height: 6,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  freqFill: { height: "100%", borderRadius: 3 },
+  freqCount: { fontSize: fontSizes.xs, fontWeight: "700", minWidth: 24, textAlign: "right" },
+  // Recent sessions
+  sessionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[3],
+    paddingVertical: spacing[2],
+  },
+  sessionRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.04)",
+  },
+  sessionDot: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  sessionHz: { fontSize: 9, fontWeight: "700" },
+  sessionInfo: { flex: 1 },
+  sessionName: { fontSize: fontSizes.xs, color: colors.textPrimary, fontWeight: "500" },
+  sessionTime: { fontSize: 10, color: colors.textDim, marginTop: 2 },
+  moodBadge: {
+    backgroundColor: "rgba(0,212,170,0.1)",
+    borderRadius: 10,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+  },
+  moodBadgeText: { fontSize: 10, color: colors.teal, fontWeight: "500" },
+  // Weekly goals
+  goalRow: { marginBottom: spacing[4] },
+  goalHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: spacing[1] },
+  goalLabel: { fontSize: fontSizes.xs, color: colors.textMuted },
+  goalValue: { fontSize: fontSizes.xs, fontWeight: "600" },
+  goalTrack: {
+    height: 8,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  goalFill: { height: "100%", borderRadius: 4 },
+});
 
 const calStyles = StyleSheet.create({
   grid: {

@@ -9,6 +9,7 @@ import {
   Sliders,
   AlarmClock,
   BarChart2,
+  BookOpen,
 } from "lucide-react-native";
 
 // Tab bar icon wrapper with active highlight
@@ -98,6 +99,17 @@ export default function TabLayout() {
       {/* Library duplicates the Player grid; keep it routable (linked from
           Home) but out of the tab bar so we stay at 7 tabs. */}
       <Tabs.Screen name="library" options={{ href: null }} />
+      <Tabs.Screen
+        name="learn"
+        options={{
+          title: "Learn",
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon focused={focused} color={color}>
+              <BookOpen size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
+            </TabIcon>
+          ),
+        }}
+      />
       <Tabs.Screen
         name="alarm"
         options={{
