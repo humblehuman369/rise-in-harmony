@@ -20,6 +20,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   extra: {
     ...config.extra,
     apiUrl: process.env.EXPO_PUBLIC_API_URL ?? "https://www.riseinharmony.com",
+    oauthPortalUrl: process.env.EXPO_PUBLIC_OAUTH_PORTAL_URL ?? "https://manus.im",
+    appId: process.env.EXPO_PUBLIC_APP_ID ?? "AtfyTVSdtA5G8ui7hAZ3a8",
     posthogKey: process.env.EXPO_PUBLIC_POSTHOG_KEY ?? "",
     posthogHost:
       process.env.EXPO_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",

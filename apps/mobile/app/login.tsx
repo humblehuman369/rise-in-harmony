@@ -16,18 +16,25 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import * as Linking from "expo-linking";
+import Constants from "expo-constants";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
 
-const API_BASE_URL = "https://www.riseinharmony.com";
-const OAUTH_PORTAL_URL = "https://manus.im";
-const APP_ID = "AtfyTVSdtA5G8ui7hAZ3a8";
+// ── Configuration ────────────────────────────────────────────────────────────
+// Sourced from app.config.ts → Constants.expoConfig.extra to stay in sync
+// with the rest of the app and avoid config drift between build profiles.
+const API_BASE_URL: string =
+  Constants.expoConfig?.extra?.apiUrl ?? "https://www.riseinharmony.com";
+const OAUTH_PORTAL_URL: string =
+  Constants.expoConfig?.extra?.oauthPortalUrl ?? "https://manus.im";
+const APP_ID: string =
+  Constants.expoConfig?.extra?.appId ?? "AtfyTVSdtA5G8ui7hAZ3a8";
 
 /**
  * Build the OAuth login URL.
  * The redirectUri points to our mobile-specific callback which returns a
  * deep link with the session token instead of setting a cookie.
  */
-function getLoginUrl(): string {
+function buildLoginUrl(): string {
   const redirectUri = `${API_BASE_URL}/api/oauth/callback-mobile`;
   const state = btoa(redirectUri);
   const url = new URL(`${OAUTH_PORTAL_URL}/app-auth`);
@@ -45,17 +52,20 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      const loginUrl = getLoginUrl();
+      const loginUrl = buildLoginUrl();
       const supported = await Linking.canOpenURL(loginUrl);
       if (supported) {
         await Linking.openURL(loginUrl);
       } else {
         Alert.alert("Error", "Cannot open the login page. Please try again.");
       }
-    } catch (error) {
-      Alert.alert("Error", "Failed to open login. Please try again.");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to open login.";
+      Alert.alert("Error", `${message} Please try again.`);
     } finally {
-      // Reset loading after a short delay — the browser will open
+      // Reset loading after a short delay — the browser will open and the app
+      // goes to background. When the user returns, loading should be cleared.
       setTimeout(() => setLoading(false), 2000);
     }
   };

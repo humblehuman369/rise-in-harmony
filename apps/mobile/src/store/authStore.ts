@@ -26,8 +26,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: true,
   isAuthenticated: false,
 
-  setUser: (user) =>
-    set({ user, isAuthenticated: user !== null }),
+  setUser: (user) => set({ user, isAuthenticated: user !== null }),
 
   setTokens: async (access, refresh) => {
     await SecureStore.setItemAsync(TOKEN_KEY, access);
@@ -38,7 +37,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   clearTokens: async () => {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     await SecureStore.deleteItemAsync(REFRESH_KEY);
-    set({ accessToken: null });
+    set({ accessToken: null, user: null, isAuthenticated: false });
   },
 
   restoreSession: async () => {
@@ -57,12 +56,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ user: res.data, isAuthenticated: true });
       } else {
         // Token is invalid/expired and could not be refreshed — clear it.
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
-        await SecureStore.deleteItemAsync(REFRESH_KEY);
-        set({ user: null, accessToken: null, isAuthenticated: false });
+        await get().clearTokens();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[AuthStore] Failed to restore session:", error);
+      // Leave current state intact on network errors — avoids logging out
+      // users who are temporarily offline.
     } finally {
       set({ isLoading: false });
     }
@@ -70,6 +69,5 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     await get().clearTokens();
-    set({ user: null, isAuthenticated: false, accessToken: null });
   },
 }));

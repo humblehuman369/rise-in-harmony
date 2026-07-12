@@ -237,26 +237,26 @@ export function createVoice(options: VoiceOptions): SynthVoice {
       envelope.gain.linearRampToValueAtTime(0, end);
       const stopAt = end + 0.05;
       oscillators.forEach((o) => {
-        try {
-          o.stop(stopAt);
-        } catch {}
+        try { o.stop(stopAt); } catch { /* already stopped */ }
       });
       extraSources.forEach((s) => {
-        try {
-          s.stop(stopAt);
-        } catch {}
+        try { s.stop(stopAt); } catch { /* already stopped */ }
       });
       // Disconnect the entire voice subgraph from the AudioContext destination
       // after the fade-out completes. Without this, stopped oscillator nodes
       // remain connected and accumulate in the native audio graph, eventually
-      // exhausting the rendering budget and causing silence (bug: audio stops
-      // after navigating to paywall multiple times).
-      const disconnectDelay = Math.ceil((stopAt - now + 0.1) * 1000);
+      // exhausting the rendering budget and causing silence.
+      // See: https://developer.mozilla.org/en-US/docs/Web/API/AudioNode/disconnect
+      const disconnectDelayMs = Math.ceil((stopAt - now + 0.1) * 1000);
       setTimeout(() => {
-        try {
-          envelope.disconnect();
-        } catch {}
-      }, disconnectDelay);
+        try { envelope.disconnect(); } catch { /* already disconnected */ }
+        oscillators.forEach((o) => {
+          try { o.disconnect(); } catch { /* no-op */ }
+        });
+        extraSources.forEach((s) => {
+          try { s.disconnect(); } catch { /* no-op */ }
+        });
+      }, disconnectDelayMs);
     },
   };
 }

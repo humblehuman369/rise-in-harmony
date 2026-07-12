@@ -98,7 +98,7 @@ export default function PaywallScreen() {
     if (!isLoading && isPremium) {
       router.back();
     }
-  }, [isPremium, isLoading]);
+  }, [isPremium, isLoading, router]);
 
   // While RevenueCat is resolving entitlements, show nothing (prevents flash)
   if (isLoading) {

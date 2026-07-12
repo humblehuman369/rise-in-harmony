@@ -37,6 +37,14 @@ function configureRevenueCat(userId?: string) {
   isConfigured = true;
 }
 
+/** Centralized premium entitlement check — avoids drift between purchase/restore/load paths. */
+function hasPremiumEntitlement(info: CustomerInfo): boolean {
+  return (
+    info.entitlements.active["premium"] !== undefined ||
+    info.entitlements.active["lifetime"] !== undefined
+  );
+}
+
 interface PurchasesState {
   customerInfo: CustomerInfo | null;
   packages: PurchasesPackage[];
@@ -64,11 +72,13 @@ export function usePurchases() {
   const loadCustomerInfo = useCallback(async () => {
     try {
       const info = await Purchases.getCustomerInfo();
-      const isPremium =
-        info.entitlements.active["premium"] !== undefined ||
-        info.entitlements.active["lifetime"] !== undefined;
-      setState((prev) => ({ ...prev, customerInfo: info, isPremium }));
-    } catch (err) {
+      setState((prev) => ({
+        ...prev,
+        customerInfo: info,
+        isPremium: hasPremiumEntitlement(info),
+      }));
+    } catch (err: unknown) {
+      console.warn("[Purchases] Failed to load customer info:", err);
       setState((prev) => ({
         ...prev,
         error: "Failed to load subscription status",
@@ -93,8 +103,7 @@ export function usePurchases() {
       try {
         setState((prev) => ({ ...prev, isLoading: true, error: null }));
         const { customerInfo } = await Purchases.purchasePackage(pkg);
-        const isPremium =
-          customerInfo.entitlements.active["premium"] !== undefined;
+        const isPremium = hasPremiumEntitlement(customerInfo);
 
         trackSubscriptionStarted({
           product_id: pkg.product.identifier,
@@ -127,9 +136,7 @@ export function usePurchases() {
     try {
       setState((prev) => ({ ...prev, isLoading: true }));
       const info = await Purchases.restorePurchases();
-      const isPremium =
-        info.entitlements.active["premium"] !== undefined ||
-        info.entitlements.active["lifetime"] !== undefined;
+      const isPremium = hasPremiumEntitlement(info);
       setState((prev) => ({
         ...prev,
         customerInfo: info,
@@ -137,7 +144,8 @@ export function usePurchases() {
         isLoading: false,
       }));
       return { success: true, isPremium };
-    } catch {
+    } catch (err: unknown) {
+      console.warn("[Purchases] Restore failed:", err);
       setState((prev) => ({ ...prev, isLoading: false }));
       return { success: false, isPremium: false };
     }

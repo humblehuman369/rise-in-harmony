@@ -55,6 +55,20 @@ async function refreshAccessToken(): Promise<string | null> {
   return null;
 }
 
+/**
+ * Safely parse a fetch Response as JSON. Returns a typed error response
+ * if the body is empty or not valid JSON (e.g., HTML error pages).
+ */
+async function safeJson<T>(res: globalThis.Response): Promise<ApiResponse<T>> {
+  try {
+    const text = await res.text();
+    if (!text) return { success: false, error: "Empty response" };
+    return JSON.parse(text) as ApiResponse<T>;
+  } catch {
+    return { success: false, error: `Unexpected response (HTTP ${res.status})` };
+  }
+}
+
 export async function apiRequest<T>(
   path: string,
   options: RequestInit = {}
@@ -82,14 +96,12 @@ export async function apiRequest<T>(
           ...(options.headers ?? {}),
         },
       });
-      const retryData = await retryRes.json();
-      return retryData as ApiResponse<T>;
+      return safeJson<T>(retryRes);
     }
     return { success: false, error: "Unauthorized", code: "UNAUTHORIZED" };
   }
 
-  const data = await res.json();
-  return data as ApiResponse<T>;
+  return safeJson<T>(res);
 }
 
 export const api = {

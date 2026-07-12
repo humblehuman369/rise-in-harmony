@@ -97,7 +97,7 @@ export function useSoundStudio() {
       try {
         freqOscRef.current.stop(0);
         freqOscRef.current.disconnect();
-      } catch {}
+      } catch { /* oscillator already stopped or disconnected */ }
       freqOscRef.current = null;
     }
   }, []);
