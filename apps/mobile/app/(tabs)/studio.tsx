@@ -46,7 +46,12 @@ import { useAuthStore } from "@/store/authStore";
 import { trackSessionStarted, trackSessionEnded } from "@/hooks/useAnalytics";
 import BreathingGuide from "@/components/BreathingGuide";
 import SessionJournal from "@/components/SessionJournal";
+import AudioVisualizer from "@/components/AudioVisualizer";
+import VolumeSlider from "@/components/VolumeSlider";
+import { Dimensions } from "react-native";
 import { soundsApi, type ServerSound } from "@/lib/api";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -696,21 +701,22 @@ export default function StudioScreen() {
           )}
         </View>
 
-        {/* Volume */}
-        <View style={styles.volumeRow}>
-          <Text style={styles.volIcon}>🔈</Text>
-          <Slider
-            style={styles.slider}
-            minimumValue={0}
-            maximumValue={1}
-            value={precision.volume}
-            onValueChange={precision.setVolume}
-            minimumTrackTintColor={colors.teal}
-            maximumTrackTintColor="rgba(255,255,255,0.1)"
-            thumbTintColor={colors.teal}
-          />
-          <Text style={styles.volIcon}>🔊</Text>
-        </View>
+        {/* Real-time Audio Visualizer */}
+        <AudioVisualizer
+          isPlaying={precision.isPlaying}
+          width={SCREEN_WIDTH - spacing[4] * 2 - spacing[6]}
+          height={100}
+          color={colors.teal}
+        />
+
+        {/* Volume Control */}
+        <VolumeSlider
+          value={precision.volume}
+          onValueChange={precision.setVolume}
+          color={colors.teal}
+          label="Tone Volume"
+          showLevel
+        />
         <Text style={styles.outputLabel}>
           ♪ Playing via {outputLabel(audioOutput.kind, audioOutput.name ?? undefined)}
         </Text>

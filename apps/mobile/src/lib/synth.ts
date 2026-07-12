@@ -7,8 +7,9 @@
  *     via hard-panned stereo oscillators (requires headphones)
  *   - Isochronic pulses: amplitude-gated tone (square LFO on a gate gain)
  *
- * All voices share one AudioContext and end in their own envelope GainNode,
- * so multiple voices can run concurrently (e.g. chakra crossfades).
+ * All voices share one AudioContext and route through a shared master output
+ * node (masterGain → analyser → destination) for global volume control and
+ * real-time audio analysis.
  */
 import {
   AudioContext,
@@ -17,6 +18,7 @@ import {
   type GainNode,
   type OscillatorNode,
   type ConstantSourceNode,
+  type AnalyserNode,
 } from "react-native-audio-api";
 import {
   clampHz,
@@ -27,7 +29,10 @@ import {
   type Waveform,
 } from "./synthMath";
 
+// ─── Shared Audio Graph ───────────────────────────────────────────────────────
 let sharedCtx: AudioContext | null = null;
+let sharedAnalyser: AnalyserNode | null = null;
+let sharedMasterGain: GainNode | null = null;
 
 function getContext(): AudioContext {
   if (!sharedCtx || sharedCtx.state === "closed") {
@@ -42,12 +47,76 @@ function getContext(): AudioContext {
     });
     AudioManager.setAudioSessionActivity(true).catch(() => {});
     sharedCtx = new AudioContext();
+    // Reset shared nodes so they get recreated
+    sharedAnalyser = null;
+    sharedMasterGain = null;
   }
   if (sharedCtx.state === "suspended") {
     sharedCtx.resume().catch(() => {});
   }
   return sharedCtx;
 }
+
+/**
+ * Returns the shared master output node. All voices connect their envelope
+ * to this node instead of ctx.destination directly. The signal chain is:
+ *   voice envelope → masterGain → analyser → ctx.destination
+ *
+ * This enables:
+ *   1. Global volume control via masterGain
+ *   2. Real-time audio analysis via the AnalyserNode
+ */
+function getMasterOutput(ctx: AudioContext): GainNode {
+  if (!sharedMasterGain) {
+    sharedMasterGain = ctx.createGain();
+    sharedMasterGain.gain.value = 1.0;
+
+    sharedAnalyser = ctx.createAnalyser();
+    sharedAnalyser.fftSize = 256; // 128 frequency bins — good for mobile perf
+    sharedAnalyser.smoothingTimeConstant = 0.7;
+
+    sharedMasterGain.connect(sharedAnalyser);
+    sharedAnalyser.connect(ctx.destination);
+  }
+  return sharedMasterGain;
+}
+
+/**
+ * Get the shared AnalyserNode for real-time visualization.
+ * Returns null if no audio context has been initialized yet.
+ */
+export function getAnalyserNode(): AnalyserNode | null {
+  return sharedAnalyser;
+}
+
+/**
+ * Get the shared master gain node for global volume control.
+ * Returns null if no audio context has been initialized yet.
+ */
+export function getMasterGainNode(): GainNode | null {
+  return sharedMasterGain;
+}
+
+/**
+ * Set the global master volume (0–1). Affects all voices simultaneously.
+ */
+export function setMasterVolume(volume: number, rampSec = 0.05): void {
+  if (!sharedMasterGain || !sharedCtx) return;
+  const clamped = Math.max(0, Math.min(1, volume));
+  sharedMasterGain.gain.linearRampToValueAtTime(
+    clamped,
+    sharedCtx.currentTime + rampSec
+  );
+}
+
+/**
+ * Get the current master volume level (0–1).
+ */
+export function getMasterVolume(): number {
+  return sharedMasterGain?.gain.value ?? 1.0;
+}
+
+// ─── Voice Types ──────────────────────────────────────────────────────────────
 
 export interface VoiceOptions {
   hz: number;
@@ -73,6 +142,8 @@ interface ToneStack {
   oscillators: OscillatorNode[];
   retune(hz: number): void;
 }
+
+// ─── Tone Stack Builder ───────────────────────────────────────────────────────
 
 /**
  * Build the sound source for one channel. Standard waveforms are a single
@@ -132,15 +203,18 @@ function buildToneStack(
   };
 }
 
+// ─── Voice Factory ────────────────────────────────────────────────────────────
+
 export function createVoice(options: VoiceOptions): SynthVoice {
   const ctx = getContext();
+  const masterOutput = getMasterOutput(ctx);
   const waveform = options.waveform ?? "sine";
   const beatHz = options.binauralBeatHz;
   let volume = Math.max(0, Math.min(1, options.volume ?? 0.8));
 
   const envelope: GainNode = ctx.createGain();
   envelope.gain.value = 0;
-  envelope.connect(ctx.destination);
+  envelope.connect(masterOutput); // Route through master → analyser → destination
 
   const oscillators: OscillatorNode[] = [];
   const extraSources: (OscillatorNode | ConstantSourceNode)[] = [];
@@ -242,11 +316,10 @@ export function createVoice(options: VoiceOptions): SynthVoice {
       extraSources.forEach((s) => {
         try { s.stop(stopAt); } catch { /* already stopped */ }
       });
-      // Disconnect the entire voice subgraph from the AudioContext destination
+      // Disconnect the entire voice subgraph from the master output
       // after the fade-out completes. Without this, stopped oscillator nodes
       // remain connected and accumulate in the native audio graph, eventually
       // exhausting the rendering budget and causing silence.
-      // See: https://developer.mozilla.org/en-US/docs/Web/API/AudioNode/disconnect
       const disconnectDelayMs = Math.ceil((stopAt - now + 0.1) * 1000);
       setTimeout(() => {
         try { envelope.disconnect(); } catch { /* already disconnected */ }
@@ -260,6 +333,8 @@ export function createVoice(options: VoiceOptions): SynthVoice {
     },
   };
 }
+
+// ─── Catalog Voice Factory ────────────────────────────────────────────────────
 
 /**
  * Build a voice for an entry from the shared FREQUENCIES catalog.

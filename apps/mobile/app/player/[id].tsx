@@ -17,6 +17,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import Slider from "@react-native-community/slider";
 import { colors, fontSizes, spacing, radii } from "@rih/ui-tokens";
+import AudioVisualizer from "@/components/AudioVisualizer";
+import VolumeSlider from "@/components/VolumeSlider";
 import { FREQUENCIES } from "@rih/shared-utils";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useAudioOutput } from "@/hooks/useAudioOutput";
@@ -364,21 +366,22 @@ export default function PlayerDetailScreen() {
           ))}
         </View>
 
-        {/* Volume slider */}
-        <View style={styles.sliderRow}>
-          <Text style={styles.sliderIcon}>🔈</Text>
-          <Slider
-            style={styles.slider}
-            minimumValue={0}
-            maximumValue={1}
-            value={volume}
-            onValueChange={setVolume}
-            minimumTrackTintColor={frequency.color}
-            maximumTrackTintColor="rgba(255,255,255,0.1)"
-            thumbTintColor={frequency.color}
-          />
-          <Text style={styles.sliderIcon}>🔊</Text>
-        </View>
+        {/* Real-time Audio Visualizer */}
+        <AudioVisualizer
+          isPlaying={isPlaying}
+          width={width - spacing[4] * 2}
+          height={80}
+          color={frequency.color}
+        />
+
+        {/* Volume Control */}
+        <VolumeSlider
+          value={volume}
+          onValueChange={setVolume}
+          color={frequency.color}
+          label="Volume"
+          showLevel
+        />
 
         {/* Sleep timer */}
         <View style={styles.sleepSection}>

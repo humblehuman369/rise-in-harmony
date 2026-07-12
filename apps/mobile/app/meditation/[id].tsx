@@ -10,18 +10,23 @@ import {
   StyleSheet,
   ScrollView,
   Animated,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import Slider from "@react-native-community/slider";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
+import AudioVisualizer from "@/components/AudioVisualizer";
 import { MEDITATIONS, FREQUENCIES, isPremiumUser } from "@rih/shared-utils";
 import { useMeditationPlayer, type MeditationMode } from "@/hooks/useMeditationPlayer";
 import { useAuthStore } from "@/store/authStore";
 import { trackSessionStarted, trackSessionEnded } from "@/hooks/useAnalytics";
+
 import SessionJournal from "@/components/SessionJournal";
 import { MEDITATION_EMOJI } from "../(tabs)/meditation";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
 
 function formatTime(sec: number) {
   const m = Math.floor(sec / 60).toString();
@@ -283,6 +288,14 @@ export default function MeditationSessionScreen() {
             {meditation.guidance[stepIndex]}
           </Text>
         </View>
+
+        {/* Real-time Audio Visualizer */}
+        <AudioVisualizer
+          isPlaying={isPlaying}
+          width={SCREEN_WIDTH - spacing[4] * 2}
+          height={80}
+          color={meditation.color}
+        />
 
         {/* Volume mixing */}
         <View style={styles.mixCard}>

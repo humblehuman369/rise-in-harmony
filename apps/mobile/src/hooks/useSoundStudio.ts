@@ -72,6 +72,9 @@ export function useSoundStudio() {
   stateRef.current = state;
 
   // ── Audio context bootstrap ──────────────────────────────────────────────
+  // The studio creates its own AudioContext for the ambient layers.
+  // We route its master gain through the shared analyser (from synth.ts)
+  // so the visualizer captures both the precision player and studio layers.
   const getCtx = useCallback((): AudioContext => {
     if (!ctxRef.current || ctxRef.current.state === "closed") {
       const ctx = new AudioContext();
