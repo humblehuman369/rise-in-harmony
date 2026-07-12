@@ -173,3 +173,13 @@
 
 - [x] Rename "Browse 100+" button to "More Frequencies"
 - [x] Add quick-select frequency chips (174, 285, 396, 417, 432, 528, 639, 741, 852, 963 Hz) above the frequency input
+
+## In Progress — Mobile Audio Visualizer & Volume Control Enhancement
+
+- [x] Create AudioVisualizer component using AnalyserNode (react-native-audio-api) + react-native-svg
+- [x] Expose AnalyserNode from the shared AudioContext in synth.ts
+- [x] Implement real-time waveform (time-domain) visualizer with smooth animation
+- [x] Implement frequency spectrum (FFT) visualizer mode toggle
+- [x] Add enhanced volume control slider with visual feedback and haptics
+- [x] Integrate visualizer and volume slider into studio and player screens
+- [x] Integrate visualizer into meditation screen (meditation uses multi-layer mixing sliders, not single volume)
