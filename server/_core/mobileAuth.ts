@@ -10,6 +10,17 @@ import type { Express, Request, Response } from "express";
 import { sdk } from "./sdk";
 import * as db from "../db";
 
+/**
+ * Constructs a minimal request-like object carrying only the Authorization
+ * header. Used to validate a standalone token without a full Express request.
+ *
+ * The cast is intentional: `sdk.authenticateRequest` only reads `req.headers`
+ * and `req.cookies`, so a partial object is safe here.
+ */
+function bearerRequestFrom(token: string): Request {
+  return { headers: { authorization: `Bearer ${token}` } } as unknown as Request;
+}
+
 export function registerMobileAuthRoutes(app: Express) {
   /**
    * GET /api/auth/me
@@ -43,7 +54,8 @@ export function registerMobileAuthRoutes(app: Express) {
           createdAt: dbUser.createdAt,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error("[MobileAuth] /api/auth/me error:", error);
       res.status(401).json({ success: false, error: "Unauthorized" });
     }
   });
@@ -54,8 +66,6 @@ export function registerMobileAuthRoutes(app: Express) {
    * This endpoint exists so the mobile client's refresh logic doesn't 404.
    */
   app.post("/api/auth/refresh", async (req: Request, res: Response) => {
-    // The mobile app stores the same session JWT as both access and refresh.
-    // Since our JWTs are already long-lived, just validate the token.
     try {
       const body = req.body as { refreshToken?: string };
       if (!body.refreshToken) {
@@ -64,9 +74,9 @@ export function registerMobileAuthRoutes(app: Express) {
       }
 
       // Verify the token is still valid by checking it as a session
-      const user = await sdk.authenticateRequest({
-        headers: { authorization: `Bearer ${body.refreshToken}` },
-      } as any);
+      const user = await sdk.authenticateRequest(
+        bearerRequestFrom(body.refreshToken)
+      );
 
       if (!user) {
         res.status(401).json({ success: false, error: "Invalid token" });
@@ -75,7 +85,8 @@ export function registerMobileAuthRoutes(app: Express) {
 
       // Re-issue the same token (it's already long-lived)
       res.json({ accessToken: body.refreshToken });
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error("[MobileAuth] /api/auth/refresh error:", error);
       res.status(401).json({ success: false, error: "Invalid token" });
     }
   });
