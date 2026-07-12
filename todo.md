@@ -188,6 +188,12 @@
 
 - [x] Investigate and fix: paid premium subscription user unable to access Pro features
 
+## In Progress — Full Body Scan & Release Meditation Track Overhaul
+
+- [ ] Update Full Body Scan & Release: duration 15→60 min, expand guidance to 30 steps
+- [ ] Update web client meditations.ts (client/src/data/meditations.ts) to match
+- [ ] Commit, push to GitHub, save checkpoint
+
 ## Completed — Sleep Preparation Meditation Track Overhaul
 
 - [x] Create meditationSynth.ts — procedural nature synths (night/forest/ocean/rain/river/cave) and music synths (drone/ambient/crystal)
