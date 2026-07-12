@@ -34,7 +34,7 @@ let sharedCtx: AudioContext | null = null;
 let sharedAnalyser: AnalyserNode | null = null;
 let sharedMasterGain: GainNode | null = null;
 
-function getContext(): AudioContext {
+export function getContext(): AudioContext {
   if (!sharedCtx || sharedCtx.state === "closed") {
     // NOTE: do NOT pass iosOptions here. "allowAirPlay"/"allowBluetoothA2DP"
     // may only be set explicitly with the playAndRecord category — combining
@@ -66,7 +66,7 @@ function getContext(): AudioContext {
  *   1. Global volume control via masterGain
  *   2. Real-time audio analysis via the AnalyserNode
  */
-function getMasterOutput(ctx: AudioContext): GainNode {
+export function getMasterOutput(ctx: AudioContext): GainNode {
   if (!sharedMasterGain) {
     sharedMasterGain = ctx.createGain();
     sharedMasterGain.gain.value = 1.0;
