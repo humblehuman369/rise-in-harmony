@@ -63,4 +63,50 @@ export function registerOAuthRoutes(app: Express) {
       res.status(500).json({ error: "OAuth callback failed" });
     }
   });
+
+  /**
+   * Mobile OAuth callback — same flow as web but redirects to the app via
+   * deep link (riseharmony://auth?token=<jwt>) instead of setting a cookie.
+   * The mobile app opens the OAuth portal with redirectUri pointing here.
+   */
+  app.get("/api/oauth/callback-mobile", async (req: Request, res: Response) => {
+    const code = getQueryParam(req, "code");
+    const state = getQueryParam(req, "state");
+
+    if (!code || !state) {
+      res.status(400).json({ error: "code and state are required" });
+      return;
+    }
+
+    try {
+      const tokenResponse = await sdk.exchangeCodeForToken(code, state);
+      const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
+
+      if (!userInfo.openId) {
+        res.status(400).json({ error: "openId missing from user info" });
+        return;
+      }
+
+      await db.upsertUser({
+        openId: userInfo.openId,
+        name: userInfo.name || null,
+        email: userInfo.email ?? null,
+        loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+        lastSignedIn: new Date(),
+      });
+
+      const sessionToken = await sdk.createSessionToken(userInfo.openId, {
+        name: userInfo.name || "",
+        expiresInMs: ONE_YEAR_MS,
+      });
+
+      // Redirect to the mobile app via deep link with the token
+      const deepLink = `riseharmony://auth?token=${encodeURIComponent(sessionToken)}`;
+      res.redirect(302, deepLink);
+    } catch (error) {
+      console.error("[OAuth] Mobile callback failed", error);
+      // Redirect to app with error so it can show a message
+      res.redirect(302, "riseharmony://auth?error=login_failed");
+    }
+  });
 }
