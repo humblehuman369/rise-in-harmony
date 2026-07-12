@@ -7,8 +7,10 @@ const monorepoRoot = path.resolve(projectRoot, "../..");
 
 const config = getDefaultConfig(projectRoot);
 
-// Watch all files in the monorepo (so changes to packages/* hot-reload)
-config.watchFolders = [monorepoRoot];
+// Watch all files in the monorepo (so changes to packages/* hot-reload).
+// Keep Expo's default watchFolders and append, rather than replacing them
+// (expo-doctor flags a replaced list as a misconfiguration).
+config.watchFolders = [...(config.watchFolders ?? []), monorepoRoot];
 
 // Resolve modules from the app first, then the monorepo root
 config.resolver.nodeModulesPaths = [
