@@ -119,3 +119,9 @@ client/public/__manus__/version.json
 # Mobile bundled audio MUST stay in git — Metro require()s it and EAS builds from GitHub.
 client/public/sounds/
 references/audio/processed/
+
+# Mobile sound assets — too large for Manus webdev checkpoint system.
+# These files are already committed to GitHub and will be available for EAS builds
+# via git clone. They are excluded here only to unblock checkpoint saves.
+apps/mobile/assets/sounds/*.wav
+apps/mobile/assets/sounds/*.mp3
