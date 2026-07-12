@@ -20,12 +20,11 @@ import { colors, fontSizes, spacing, radii } from "@rih/ui-tokens";
 import AudioVisualizer from "@/components/AudioVisualizer";
 import VolumeSlider from "@/components/VolumeSlider";
 import { FREQUENCIES } from "@rih/shared-utils";
+import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useAudioOutput } from "@/hooks/useAudioOutput";
 import { useRecordedDownload } from "@/hooks/useRecordedDownload";
 import { binauralRouteHint } from "@/lib/audioRoute";
-import { useAuthStore } from "@/store/authStore";
-import { isPremiumUser } from "@rih/shared-utils";
 
 const { width } = Dimensions.get("window");
 const RING_BASE = width * 0.38;
@@ -40,8 +39,7 @@ const SLEEP_OPTIONS = [
 export default function PlayerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { user } = useAuthStore();
-  const isPremium = isPremiumUser(user?.subscriptionTier ?? "free");
+  const { isPremium } = usePremiumStatus();
 
   const frequency = FREQUENCIES.find((f) => f.id === id);
 

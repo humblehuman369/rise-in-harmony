@@ -64,9 +64,31 @@ export function usePurchases() {
   });
 
   useEffect(() => {
-    configureRevenueCat(user ? String(user.id) : undefined);
-    loadCustomerInfo();
-    loadOfferings();
+    async function initRC() {
+      configureRevenueCat(user ? String(user.id) : undefined);
+      // If RevenueCat was already configured and user just logged in,
+      // call logIn() to link the anonymous ID to the authenticated user.
+      // This ensures entitlements purchased on other devices or via web
+      // are correctly associated with this user.
+      if (isConfigured && user?.id) {
+        try {
+          const { customerInfo } = await Purchases.logIn(String(user.id));
+          setState((prev) => ({
+            ...prev,
+            customerInfo,
+            isPremium: hasPremiumEntitlement(customerInfo),
+            isLoading: false,
+          }));
+          loadOfferings();
+          return; // Already loaded customer info via logIn
+        } catch {
+          // logIn may fail if already logged in with same ID — fall through
+        }
+      }
+      loadCustomerInfo();
+      loadOfferings();
+    }
+    initRC();
   }, [user?.id]);
 
   const loadCustomerInfo = useCallback(async () => {

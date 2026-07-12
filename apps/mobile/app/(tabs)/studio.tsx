@@ -22,7 +22,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Slider from "@react-native-community/slider";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
-import { isPremiumUser } from "@rih/shared-utils";
+import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import {
   STUDIO_FREQUENCIES,
   STUDIO_MUSIC_MODES,
@@ -153,7 +153,7 @@ function formatTime(sec: number) {
 export default function StudioScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const isPremium = isPremiumUser(user?.subscriptionTier ?? "free");
+  const { isPremium } = usePremiumStatus();
 
   // Precision DDS engine (tone layer)
   const precision = usePrecisionPlayer();

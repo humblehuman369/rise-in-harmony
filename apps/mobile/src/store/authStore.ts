@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import * as SecureStore from "expo-secure-store";
-import type { User } from "@rih/shared-types";
+import type { User, SubscriptionTier } from "@rih/shared-types";
 import { getCurrentUser } from "@/lib/api";
 
 const TOKEN_KEY = "rih_jwt_token";
@@ -14,6 +14,7 @@ interface AuthState {
 
   // Actions
   setUser: (user: User | null) => void;
+  setSubscriptionTier: (tier: SubscriptionTier) => void;
   setTokens: (access: string, refresh: string) => Promise<void>;
   clearTokens: () => Promise<void>;
   restoreSession: () => Promise<void>;
@@ -27,6 +28,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
 
   setUser: (user) => set({ user, isAuthenticated: user !== null }),
+
+  /**
+   * Optimistically update the local user's subscription tier without a server
+   * round-trip. Used after a successful RevenueCat purchase so feature gates
+   * unlock immediately — the webhook will eventually sync the DB.
+   */
+  setSubscriptionTier: (tier) => {
+    const current = get().user;
+    if (!current) return;
+    set({ user: { ...current, subscriptionTier: tier } });
+  },
 
   setTokens: async (access, refresh) => {
     await SecureStore.setItemAsync(TOKEN_KEY, access);

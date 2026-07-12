@@ -3,13 +3,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { colors, fontSizes, spacing } from "@rih/ui-tokens";
 import { FREQUENCIES } from "@rih/shared-utils";
-import { useAuthStore } from "@/store/authStore";
-import { isPremiumUser } from "@rih/shared-utils";
+import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 
 export default function LibraryScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const isPremium = isPremiumUser(user?.subscriptionTier ?? "free");
+  
+  const { isPremium } = usePremiumStatus();
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>

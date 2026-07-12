@@ -17,6 +17,7 @@ import {
   DMSans_500Medium,
   DMSans_700Bold,
 } from "@expo-google-fonts/dm-sans";
+import Purchases from "react-native-purchases";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuthStore } from "@/store/authStore";
 import { ONBOARDING_COMPLETED_KEY } from "./onboarding";
@@ -59,6 +60,24 @@ function RootLayoutNav() {
   useEffect(() => {
     async function init() {
       await restoreSession();
+      // Sync RevenueCat entitlements with local user state on launch.
+      // This ensures that if the webhook was delayed or the user purchased
+      // on another device, the local tier is updated immediately.
+      try {
+        const info = await Purchases.getCustomerInfo();
+        const rcPremium =
+          info.entitlements.active["premium"] !== undefined ||
+          info.entitlements.active["lifetime"] !== undefined;
+        if (rcPremium) {
+          const { user, setSubscriptionTier } = useAuthStore.getState();
+          if (user && user.subscriptionTier === "free") {
+            const hasLifetime = info.entitlements.active["lifetime"] !== undefined;
+            setSubscriptionTier(hasLifetime ? "lifetime" : "premium");
+          }
+        }
+      } catch {
+        // RevenueCat may not be configured yet (no API key) — silently ignore
+      }
       const done = await AsyncStorage.getItem(ONBOARDING_COMPLETED_KEY);
       if (!done) {
         router.replace("/onboarding");

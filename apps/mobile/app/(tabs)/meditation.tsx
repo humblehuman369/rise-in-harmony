@@ -15,9 +15,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
-import { MEDITATIONS, MEDITATION_CATEGORIES, isPremiumUser } from "@rih/shared-utils";
+import { MEDITATIONS, MEDITATION_CATEGORIES } from "@rih/shared-utils";
+import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import type { Meditation, MeditationCategory } from "@rih/shared-types";
-import { useAuthStore } from "@/store/authStore";
 
 // Map lucide icon names (from the shared catalog) to emoji for mobile
 export const MEDITATION_EMOJI: Record<string, string> = {
@@ -40,8 +40,7 @@ type CategoryFilter = MeditationCategory | "all";
 
 export default function MeditationScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const isPremium = isPremiumUser(user?.subscriptionTier ?? "free");
+  const { isPremium } = usePremiumStatus();
   const [category, setCategory] = useState<CategoryFilter>("all");
 
   const filtered = useMemo(

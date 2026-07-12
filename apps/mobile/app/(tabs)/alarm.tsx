@@ -22,8 +22,8 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
-import { FREQUENCIES, isPremiumUser } from "@rih/shared-utils";
-import { useAuthStore } from "@/store/authStore";
+import { FREQUENCIES } from "@rih/shared-utils";
+import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import {
   useAlarmNotifications,
   scheduleAlarm,
@@ -142,8 +142,7 @@ function formatTime(hour: number, minute: number) {
 
 export default function AlarmScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const userIsPremium = isPremiumUser(user?.subscriptionTier ?? "free");
+  const { isPremium: userIsPremium } = usePremiumStatus();
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [creating, setCreating] = useState(false);
 

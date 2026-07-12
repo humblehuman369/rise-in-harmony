@@ -18,9 +18,9 @@ import { useEffect, useRef, useState } from "react";
 import Slider from "@react-native-community/slider";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
 import AudioVisualizer from "@/components/AudioVisualizer";
-import { MEDITATIONS, FREQUENCIES, isPremiumUser } from "@rih/shared-utils";
+import { MEDITATIONS, FREQUENCIES } from "@rih/shared-utils";
+import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { useMeditationPlayer, type MeditationMode } from "@/hooks/useMeditationPlayer";
-import { useAuthStore } from "@/store/authStore";
 import { trackSessionStarted, trackSessionEnded } from "@/hooks/useAnalytics";
 
 import SessionJournal from "@/components/SessionJournal";
@@ -50,8 +50,7 @@ const SOUNDSCAPE_LABEL: Record<string, string> = {
 export default function MeditationSessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { user } = useAuthStore();
-  const isPremium = isPremiumUser(user?.subscriptionTier ?? "free");
+  const { isPremium } = usePremiumStatus();
 
   const meditation = MEDITATIONS.find((m) => m.id === id) ?? null;
   const [mode, setMode] = useState<MeditationMode>("frequency");

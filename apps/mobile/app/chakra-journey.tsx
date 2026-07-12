@@ -14,9 +14,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
-import { CHAKRA_FREQUENCIES, isPremiumUser } from "@rih/shared-utils";
+import { CHAKRA_FREQUENCIES } from "@rih/shared-utils";
+import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { useChakraJourney } from "@/hooks/useChakraJourney";
-import { useAuthStore } from "@/store/authStore";
 import {
   trackSessionStarted,
   trackChakraSequenceCompleted,
@@ -38,8 +38,7 @@ function formatTime(sec: number) {
 
 export default function ChakraJourneyScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const isPremium = isPremiumUser(user?.subscriptionTier ?? "free");
+  const { isPremium } = usePremiumStatus();
 
   const [perChakraSec, setPerChakraSec] = useState(180);
   const [started, setStarted] = useState(false);

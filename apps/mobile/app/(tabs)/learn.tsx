@@ -17,8 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ChevronLeft, Lock, Sparkles, Brain, Activity, Compass } from "lucide-react-native";
 import { colors, spacing, radii, fontSizes, shadows } from "@rih/ui-tokens";
-import { isPremiumUser } from "@rih/shared-utils";
-import { useAuthStore } from "@/store/authStore";
+import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { JOURNEYS, type Journey, type JourneyEntry } from "@/lib/learningContent";
 
 const { width } = Dimensions.get("window");
@@ -132,8 +131,7 @@ function EntryRow({
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function LearnScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const isPremium = isPremiumUser(user?.subscriptionTier ?? "free");
+  const { isPremium } = usePremiumStatus();
   const [activeJourney, setActiveJourney] = useState<Journey | null>(null);
 
   return (

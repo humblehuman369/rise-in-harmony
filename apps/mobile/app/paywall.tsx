@@ -53,7 +53,7 @@ export default function PaywallScreen() {
   const router = useRouter();
   const { packages, isPremium, isLoading, error, purchasePackage, restorePurchases } =
     usePurchases();
-  const { restoreSession } = useAuthStore();
+  const { restoreSession, setSubscriptionTier } = useAuthStore();
 
   const [selectedPkg, setSelectedPkg] = useState<PurchasesPackage | null>(
     packages[0] ?? null
@@ -74,8 +74,12 @@ export default function PaywallScreen() {
     if (!selectedPkg) return;
     const result = await purchasePackage(selectedPkg);
     if (result.success) {
-      // Refresh the server-side profile so subscriptionTier-based gating updates.
-      await restoreSession();
+      // Optimistically unlock Pro features immediately — the RevenueCat webhook
+      // will eventually sync the DB, but we don't wait for the round-trip.
+      const isLifetime = selectedPkg.product.identifier.toLowerCase().includes("lifetime");
+      setSubscriptionTier(isLifetime ? "lifetime" : "premium");
+      // Also attempt a server refresh in the background (non-blocking)
+      restoreSession().catch(() => {});
       router.back();
     } else if (result.error && !result.error.includes("cancelled")) {
       Alert.alert("Purchase Failed", result.error);
@@ -85,7 +89,9 @@ export default function PaywallScreen() {
   const handleRestore = async () => {
     const result = await restorePurchases();
     if (result.isPremium) {
-      await restoreSession();
+      // Optimistically unlock Pro features immediately
+      setSubscriptionTier("premium");
+      restoreSession().catch(() => {});
       Alert.alert("Restored", "Your premium access has been restored.", [
         { text: "Continue", onPress: () => router.back() },
       ]);
