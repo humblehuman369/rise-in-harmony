@@ -4,7 +4,6 @@ import { colors } from "@rih/ui-tokens";
 import {
   Home,
   Music2,
-  Gauge,
   Waves,
   Sliders,
   AlarmClock,
@@ -63,17 +62,8 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="precision"
-        options={{
-          title: "Precision",
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon focused={focused} color={color}>
-              <Gauge size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
-            </TabIcon>
-          ),
-        }}
-      />
+      {/* Precision merged into Studio — keep routable but hidden from tab bar */}
+      <Tabs.Screen name="precision" options={{ href: null }} />
       <Tabs.Screen
         name="meditation"
         options={{
