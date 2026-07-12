@@ -2,6 +2,9 @@
  * BreathingGuide — animated breathing overlay (4-7-8, Box, Calm patterns).
  * Ported from the web app: a breathing circle scales with each phase,
  * with a per-second countdown, phase dots, and cycle counter.
+ *
+ * v2: Guided voice mode — calm female TTS cues play at each phase transition.
+ * Toggle between "Guided" (voice + visual) and "Silent" (visual only).
  */
 import {
   View,
@@ -12,13 +15,17 @@ import {
   Animated,
 } from "react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createAudioPlayer, type AudioPlayer } from "expo-audio";
 import { colors, fontSizes, spacing, radii } from "@rih/ui-tokens";
+import { resolveAssetUrl } from "@/lib/api";
 
 interface BreathPhase {
   label: string;
   seconds: number;
   color: string;
   scale: number;
+  /** Path to the voice cue audio file for this phase */
+  voiceCue?: string;
 }
 
 interface BreathPattern {
@@ -28,7 +35,16 @@ interface BreathPattern {
   benefit: string;
   color: string;
   phases: BreathPhase[];
+  /** Path to the intro voice cue played when session starts */
+  introCue: string;
 }
+
+/** Measured intro audio durations in ms (from ffprobe) */
+const INTRO_DURATION_MS: Record<string, number> = {
+  "478": 34_400,
+  "box": 32_080,
+  "calm": 32_240,
+};
 
 export const BREATH_PATTERNS: BreathPattern[] = [
   {
@@ -37,10 +53,29 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     description: "Inhale 4s · Hold 7s · Exhale 8s",
     benefit: "Calms the nervous system, ideal before sleep",
     color: "#8B5CF6",
+    introCue: "/manus-storage/478-intro_2da42d93.wav",
     phases: [
-      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.35 },
-      { label: "Hold", seconds: 7, color: "#8B5CF6", scale: 1.35 },
-      { label: "Exhale", seconds: 8, color: "#3B82F6", scale: 0.72 },
+      {
+        label: "Inhale",
+        seconds: 4,
+        color: "#00D4AA",
+        scale: 1.35,
+        voiceCue: "/manus-storage/478-inhale_5ac310e7.wav",
+      },
+      {
+        label: "Hold",
+        seconds: 7,
+        color: "#8B5CF6",
+        scale: 1.35,
+        voiceCue: "/manus-storage/478-hold_dc3c56ff.wav",
+      },
+      {
+        label: "Exhale",
+        seconds: 8,
+        color: "#3B82F6",
+        scale: 0.72,
+        voiceCue: "/manus-storage/478-exhale_c1c86e20.wav",
+      },
     ],
   },
   {
@@ -49,11 +84,36 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     description: "Inhale 4s · Hold 4s · Exhale 4s · Hold 4s",
     benefit: "Reduces stress, sharpens focus and clarity",
     color: "#00D4AA",
+    introCue: "/manus-storage/box-intro_7da5eead.wav",
     phases: [
-      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.32 },
-      { label: "Hold", seconds: 4, color: "#8B5CF6", scale: 1.32 },
-      { label: "Exhale", seconds: 4, color: "#3B82F6", scale: 0.72 },
-      { label: "Hold", seconds: 4, color: "#6B7A99", scale: 0.72 },
+      {
+        label: "Inhale",
+        seconds: 4,
+        color: "#00D4AA",
+        scale: 1.32,
+        voiceCue: "/manus-storage/box-inhale_d9e9dec5.wav",
+      },
+      {
+        label: "Hold",
+        seconds: 4,
+        color: "#8B5CF6",
+        scale: 1.32,
+        voiceCue: "/manus-storage/box-hold-top_34320c65.wav",
+      },
+      {
+        label: "Exhale",
+        seconds: 4,
+        color: "#3B82F6",
+        scale: 0.72,
+        voiceCue: "/manus-storage/box-exhale_221d3a99.wav",
+      },
+      {
+        label: "Hold",
+        seconds: 4,
+        color: "#6B7A99",
+        scale: 0.72,
+        voiceCue: "/manus-storage/box-hold-bottom_28685bfc.wav",
+      },
     ],
   },
   {
@@ -62,12 +122,29 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     description: "Inhale 5s · Exhale 5s",
     benefit: "Simple coherence breathing for grounding",
     color: "#F59E0B",
+    introCue: "/manus-storage/calm-intro_39b53cef.wav",
     phases: [
-      { label: "Inhale", seconds: 5, color: "#F59E0B", scale: 1.35 },
-      { label: "Exhale", seconds: 5, color: "#3B82F6", scale: 0.72 },
+      {
+        label: "Inhale",
+        seconds: 5,
+        color: "#F59E0B",
+        scale: 1.35,
+        voiceCue: "/manus-storage/calm-inhale_26039357.wav",
+      },
+      {
+        label: "Exhale",
+        seconds: 5,
+        color: "#3B82F6",
+        scale: 0.72,
+        voiceCue: "/manus-storage/calm-exhale_40cbc5f0.wav",
+      },
     ],
   },
 ];
+
+const COMPLETE_CUE = "/manus-storage/complete_50ff21ab.wav";
+/** Number of cycles after which the completion cue plays */
+const COMPLETE_AFTER_CYCLES = 5;
 
 interface BreathingGuideProps {
   visible: boolean;
@@ -85,10 +162,55 @@ export default function BreathingGuide({
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [phaseRemain, setPhaseRemain] = useState(0);
   const [cycleCount, setCycleCount] = useState(0);
+  const [guided, setGuided] = useState(true);
+  const [introPlaying, setIntroPlaying] = useState(false);
+
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const voicePlayerRef = useRef<AudioPlayer | null>(null);
 
   const currentPhase = pattern.phases[phaseIndex];
+
+  // ── Audio helpers ──────────────────────────────────────────────────────────
+
+  const clearIntroTimeout = useCallback(() => {
+    if (introTimeoutRef.current) {
+      clearTimeout(introTimeoutRef.current);
+      introTimeoutRef.current = null;
+    }
+  }, []);
+
+  const stopVoice = useCallback(() => {
+    if (voicePlayerRef.current) {
+      try {
+        voicePlayerRef.current.pause();
+        voicePlayerRef.current.remove();
+      } catch {
+        // already released
+      }
+      voicePlayerRef.current = null;
+    }
+  }, []);
+
+  const playVoiceCue = useCallback(
+    (path: string) => {
+      if (!guided) return;
+      stopVoice();
+      try {
+        const uri = resolveAssetUrl(path);
+        const player = createAudioPlayer({ uri });
+        player.volume = 1.0;
+        player.play();
+        voicePlayerRef.current = player;
+      } catch {
+        // audio not critical — swallow errors
+      }
+    },
+    [guided, stopVoice]
+  );
+
+  // ── Animation ──────────────────────────────────────────────────────────────
 
   const stopTimer = useCallback(() => {
     if (intervalRef.current) {
@@ -108,32 +230,87 @@ export default function BreathingGuide({
     [scaleAnim]
   );
 
+  // ── Session control ────────────────────────────────────────────────────────
+
   const startBreathing = useCallback(() => {
     stopTimer();
     let pIdx = 0;
     let remain = pattern.phases[0].seconds;
+    let cycles = 0;
     setPhaseIndex(0);
     setPhaseRemain(remain);
     setCycleCount(0);
-    setIsRunning(true);
     animateToPhase(pattern.phases[0]);
 
-    intervalRef.current = setInterval(() => {
-      remain -= 1;
-      if (remain <= 0) {
-        pIdx = (pIdx + 1) % pattern.phases.length;
-        if (pIdx === 0) setCycleCount((c) => c + 1);
-        remain = pattern.phases[pIdx].seconds;
-        setPhaseIndex(pIdx);
-        animateToPhase(pattern.phases[pIdx]);
-      }
-      setPhaseRemain(remain);
-    }, 1000);
-  }, [pattern, stopTimer, animateToPhase]);
+    if (guided) {
+      // Play intro, then start the timer after it finishes (~10s max)
+      setIntroPlaying(true);
+      setIsRunning(false);
+      playVoiceCue(pattern.introCue);
+
+      // Use measured intro duration so timer starts right after voice finishes
+      const introMs = INTRO_DURATION_MS[pattern.id] ?? 10_000;
+      introTimeoutRef.current = setTimeout(() => {
+        setIntroPlaying(false);
+        setIsRunning(true);
+        const firstCue = pattern.phases[0].voiceCue;
+        if (firstCue) playVoiceCue(firstCue);
+
+        intervalRef.current = setInterval(() => {
+          remain -= 1;
+          if (remain <= 0) {
+            pIdx = (pIdx + 1) % pattern.phases.length;
+            if (pIdx === 0) {
+              cycles += 1;
+              setCycleCount(cycles);
+              if (cycles >= COMPLETE_AFTER_CYCLES) {
+                // Play completion cue and stop
+                stopTimer();
+                setIsRunning(false);
+                playVoiceCue(COMPLETE_CUE);
+                Animated.timing(scaleAnim, {
+                  toValue: 1,
+                  duration: 600,
+                  useNativeDriver: true,
+                }).start();
+                return;
+              }
+            }
+            remain = pattern.phases[pIdx].seconds;
+            setPhaseIndex(pIdx);
+            animateToPhase(pattern.phases[pIdx]);
+            const cue = pattern.phases[pIdx].voiceCue;
+            if (cue) playVoiceCue(cue);
+          }
+          setPhaseRemain(remain);
+        }, 1000);
+      }, introMs);
+    } else {
+      // Silent mode — start immediately
+      setIsRunning(true);
+      intervalRef.current = setInterval(() => {
+        remain -= 1;
+        if (remain <= 0) {
+          pIdx = (pIdx + 1) % pattern.phases.length;
+          if (pIdx === 0) {
+            cycles += 1;
+            setCycleCount(cycles);
+          }
+          remain = pattern.phases[pIdx].seconds;
+          setPhaseIndex(pIdx);
+          animateToPhase(pattern.phases[pIdx]);
+        }
+        setPhaseRemain(remain);
+      }, 1000);
+    }
+  }, [pattern, guided, stopTimer, animateToPhase, playVoiceCue, scaleAnim]);
 
   const stopBreathing = useCallback(() => {
     stopTimer();
+    clearIntroTimeout();
+    stopVoice();
     setIsRunning(false);
+    setIntroPlaying(false);
     setPhaseIndex(0);
     setPhaseRemain(0);
     setCycleCount(0);
@@ -142,12 +319,16 @@ export default function BreathingGuide({
       duration: 400,
       useNativeDriver: true,
     }).start();
-  }, [stopTimer, scaleAnim]);
+  }, [stopTimer, stopVoice, scaleAnim]);
 
   // Reset when closed
   useEffect(() => {
     if (!visible) stopBreathing();
-    return stopTimer;
+    return () => {
+      stopTimer();
+      clearIntroTimeout();
+      stopVoice();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
@@ -166,7 +347,7 @@ export default function BreathingGuide({
         </TouchableOpacity>
 
         {/* Pattern selector */}
-        {!isRunning && (
+        {!isRunning && !introPlaying && (
           <View style={styles.patternList}>
             <Text style={styles.patternHeading}>CHOOSE A BREATHING PATTERN</Text>
             {BREATH_PATTERNS.map((p) => {
@@ -202,6 +383,35 @@ export default function BreathingGuide({
                 </TouchableOpacity>
               );
             })}
+
+            {/* Guided / Silent toggle */}
+            <View style={styles.toggleRow}>
+              <TouchableOpacity
+                style={[styles.toggleBtn, guided && styles.toggleBtnActive]}
+                onPress={() => setGuided(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.toggleText, guided && styles.toggleTextActive]}>
+                  🎙 Guided
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.toggleBtn, !guided && styles.toggleBtnActive]}
+                onPress={() => setGuided(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.toggleText, !guided && styles.toggleTextActive]}>
+                  🔇 Silent
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Intro playing state */}
+        {introPlaying && (
+          <View style={styles.introBox}>
+            <Text style={styles.introText}>🎙 Listening to introduction…</Text>
           </View>
         )}
 
@@ -250,29 +460,36 @@ export default function BreathingGuide({
               </Text>
             )}
             <Text style={styles.runningName}>{pattern.name}</Text>
+            {guided && (
+              <Text style={styles.guidedBadge}>🎙 Guided</Text>
+            )}
           </>
         )}
 
         {/* Start / Stop */}
-        <TouchableOpacity
-          style={[
-            styles.actionBtn,
-            { backgroundColor: isRunning ? "rgba(255,255,255,0.06)" : pattern.color },
-          ]}
-          onPress={isRunning ? stopBreathing : startBreathing}
-          activeOpacity={0.85}
-        >
-          <Text
+        {!introPlaying && (
+          <TouchableOpacity
             style={[
-              styles.actionText,
-              { color: isRunning ? colors.textSecondary : "#fff" },
+              styles.actionBtn,
+              { backgroundColor: isRunning ? "rgba(255,255,255,0.06)" : pattern.color },
             ]}
+            onPress={isRunning ? stopBreathing : startBreathing}
+            activeOpacity={0.85}
           >
-            {isRunning ? "Stop" : `Begin ${pattern.name}`}
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={[
+                styles.actionText,
+                { color: isRunning ? colors.textSecondary : "#fff" },
+              ]}
+            >
+              {isRunning ? "Stop" : `Begin ${pattern.name}`}
+            </Text>
+          </TouchableOpacity>
+        )}
 
-        {!isRunning && <Text style={styles.benefitFooter}>{pattern.benefit}</Text>}
+        {!isRunning && !introPlaying && (
+          <Text style={styles.benefitFooter}>{pattern.benefit}</Text>
+        )}
       </View>
     </Modal>
   );
@@ -338,6 +555,46 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: 2,
   },
+  toggleRow: {
+    flexDirection: "row",
+    gap: spacing[2],
+    marginTop: spacing[3],
+    justifyContent: "center",
+  },
+  toggleBtn: {
+    paddingHorizontal: spacing[5],
+    paddingVertical: spacing[2],
+    borderRadius: radii.full,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  toggleBtnActive: {
+    backgroundColor: "rgba(0,212,170,0.12)",
+    borderColor: "rgba(0,212,170,0.35)",
+  },
+  toggleText: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    fontWeight: "600",
+  },
+  toggleTextActive: {
+    color: colors.teal,
+  },
+  introBox: {
+    marginBottom: spacing[4],
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    borderRadius: radii.lg,
+    backgroundColor: "rgba(0,212,170,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(0,212,170,0.2)",
+  },
+  introText: {
+    fontSize: fontSizes.sm,
+    color: colors.teal,
+    textAlign: "center",
+  },
   circleArea: {
     width: 220,
     height: 220,
@@ -374,6 +631,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: "600",
     marginTop: spacing[1],
+  },
+  guidedBadge: {
+    fontSize: 10,
+    color: colors.teal,
+    marginTop: 2,
+    opacity: 0.7,
   },
   actionBtn: {
     marginTop: spacing[6],
