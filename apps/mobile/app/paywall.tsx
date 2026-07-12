@@ -95,10 +95,21 @@ export default function PaywallScreen() {
   };
 
   useEffect(() => {
-    if (isPremium) {
+    if (!isLoading && isPremium) {
       router.back();
     }
-  }, [isPremium]);
+  }, [isPremium, isLoading]);
+
+  // While RevenueCat is resolving entitlements, show nothing (prevents flash)
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator color={colors.teal} size="large" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (isPremium) return null;
 

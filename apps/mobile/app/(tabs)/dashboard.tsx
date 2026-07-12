@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback } from "react";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
 import { CHAKRA_FREQUENCIES, FREQUENCIES, formatStreakLabel, calculateStreak } from "@rih/shared-utils";
 import { useAuthStore } from "@/store/authStore";
@@ -58,6 +58,7 @@ function getChakraActivity(sessions: Session[]): Set<number> {
 }
 
 export default function DashboardScreen() {
+  const router = useRouter();
   const { user, accessToken } = useAuthStore();
   const [stats, setStats] = useState<SessionStats | null>(null);
   const [loading, setLoading] = useState(false);
@@ -274,9 +275,26 @@ export default function DashboardScreen() {
         <WeeklyGoalsSection totalMinutes={totalMin} streak={streak} />
 
         {!user && (
-          <Text style={styles.note}>
-            Sign in to sync sessions across devices and unlock detailed analytics.
-          </Text>
+          <View style={{ alignItems: "center", marginTop: spacing[4] }}>
+            <Text style={styles.note}>
+              Sign in to sync sessions across devices and unlock detailed analytics.
+            </Text>
+            <TouchableOpacity
+              style={{
+                marginTop: spacing[3],
+                paddingHorizontal: spacing[5],
+                paddingVertical: spacing[3],
+                borderRadius: 100,
+                backgroundColor: colors.teal,
+              }}
+              onPress={() => router.push("/login")}
+              activeOpacity={0.85}
+            >
+              <Text style={{ color: colors.bgDeep, fontWeight: "700", fontSize: fontSizes.sm }}>
+                Sign In
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>

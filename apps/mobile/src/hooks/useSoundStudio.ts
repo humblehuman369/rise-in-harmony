@@ -96,6 +96,7 @@ export function useSoundStudio() {
     if (freqOscRef.current) {
       try {
         freqOscRef.current.stop(0);
+        freqOscRef.current.disconnect();
       } catch {}
       freqOscRef.current = null;
     }

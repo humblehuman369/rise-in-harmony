@@ -246,6 +246,17 @@ export function createVoice(options: VoiceOptions): SynthVoice {
           s.stop(stopAt);
         } catch {}
       });
+      // Disconnect the entire voice subgraph from the AudioContext destination
+      // after the fade-out completes. Without this, stopped oscillator nodes
+      // remain connected and accumulate in the native audio graph, eventually
+      // exhausting the rendering budget and causing silence (bug: audio stops
+      // after navigating to paywall multiple times).
+      const disconnectDelay = Math.ceil((stopAt - now + 0.1) * 1000);
+      setTimeout(() => {
+        try {
+          envelope.disconnect();
+        } catch {}
+      }, disconnectDelay);
     },
   };
 }

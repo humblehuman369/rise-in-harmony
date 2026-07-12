@@ -30,9 +30,19 @@ export default function HomeScreen() {
               {user?.name ?? "Friend"}
             </Text>
           </View>
-          <View style={styles.logoMark}>
-            <Text style={styles.logoText}>RiH</Text>
-          </View>
+          {!user ? (
+            <TouchableOpacity
+              style={styles.loginBtn}
+              onPress={() => router.push("/login")}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.loginBtnText}>Sign In</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.logoMark}>
+              <Text style={styles.logoText}>RiH</Text>
+            </View>
+          )}
         </View>
 
         {/* Quick Start Card */}
@@ -162,6 +172,19 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.xs,
     fontWeight: "700",
     letterSpacing: 1,
+  },
+  loginBtn: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    borderRadius: 100,
+    backgroundColor: "rgba(0,212,170,0.12)",
+    borderWidth: 1,
+    borderColor: colors.tealBorder,
+  },
+  loginBtnText: {
+    color: colors.teal,
+    fontSize: fontSizes.sm,
+    fontWeight: "600",
   },
   quickStartCard: {
     backgroundColor: "rgba(0,212,170,0.06)",

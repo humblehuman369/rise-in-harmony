@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Font from "expo-font";
+import * as Linking from "expo-linking";
 import {
   CormorantGaramond_400Regular,
   CormorantGaramond_600SemiBold,
@@ -40,7 +41,7 @@ const queryClient = new QueryClient({
  */
 function RootLayoutNav() {
   useAnalytics();
-  const { restoreSession } = useAuthStore();
+  const { restoreSession, setTokens } = useAuthStore();
   const router = useRouter();
   const [checked, setChecked] = useState(false);
 
@@ -67,6 +68,47 @@ function RootLayoutNav() {
     init();
   }, []);
 
+  // Handle deep link callback from OAuth login (riseharmony://auth?token=xxx)
+  useEffect(() => {
+    const handleDeepLink = async (event: { url: string }) => {
+      const { url } = event;
+      if (!url) return;
+
+      // Parse the URL — handle both riseharmony://auth?token=xxx and
+      // exp://...--/auth?token=xxx (dev client)
+      const parsed = Linking.parse(url);
+      if (parsed.path === "auth" || parsed.hostname === "auth") {
+        const token = parsed.queryParams?.token as string | undefined;
+        const error = parsed.queryParams?.error as string | undefined;
+
+        if (error) {
+          console.warn("[Auth] OAuth login failed:", error);
+          return;
+        }
+
+        if (token) {
+          // Store the token and restore the session
+          await setTokens(token, token); // Use same token as refresh for now
+          await restoreSession();
+          // Navigate back to the main app
+          router.replace("/(tabs)");
+        }
+      }
+    };
+
+    // Handle deep links when app is already open
+    const subscription = Linking.addEventListener("url", handleDeepLink);
+
+    // Handle deep link that opened the app (cold start)
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url });
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [setTokens, restoreSession, router]);
+
   return (
     <Stack
       screenOptions={{
@@ -77,6 +119,7 @@ function RootLayoutNav() {
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false, animation: "fade" }} />
+      <Stack.Screen name="login" options={{ presentation: "modal" }} />
       <Stack.Screen name="paywall" options={{ presentation: "modal" }} />
       <Stack.Screen name="player/[id]" options={{ presentation: "card" }} />
       <Stack.Screen name="meditation/[id]" options={{ presentation: "card" }} />
