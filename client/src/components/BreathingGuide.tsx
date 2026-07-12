@@ -1,10 +1,13 @@
 /**
  * BreathingGuide — Animated breathing overlay for Sound Studio
- * Supports 4-7-8 breathing and Box breathing patterns
+ * Supports 4-7-8, Box Breathing, and Calm Breath patterns
  * Bioluminescent Depth theme
+ *
+ * v2: Guided voice mode — calm female TTS cues (Sulafat voice) play at each
+ * phase transition. Toggle between "Guided" (voice + visual) and "Silent" (visual only).
  */
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Wind } from "lucide-react";
+import { X, Wind, Mic, MicOff } from "lucide-react";
 
 // ─── Breathing patterns ───────────────────────────────────────────────────────
 
@@ -12,7 +15,8 @@ interface BreathPhase {
   label: string;
   seconds: number;
   color: string;
-  scale: number; // circle scale target
+  scale: number;
+  voiceCue?: string;
 }
 
 interface BreathPattern {
@@ -22,7 +26,19 @@ interface BreathPattern {
   benefit: string;
   color: string;
   phases: BreathPhase[];
+  introCue: string;
 }
+
+/** Measured intro audio durations in ms (from ffprobe) */
+const INTRO_DURATION_MS: Record<string, number> = {
+  "478": 34_400,
+  "box": 32_080,
+  "calm": 32_240,
+};
+
+/** Number of cycles after which the completion cue plays */
+const COMPLETE_AFTER_CYCLES = 5;
+const COMPLETE_CUE = "/manus-storage/complete_50ff21ab.wav";
 
 export const BREATH_PATTERNS: BreathPattern[] = [
   {
@@ -31,10 +47,11 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     description: "Inhale 4s · Hold 7s · Exhale 8s",
     benefit: "Calms the nervous system, ideal before sleep",
     color: "#8B5CF6",
+    introCue: "/manus-storage/478-intro_2da42d93.wav",
     phases: [
-      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.4 },
-      { label: "Hold", seconds: 7, color: "#8B5CF6", scale: 1.4 },
-      { label: "Exhale", seconds: 8, color: "#3B82F6", scale: 0.7 },
+      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.4, voiceCue: "/manus-storage/478-inhale_5ac310e7.wav" },
+      { label: "Hold", seconds: 7, color: "#8B5CF6", scale: 1.4, voiceCue: "/manus-storage/478-hold_dc3c56ff.wav" },
+      { label: "Exhale", seconds: 8, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/478-exhale_c1c86e20.wav" },
     ],
   },
   {
@@ -43,11 +60,12 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     description: "Inhale 4s · Hold 4s · Exhale 4s · Hold 4s",
     benefit: "Reduces stress, sharpens focus and clarity",
     color: "#00D4AA",
+    introCue: "/manus-storage/box-intro_7da5eead.wav",
     phases: [
-      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.35 },
-      { label: "Hold", seconds: 4, color: "#8B5CF6", scale: 1.35 },
-      { label: "Exhale", seconds: 4, color: "#3B82F6", scale: 0.7 },
-      { label: "Hold", seconds: 4, color: "#6B7A99", scale: 0.7 },
+      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.35, voiceCue: "/manus-storage/box-inhale_d9e9dec5.wav" },
+      { label: "Hold", seconds: 4, color: "#8B5CF6", scale: 1.35, voiceCue: "/manus-storage/box-hold-top_34320c65.wav" },
+      { label: "Exhale", seconds: 4, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/box-exhale_221d3a99.wav" },
+      { label: "Hold", seconds: 4, color: "#6B7A99", scale: 0.7, voiceCue: "/manus-storage/box-hold-bottom_28685bfc.wav" },
     ],
   },
   {
@@ -56,9 +74,10 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     description: "Inhale 5s · Exhale 5s",
     benefit: "Simple coherence breathing for grounding",
     color: "#F59E0B",
+    introCue: "/manus-storage/calm-intro_39b53cef.wav",
     phases: [
-      { label: "Inhale", seconds: 5, color: "#F59E0B", scale: 1.4 },
-      { label: "Exhale", seconds: 5, color: "#3B82F6", scale: 0.7 },
+      { label: "Inhale", seconds: 5, color: "#F59E0B", scale: 1.4, voiceCue: "/manus-storage/calm-inhale_26039357.wav" },
+      { label: "Exhale", seconds: 5, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/calm-exhale_40cbc5f0.wav" },
     ],
   },
 ];
@@ -73,11 +92,16 @@ interface BreathingGuideProps {
 export default function BreathingGuide({ onClose, accentColor = "#00D4AA" }: BreathingGuideProps) {
   const [selectedPattern, setSelectedPattern] = useState<BreathPattern>(BREATH_PATTERNS[0]);
   const [isRunning, setIsRunning] = useState(false);
+  const [introPlaying, setIntroPlaying] = useState(false);
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [phaseRemain, setPhaseRemain] = useState(0);
   const [cycleCount, setCycleCount] = useState(0);
   const [circleScale, setCircleScale] = useState(1.0);
+  const [guided, setGuided] = useState(true);
+
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const timeRef = useRef(0);
@@ -131,50 +155,117 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA" }: Bre
     return () => cancelAnimationFrame(animRef.current);
   }, [accentColor]);
 
-  // ── Breathing timer ──────────────────────────────────────────────────────────
+  // ── Audio helpers ────────────────────────────────────────────────────────────
+  const stopAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current = null;
+    }
+  }, []);
+
+  const playVoiceCue = useCallback((path: string) => {
+    if (!guided) return;
+    stopAudio();
+    try {
+      const audio = new Audio(path);
+      audio.volume = 1.0;
+      audio.play().catch(() => {/* swallow autoplay errors */});
+      audioRef.current = audio;
+    } catch {
+      // audio not critical
+    }
+  }, [guided, stopAudio]);
+
+  // ── Timer helpers ────────────────────────────────────────────────────────────
   const stopTimer = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = null;
   }, []);
 
+  const clearIntroTimeout = useCallback(() => {
+    if (introTimeoutRef.current) clearTimeout(introTimeoutRef.current);
+    introTimeoutRef.current = null;
+  }, []);
+
+  // ── Session control ──────────────────────────────────────────────────────────
   const startBreathing = useCallback(() => {
     stopTimer();
+    clearIntroTimeout();
     const pattern = selectedPattern;
     let pIdx = 0;
     let remain = pattern.phases[0].seconds;
+    let cycles = 0;
+
     setPhaseIndex(0);
     setPhaseRemain(pattern.phases[0].seconds);
     setCircleScale(pattern.phases[0].scale);
-    setIsRunning(true);
     setCycleCount(0);
 
-    intervalRef.current = setInterval(() => {
-      remain -= 1;
-      if (remain <= 0) {
-        pIdx = (pIdx + 1) % pattern.phases.length;
-        if (pIdx === 0) setCycleCount(c => c + 1);
-        remain = pattern.phases[pIdx].seconds;
-        setPhaseIndex(pIdx);
-        setCircleScale(pattern.phases[pIdx].scale);
-      }
-      setPhaseRemain(remain);
-    }, 1000);
-  }, [selectedPattern, stopTimer]);
+    const runTimer = () => {
+      setIsRunning(true);
+      const firstCue = pattern.phases[0].voiceCue;
+      if (firstCue) playVoiceCue(firstCue);
+
+      intervalRef.current = setInterval(() => {
+        remain -= 1;
+        if (remain <= 0) {
+          pIdx = (pIdx + 1) % pattern.phases.length;
+          if (pIdx === 0) {
+            cycles += 1;
+            setCycleCount(cycles);
+            if (cycles >= COMPLETE_AFTER_CYCLES) {
+              stopTimer();
+              setIsRunning(false);
+              setCircleScale(1.0);
+              playVoiceCue(COMPLETE_CUE);
+              return;
+            }
+          }
+          remain = pattern.phases[pIdx].seconds;
+          setPhaseIndex(pIdx);
+          setCircleScale(pattern.phases[pIdx].scale);
+          const cue = pattern.phases[pIdx].voiceCue;
+          if (cue) playVoiceCue(cue);
+        }
+        setPhaseRemain(remain);
+      }, 1000);
+    };
+
+    if (guided) {
+      setIntroPlaying(true);
+      setIsRunning(false);
+      playVoiceCue(pattern.introCue);
+      const introMs = INTRO_DURATION_MS[pattern.id] ?? 10_000;
+      introTimeoutRef.current = setTimeout(() => {
+        setIntroPlaying(false);
+        runTimer();
+      }, introMs);
+    } else {
+      runTimer();
+    }
+  }, [selectedPattern, guided, stopTimer, clearIntroTimeout, playVoiceCue]);
 
   const stopBreathing = useCallback(() => {
     stopTimer();
+    clearIntroTimeout();
+    stopAudio();
     setIsRunning(false);
+    setIntroPlaying(false);
     setPhaseIndex(0);
     setPhaseRemain(0);
     setCircleScale(1.0);
     setCycleCount(0);
-  }, [stopTimer]);
+  }, [stopTimer, clearIntroTimeout, stopAudio]);
 
   useEffect(() => {
-    return () => stopTimer();
-  }, [stopTimer]);
+    return () => {
+      stopTimer();
+      clearIntroTimeout();
+      stopAudio();
+    };
+  }, [stopTimer, clearIntroTimeout, stopAudio]);
 
-  // ── CSS transition duration matches phase seconds ────────────────────────────
   const transitionDuration = isRunning ? `${currentPhase?.seconds ?? 4}s` : "0.4s";
 
   return (
@@ -203,10 +294,13 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA" }: Bre
           <X size={16} />
         </button>
 
-        {/* Pattern selector (shown when not running) */}
-        {!isRunning && (
+        {/* Pattern selector (shown when not running and not in intro) */}
+        {!isRunning && !introPlaying && (
           <div className="mb-6">
-            <div className="text-xs font-semibold uppercase tracking-widest mb-3 text-center" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+            <div
+              className="text-xs font-semibold uppercase tracking-widest mb-3 text-center"
+              style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}
+            >
               Choose a Breathing Pattern
             </div>
             <div className="space-y-2">
@@ -221,26 +315,79 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA" }: Bre
                   }}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold" style={{ color: selectedPattern.id === pattern.id ? "#E8EDF5" : "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
+                    <span
+                      className="text-sm font-semibold"
+                      style={{ color: selectedPattern.id === pattern.id ? "#E8EDF5" : "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}
+                    >
                       {pattern.name}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${pattern.color}20`, color: pattern.color, fontFamily: "DM Sans, sans-serif" }}>
+                    <span
+                      className="text-[10px] px-2 py-0.5 rounded-full"
+                      style={{ background: `${pattern.color}20`, color: pattern.color, fontFamily: "DM Sans, sans-serif" }}
+                    >
                       {totalCycleSec}s cycle
                     </span>
                   </div>
-                  <div className="text-xs mt-0.5" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>{pattern.description}</div>
-                  <div className="text-[10px] mt-1 italic" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>{pattern.benefit}</div>
+                  <div className="text-xs mt-0.5" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                    {pattern.description}
+                  </div>
+                  <div className="text-[10px] mt-1 italic" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>
+                    {pattern.benefit}
+                  </div>
                 </button>
               ))}
             </div>
+
+            {/* Guided / Silent toggle */}
+            <div className="flex gap-2 mt-4 justify-center">
+              <button
+                onClick={() => setGuided(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200"
+                style={{
+                  background: guided ? "rgba(0,212,170,0.12)" : "rgba(255,255,255,0.05)",
+                  border: `1px solid ${guided ? "rgba(0,212,170,0.35)" : "rgba(255,255,255,0.08)"}`,
+                  color: guided ? "#00D4AA" : "#6B7A99",
+                  fontFamily: "DM Sans, sans-serif",
+                }}
+              >
+                <Mic size={12} />
+                Guided
+              </button>
+              <button
+                onClick={() => setGuided(false)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200"
+                style={{
+                  background: !guided ? "rgba(0,212,170,0.12)" : "rgba(255,255,255,0.05)",
+                  border: `1px solid ${!guided ? "rgba(0,212,170,0.35)" : "rgba(255,255,255,0.08)"}`,
+                  color: !guided ? "#00D4AA" : "#6B7A99",
+                  fontFamily: "DM Sans, sans-serif",
+                }}
+              >
+                <MicOff size={12} />
+                Silent
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Intro playing state */}
+        {introPlaying && (
+          <div
+            className="mb-6 px-4 py-3 rounded-xl text-center text-sm"
+            style={{
+              background: "rgba(0,212,170,0.08)",
+              border: "1px solid rgba(0,212,170,0.2)",
+              color: "#00D4AA",
+              fontFamily: "DM Sans, sans-serif",
+            }}
+          >
+            🎙 Listening to introduction…
           </div>
         )}
 
         {/* Breathing circle */}
         <div className="flex flex-col items-center">
-          {/* Outer ring */}
           <div className="relative flex items-center justify-center" style={{ width: "220px", height: "220px" }}>
-            {/* Glow rings */}
             {[1, 2, 3].map(i => (
               <div
                 key={i}
@@ -255,7 +402,6 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA" }: Bre
               />
             ))}
 
-            {/* Main breathing circle */}
             <div
               className="rounded-full flex flex-col items-center justify-center"
               style={{
@@ -270,10 +416,7 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA" }: Bre
             >
               {isRunning ? (
                 <>
-                  <div
-                    className="text-4xl font-bold font-mono-brand"
-                    style={{ color: currentPhase?.color ?? accentColor }}
-                  >
+                  <div className="text-4xl font-bold font-mono-brand" style={{ color: currentPhase?.color ?? accentColor }}>
                     {phaseRemain}
                   </div>
                   <div
@@ -306,40 +449,43 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA" }: Bre
             </div>
           )}
 
-          {/* Cycle counter */}
           {isRunning && cycleCount > 0 && (
             <div className="mt-3 text-xs" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
               {cycleCount} {cycleCount === 1 ? "cycle" : "cycles"} complete
             </div>
           )}
 
-          {/* Pattern name when running */}
           {isRunning && (
             <div className="mt-2 text-sm font-semibold" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
               {selectedPattern.name}
+              {guided && <span className="ml-2 text-xs" style={{ color: "#00D4AA", opacity: 0.7 }}>🎙 Guided</span>}
             </div>
           )}
 
           {/* Start / Stop button */}
-          <button
-            onClick={isRunning ? stopBreathing : startBreathing}
-            className="mt-6 px-8 py-3 rounded-full font-semibold text-sm transition-all duration-200 active:scale-95"
-            style={{
-              background: isRunning
-                ? "rgba(255,255,255,0.06)"
-                : `linear-gradient(135deg, ${selectedPattern.color}, ${selectedPattern.color}CC)`,
-              color: isRunning ? "#8FA3BF" : "#fff",
-              border: isRunning ? "1px solid rgba(255,255,255,0.1)" : "none",
-              boxShadow: isRunning ? "none" : `0 0 20px ${selectedPattern.color}40`,
-              fontFamily: "DM Sans, sans-serif",
-            }}
-          >
-            {isRunning ? "Stop" : `Begin ${selectedPattern.name}`}
-          </button>
+          {!introPlaying && (
+            <button
+              onClick={isRunning ? stopBreathing : startBreathing}
+              className="mt-6 px-8 py-3 rounded-full font-semibold text-sm transition-all duration-200 active:scale-95"
+              style={{
+                background: isRunning
+                  ? "rgba(255,255,255,0.06)"
+                  : `linear-gradient(135deg, ${selectedPattern.color}, ${selectedPattern.color}CC)`,
+                color: isRunning ? "#8FA3BF" : "#fff",
+                border: isRunning ? "1px solid rgba(255,255,255,0.1)" : "none",
+                boxShadow: isRunning ? "none" : `0 0 20px ${selectedPattern.color}40`,
+                fontFamily: "DM Sans, sans-serif",
+              }}
+            >
+              {isRunning ? "Stop" : `Begin ${selectedPattern.name}`}
+            </button>
+          )}
 
-          {/* Benefit text */}
-          {!isRunning && (
-            <p className="mt-4 text-xs text-center leading-relaxed" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif", maxWidth: "240px" }}>
+          {!isRunning && !introPlaying && (
+            <p
+              className="mt-4 text-xs text-center leading-relaxed"
+              style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif", maxWidth: "240px" }}
+            >
               {selectedPattern.benefit}
             </p>
           )}

@@ -49,4 +49,4 @@
 - [x] Upload all audio files to CDN via manus-upload-file --webdev
 - [x] Add guided voice toggle to BreathingGuide component
 - [x] Integrate expo-audio playback of phase cues in sync with breathing timer
-- [ ] Commit, push to GitHub, save checkpoint
+- [x] Commit, push to GitHub, save checkpoint
