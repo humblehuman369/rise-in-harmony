@@ -8,7 +8,7 @@
  *   - Quick-Start Guided Chakra Journey (3 min/chakra, auto-begins)
  *   - Full 7-Chakra Journey modal with duration picker
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Play, Pause, Volume2, VolumeX, ChevronLeft, ChevronRight, Lock, Zap, Sparkles, Wind } from "lucide-react";
 import Layout from "@/components/Layout";
 import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFrequencyPlayer";
@@ -227,6 +227,19 @@ export default function Player() {
   const [chakraAutoStart, setChakraAutoStart] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [showBreathing, setShowBreathing] = useState(false);
+  // Volume level before breathing session started — used to restore after
+  const breathingPreVolumeRef = useRef<number>(0.6);
+
+  const handleBreathingSessionStart = useCallback(() => {
+    breathingPreVolumeRef.current = volume;
+    // Fade frequency down to 20% as a soft ambient underlay
+    setVolume(Math.max(volume * 0.2, 0.05));
+  }, [volume, setVolume]);
+
+  const handleBreathingSessionEnd = useCallback(() => {
+    // Restore to the volume level before the session started
+    setVolume(breathingPreVolumeRef.current);
+  }, [setVolume]);
 
   const selected = FREQUENCIES[selectedIndex];
 
@@ -638,7 +651,12 @@ export default function Player() {
         </div>
       </div>
       {showBreathing && (
-        <BreathingGuide onClose={() => setShowBreathing(false)} accentColor="#00D4AA" />
+        <BreathingGuide
+          onClose={() => setShowBreathing(false)}
+          accentColor="#00D4AA"
+          onSessionStart={handleBreathingSessionStart}
+          onSessionEnd={handleBreathingSessionEnd}
+        />
       )}
     </Layout>
   );

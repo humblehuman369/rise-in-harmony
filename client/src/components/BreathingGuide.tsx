@@ -87,9 +87,13 @@ export const BREATH_PATTERNS: BreathPattern[] = [
 interface BreathingGuideProps {
   onClose: () => void;
   accentColor?: string;
+  /** Called when a breathing session starts — use to duck background audio */
+  onSessionStart?: () => void;
+  /** Called when a breathing session ends or the overlay closes — use to restore background audio */
+  onSessionEnd?: () => void;
 }
 
-export default function BreathingGuide({ onClose, accentColor = "#00D4AA" }: BreathingGuideProps) {
+export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSessionStart, onSessionEnd }: BreathingGuideProps) {
   const [selectedPattern, setSelectedPattern] = useState<BreathPattern>(BREATH_PATTERNS[0]);
   const [isRunning, setIsRunning] = useState(false);
   const [introPlaying, setIntroPlaying] = useState(false);
@@ -232,6 +236,8 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA" }: Bre
       }, 1000);
     };
 
+    onSessionStart?.();
+
     if (guided) {
       setIntroPlaying(true);
       setIsRunning(false);
@@ -244,7 +250,7 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA" }: Bre
     } else {
       runTimer();
     }
-  }, [selectedPattern, guided, stopTimer, clearIntroTimeout, playVoiceCue]);
+  }, [selectedPattern, guided, stopTimer, clearIntroTimeout, playVoiceCue, onSessionStart]);
 
   const stopBreathing = useCallback(() => {
     stopTimer();
@@ -256,7 +262,8 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA" }: Bre
     setPhaseRemain(0);
     setCircleScale(1.0);
     setCycleCount(0);
-  }, [stopTimer, clearIntroTimeout, stopAudio]);
+    onSessionEnd?.();
+  }, [stopTimer, clearIntroTimeout, stopAudio, onSessionEnd]);
 
   useEffect(() => {
     return () => {
@@ -285,7 +292,7 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA" }: Bre
       <div className="relative w-full max-w-sm mx-4">
         {/* Close */}
         <button
-          onClick={onClose}
+          onClick={() => { onSessionEnd?.(); onClose(); }}
           className="absolute -top-2 -right-2 w-9 h-9 rounded-full flex items-center justify-center z-10 transition-all duration-200"
           style={{ background: "rgba(255,255,255,0.08)", color: "#6B7A99" }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#E8EDF5"; }}
