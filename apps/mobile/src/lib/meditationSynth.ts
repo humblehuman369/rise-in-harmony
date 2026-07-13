@@ -207,44 +207,47 @@ function synthRain(ctx: AudioContext): ProceduralSynthHandle {
   const out = ctx.createGain();
   out.gain.value = 1;
 
-  // Steady rain bed: white noise → bandpass + lowpass
-  const bed = startNoiseSource(ctx, makeNoiseBuffer(ctx));
+  // Steady rain bed: use a long pink noise buffer (120s) to push the loop
+  // point far beyond any typical session length, eliminating the audible seam.
+  // Pink noise is softer and more natural-sounding than white noise for rain.
+  // Filtered through a gentle bandpass + lowpass to create a distant, soft rain.
+  const bed = startNoiseSource(ctx, makePinkNoiseBuffer(ctx, 120));
   const bp = ctx.createBiquadFilter();
   bp.type = "bandpass";
-  bp.frequency.value = 1800;
-  bp.Q.value = 0.5;
+  bp.frequency.value = 1200;  // lower center = softer, more distant rain
+  bp.Q.value = 0.4;
   const lp = ctx.createBiquadFilter();
   lp.type = "lowpass";
-  lp.frequency.value = 6000;
+  lp.frequency.value = 4000;  // roll off high frequencies for gentleness
   const bedGain = ctx.createGain();
-  bedGain.gain.value = 0.5;
+  bedGain.gain.value = 0.28;  // reduced from 0.5 — softer overall level
   bed.connect(bp);
   bp.connect(lp);
   lp.connect(bedGain);
   bedGain.connect(out);
 
-  // Slow intensity drift
-  const lfo = addLFO(ctx, bedGain.gain, 0.05 + Math.random() * 0.04, 0.12);
+  // Very slow intensity drift — barely perceptible, like rain easing in and out
+  const lfo = addLFO(ctx, bedGain.gain, 0.025 + Math.random() * 0.02, 0.06);
 
-  // Droplet spatters
+  // Soft distant droplets — fewer, quieter, higher-pitched for a gentle feel
   const dropletBuf = makeNoiseBuffer(ctx, 0.5);
   const events = makeEventScheduler(() => {
     const src = ctx.createBufferSource();
     src.buffer = dropletBuf;
     const f = ctx.createBiquadFilter();
     f.type = "bandpass";
-    f.frequency.value = 3000 + Math.random() * 4000;
-    f.Q.value = 8;
+    f.frequency.value = 4000 + Math.random() * 3000;  // higher = lighter drops
+    f.Q.value = 12;
     const g = ctx.createGain();
     const now = ctx.currentTime;
     g.gain.setValueAtTime(0, now);
-    g.gain.linearRampToValueAtTime(0.10 + Math.random() * 0.10, now + 0.005);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.06 + Math.random() * 0.08);
+    g.gain.linearRampToValueAtTime(0.03 + Math.random() * 0.04, now + 0.005);  // quieter
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.05 + Math.random() * 0.07);
     src.connect(f);
     f.connect(g);
     g.connect(out);
     src.start(now, Math.random() * 0.3, 0.2);
-    return 60 + Math.random() * 250;
+    return 120 + Math.random() * 400;  // sparser — fewer drops per second
   });
 
   return {
