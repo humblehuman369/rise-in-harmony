@@ -229,12 +229,21 @@ export default function Player() {
   const [showBreathing, setShowBreathing] = useState(false);
   // Volume level before breathing session started — used to restore after
   const breathingPreVolumeRef = useRef<number>(0.6);
+  // Tracks the current bg level set by the slider so we can restore correctly
+  const breathingBgVolumeRef = useRef<number>(0.12);
 
   const handleBreathingSessionStart = useCallback(() => {
     breathingPreVolumeRef.current = volume;
-    // Fade frequency down to 20% as a soft ambient underlay
-    setVolume(Math.max(volume * 0.2, 0.05));
+    // Fade frequency down to the slider's initial default (12%)
+    const bgVol = Math.min(Math.max(volume * 0.2, 0.05), 0.4);
+    breathingBgVolumeRef.current = bgVol;
+    setVolume(bgVol);
   }, [volume, setVolume]);
+
+  const handleBgVolumeChange = useCallback((v: number) => {
+    breathingBgVolumeRef.current = v;
+    setVolume(v);
+  }, [setVolume]);
 
   const handleBreathingSessionEnd = useCallback(() => {
     // Restore to the volume level before the session started
@@ -656,6 +665,8 @@ export default function Player() {
           accentColor="#00D4AA"
           onSessionStart={handleBreathingSessionStart}
           onSessionEnd={handleBreathingSessionEnd}
+          onBgVolumeChange={handleBgVolumeChange}
+          initialBgVolume={breathingBgVolumeRef.current}
         />
       )}
     </Layout>

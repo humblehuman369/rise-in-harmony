@@ -91,9 +91,13 @@ interface BreathingGuideProps {
   onSessionStart?: () => void;
   /** Called when a breathing session ends or the overlay closes — use to restore background audio */
   onSessionEnd?: () => void;
+  /** Called with the new 0–1 volume whenever the user moves the bg frequency slider */
+  onBgVolumeChange?: (v: number) => void;
+  /** Initial background frequency volume (0–1) shown on the slider */
+  initialBgVolume?: number;
 }
 
-export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSessionStart, onSessionEnd }: BreathingGuideProps) {
+export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSessionStart, onSessionEnd, onBgVolumeChange, initialBgVolume = 0.12 }: BreathingGuideProps) {
   const [selectedPattern, setSelectedPattern] = useState<BreathPattern>(BREATH_PATTERNS[0]);
   const [isRunning, setIsRunning] = useState(false);
   const [introPlaying, setIntroPlaying] = useState(false);
@@ -102,6 +106,7 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
   const [cycleCount, setCycleCount] = useState(0);
   const [circleScale, setCircleScale] = useState(1.0);
   const [guided, setGuided] = useState(true);
+  const [bgVolume, setBgVolume] = useState(initialBgVolume);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -374,6 +379,41 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
                 Silent
               </button>
             </div>
+
+            {/* Background frequency volume slider */}
+            {onBgVolumeChange && (
+              <div className="mt-4 px-1">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                    Background Frequency
+                  </span>
+                  <span className="text-[10px] font-mono" style={{ color: accentColor, fontFamily: "DM Sans, sans-serif" }}>
+                    {Math.round(bgVolume * 100)}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={0.4}
+                  step={0.01}
+                  value={bgVolume}
+                  onChange={e => {
+                    const v = parseFloat(e.target.value);
+                    setBgVolume(v);
+                    onBgVolumeChange(v);
+                  }}
+                  className="w-full h-1 rounded-full appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, ${accentColor} ${bgVolume / 0.4 * 100}%, rgba(255,255,255,0.1) ${bgVolume / 0.4 * 100}%)`,
+                    accentColor,
+                  }}
+                />
+                <div className="flex justify-between mt-1">
+                  <span className="text-[9px]" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>Off</span>
+                  <span className="text-[9px]" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>40%</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -495,6 +535,37 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
             >
               {selectedPattern.benefit}
             </p>
+          )}
+
+          {/* Bg frequency slider during active session */}
+          {(isRunning || introPlaying) && onBgVolumeChange && (
+            <div className="mt-5 w-full px-1" style={{ maxWidth: "240px" }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                  Background Frequency
+                </span>
+                <span className="text-[10px] font-mono" style={{ color: accentColor, fontFamily: "DM Sans, sans-serif" }}>
+                  {Math.round(bgVolume * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={0.4}
+                step={0.01}
+                value={bgVolume}
+                onChange={e => {
+                  const v = parseFloat(e.target.value);
+                  setBgVolume(v);
+                  onBgVolumeChange(v);
+                }}
+                className="w-full h-1 rounded-full appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, ${accentColor} ${bgVolume / 0.4 * 100}%, rgba(255,255,255,0.1) ${bgVolume / 0.4 * 100}%)`,
+                  accentColor,
+                }}
+              />
+            </div>
           )}
         </div>
       </div>
