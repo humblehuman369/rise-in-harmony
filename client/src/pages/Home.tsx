@@ -80,44 +80,56 @@ export default function Home() {
       <section className="relative min-h-screen flex items-center overflow-hidden">
         {/* Background image */}
         <div className="absolute inset-0 z-0">
-          <img
-            src="/manus-storage/rih-hero-bg_b01c003a.jpg"
-            alt="Bioluminescent deep ocean scene representing healing frequency vibrations"
-            className="w-full h-full object-cover"
-            style={{ opacity: isLight ? 0.75 : 0.55 }}
-          />
-          <div className="absolute inset-0" style={{
-            background: isLight
-              ? 'linear-gradient(120deg, rgba(255,252,245,0.95) 0%, rgba(240,252,250,0.80) 45%, rgba(220,240,255,0.70) 75%, rgba(230,220,255,0.60) 100%)'
-              : 'linear-gradient(135deg, rgba(10,11,20,0.85) 0%, rgba(10,11,20,0.5) 50%, rgba(10,11,20,0.8) 100%)',
-          }} />
+          {/* Light mode: use the cosmic/galaxy mockup image */}
+          {isLight ? (
+            <img
+              src="/manus-storage/rih-hero-light-bg_e088a906.png"
+              alt="Cosmic galaxy background with warm cream and teal tones"
+              className="w-full h-full object-cover object-left"
+              style={{ opacity: 1 }}
+            />
+          ) : (
+            <>
+              <img
+                src="/manus-storage/rih-hero-bg_b01c003a.jpg"
+                alt="Bioluminescent deep ocean scene representing healing frequency vibrations"
+                className="w-full h-full object-cover"
+                style={{ opacity: 0.55 }}
+              />
+              <div className="absolute inset-0" style={{
+                background: 'linear-gradient(135deg, rgba(10,11,20,0.85) 0%, rgba(10,11,20,0.5) 50%, rgba(10,11,20,0.8) 100%)',
+              }} />
+            </>
+          )}
         </div>
 
-        {/* Animated rings */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-          {[1, 2, 3].map(i => (
-            <div
-              key={i}
-              className="absolute rounded-full border"
-              style={{
-                width: `${200 + i * 120}px`,
-                height: `${200 + i * 120}px`,
-                borderColor: `rgba(0,212,170,${0.12 - i * 0.03})`,
-                animation: `frequency-pulse ${3 + i * 0.8}s ease-in-out infinite`,
-                animationDelay: `${i * 0.4}s`,
-              }}
-            />
-          ))}
-        </div>
+        {/* Animated rings — dark mode only; light mode uses the image's built-in rings */}
+        {!isLight && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+            {[1, 2, 3].map(i => (
+              <div
+                key={i}
+                className="absolute rounded-full border"
+                style={{
+                  width: `${200 + i * 120}px`,
+                  height: `${200 + i * 120}px`,
+                  borderColor: `rgba(0,212,170,${0.12 - i * 0.03})`,
+                  animation: `frequency-pulse ${3 + i * 0.8}s ease-in-out infinite`,
+                  animationDelay: `${i * 0.4}s`,
+                }}
+              />
+            ))}
+          </div>
+        )}
 
         <div className="container relative z-10 pt-20 pb-16">
           <div className="max-w-3xl">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-8"
               style={{
-                background: isLight ? '#00C4A0' : 'rgba(0,212,170,0.1)',
-                border: isLight ? 'none' : '1px solid rgba(0,212,170,0.25)',
-                color: isLight ? '#FFFFFF' : '#00D4AA',
+                background: isLight ? 'rgba(255,255,255,0.85)' : 'rgba(0,212,170,0.1)',
+                border: isLight ? '1.5px solid #00C4A0' : '1px solid rgba(0,212,170,0.25)',
+                color: isLight ? '#00A88A' : '#00D4AA',
                 fontFamily: 'DM Sans, sans-serif',
               }}>
               <span className="w-1.5 h-1.5 rounded-full bg-[#00D4AA] animate-pulse" />
