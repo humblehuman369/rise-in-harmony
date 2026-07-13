@@ -31,14 +31,14 @@ interface BreathPattern {
 
 /** Measured intro audio durations in ms (from ffprobe) */
 const INTRO_DURATION_MS: Record<string, number> = {
-  "478": 34_400,
-  "box": 32_080,
-  "calm": 32_240,
+  "478": 29_000,
+  "box": 30_720,
+  "calm": 29_120,
 };
 
 /** Number of cycles after which the completion cue plays */
 const COMPLETE_AFTER_CYCLES = 5;
-const COMPLETE_CUE = "/manus-storage/complete_50ff21ab.wav";
+const COMPLETE_CUE = "/manus-storage/v2-complete_3b0e0367.wav";
 
 export const BREATH_PATTERNS: BreathPattern[] = [
   {
@@ -47,11 +47,11 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     description: "Inhale 4s · Hold 7s · Exhale 8s",
     benefit: "Calms the nervous system, ideal before sleep",
     color: "#8B5CF6",
-    introCue: "/manus-storage/478-intro_2da42d93.wav",
+    introCue: "/manus-storage/v2-478-intro_8eb10b42.wav",
     phases: [
-      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.4, voiceCue: "/manus-storage/478-inhale_5ac310e7.wav" },
-      { label: "Hold", seconds: 7, color: "#8B5CF6", scale: 1.4, voiceCue: "/manus-storage/478-hold_dc3c56ff.wav" },
-      { label: "Exhale", seconds: 8, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/478-exhale_c1c86e20.wav" },
+      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.4, voiceCue: "/manus-storage/v2-478-inhale_b9f2c19e.wav" },
+      { label: "Hold", seconds: 7, color: "#8B5CF6", scale: 1.4, voiceCue: "/manus-storage/v2-478-hold_6aa044c1.wav" },
+      { label: "Exhale", seconds: 8, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/v2-478-exhale_e50f5d78.wav" },
     ],
   },
   {
@@ -60,12 +60,12 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     description: "Inhale 4s · Hold 4s · Exhale 4s · Hold 4s",
     benefit: "Reduces stress, sharpens focus and clarity",
     color: "#00D4AA",
-    introCue: "/manus-storage/box-intro_7da5eead.wav",
+    introCue: "/manus-storage/v2-box-intro_6a67f083.wav",
     phases: [
-      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.35, voiceCue: "/manus-storage/box-inhale_d9e9dec5.wav" },
-      { label: "Hold", seconds: 4, color: "#8B5CF6", scale: 1.35, voiceCue: "/manus-storage/box-hold-top_34320c65.wav" },
-      { label: "Exhale", seconds: 4, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/box-exhale_221d3a99.wav" },
-      { label: "Hold", seconds: 4, color: "#6B7A99", scale: 0.7, voiceCue: "/manus-storage/box-hold-bottom_28685bfc.wav" },
+      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.35, voiceCue: "/manus-storage/v2-box-inhale_9e1c5838.wav" },
+      { label: "Hold", seconds: 4, color: "#8B5CF6", scale: 1.35, voiceCue: "/manus-storage/v2-box-hold-top_212a3a20.wav" },
+      { label: "Exhale", seconds: 4, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/v2-box-exhale_c1886059.wav" },
+      { label: "Hold", seconds: 4, color: "#6B7A99", scale: 0.7, voiceCue: "/manus-storage/v2-box-hold-bottom_afe4cb52.wav" },
     ],
   },
   {
@@ -74,10 +74,10 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     description: "Inhale 5s · Exhale 5s",
     benefit: "Simple coherence breathing for grounding",
     color: "#F59E0B",
-    introCue: "/manus-storage/calm-intro_39b53cef.wav",
+    introCue: "/manus-storage/v2-calm-intro_dbcdc3b9.wav",
     phases: [
-      { label: "Inhale", seconds: 5, color: "#F59E0B", scale: 1.4, voiceCue: "/manus-storage/calm-inhale_26039357.wav" },
-      { label: "Exhale", seconds: 5, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/calm-exhale_40cbc5f0.wav" },
+      { label: "Inhale", seconds: 5, color: "#F59E0B", scale: 1.4, voiceCue: "/manus-storage/v2-calm-inhale_79ba4dcc.wav" },
+      { label: "Exhale", seconds: 5, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/v2-calm-exhale_99c92c60.wav" },
     ],
   },
 ];
