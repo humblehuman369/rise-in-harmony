@@ -9,13 +9,14 @@
  *   - Full 7-Chakra Journey modal with duration picker
  */
 import { useState, useEffect, useRef } from "react";
-import { Play, Pause, Volume2, VolumeX, ChevronLeft, ChevronRight, Lock, Zap, Sparkles } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, ChevronLeft, ChevronRight, Lock, Zap, Sparkles, Wind } from "lucide-react";
 import Layout from "@/components/Layout";
 import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFrequencyPlayer";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import ChakraSequence from "@/components/ChakraSequence";
 import PremiumPaywall from "@/components/PremiumPaywall";
+import BreathingGuide from "@/components/BreathingGuide";
 
 // ─── Chakra affirmation data ──────────────────────────────────────────────────
 
@@ -225,6 +226,7 @@ export default function Player() {
   const [showChakra, setShowChakra] = useState(false);
   const [chakraAutoStart, setChakraAutoStart] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showBreathing, setShowBreathing] = useState(false);
 
   const selected = FREQUENCIES[selectedIndex];
 
@@ -350,6 +352,22 @@ export default function Player() {
               >
                 <Zap size={12} />
                 7-Chakra Journey
+              </button>
+              {/* Breathe — opens Breathing Patterns overlay */}
+              <button
+                onClick={() => setShowBreathing(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(0,212,170,0.2))',
+                  border: '1px solid rgba(0,212,170,0.3)',
+                  color: '#67E8F9',
+                  fontFamily: 'DM Sans, sans-serif',
+                  boxShadow: '0 0 16px rgba(0,212,170,0.10)',
+                }}
+                title="Open guided breathing patterns"
+              >
+                <Wind size={12} />
+                Breathe
               </button>
             </div>
           </div>
@@ -619,6 +637,9 @@ export default function Player() {
           </div>
         </div>
       </div>
+      {showBreathing && (
+        <BreathingGuide onClose={() => setShowBreathing(false)} accentColor="#00D4AA" />
+      )}
     </Layout>
   );
 }
