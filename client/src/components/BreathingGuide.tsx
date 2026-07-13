@@ -27,15 +27,7 @@ interface BreathPattern {
   benefit: string;
   color: string;
   phases: BreathPhase[];
-  introCue: string;
 }
-
-/** Measured intro audio durations in ms (from ffprobe) */
-const INTRO_DURATION_MS: Record<string, number> = {
-  "478": 29_000,
-  "box": 30_720,
-  "calm": 29_120,
-};
 
 /** Number of cycles after which the completion cue plays */
 const COMPLETE_AFTER_CYCLES = 5;
@@ -48,11 +40,10 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     description: "Inhale 4s · Hold 7s · Exhale 8s",
     benefit: "Calms the nervous system, ideal before sleep",
     color: "#8B5CF6",
-    introCue: "/manus-storage/v2-478-intro_8eb10b42.wav",
     phases: [
-      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.4, voiceCue: "/manus-storage/v2-478-inhale_b9f2c19e.wav" },
-      { label: "Hold", seconds: 7, color: "#8B5CF6", scale: 1.4, voiceCue: "/manus-storage/v2-478-hold_6aa044c1.wav" },
-      { label: "Exhale", seconds: 8, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/v2-478-exhale_e50f5d78.wav" },
+      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.4, voiceCue: "/manus-storage/breath-478-inhale_590b2009.wav" },
+      { label: "Hold", seconds: 7, color: "#8B5CF6", scale: 1.4, voiceCue: "/manus-storage/breath-478-hold_650f4e10.wav" },
+      { label: "Exhale", seconds: 8, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/breath-478-exhale_155e4a0e.wav" },
     ],
   },
   {
@@ -61,12 +52,11 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     description: "Inhale 4s · Hold 4s · Exhale 4s · Hold 4s",
     benefit: "Reduces stress, sharpens focus and clarity",
     color: "#00D4AA",
-    introCue: "/manus-storage/v2-box-intro_6a67f083.wav",
     phases: [
-      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.35, voiceCue: "/manus-storage/v2-box-inhale_9e1c5838.wav" },
-      { label: "Hold", seconds: 4, color: "#8B5CF6", scale: 1.35, voiceCue: "/manus-storage/v2-box-hold-top_212a3a20.wav" },
-      { label: "Exhale", seconds: 4, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/v2-box-exhale_c1886059.wav" },
-      { label: "Hold", seconds: 4, color: "#6B7A99", scale: 0.7, voiceCue: "/manus-storage/v2-box-hold-bottom_afe4cb52.wav" },
+      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.35, voiceCue: "/manus-storage/breath-box-inhale_1fa5f9af.wav" },
+      { label: "Hold", seconds: 4, color: "#8B5CF6", scale: 1.35, voiceCue: "/manus-storage/breath-box-hold-top_55e2131f.wav" },
+      { label: "Exhale", seconds: 4, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/breath-box-exhale_8432a928.wav" },
+      { label: "Hold", seconds: 4, color: "#6B7A99", scale: 0.7, voiceCue: "/manus-storage/breath-box-hold-bottom_8ebb4b3f.wav" },
     ],
   },
   {
@@ -75,10 +65,9 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     description: "Inhale 5s · Exhale 5s",
     benefit: "Simple coherence breathing for grounding",
     color: "#F59E0B",
-    introCue: "/manus-storage/v2-calm-intro_dbcdc3b9.wav",
     phases: [
-      { label: "Inhale", seconds: 5, color: "#F59E0B", scale: 1.4, voiceCue: "/manus-storage/v2-calm-inhale_79ba4dcc.wav" },
-      { label: "Exhale", seconds: 5, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/v2-calm-exhale_99c92c60.wav" },
+      { label: "Inhale", seconds: 5, color: "#F59E0B", scale: 1.4, voiceCue: "/manus-storage/breath-calm-inhale_3b4982b3.wav" },
+      { label: "Exhale", seconds: 5, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/breath-calm-exhale_4c5b28f8.wav" },
     ],
   },
 ];
@@ -103,7 +92,6 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
   const isLight = theme === 'light';
   const [selectedPattern, setSelectedPattern] = useState<BreathPattern>(BREATH_PATTERNS[0]);
   const [isRunning, setIsRunning] = useState(false);
-  const [introPlaying, setIntroPlaying] = useState(false);
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [phaseRemain, setPhaseRemain] = useState(0);
   const [cycleCount, setCycleCount] = useState(0);
@@ -112,7 +100,6 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
   const [bgVolume, setBgVolume] = useState(initialBgVolume);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
@@ -195,15 +182,10 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
     intervalRef.current = null;
   }, []);
 
-  const clearIntroTimeout = useCallback(() => {
-    if (introTimeoutRef.current) clearTimeout(introTimeoutRef.current);
-    introTimeoutRef.current = null;
-  }, []);
 
   // ── Session control ──────────────────────────────────────────────────────────
   const startBreathing = useCallback(() => {
     stopTimer();
-    clearIntroTimeout();
     const pattern = selectedPattern;
     let pIdx = 0;
     let remain = pattern.phases[0].seconds;
@@ -245,41 +227,26 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
     };
 
     onSessionStart?.();
-
-    if (guided) {
-      setIntroPlaying(true);
-      setIsRunning(false);
-      playVoiceCue(pattern.introCue);
-      const introMs = INTRO_DURATION_MS[pattern.id] ?? 10_000;
-      introTimeoutRef.current = setTimeout(() => {
-        setIntroPlaying(false);
-        runTimer();
-      }, introMs);
-    } else {
-      runTimer();
-    }
-  }, [selectedPattern, guided, stopTimer, clearIntroTimeout, playVoiceCue, onSessionStart]);
+    runTimer();
+  }, [selectedPattern, guided, stopTimer, playVoiceCue, onSessionStart]);
 
   const stopBreathing = useCallback(() => {
     stopTimer();
-    clearIntroTimeout();
     stopAudio();
     setIsRunning(false);
-    setIntroPlaying(false);
     setPhaseIndex(0);
     setPhaseRemain(0);
     setCircleScale(1.0);
     setCycleCount(0);
     onSessionEnd?.();
-  }, [stopTimer, clearIntroTimeout, stopAudio, onSessionEnd]);
+  }, [stopTimer, stopAudio, onSessionEnd]);
 
   useEffect(() => {
     return () => {
       stopTimer();
-      clearIntroTimeout();
       stopAudio();
     };
-  }, [stopTimer, clearIntroTimeout, stopAudio]);
+  }, [stopTimer, stopAudio]);
 
   const transitionDuration = isRunning ? `${currentPhase?.seconds ?? 4}s` : "0.4s";
 
@@ -309,8 +276,8 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
           <X size={16} />
         </button>
 
-        {/* Pattern selector (shown when not running and not in intro) */}
-        {!isRunning && !introPlaying && (
+        {/* Pattern selector (shown when not running) */}
+        {!isRunning && (
           <div className="mb-6">
             <div
               className="text-xs font-semibold uppercase tracking-widest mb-3 text-center"
@@ -420,21 +387,6 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
           </div>
         )}
 
-        {/* Intro playing state */}
-        {introPlaying && (
-          <div
-            className="mb-6 px-4 py-3 rounded-xl text-center text-sm"
-            style={{
-              background: "rgba(0,212,170,0.08)",
-              border: "1px solid rgba(0,212,170,0.2)",
-              color: "#00D4AA",
-              fontFamily: "DM Sans, sans-serif",
-            }}
-          >
-            🎙 Listening to introduction…
-          </div>
-        )}
-
         {/* Breathing circle */}
         <div className="flex flex-col items-center">
           <div className="relative flex items-center justify-center" style={{ width: "220px", height: "220px" }}>
@@ -513,7 +465,7 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
           )}
 
           {/* Start / Stop button */}
-          {!introPlaying && (
+          {(
             <button
               onClick={isRunning ? stopBreathing : startBreathing}
               className="mt-6 px-8 py-3 rounded-full font-semibold text-sm transition-all duration-200 active:scale-95"
@@ -531,7 +483,7 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
             </button>
           )}
 
-          {!isRunning && !introPlaying && (
+          {!isRunning && (
             <p
               className="mt-4 text-xs text-center leading-relaxed"
               style={{ color: isLight ? "#6B7A99" : "#4A5568", fontFamily: "DM Sans, sans-serif", maxWidth: "240px" }}
@@ -541,7 +493,7 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
           )}
 
           {/* Bg frequency slider during active session */}
-          {(isRunning || introPlaying) && onBgVolumeChange && (
+          {isRunning && onBgVolumeChange && (
             <div className="mt-5 w-full px-1" style={{ maxWidth: "240px" }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
