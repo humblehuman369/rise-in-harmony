@@ -1113,15 +1113,6 @@ export default function Alarm() {
           </div>
         </div>
 
-        <div className="mx-6 mb-8 rounded-2xl overflow-hidden" style={{ height: '180px' }}>
-          <img src="/manus-storage/rih-alarm-visual_9be7e1ae.jpg" alt="Healing alarm visualization" className="w-full h-full object-cover" />
-          <div className="relative -mt-full h-full flex items-end p-5" style={{ background: 'linear-gradient(to top, rgba(10,11,20,0.8), transparent)' }}>
-            <div>
-              <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>Progressive Wake-Up</div>
-              <div className="text-xs" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>Gentle frequency fade-in over your chosen duration</div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {showCreate && (
