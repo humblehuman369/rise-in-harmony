@@ -17,7 +17,6 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useAlarmNotifications } from "@/hooks/useAlarmNotifications";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { useTheme } from "@/contexts/ThemeContext";
 import { trpc } from "@/lib/trpc";
 import { trackPaywallTriggered } from "@/hooks/useAnalytics";
 import PremiumPaywall from "@/components/PremiumPaywall";
@@ -98,7 +97,7 @@ interface DrumRollPickerProps {
   height?: number;
 }
 
-function DrumRollPicker({ value, items, onChange, height = 180, isLight = false }: DrumRollPickerProps & { isLight?: boolean }) {
+function DrumRollPicker({ value, items, onChange, height = 180 }: DrumRollPickerProps) {
   const ITEM_H = 44;
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -151,12 +150,12 @@ function DrumRollPicker({ value, items, onChange, height = 180, isLight = false 
       {/* Top fade */}
       <div className="pointer-events-none absolute top-0 left-0 right-0 z-10" style={{
         height: '40%',
-        background: isLight ? 'linear-gradient(to bottom, rgba(245,246,249,1) 0%, transparent 100%)' : 'linear-gradient(to bottom, rgba(18,21,42,1) 0%, transparent 100%)',
+        background: 'linear-gradient(to bottom, rgba(18,21,42,1) 0%, transparent 100%)',
       }} />
       {/* Bottom fade */}
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10" style={{
         height: '40%',
-        background: isLight ? 'linear-gradient(to top, rgba(245,246,249,1) 0%, transparent 100%)' : 'linear-gradient(to top, rgba(18,21,42,1) 0%, transparent 100%)',
+        background: 'linear-gradient(to top, rgba(18,21,42,1) 0%, transparent 100%)',
       }} />
       {/* Scroll container */}
       <div
@@ -187,7 +186,7 @@ function DrumRollPicker({ value, items, onChange, height = 180, isLight = false 
               fontFamily: 'DM Mono, monospace',
               fontSize: '1.5rem',
               fontWeight: item.value === value ? 700 : 400,
-              color: item.value === value ? (isLight ? '#1A1D2E' : '#E8EDF5') : '#4A5568',
+              color: item.value === value ? '#E8EDF5' : '#4A5568',
               transition: 'color 0.15s, font-weight 0.15s',
               userSelect: 'none',
             }}
@@ -201,12 +200,11 @@ function DrumRollPicker({ value, items, onChange, height = 180, isLight = false 
 }
 
 // ─── iOS-style swipeable AlarmCard ───────────────────────────────────────────
-function AlarmCard({ alarm, onToggle, onDelete, onEdit, isLight = false }: {
+function AlarmCard({ alarm, onToggle, onDelete, onEdit }: {
   alarm: Alarm;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit: (alarm: Alarm) => void;
-  isLight?: boolean;
 }) {
   const freq = FREQUENCIES.find(f => f.id === alarm.frequencyId);
   const seq = WAKE_SEQUENCES.find(s => s.id === alarm.sequenceId);
@@ -290,7 +288,7 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit, isLight = false }: {
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 mb-1">
-              <span className="font-mono-brand font-bold" style={{ fontSize: '2.5rem', lineHeight: 1, color: alarm.enabled ? (isLight ? '#1A1D2E' : '#E8EDF5') : '#6B7A99' }}>
+              <span className="font-mono-brand font-bold" style={{ fontSize: '2.5rem', lineHeight: 1, color: alarm.enabled ? '#E8EDF5' : '#6B7A99' }}>
                 {displayHour}:{m}
               </span>
               <span className="font-mono-brand text-lg font-medium" style={{ color: alarm.enabled ? '#6B7A99' : '#4A5568' }}>
@@ -303,7 +301,7 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit, isLight = false }: {
               {DAY_LABELS.map((d, i) => (
                 <span key={i} className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold"
                   style={{
-                    background: alarm.days.includes(i) ? `${freq?.color || '#00D4AA'}20` : isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
+                    background: alarm.days.includes(i) ? `${freq?.color || '#00D4AA'}20` : 'rgba(255,255,255,0.04)',
                     color: alarm.days.includes(i) ? freq?.color || '#00D4AA' : '#4A5568',
                     fontFamily: 'DM Sans, sans-serif',
                   }}>
@@ -337,7 +335,7 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit, isLight = false }: {
             <div className="flex gap-2">
               <button onClick={(e) => { e.stopPropagation(); onEdit(alarm); }}
                 className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200"
-                style={{ color: '#6B7A99', background: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)' }}
+                style={{ color: '#6B7A99', background: 'rgba(255,255,255,0.04)' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#00D4AA'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
                 title="Edit alarm">
@@ -345,7 +343,7 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit, isLight = false }: {
               </button>
               <button onClick={(e) => { e.stopPropagation(); onDelete(alarm.id); }}
                 className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200"
-                style={{ color: '#6B7A99', background: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)' }}
+                style={{ color: '#6B7A99', background: 'rgba(255,255,255,0.04)' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#EF4444'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
                 title="Delete alarm">
@@ -372,7 +370,7 @@ interface AlarmEditorSheetProps {
   onPremiumNeeded: () => void;
 }
 
-function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, isPremium, onPremiumNeeded, isLight = false }: AlarmEditorSheetProps & { isLight?: boolean }) {
+function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, isPremium, onPremiumNeeded }: AlarmEditorSheetProps) {
   const isEditing = !!editingAlarm;
 
   // Parse initial time
@@ -467,17 +465,17 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
       style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)' }}>
       <div className="w-full max-w-md rounded-t-3xl sm:rounded-2xl overflow-hidden flex flex-col"
-        style={{ background: isLight ? '#FFFFFF' : '#12152A', border: isLight ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.08)', maxHeight: '92vh', boxShadow: isLight ? '0 -8px 40px rgba(0,0,0,0.12)' : '0 -8px 40px rgba(0,0,0,0.5)' }}>
+        style={{ background: '#12152A', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '92vh' }}>
 
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.15)' }} />
+          <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
           <button onClick={onClose} className="text-sm font-semibold" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Cancel</button>
-          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.25rem', fontWeight: 600, color: isLight ? '#1A1D2E' : '#E8EDF5' }}>
+          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.25rem', fontWeight: 600, color: '#E8EDF5' }}>
             {isEditing ? 'Edit Alarm' : 'New Healing Alarm'}
           </h2>
           <button onClick={handleSave} className="text-sm font-bold" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
@@ -495,7 +493,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
               type="text" value={label} onChange={e => setLabel(e.target.value)} placeholder="e.g. Morning Harmony"
               autoFocus
               className="w-full px-4 py-3 rounded-xl text-sm"
-              style={{ background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,212,170,0.25)', color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif', outline: 'none' }}
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,212,170,0.25)', color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif', outline: 'none' }}
             />
           </div>
 
@@ -504,16 +502,16 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
             <label className="block text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
               Wake Time
             </label>
-            <div className="rounded-2xl overflow-hidden" style={{ background: isLight ? 'rgba(0,212,170,0.05)' : 'rgba(0,212,170,0.04)', border: '1px solid rgba(0,212,170,0.15)' }}>
+            <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(0,212,170,0.04)', border: '1px solid rgba(0,212,170,0.15)' }}>
               <div className="flex items-center justify-center gap-1 px-4 py-2">
                 {/* Hour wheel */}
                 <div style={{ flex: 1, maxWidth: 80 }}>
-                  <DrumRollPicker value={hour12} items={hourItems} onChange={setHour12} height={180} isLight={isLight} />
+                  <DrumRollPicker value={hour12} items={hourItems} onChange={setHour12} height={180} />
                 </div>
-                <span className="font-mono-brand text-3xl font-bold" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', paddingBottom: 4 }}>:</span>
+                <span className="font-mono-brand text-3xl font-bold" style={{ color: '#E8EDF5', paddingBottom: 4 }}>:</span>
                 {/* Minute wheel */}
                 <div style={{ flex: 1, maxWidth: 80 }}>
-                  <DrumRollPicker value={minute} items={minuteItems} onChange={setMinute} height={180} isLight={isLight} />
+                  <DrumRollPicker value={minute} items={minuteItems} onChange={setMinute} height={180} />
                 </div>
                 {/* AM/PM toggle */}
                 <div className="flex flex-col gap-2 ml-3">
@@ -521,8 +519,8 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                     onClick={() => setIsAM(true)}
                     className="px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
                     style={{
-                      background: isAM ? 'rgba(0,212,170,0.2)' : isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
-                      border: `1.5px solid ${isAM ? 'rgba(0,212,170,0.5)' : isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)'}`,
+                      background: isAM ? 'rgba(0,212,170,0.2)' : 'rgba(255,255,255,0.04)',
+                      border: `1.5px solid ${isAM ? 'rgba(0,212,170,0.5)' : 'rgba(255,255,255,0.08)'}`,
                       color: isAM ? '#00D4AA' : '#4A5568',
                       fontFamily: 'DM Sans, sans-serif',
                     }}>
@@ -532,8 +530,8 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                     onClick={() => setIsAM(false)}
                     className="px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
                     style={{
-                      background: !isAM ? 'rgba(0,212,170,0.2)' : isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
-                      border: `1.5px solid ${!isAM ? 'rgba(0,212,170,0.5)' : isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)'}`,
+                      background: !isAM ? 'rgba(0,212,170,0.2)' : 'rgba(255,255,255,0.04)',
+                      border: `1.5px solid ${!isAM ? 'rgba(0,212,170,0.5)' : 'rgba(255,255,255,0.08)'}`,
                       color: !isAM ? '#00D4AA' : '#4A5568',
                       fontFamily: 'DM Sans, sans-serif',
                     }}>
@@ -556,8 +554,8 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                 <button key={i} onClick={() => toggleDay(i)}
                   className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200"
                   style={{
-                    background: selectedDays.includes(i) ? 'rgba(0,212,170,0.18)' : isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
-                    border: `1.5px solid ${selectedDays.includes(i) ? 'rgba(0,212,170,0.5)' : isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.06)'}`,
+                    background: selectedDays.includes(i) ? 'rgba(0,212,170,0.18)' : 'rgba(255,255,255,0.04)',
+                    border: `1.5px solid ${selectedDays.includes(i) ? 'rgba(0,212,170,0.5)' : 'rgba(255,255,255,0.06)'}`,
                     color: selectedDays.includes(i) ? '#00D4AA' : '#6B7A99',
                     fontFamily: 'DM Sans, sans-serif',
                   }}>
@@ -572,8 +570,8 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                   <button key={preset.label} onClick={() => setSelectedDays(preset.days)}
                     className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all duration-150"
                     style={{
-                      background: active ? 'rgba(0,212,170,0.1)' : isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)',
-                      border: isLight ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.06)',
+                      background: active ? 'rgba(0,212,170,0.1)' : 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.06)',
                       color: active ? '#00D4AA' : '#6B7A99',
                       fontFamily: 'DM Sans, sans-serif',
                     }}>
@@ -596,8 +594,8 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                 <button key={tab.mode} onClick={() => setSoundMode(tab.mode)}
                   className="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200"
                   style={{
-                    background: soundMode === tab.mode ? tab.activeBg : isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${soundMode === tab.mode ? tab.activeBorder : isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)'}`,
+                    background: soundMode === tab.mode ? tab.activeBg : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${soundMode === tab.mode ? tab.activeBorder : 'rgba(255,255,255,0.06)'}`,
                     color: soundMode === tab.mode ? tab.activeColor : '#6B7A99',
                     fontFamily: 'DM Sans, sans-serif',
                   }}>
@@ -613,8 +611,8 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                     <button key={cat.id} onClick={() => setFreqCategory(cat.id)}
                       className="flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200"
                       style={{
-                        background: freqCategory === cat.id ? 'rgba(0,212,170,0.12)' : isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${freqCategory === cat.id ? 'rgba(0,212,170,0.3)' : isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.05)'}`,
+                        background: freqCategory === cat.id ? 'rgba(0,212,170,0.12)' : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${freqCategory === cat.id ? 'rgba(0,212,170,0.3)' : 'rgba(255,255,255,0.05)'}`,
                         color: freqCategory === cat.id ? '#00D4AA' : '#6B7A99',
                         fontFamily: 'DM Sans, sans-serif',
                       }}>
@@ -631,8 +629,8 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                       <button key={f.id} onClick={() => { if (f.isPremium && !isPremium) { onPremiumNeeded(); return; } setSelectedFreq(f.id); }}
                         className="p-3 rounded-xl text-left transition-all duration-200 relative"
                         style={{
-                          background: selectedFreq === f.id ? `${f.color}18` : isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)',
-                          border: `1px solid ${selectedFreq === f.id ? f.color + '40' : isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)'}`,
+                          background: selectedFreq === f.id ? `${f.color}18` : 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${selectedFreq === f.id ? f.color + '40' : 'rgba(255,255,255,0.06)'}`,
                           opacity: f.isPremium ? 0.75 : 1,
                         }}>
                         {f.isPremium ? (
@@ -640,7 +638,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                         ) : (
                           <button onClick={(e) => togglePreview(previewKey, previewUrl, e)}
                             className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-150"
-                            style={{ background: isPreviewing ? f.color : isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPreviewing ? f.color : isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.12)'}` }}>
+                            style={{ background: isPreviewing ? f.color : 'rgba(255,255,255,0.08)', border: `1px solid ${isPreviewing ? f.color : 'rgba(255,255,255,0.12)'}` }}>
                             {isPreviewing ? <Square size={7} fill="#0A0B14" style={{ color: '#0A0B14' }} /> : <Play size={7} fill="currentColor" style={{ color: f.color }} />}
                           </button>
                         )}
@@ -675,12 +673,12 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                             <button key={loop.id} onClick={() => setSelectedAmbientId(loop.id)}
                               className="p-2.5 rounded-xl text-center transition-all duration-200 relative"
                               style={{
-                                background: selectedAmbientId === loop.id ? 'rgba(59,130,246,0.18)' : isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)',
-                                border: `1px solid ${selectedAmbientId === loop.id ? 'rgba(59,130,246,0.45)' : isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)'}`,
+                                background: selectedAmbientId === loop.id ? 'rgba(59,130,246,0.18)' : 'rgba(255,255,255,0.03)',
+                                border: `1px solid ${selectedAmbientId === loop.id ? 'rgba(59,130,246,0.45)' : 'rgba(255,255,255,0.06)'}`,
                               }}>
                               <button onClick={(e) => togglePreview(previewKey, getLibraryLoopUrl(loop.id), e)}
                                 className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center"
-                                style={{ background: isPreviewing ? catColor : isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPreviewing ? catColor : isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.12)'}` }}>
+                                style={{ background: isPreviewing ? catColor : 'rgba(255,255,255,0.08)', border: `1px solid ${isPreviewing ? catColor : 'rgba(255,255,255,0.12)'}` }}>
                                 {isPreviewing ? <Square size={6} fill="#0A0B14" style={{ color: '#0A0B14' }} /> : <Play size={6} fill="currentColor" style={{ color: catColor }} />}
                               </button>
                               <div className="text-xs font-semibold pt-1" style={{ color: selectedAmbientId === loop.id ? '#3B82F6' : '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
@@ -703,12 +701,12 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                     <button key={mix.id} onClick={() => setSelectedMixId(mix.id)}
                       className="w-full p-3 rounded-xl text-left flex items-center gap-3 transition-all duration-200"
                       style={{
-                        background: selectedMixId === mix.id ? 'rgba(139,92,246,0.15)' : isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${selectedMixId === mix.id ? 'rgba(139,92,246,0.4)' : isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)'}`,
+                        background: selectedMixId === mix.id ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${selectedMixId === mix.id ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.06)'}`,
                       }}>
                       <Layers size={16} style={{ color: '#8B5CF6', flexShrink: 0 }} />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>{mix.name}</div>
+                        <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>{mix.name}</div>
                         <div className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>{mix.settings.frequencyHz}Hz · {mix.settings.musicMode}</div>
                       </div>
                       {selectedMixId === mix.id && <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#8B5CF6' }}><div className="w-2 h-2 rounded-full bg-white" /></div>}
@@ -735,13 +733,13 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                   onClick={() => { if (seq.isPremium) { toast("✦ Premium sequence — upgrade to unlock"); return; } setSelectedSeq(seq.id); }}
                   className="w-full p-3 rounded-xl text-left flex items-center gap-3 transition-all duration-200"
                   style={{
-                    background: selectedSeq === seq.id ? `${seq.color}12` : isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${selectedSeq === seq.id ? seq.color + '35' : isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)'}`,
+                    background: selectedSeq === seq.id ? `${seq.color}12` : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${selectedSeq === seq.id ? seq.color + '35' : 'rgba(255,255,255,0.06)'}`,
                     opacity: seq.isPremium ? 0.7 : 1,
                   }}>
                   <seq.icon size={16} style={{ color: seq.color, flexShrink: 0 }} />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold flex items-center gap-1.5" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+                    <div className="text-sm font-semibold flex items-center gap-1.5" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
                       {seq.name}{seq.isPremium && <Lock size={11} style={{ color: '#8B5CF6' }} />}
                     </div>
                     <div className="text-xs truncate" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>{seq.description}</div>
@@ -762,8 +760,8 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                 <button key={v} onClick={() => setFadeIn(v)}
                   className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200"
                   style={{
-                    background: fadeIn === v ? 'rgba(0,212,170,0.2)' : isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)',
-                    border: `1.5px solid ${fadeIn === v ? 'rgba(0,212,170,0.4)' : isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.06)'}`,
+                    background: fadeIn === v ? 'rgba(0,212,170,0.2)' : 'rgba(255,255,255,0.04)',
+                    border: `1.5px solid ${fadeIn === v ? 'rgba(0,212,170,0.4)' : 'rgba(255,255,255,0.06)'}`,
                     color: fadeIn === v ? '#00D4AA' : '#6B7A99',
                     fontFamily: 'DM Sans, sans-serif',
                   }}>
@@ -790,16 +788,16 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                 </button>
               ) : (
                 <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(239,68,68,0.3)' }}>
-                  <div className="px-4 py-3 text-center text-sm" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', background: 'rgba(239,68,68,0.08)', fontFamily: 'DM Sans, sans-serif' }}>
+                  <div className="px-4 py-3 text-center text-sm" style={{ color: '#E8EDF5', background: 'rgba(239,68,68,0.08)', fontFamily: 'DM Sans, sans-serif' }}>
                     Delete this alarm?
                   </div>
                   <div className="flex">
                     <button onClick={() => setShowDeleteConfirm(false)}
                       className="flex-1 py-3 text-sm font-semibold"
-                      style={{ color: '#6B7A99', background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)', fontFamily: 'DM Sans, sans-serif' }}>
+                      style={{ color: '#6B7A99', background: 'rgba(255,255,255,0.03)', fontFamily: 'DM Sans, sans-serif' }}>
                       Cancel
                     </button>
-                    <div style={{ width: '1px', background: isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)' }} />
+                    <div style={{ width: '1px', background: 'rgba(255,255,255,0.06)' }} />
                     <button onClick={() => { onDelete(editingAlarm.id); onClose(); }}
                       className="flex-1 py-3 text-sm font-bold"
                       style={{ color: '#EF4444', background: 'rgba(239,68,68,0.06)', fontFamily: 'DM Sans, sans-serif' }}>
@@ -821,8 +819,6 @@ interface AlarmPrefill { wakeTime?: string; frequencyHz?: number; }
 
 // ─── Main Alarm page ──────────────────────────────────────────────────────────
 export default function Alarm() {
-  const { theme } = useTheme();
-  const isLight = theme === 'light';
   const { isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
 
@@ -1013,13 +1009,13 @@ export default function Alarm() {
 
   return (
     <Layout>
-      <div className="min-h-screen" style={{ background: isLight ? 'transparent' : '#0A0B14' }}>
+      <div className="min-h-screen" style={{ background: '#0A0B14' }}>
         {/* Header */}
         <div className="px-6 pt-8 pb-6">
           <div className="flex items-start justify-between">
             <div>
               <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Smart Alarm</div>
-              <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: isLight ? '#1A1D2E' : '#E8EDF5' }}>Healing Alarms</h1>
+              <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5' }}>Healing Alarms</h1>
             </div>
             <button onClick={handleAddAlarm} className="btn-teal flex items-center gap-2 px-5 py-2.5 text-sm font-semibold">
               <Plus size={16} /> New Alarm
@@ -1043,18 +1039,18 @@ export default function Alarm() {
         <div className="px-6 pb-8 space-y-3">
           {serverAlarms.isLoading && isAuthenticated ? (
             <div className="glow-card p-8 text-center">
-              <div className="text-sm" style={{ color: isLight ? '#4A5568' : '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Loading alarms...</div>
+              <div className="text-sm" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Loading alarms...</div>
             </div>
           ) : alarms.length === 0 ? (
             <div className="glow-card p-12 text-center">
               <BellOff size={40} className="mx-auto mb-4" style={{ color: '#4A5568' }} />
-              <div className="text-base font-medium mb-2" style={{ color: isLight ? '#4A5568' : '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>No alarms yet</div>
-              <div className="text-sm mb-6" style={{ color: isLight ? '#6B7A99' : '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Set your first healing alarm to begin your morning ritual</div>
+              <div className="text-base font-medium mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>No alarms yet</div>
+              <div className="text-sm mb-6" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Set your first healing alarm to begin your morning ritual</div>
               <button onClick={() => setShowCreate(true)} className="btn-teal px-6 py-2.5 text-sm font-semibold">Create First Alarm</button>
             </div>
           ) : (
             alarms.map(alarm => (
-              <AlarmCard key={alarm.id} alarm={alarm} onToggle={toggleAlarm} onDelete={deleteAlarmById} onEdit={setEditingAlarm} isLight={isLight} />
+              <AlarmCard key={alarm.id} alarm={alarm} onToggle={toggleAlarm} onDelete={deleteAlarmById} onEdit={setEditingAlarm} />
             ))
           )}
         </div>
@@ -1066,7 +1062,7 @@ export default function Alarm() {
               <Smartphone size={18} style={{ color: '#00D4AA', flexShrink: 0, marginTop: '1px' }} />
               <div className="flex-1">
                 <div className="text-sm font-semibold mb-1" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>Get the real healing alarm</div>
-                <div className="text-xs leading-relaxed mb-3" style={{ color: isLight ? '#4A5568' : '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                <div className="text-xs leading-relaxed mb-3" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
                   Phone browsers can't wake a locked phone. The Rise In Harmony app wakes you with your chosen healing frequency reliably, even with the screen locked.
                 </div>
                 {IOS_APP_LIVE ? (
@@ -1087,7 +1083,7 @@ export default function Alarm() {
               <BellRing size={18} style={{ color: '#00D4AA', flexShrink: 0, marginTop: '1px' }} />
               <div className="flex-1">
                 <div className="text-sm font-semibold mb-1" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>Enable Alarm Notifications</div>
-                <div className="text-xs leading-relaxed mb-3" style={{ color: isLight ? '#4A5568' : '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Allow browser notifications so your healing alarms fire even when the app is in the background.</div>
+                <div className="text-xs leading-relaxed mb-3" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Allow browser notifications so your healing alarms fire even when the app is in the background.</div>
                 <button onClick={requestPermission} className="btn-teal px-4 py-2 text-xs font-semibold flex items-center gap-1.5">
                   <Bell size={13} /> Enable Notifications
                 </button>
@@ -1099,7 +1095,7 @@ export default function Alarm() {
         {mobilePlatform === null && isGranted && (
           <div className="mx-6 mb-4 p-3 rounded-xl flex items-center gap-2.5" style={{ background: 'rgba(0,212,170,0.06)', border: '1px solid rgba(0,212,170,0.12)' }}>
             <ShieldCheck size={15} style={{ color: '#00D4AA', flexShrink: 0 }} />
-            <span className="text-xs" style={{ color: isLight ? '#4A5568' : '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Browser notifications active — alarms will fire even when the app is minimized.</span>
+            <span className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Browser notifications active — alarms will fire even when the app is minimized.</span>
           </div>
         )}
 
@@ -1108,19 +1104,28 @@ export default function Alarm() {
             <AlarmClock size={18} style={{ color: '#F59E0B', flexShrink: 0, marginTop: '1px' }} />
             <div>
               <div className="text-sm font-semibold mb-1" style={{ color: '#F59E0B', fontFamily: 'DM Sans, sans-serif' }}>Native App Alarms</div>
-              <div className="text-xs leading-relaxed" style={{ color: isLight ? '#4A5568' : '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>The mobile app schedules alarms through the system notification service for exact delivery, even with the screen locked. Web alarms use browser notifications and require this tab to stay open.</div>
+              <div className="text-xs leading-relaxed" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>The mobile app schedules alarms through the system notification service for exact delivery, even with the screen locked. Web alarms use browser notifications and require this tab to stay open.</div>
             </div>
           </div>
         </div>
 
+        <div className="mx-6 mb-8 rounded-2xl overflow-hidden" style={{ height: '180px' }}>
+          <img src="/manus-storage/rih-alarm-visual_9be7e1ae.jpg" alt="Healing alarm visualization" className="w-full h-full object-cover" />
+          <div className="relative -mt-full h-full flex items-end p-5" style={{ background: 'linear-gradient(to top, rgba(10,11,20,0.8), transparent)' }}>
+            <div>
+              <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>Progressive Wake-Up</div>
+              <div className="text-xs" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>Gentle frequency fade-in over your chosen duration</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {showCreate && (
-        <AlarmEditorSheet onClose={() => setShowCreate(false)} onSave={saveAlarm} prefill={prefill} isPremium={isPremium} onPremiumNeeded={() => setShowAlarmPaywall(true)} isLight={isLight} />
+        <AlarmEditorSheet onClose={() => setShowCreate(false)} onSave={saveAlarm} prefill={prefill} isPremium={isPremium} onPremiumNeeded={() => setShowAlarmPaywall(true)} />
       )}
 
       {editingAlarm && (
-        <AlarmEditorSheet onClose={() => setEditingAlarm(null)} onSave={saveEditedAlarm} onDelete={deleteAlarmById} editingAlarm={editingAlarm} isPremium={isPremium} onPremiumNeeded={() => setShowAlarmPaywall(true)} isLight={isLight} />
+        <AlarmEditorSheet onClose={() => setEditingAlarm(null)} onSave={saveEditedAlarm} onDelete={deleteAlarmById} editingAlarm={editingAlarm} isPremium={isPremium} onPremiumNeeded={() => setShowAlarmPaywall(true)} />
       )}
 
       {showAlarmPaywall && (

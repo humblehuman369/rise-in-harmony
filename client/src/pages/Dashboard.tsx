@@ -16,7 +16,6 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 import { trackSubscriptionPurchased, trackPaywallTriggered } from "@/hooks/useAnalytics";
 import PremiumPaywall from "@/components/PremiumPaywall";
-import { useTheme } from "@/contexts/ThemeContext";
 
 // ─── Chakra Map ───────────────────────────────────────────────────────────────
 
@@ -30,7 +29,7 @@ const CHAKRA_NODES = [
   { position: 1, name: "Root",        hz: 396, color: "#EAB308", yPct: 83, label: "Mūlādhāra" },
 ];
 
-function ChakraMap({ playedHzThisWeek, isLight = false }: { playedHzThisWeek: Set<number>; isLight?: boolean }) {
+function ChakraMap({ playedHzThisWeek }: { playedHzThisWeek: Set<number> }) {
   const activeCount = CHAKRA_NODES.filter(n => playedHzThisWeek.has(n.hz)).length;
 
   return (
@@ -38,13 +37,13 @@ function ChakraMap({ playedHzThisWeek, isLight = false }: { playedHzThisWeek: Se
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="text-base" style={{ color: '#8B5CF6' }}>✦</div>
-          <div className="text-sm font-semibold" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+          <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
             Chakra Map
           </div>
         </div>
         <div className="text-xs px-2.5 py-1 rounded-full"
           style={{
-            background: activeCount > 0 ? 'rgba(0,212,170,0.1)' : isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
+            background: activeCount > 0 ? 'rgba(0,212,170,0.1)' : 'rgba(255,255,255,0.04)',
             color: activeCount > 0 ? '#00D4AA' : '#4A5568',
             fontFamily: 'DM Sans, sans-serif',
           }}>
@@ -59,27 +58,27 @@ function ChakraMap({ playedHzThisWeek, isLight = false }: { playedHzThisWeek: Se
           <svg viewBox="0 0 80 280" fill="none" xmlns="http://www.w3.org/2000/svg"
             className="absolute inset-0 w-full h-full">
             {/* Head */}
-            <ellipse cx="40" cy="22" rx="14" ry="16" fill={isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)'} stroke={isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.08)'} strokeWidth="1"/>
+            <ellipse cx="40" cy="22" rx="14" ry="16" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" strokeWidth="1"/>
             {/* Neck */}
-            <rect x="35" y="37" width="10" height="10" rx="3" fill={isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)'} stroke={isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.08)'} strokeWidth="1"/>
+            <rect x="35" y="37" width="10" height="10" rx="3" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" strokeWidth="1"/>
             {/* Torso */}
             <path d="M20 47 Q16 60 14 90 L14 170 Q14 178 22 180 L58 180 Q66 178 66 170 L66 90 Q64 60 60 47 Z"
-              fill={isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)'} stroke={isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.08)'} strokeWidth="1"/>
+              fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" strokeWidth="1"/>
             {/* Left arm */}
             <path d="M20 50 Q8 70 6 110 Q6 120 12 122 Q18 120 20 110 L22 70 Z"
-              fill={isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)'} stroke={isLight ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.06)'} strokeWidth="1"/>
+              fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" strokeWidth="1"/>
             {/* Right arm */}
             <path d="M60 50 Q72 70 74 110 Q74 120 68 122 Q62 120 60 110 L58 70 Z"
-              fill={isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)'} stroke={isLight ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.06)'} strokeWidth="1"/>
+              fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" strokeWidth="1"/>
             {/* Left leg */}
             <path d="M22 178 Q18 210 16 240 Q16 252 22 254 Q28 252 30 240 L34 178 Z"
-              fill={isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)'} stroke={isLight ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.06)'} strokeWidth="1"/>
+              fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" strokeWidth="1"/>
             {/* Right leg */}
             <path d="M58 178 Q62 210 64 240 Q64 252 58 254 Q52 252 50 240 L46 178 Z"
-              fill={isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)'} stroke={isLight ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.06)'} strokeWidth="1"/>
+              fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" strokeWidth="1"/>
             {/* Central energy channel (sushumna) */}
             <line x1="40" y1="6" x2="40" y2="240"
-              stroke={isLight ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.06)'} strokeWidth="1" strokeDasharray="3 4"/>
+              stroke="rgba(255,255,255,0.06)" strokeWidth="1" strokeDasharray="3 4"/>
           </svg>
 
           {/* Chakra dots */}
@@ -96,8 +95,8 @@ function ChakraMap({ playedHzThisWeek, isLight = false }: { playedHzThisWeek: Se
                   style={{
                     width: active ? 16 : 10,
                     height: active ? 16 : 10,
-                    background: active ? node.color : isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)',
-                    border: `2px solid ${active ? node.color : isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)'}`,
+                    background: active ? node.color : 'rgba(255,255,255,0.08)',
+                    border: `2px solid ${active ? node.color : 'rgba(255,255,255,0.12)'}`,
                     boxShadow: active ? `0 0 12px ${node.color}80, 0 0 24px ${node.color}40` : 'none',
                   }}
                 />
@@ -114,20 +113,20 @@ function ChakraMap({ playedHzThisWeek, isLight = false }: { playedHzThisWeek: Se
               <div key={node.hz} className="flex items-center gap-2.5">
                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-all duration-500"
                   style={{
-                    background: active ? node.color : isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)',
+                    background: active ? node.color : 'rgba(255,255,255,0.08)',
                     boxShadow: active ? `0 0 6px ${node.color}80` : 'none',
                   }}
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-medium" style={{ color: active ? (isLight ? '#1A1D2E' : '#E8EDF5') : '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
+                    <span className="text-xs font-medium" style={{ color: active ? '#E8EDF5' : '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
                       {node.name}
                     </span>
-                    <span className="text-[10px] font-mono-brand" style={{ color: active ? node.color : isLight ? '#9AA5B4' : '#2D3748' }}>
+                    <span className="text-[10px] font-mono-brand" style={{ color: active ? node.color : '#2D3748' }}>
                       {node.hz}Hz
                     </span>
                   </div>
-                  <div className="text-[9px]" style={{ color: active ? `${node.color}80` : isLight ? '#9AA5B4' : '#2D3748', fontFamily: 'DM Sans, sans-serif' }}>
+                  <div className="text-[9px]" style={{ color: active ? `${node.color}80` : '#2D3748', fontFamily: 'DM Sans, sans-serif' }}>
                     {node.label}
                   </div>
                 </div>
@@ -264,13 +263,12 @@ const DEMO_WEEKLY_SESSIONS = [
 const MOOD_LABELS: Record<number, string> = { 1: "Difficult", 2: "Low", 3: "Neutral", 4: "Good", 5: "Radiant" };
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function StatCard({ icon: Icon, label, value, sub, color, isLight = false }: {
+function StatCard({ icon: Icon, label, value, sub, color }: {
   icon: React.ElementType;
   label: string;
   value: string | number;
   sub?: string;
   color: string;
-  isLight?: boolean;
 }) {
   return (
     <div className="glow-card p-5">
@@ -280,18 +278,18 @@ function StatCard({ icon: Icon, label, value, sub, color, isLight = false }: {
           <Icon size={18} style={{ color }} />
         </div>
       </div>
-      <div className="text-2xl font-bold font-mono-brand mb-0.5" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5' }}>{value}</div>
+      <div className="text-2xl font-bold font-mono-brand mb-0.5" style={{ color: '#E8EDF5' }}>{value}</div>
       <div className="text-xs font-medium" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>{label}</div>
       {sub && <div className="text-xs mt-1" style={{ color: color, fontFamily: 'DM Sans, sans-serif' }}>{sub}</div>}
     </div>
   );
 }
 
-const CustomTooltip = ({ active, payload, label, isLight = false }: { active?: boolean; payload?: Array<{ value: number }>; label?: string; isLight?: boolean }) => {
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
   if (active && payload && payload.length) {
     return (
       <div className="px-3 py-2 rounded-lg text-xs"
-        style={{ background: isLight ? '#FFFFFF' : '#12152A', border: isLight ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.1)', color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif', boxShadow: isLight ? '0 4px 12px rgba(0,0,0,0.1)' : undefined }}>
+        style={{ background: '#12152A', border: '1px solid rgba(255,255,255,0.1)', color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
         <div style={{ color: '#6B7A99' }}>{label}</div>
         <div style={{ color: '#00D4AA' }}>{payload[0].value} min</div>
       </div>
@@ -382,7 +380,7 @@ function MySoundsCard() {
               <div
                 key={sound.id}
                 className="flex items-center gap-3 py-2 border-b last:border-0"
-                style={{ borderColor: 'rgba(128,128,128,0.1)' }}
+                style={{ borderColor: 'rgba(255,255,255,0.04)' }}
               >
                 <div className="flex-1 min-w-0">
                   {renamingId === sound.id ? (
@@ -392,7 +390,7 @@ function MySoundsCard() {
                         onChange={e => setRenameValue(e.target.value)}
                         onKeyDown={e => e.key === "Enter" && void handleRename(sound.id)}
                         className="flex-1 px-2 py-1 rounded text-xs outline-none"
-                        style={{ background: 'rgba(128,128,128,0.08)', border: '1px solid rgba(128,128,128,0.15)', color: 'inherit' }}
+                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#E8EDF5' }}
                         autoFocus
                       />
                       <button
@@ -405,7 +403,7 @@ function MySoundsCard() {
                     </div>
                   ) : (
                     <>
-                      <div className="text-xs font-medium truncate" style={{ color: 'inherit', fontFamily: 'DM Sans, sans-serif' }}>
+                      <div className="text-xs font-medium truncate" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
                         {sound.name}
                       </div>
                       <div className="text-[10px] truncate" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -484,7 +482,7 @@ function ManageSubscription() {
       }}
       disabled={createPortal.isPending}
       className="text-xs px-3 py-2 rounded-lg transition-all disabled:opacity-60"
-      style={{ background: 'rgba(128,128,128,0.06)', border: '1px solid rgba(128,128,128,0.15)', color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}
+      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}
     >
       {subStatus.data.tier === "lifetime" ? "✦ Founder" : "Manage subscription"}
     </button>
@@ -492,8 +490,6 @@ function ManageSubscription() {
 }
 
 export default function Dashboard() {
-  const { theme } = useTheme();
-  const isLight = theme === 'light';
   const [activeTab, setActiveTab] = useState<"week" | "month">("week");
   const { isAuthenticated } = useAuth();
   const [showStreakPaywall, setShowStreakPaywall] = useState(false);
@@ -602,14 +598,14 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="min-h-screen" style={{ background: isLight ? 'transparent' : '#0A0B14' }}>
+      <div className="min-h-screen" style={{ background: '#0A0B14' }}>
         {/* Header */}
         <div className="px-6 pt-8 pb-6 flex items-end justify-between gap-4 flex-wrap">
           <div>
             <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
               Wellness Analytics
             </div>
-            <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: isLight ? '#1A1D2E' : '#E8EDF5' }}>
+            <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5' }}>
               Your Journey
             </h1>
           </div>

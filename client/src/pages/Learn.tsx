@@ -13,7 +13,6 @@ import { useFrequencyPlayer, type Frequency } from "@/hooks/useFrequencyPlayer";
 import { JOURNEYS, toPlayableFrequency, type Journey, type JourneyEntry } from "@/data/learningContent";
 import PremiumPaywall from "@/components/PremiumPaywall";
 import FrequencyWizard from "@/components/FrequencyWizard";
-import { useTheme } from "@/contexts/ThemeContext";
 
 const ICONS = {
   sparkles: Sparkles,
@@ -23,7 +22,7 @@ const ICONS = {
 } as const;
 
 // ─── Journey Card (grid view) ─────────────────────────────────────────────────
-function JourneyCard({ journey, index, onOpen, isLight = false }: { journey: Journey; index: number; onOpen: () => void; isLight?: boolean }) {
+function JourneyCard({ journey, index, onOpen }: { journey: Journey; index: number; onOpen: () => void }) {
   const Icon = ICONS[journey.iconType];
   const freeCount = journey.entries.filter(e => !e.isPremium).length;
   return (
@@ -31,8 +30,7 @@ function JourneyCard({ journey, index, onOpen, isLight = false }: { journey: Jou
       onClick={onOpen}
       className="group text-left p-6 rounded-2xl transition-all duration-300 hover:scale-[1.02] animate-in fade-in slide-in-from-bottom-4"
       style={{
-        background: isLight ? '#FFFFFF' : '#12152A',
-        boxShadow: isLight ? '0 1px 4px rgba(0,0,0,0.06)' : undefined,
+        background: '#12152A',
         border: `1px solid ${journey.themeColor}30`,
         animationDelay: `${index * 60}ms`,
         animationFillMode: 'both',
@@ -47,14 +45,14 @@ function JourneyCard({ journey, index, onOpen, isLight = false }: { journey: Jou
         style={{ color: journey.themeColor, fontFamily: 'DM Sans, sans-serif' }}>
         {journey.subtitle}
       </div>
-      <h3 className="text-2xl mb-2" style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 600, color: isLight ? '#1A1D2E' : '#E8EDF5' }}>
+      <h3 className="text-2xl mb-2" style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 600, color: '#E8EDF5' }}>
         {journey.title}
       </h3>
       <p className="text-sm leading-relaxed mb-4" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
         {journey.description}
       </p>
       <div className="flex items-center justify-between">
-        <span className="text-xs font-mono-brand" style={{ color: isLight ? '#6B7A99' : '#4A5568' }}>
+        <span className="text-xs font-mono-brand" style={{ color: '#4A5568' }}>
           {journey.entries.length} frequencies · {freeCount} free
         </span>
         <span className="text-xs font-medium transition-colors duration-200 group-hover:underline"
@@ -72,21 +70,18 @@ function EntryRow({
   index,
   isActive,
   onPlay,
-  isLight = false,
 }: {
   entry: JourneyEntry;
   index: number;
   isActive: boolean;
   onPlay: () => void;
-  isLight?: boolean;
 }) {
   return (
     <div
       className="flex items-start gap-4 p-5 rounded-2xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-4"
       style={{
-        background: isActive ? `${entry.color}0D` : isLight ? '#FFFFFF' : '#12152A',
-        border: `1px solid ${isActive ? `${entry.color}50` : isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)'}`,
-        boxShadow: isLight && !isActive ? '0 1px 4px rgba(0,0,0,0.05)' : undefined,
+        background: isActive ? `${entry.color}0D` : '#12152A',
+        border: `1px solid ${isActive ? `${entry.color}50` : 'rgba(255,255,255,0.06)'}`,
         animationDelay: `${index * 60}ms`,
         animationFillMode: 'both',
       }}>
@@ -97,13 +92,13 @@ function EntryRow({
         style={{
           background: isActive ? entry.color : entry.isPremium ? 'rgba(139,92,246,0.12)' : `${entry.color}18`,
           border: `1.5px solid ${isActive ? entry.color : entry.isPremium ? 'rgba(139,92,246,0.4)' : `${entry.color}50`}`,
-          color: isActive ? (isLight ? '#FFFFFF' : '#0A0B14') : entry.isPremium ? '#8B5CF6' : entry.color,
+          color: isActive ? '#0A0B14' : entry.isPremium ? '#8B5CF6' : entry.color,
         }}>
         {entry.isPremium && !isActive ? <Lock size={16} /> : isActive ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
       </button>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-3 flex-wrap">
-          <h4 className="text-base font-semibold" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+          <h4 className="text-base font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
             {entry.name}
           </h4>
           <span className="text-xs font-mono-brand" style={{ color: entry.color }}>
@@ -116,10 +111,10 @@ function EntryRow({
             </span>
           )}
         </div>
-        <div className="text-xs mt-0.5 mb-1.5" style={{ color: isLight ? '#6B7A99' : '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
+        <div className="text-xs mt-0.5 mb-1.5" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
           {entry.description}
         </div>
-        <p className="text-sm leading-relaxed" style={{ color: isLight ? '#4A5568' : '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+        <p className="text-sm leading-relaxed" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
           {entry.benefit}
         </p>
       </div>
@@ -129,8 +124,6 @@ function EntryRow({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Learn() {
-  const { theme } = useTheme();
-  const isLight = theme === 'light';
   const { isPlaying, currentFrequency, togglePlay } = useFrequencyPlayer();
   const [activeJourney, setActiveJourney] = useState<Journey | null>(null);
   const [paywallEntry, setPaywallEntry] = useState<JourneyEntry | null>(null);
@@ -146,7 +139,7 @@ export default function Learn() {
 
   return (
     <Layout>
-      <div className="min-h-screen pb-24" style={{ background: isLight ? 'var(--background)' : '#0A0B14' }}>
+      <div className="min-h-screen pb-24" style={{ background: '#0A0B14' }}>
         {/* Header */}
         <div className="px-6 pt-8 pb-6 max-w-5xl mx-auto">
           {activeJourney ? (
@@ -172,7 +165,7 @@ export default function Learn() {
             fontFamily: 'Cormorant Garamond, serif',
             fontSize: 'clamp(2rem, 4.5vw, 2.8rem)',
             fontWeight: 600,
-            color: isLight ? '#1A1D2E' : '#E8EDF5',
+            color: '#E8EDF5',
             lineHeight: 1.15,
           }}>
             {activeJourney ? activeJourney.title : 'The Frequency Journeys'}
@@ -188,7 +181,7 @@ export default function Learn() {
               className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 hover:scale-[1.03] active:scale-95"
               style={{
                 background: 'linear-gradient(135deg, #00D4AA, #8B5CF6)',
-                color: isLight ? '#FFFFFF' : '#0A0B14',
+                color: '#0A0B14',
                 fontFamily: 'DM Sans, sans-serif',
               }}>
               <Wand2 size={16} /> Find My Frequency
@@ -207,20 +200,19 @@ export default function Learn() {
                   index={i}
                   isActive={isPlaying && currentFrequency?.id === entry.id}
                   onPlay={() => handlePlay(entry)}
-                  isLight={isLight}
                 />
               ))}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {JOURNEYS.map((j, i) => (
-                <JourneyCard key={j.id} journey={j} index={i} onOpen={() => setActiveJourney(j)} isLight={isLight} />
+                <JourneyCard key={j.id} journey={j} index={i} onOpen={() => setActiveJourney(j)} />
               ))}
             </div>
           )}
 
           {/* Disclaimer */}
-          <p className="mt-10 text-xs leading-relaxed max-w-3xl" style={{ color: isLight ? '#9AA5B4' : '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
+          <p className="mt-10 text-xs leading-relaxed max-w-3xl" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
             The descriptions in this section reflect traditional, historical, and symbolic associations from
             sound-healing practice. They are offered for relaxation, meditation, and inspiration — not as medical
             advice, diagnosis, or treatment. If you have a health concern, please consult a qualified professional.

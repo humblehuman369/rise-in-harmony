@@ -5,7 +5,6 @@ import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { useTheme } from "@/contexts/ThemeContext";
 import {
   User,
   CreditCard,
@@ -58,20 +57,17 @@ function Section({
   icon: Icon,
   title,
   children,
-  isLight = false,
 }: {
   icon: React.ElementType;
   title: string;
   children: React.ReactNode;
-  isLight?: boolean;
 }) {
   return (
     <div
       className="rounded-2xl p-6 space-y-5"
       style={{
-        background: isLight ? '#FFFFFF' : "rgba(255,255,255,0.03)",
-        border: isLight ? '1px solid rgba(0,0,0,0.07)' : "1px solid rgba(255,255,255,0.07)",
-        boxShadow: isLight ? '0 1px 4px rgba(0,0,0,0.05)' : undefined,
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.07)",
       }}
     >
       <div className="flex items-center gap-3">
@@ -83,7 +79,7 @@ function Section({
         </div>
         <h2
           className="text-base font-semibold"
-          style={{ color: isLight ? '#1A1D2E' : "#E8EDF5", fontFamily: "DM Sans, sans-serif" }}
+          style={{ color: "#E8EDF5", fontFamily: "DM Sans, sans-serif" }}
         >
           {title}
         </h2>
@@ -97,17 +93,15 @@ function Row({
   label,
   description,
   children,
-  isLight = false,
 }: {
   label: string;
   description?: string;
   children: React.ReactNode;
-  isLight?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="min-w-0">
-        <p className="text-sm font-medium" style={{ color: isLight ? '#1A1D2E' : "#E8EDF5" }}>
+        <p className="text-sm font-medium" style={{ color: "#E8EDF5" }}>
           {label}
         </p>
         {description && (
@@ -124,8 +118,6 @@ function Row({
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function Settings() {
-  const { theme: appTheme } = useTheme();
-  const isLight = appTheme === 'light';
   const { isAuthenticated, logout } = useAuth();
   const utils = trpc.useUtils();
 
@@ -220,7 +212,7 @@ export default function Settings() {
       <div className="mb-2">
         <h1
           className="text-2xl font-semibold"
-          style={{ color: isLight ? '#1A1D2E' : "#E8EDF5", fontFamily: "Cormorant Garamond, serif" }}
+          style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif" }}
         >
           Settings
         </h1>
@@ -230,15 +222,15 @@ export default function Settings() {
       </div>
 
       {/* ── Account ── */}
-      <Section icon={User} title="Account" isLight={isLight}>
-        <Row label="Display Name" isLight={isLight}>
+      <Section icon={User} title="Account">
+        <Row label="Display Name">
           {editingName ? (
             <div className="flex items-center gap-2">
               <Input
                 value={nameValue}
                 onChange={(e) => setNameValue(e.target.value)}
                 className="h-8 w-40 text-sm"
-                style={{ background: isLight ? 'rgba(0,0,0,0.04)' : "rgba(255,255,255,0.06)", border: isLight ? '1px solid rgba(0,0,0,0.1)' : "1px solid rgba(255,255,255,0.12)", color: isLight ? '#1A1D2E' : "#E8EDF5" }}
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#E8EDF5" }}
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Enter") updateProfile.mutate({ name: nameValue });
@@ -267,7 +259,7 @@ export default function Settings() {
           ) : (
             <button
               className="flex items-center gap-2 text-sm transition-opacity hover:opacity-70"
-              style={{ color: isLight ? '#1A1D2E' : "#E8EDF5" }}
+              style={{ color: "#E8EDF5" }}
               onClick={() => {
                 setNameValue(profile.name ?? "");
                 setEditingName(true);
@@ -279,13 +271,13 @@ export default function Settings() {
           )}
         </Row>
 
-        <Row label="Email" description="Managed by your sign-in provider" isLight={isLight}>
+        <Row label="Email" description="Managed by your sign-in provider">
           <span className="text-sm" style={{ color: "#8FA3BF" }}>
             {profile.email ?? "—"}
           </span>
         </Row>
 
-        <Row label="Member Since" isLight={isLight}>
+        <Row label="Member Since">
           <span className="text-sm" style={{ color: "#8FA3BF" }}>
             {new Date(profile.createdAt).toLocaleDateString(undefined, {
               year: "numeric",
@@ -297,8 +289,8 @@ export default function Settings() {
       </Section>
 
       {/* ── Subscription ── */}
-      <Section icon={CreditCard} title="Subscription" isLight={isLight}>
-        <Row label="Current Plan" isLight={isLight}>
+      <Section icon={CreditCard} title="Subscription">
+        <Row label="Current Plan">
           <div className="flex items-center gap-2">
             {profile.subscriptionTier === "lifetime" && (
               <Crown size={14} className="text-amber-400" />
@@ -310,7 +302,7 @@ export default function Settings() {
         </Row>
 
         {profile.subscriptionExpiresAt && profile.subscriptionTier === "premium" && (
-          <Row label="Renews" isLight={isLight}>
+          <Row label="Renews">
             <span className="text-sm" style={{ color: "#8FA3BF" }}>
               {new Date(profile.subscriptionExpiresAt).toLocaleDateString()}
             </span>
@@ -318,7 +310,7 @@ export default function Settings() {
         )}
 
         {profile.isFounder && (
-          <Row label="Founder Status" isLight={isLight}>
+          <Row label="Founder Status">
             <span className="text-xs px-2 py-0.5 rounded-full font-medium"
               style={{ background: "rgba(245,158,11,0.15)", color: "#F59E0B" }}>
               Lifetime Founder
@@ -329,13 +321,12 @@ export default function Settings() {
         <Row
           label="Manage Billing"
           description="Update payment method, cancel, or view invoices"
-          isLight={isLight}
         >
           <Button
             size="sm"
             variant="outline"
             className="h-8 px-3 text-xs"
-            style={{ borderColor: isLight ? 'rgba(0,0,0,0.15)' : "rgba(255,255,255,0.12)", color: isLight ? '#1A1D2E' : "#E8EDF5" }}
+            style={{ borderColor: "rgba(255,255,255,0.12)", color: "#E8EDF5" }}
             onClick={() => createPortal.mutate()}
             disabled={createPortal.isPending}
           >
@@ -349,11 +340,10 @@ export default function Settings() {
       </Section>
 
       {/* ── Notifications ── */}
-      <Section icon={Bell} title="Notifications" isLight={isLight}>
+      <Section icon={Bell} title="Notifications">
         <Row
           label="Alarm Reminders"
           description="Get a reminder 5 minutes before your healing alarm"
-          isLight={isLight}
         >
           <Switch
             checked={reminders}
@@ -363,8 +353,8 @@ export default function Settings() {
       </Section>
 
       {/* ── Audio Preferences ── */}
-      <Section icon={Volume2} title="Audio Preferences" isLight={isLight}>
-        <Row label="Default Fade-In" description="How gradually the alarm sound rises" isLight={isLight}>
+      <Section icon={Volume2} title="Audio Preferences">
+        <Row label="Default Fade-In" description="How gradually the alarm sound rises">
           <div className="flex items-center gap-2">
             {[1, 3, 5].map((min) => (
               <button
@@ -372,9 +362,9 @@ export default function Settings() {
                 onClick={() => setPref("defaultFadeInMinutes", min)}
                 className="px-3 py-1 rounded-full text-xs font-medium transition-all"
                 style={{
-                  background: fadeIn === min ? "#00D4AA" : isLight ? 'rgba(0,0,0,0.05)' : "rgba(255,255,255,0.06)",
+                  background: fadeIn === min ? "#00D4AA" : "rgba(255,255,255,0.06)",
                   color: fadeIn === min ? "#0A0B14" : "#8FA3BF",
-                  border: `1px solid ${fadeIn === min ? "#00D4AA" : isLight ? 'rgba(0,0,0,0.1)' : "rgba(255,255,255,0.1)"}`,
+                  border: `1px solid ${fadeIn === min ? "#00D4AA" : "rgba(255,255,255,0.1)"}`,
                 }}
               >
                 {min}m
@@ -383,7 +373,7 @@ export default function Settings() {
           </div>
         </Row>
 
-        <Row label="Default Volume" description={`${Math.round(volume * 100)}%`} isLight={isLight}>
+        <Row label="Default Volume" description={`${Math.round(volume * 100)}%`}>
           <input
             type="range"
             min={0}
@@ -397,8 +387,8 @@ export default function Settings() {
       </Section>
 
       {/* ── Theme ── */}
-      <Section icon={Moon} title="Theme" isLight={isLight}>
-        <Row label="Appearance" isLight={isLight}>
+      <Section icon={Moon} title="Theme">
+        <Row label="Appearance">
           <div className="flex items-center gap-2">
             {(
               [
@@ -412,9 +402,9 @@ export default function Settings() {
                 onClick={() => setPref("theme", value)}
                 className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all"
                 style={{
-                  background: theme === value ? "#00D4AA" : isLight ? 'rgba(0,0,0,0.05)' : "rgba(255,255,255,0.06)",
+                  background: theme === value ? "#00D4AA" : "rgba(255,255,255,0.06)",
                   color: theme === value ? "#0A0B14" : "#8FA3BF",
-                  border: `1px solid ${theme === value ? "#00D4AA" : isLight ? 'rgba(0,0,0,0.1)' : "rgba(255,255,255,0.1)"}`,
+                  border: `1px solid ${theme === value ? "#00D4AA" : "rgba(255,255,255,0.1)"}`,
                 }}
               >
                 <Icon size={11} />
@@ -426,17 +416,16 @@ export default function Settings() {
       </Section>
 
       {/* ── Data & Privacy ── */}
-      <Section icon={Shield} title="Data & Privacy" isLight={isLight}>
+      <Section icon={Shield} title="Data & Privacy">
         <Row
           label="Export My Data"
           description="Download all your account data as JSON"
-          isLight={isLight}
         >
           <Button
             size="sm"
             variant="outline"
             className="h-8 px-3 text-xs"
-            style={{ borderColor: isLight ? 'rgba(0,0,0,0.15)' : "rgba(255,255,255,0.12)", color: isLight ? '#1A1D2E' : "#E8EDF5" }}
+            style={{ borderColor: "rgba(255,255,255,0.12)", color: "#E8EDF5" }}
             onClick={handleExport}
             disabled={exportData.isFetching}
           >
@@ -452,7 +441,6 @@ export default function Settings() {
         <Row
           label="Delete Account"
           description="Permanently remove your account and all data"
-          isLight={isLight}
         >
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -467,13 +455,13 @@ export default function Settings() {
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent
-              style={{ background: isLight ? '#FFFFFF' : "#0E1A2B", border: isLight ? '1px solid rgba(0,0,0,0.1)' : "1px solid rgba(255,255,255,0.1)" }}
+              style={{ background: "#0E1A2B", border: "1px solid rgba(255,255,255,0.1)" }}
             >
               <AlertDialogHeader>
-                <AlertDialogTitle style={{ color: isLight ? '#1A1D2E' : "#E8EDF5" }}>
+                <AlertDialogTitle style={{ color: "#E8EDF5" }}>
                   Delete your account?
                 </AlertDialogTitle>
-                <AlertDialogDescription style={{ color: isLight ? '#4A5568' : "#8FA3BF" }}>
+                <AlertDialogDescription style={{ color: "#8FA3BF" }}>
                   This will permanently delete your account, all alarms, sessions, and
                   saved sounds. This action cannot be undone.
                   <br />
@@ -489,14 +477,14 @@ export default function Settings() {
                 placeholder="DELETE MY ACCOUNT"
                 className="mt-2"
                 style={{
-                  background: isLight ? 'rgba(0,0,0,0.04)' : "rgba(255,255,255,0.06)",
-                  border: isLight ? '1px solid rgba(0,0,0,0.1)' : "1px solid rgba(255,255,255,0.12)",
-                  color: isLight ? '#1A1D2E' : "#E8EDF5",
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  color: "#E8EDF5",
                 }}
               />
               <AlertDialogFooter>
                 <AlertDialogCancel
-                  style={{ background: "transparent", color: "#8FA3BF", border: isLight ? '1px solid rgba(0,0,0,0.12)' : "1px solid rgba(255,255,255,0.12)" }}
+                  style={{ background: "transparent", color: "#8FA3BF", border: "1px solid rgba(255,255,255,0.12)" }}
                   onClick={() => setDeleteConfirmText("")}
                 >
                   Cancel

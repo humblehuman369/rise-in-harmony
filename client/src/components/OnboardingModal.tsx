@@ -209,8 +209,8 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{
-        background: isLight ? "rgba(237,240,247,0.82)" : "rgba(0,0,0,0.8)",
-        backdropFilter: isLight ? "blur(24px) saturate(1.2)" : "blur(12px)",
+        background: isLight ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.8)",
+        backdropFilter: "blur(12px)",
         opacity: isVisible ? 1 : 0,
         transition: "opacity 0.4s ease",
       }}

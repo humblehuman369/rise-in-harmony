@@ -10,7 +10,6 @@ import Layout from "@/components/Layout";
 import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFrequencyPlayer";
 import { toast } from "sonner";
 import PremiumPaywall from "@/components/PremiumPaywall";
-import { useTheme } from "@/contexts/ThemeContext";
 
 const CATEGORIES = ["all", "chakra", "solfeggio", "binaural", "recorded"] as const;
 type Category = typeof CATEGORIES[number];
@@ -67,12 +66,12 @@ function ChakraProgressionHeader() {
               </div>
             </div>
             {i < chakraFreqs.length - 1 && (
-              <div className="w-3 h-px mb-3" style={{ background: 'rgba(128,128,128,0.25)' }} />
+              <div className="w-3 h-px mb-3" style={{ background: 'rgba(255,255,255,0.12)' }} />
             )}
           </div>
         ))}
       </div>
-          <div className="text-xs mt-3 leading-relaxed" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+      <div className="text-xs mt-3 leading-relaxed" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
         Play them in sequence — Root to Crown — for a complete energetic alignment journey.
       </div>
     </div>
@@ -125,12 +124,11 @@ function PronunciationGuide({ freq }: { freq: Frequency }) {
   );
 }
 
-function FrequencyCard({ freq, isPlaying, onPlay, showChakraPosition, isLight = false }: {
+function FrequencyCard({ freq, isPlaying, onPlay, showChakraPosition }: {
   freq: Frequency;
   isPlaying: boolean;
   onPlay: (freq: Frequency) => void;
   showChakraPosition?: boolean;
-  isLight?: boolean;
 }) {
   return (
     <div
@@ -159,7 +157,7 @@ function FrequencyCard({ freq, isPlaying, onPlay, showChakraPosition, isLight = 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-sm font-semibold" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+            <span className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
               {freq.name}
             </span>
             {freq.isPremium && (
@@ -176,10 +174,10 @@ function FrequencyCard({ freq, isPlaying, onPlay, showChakraPosition, isLight = 
               </span>
             )}
           </div>
-          <div className="text-xs mb-2" style={{ color: isLight ? '#4A5568' : '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+          <div className="text-xs mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
             {freq.description}
           </div>
-          <div className="text-xs leading-relaxed" style={{ color: isLight ? '#6B7A99' : '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
+          <div className="text-xs leading-relaxed" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
             {freq.benefit}
           </div>
           {freq.binauralOffset && (
@@ -219,8 +217,6 @@ function FrequencyCard({ freq, isPlaying, onPlay, showChakraPosition, isLight = 
 }
 
 export default function Library() {
-  const { theme } = useTheme();
-  const isLight = theme === 'light';
   const { isPlaying, currentFrequency, togglePlay } = useFrequencyPlayer();
   const [activeCategory, setActiveCategory] = useState<Category>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -259,13 +255,13 @@ export default function Library() {
 
   return (
     <Layout>
-      <div className="min-h-screen" style={{ background: isLight ? 'var(--background)' : '#0A0B14' }}>
+      <div className="min-h-screen" style={{ background: '#0A0B14' }}>
         {/* Header */}
         <div className="px-6 pt-8 pb-6">
           <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
             Frequency Library
           </div>
-          <h1 className="mb-2" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: isLight ? '#1A1D2E' : '#E8EDF5' }}>
+          <h1 className="mb-2" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5' }}>
             Healing Tones
           </h1>
           <div className="flex gap-4 text-sm" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -288,9 +284,9 @@ export default function Library() {
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3 rounded-xl text-sm"
               style={{
-                background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)',
-                border: isLight ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.08)',
-                color: isLight ? '#1A1D2E' : '#E8EDF5',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: '#E8EDF5',
                 fontFamily: 'DM Sans, sans-serif',
               }}
             />
@@ -308,10 +304,10 @@ export default function Library() {
                 style={{
                   background: activeCategory === cat
                     ? cat === 'chakra' ? 'rgba(139,92,246,0.15)' : 'rgba(0,212,170,0.15)'
-                    : isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
+                    : 'rgba(255,255,255,0.04)',
                   border: `1px solid ${activeCategory === cat
                     ? cat === 'chakra' ? 'rgba(139,92,246,0.35)' : 'rgba(0,212,170,0.35)'
-                    : isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)'}`,
+                    : 'rgba(255,255,255,0.06)'}`,
                   color: activeCategory === cat
                     ? cat === 'chakra' ? '#8B5CF6' : '#00D4AA'
                     : '#6B7A99',
@@ -376,7 +372,6 @@ export default function Library() {
                   isPlaying={isPlaying && currentFrequency?.id === freq.id}
                   onPlay={handlePlay}
                   showChakraPosition={activeCategory === 'chakra'}
-                  isLight={isLight}
                 />
               </div>
             ))
