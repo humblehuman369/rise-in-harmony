@@ -82,12 +82,18 @@ export default function Home() {
         <div className="absolute inset-0 z-0">
           {/* Light mode: use the cosmic/galaxy mockup image */}
           {isLight ? (
-            <img
-              src="/manus-storage/rih-hero-light-bg_e088a906.png"
-              alt="Cosmic galaxy background with warm cream and teal tones"
-              className="w-full h-full object-cover object-left"
-              style={{ opacity: 1 }}
-            />
+            <>
+              <img
+                src="/manus-storage/rih-hero-clean-bg_e6222859.png"
+                alt="Cosmic galaxy background with warm cream and teal tones"
+                className="w-full h-full object-cover object-center"
+                style={{ opacity: 1 }}
+              />
+              {/* Subtle left-side gradient for text contrast */}
+              <div className="absolute inset-0" style={{
+                background: 'linear-gradient(to right, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 50%, transparent 100%)',
+              }} />
+            </>
           ) : (
             <>
               <img
