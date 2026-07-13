@@ -1,7 +1,7 @@
 /**
  * BreathingGuide — Guided breathing overlay for Rise In Harmony
  *
- * Patterns: 4-7-8 · Box Breathing · Calm Breath
+ * Patterns: 4-7-8 · Box Breathing · Calm Breath (adjustable cycle)
  * Modes:    Guided (voice cues) · Silent (visual only)
  * Theme:    Bioluminescent Depth  bg #0A0B14 · accent #00D4AA
  *
@@ -11,6 +11,9 @@
  *  - `sessionRef` is the single source of truth for running state;
  *    React state is only used for display.
  *  - Start/Stop are fully idempotent — calling either twice is safe.
+ *  - Calm Breath exposes a per-phase duration slider (5 – 15 s).
+ *    The live pattern passed to startSession() is built from the
+ *    slider value, so the ticker always sees the correct seconds.
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -23,7 +26,7 @@ interface Phase {
   label: string;
   seconds: number;
   color: string;
-  targetScale: number; // final circle scale at end of this phase
+  targetScale: number;
   voiceCue?: string;
 }
 
@@ -43,9 +46,30 @@ const CUE_EXHALE   = "/manus-storage/rih-breath-exhale-v3_30eb22d8.wav";
 const CUE_HOLD     = "/manus-storage/rih-breath-hold-v3_bcc068ae.wav";
 const CUE_COMPLETE = "/manus-storage/rih-breath-complete-v3_0d6d4b26.wav";
 
-// ─── Patterns ─────────────────────────────────────────────────────────────────
+// ─── Calm Breath duration range ───────────────────────────────────────────────
 
-export const BREATH_PATTERNS: Pattern[] = [
+const CALM_MIN_SEC = 5;
+const CALM_MAX_SEC = 15;
+const CALM_DEFAULT = 5;
+
+/** Build a Calm Breath Pattern from a given per-phase duration (seconds). */
+function buildCalmPattern(sec: number): Pattern {
+  return {
+    id: "calm",
+    name: "Calm Breath",
+    description: `Inhale ${sec}s · Exhale ${sec}s`,
+    benefit: "Simple coherence breathing for grounding",
+    accentColor: "#F59E0B",
+    phases: [
+      { label: "Inhale", seconds: sec, color: "#F59E0B", targetScale: 1.45, voiceCue: CUE_INHALE },
+      { label: "Exhale", seconds: sec, color: "#3B82F6", targetScale: 0.70, voiceCue: CUE_EXHALE },
+    ],
+  };
+}
+
+// ─── Static patterns (4-7-8 and Box) ─────────────────────────────────────────
+
+const STATIC_PATTERNS: Pattern[] = [
   {
     id: "478",
     name: "4-7-8",
@@ -71,17 +95,12 @@ export const BREATH_PATTERNS: Pattern[] = [
       { label: "Hold",   seconds: 4, color: "#6B7A99", targetScale: 0.70, voiceCue: CUE_HOLD   },
     ],
   },
-  {
-    id: "calm",
-    name: "Calm Breath",
-    description: "Inhale 5s · Exhale 5s",
-    benefit: "Simple coherence breathing for grounding",
-    accentColor: "#F59E0B",
-    phases: [
-      { label: "Inhale", seconds: 5, color: "#F59E0B", targetScale: 1.45, voiceCue: CUE_INHALE },
-      { label: "Exhale", seconds: 5, color: "#3B82F6", targetScale: 0.70, voiceCue: CUE_EXHALE },
-    ],
-  },
+];
+
+/** All patterns including the default Calm Breath — used for display list. */
+export const BREATH_PATTERNS: Pattern[] = [
+  ...STATIC_PATTERNS,
+  buildCalmPattern(CALM_DEFAULT),
 ];
 
 const CYCLES_PER_SESSION = 5;
@@ -103,8 +122,10 @@ interface SessionState {
   running: boolean;
   patternId: string;
   phaseIndex: number;
-  phaseElapsed: number; // seconds elapsed in current phase
+  phaseElapsed: number;
   cycleCount: number;
+  /** For Calm Breath: the per-phase duration in seconds used by the running session */
+  calmSec: number;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -121,32 +142,34 @@ export default function BreathingGuide({
   const isLight = theme === "light";
 
   // ── UI state (display only) ─────────────────────────────────────────────────
-  const [pattern, setPattern] = useState<Pattern>(BREATH_PATTERNS[0]);
-  const [guided, setGuided] = useState(true);
-  const [bgVolume, setBgVolume] = useState(initialBgVolume);
+  const [patternId, setPatternId] = useState<string>(STATIC_PATTERNS[0].id);
+  const [guided, setGuided]       = useState(true);
+  const [bgVolume, setBgVolume]   = useState(initialBgVolume);
+  const [calmSec, setCalmSec]     = useState(CALM_DEFAULT);
 
   // Running display state — driven by the ticker
-  const [isRunning, setIsRunning] = useState(false);
+  const [isRunning, setIsRunning]               = useState(false);
   const [displayPhaseIndex, setDisplayPhaseIndex] = useState(0);
-  const [displayRemain, setDisplayRemain] = useState(0);
-  const [displayCycles, setDisplayCycles] = useState(0);
-  const [circleScale, setCircleScale] = useState(1.0);
+  const [displayRemain, setDisplayRemain]         = useState(0);
+  const [displayCycles, setDisplayCycles]         = useState(0);
+  const [circleScale, setCircleScale]             = useState(1.0);
 
   // ── Refs ────────────────────────────────────────────────────────────────────
-  const tickerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
-  const sessionRef  = useRef<SessionState>({
+  const tickerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sessionRef = useRef<SessionState>({
     running: false,
-    patternId: BREATH_PATTERNS[0].id,
+    patternId: STATIC_PATTERNS[0].id,
     phaseIndex: 0,
     phaseElapsed: 0,
     cycleCount: 0,
+    calmSec: CALM_DEFAULT,
   });
 
   // Audio
-  const audioCtxRef   = useRef<AudioContext | null>(null);
-  const bufferCache   = useRef<Map<string, AudioBuffer>>(new Map());
-  const activeSrc     = useRef<AudioBufferSourceNode | null>(null);
-  const guidedRef     = useRef(true); // mirror of `guided` state for use inside ticker closure
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const bufferCache = useRef<Map<string, AudioBuffer>>(new Map());
+  const activeSrc   = useRef<AudioBufferSourceNode | null>(null);
+  const guidedRef   = useRef(true);
 
   // Particle canvas
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -154,6 +177,12 @@ export default function BreathingGuide({
 
   // Keep guidedRef in sync
   useEffect(() => { guidedRef.current = guided; }, [guided]);
+
+  // ── Derive the active Pattern object from state ──────────────────────────────
+  const pattern: Pattern =
+    patternId === "calm"
+      ? buildCalmPattern(calmSec)
+      : STATIC_PATTERNS.find(p => p.id === patternId) ?? STATIC_PATTERNS[0];
 
   // ── Audio helpers ────────────────────────────────────────────────────────────
 
@@ -190,7 +219,6 @@ export default function BreathingGuide({
       stopCue();
       const buf = bufferCache.current.get(url);
       if (!buf) {
-        // Fetch on demand if not yet cached
         fetch(url)
           .then(r => r.arrayBuffer())
           .then(a => ctx.decodeAudioData(a))
@@ -214,12 +242,11 @@ export default function BreathingGuide({
     } catch { /* audio non-critical */ }
   }, [getAudioCtx, stopCue]);
 
-  // Preload all cues on mount
   useEffect(() => {
     [CUE_INHALE, CUE_EXHALE, CUE_HOLD, CUE_COMPLETE].forEach(url => preloadCue(url));
   }, [preloadCue]);
 
-  // ── Ticker (single setInterval, no closures over React state) ───────────────
+  // ── Ticker ───────────────────────────────────────────────────────────────────
 
   const clearTicker = useCallback(() => {
     if (tickerRef.current !== null) {
@@ -229,49 +256,46 @@ export default function BreathingGuide({
   }, []);
 
   const startSession = useCallback((pat: Pattern) => {
-    // Idempotent: stop any existing session first
     clearTicker();
     stopCue();
 
     const s = sessionRef.current;
-    s.running     = true;
-    s.patternId   = pat.id;
-    s.phaseIndex  = 0;
+    s.running      = true;
+    s.patternId    = pat.id;
+    s.phaseIndex   = 0;
     s.phaseElapsed = 0;
-    s.cycleCount  = 0;
+    s.cycleCount   = 0;
+    s.calmSec      = pat.id === "calm" ? pat.phases[0].seconds : CALM_DEFAULT;
 
     const firstPhase = pat.phases[0];
 
-    // Initialise display state
     setIsRunning(true);
     setDisplayPhaseIndex(0);
     setDisplayRemain(firstPhase.seconds);
     setDisplayCycles(0);
     setCircleScale(firstPhase.targetScale);
 
-    // Fire first voice cue
     if (firstPhase.voiceCue) playCue(firstPhase.voiceCue);
-
     onSessionStart?.();
 
-    // Tick every second
     tickerRef.current = setInterval(() => {
       const sess = sessionRef.current;
       if (!sess.running) return;
 
-      // Resolve the live pattern from the ref's patternId
-      const livePat = BREATH_PATTERNS.find(p => p.id === sess.patternId)!;
-      const phase   = livePat.phases[sess.phaseIndex];
+      // Resolve the live pattern — for Calm Breath, rebuild with the locked calmSec
+      const livePat: Pattern =
+        sess.patternId === "calm"
+          ? buildCalmPattern(sess.calmSec)
+          : STATIC_PATTERNS.find(p => p.id === sess.patternId)!;
 
+      const phase = livePat.phases[sess.phaseIndex];
       sess.phaseElapsed += 1;
 
       const remain = phase.seconds - sess.phaseElapsed;
 
       if (remain > 0) {
-        // Still in this phase — just update countdown
         setDisplayRemain(remain);
       } else {
-        // Phase complete — advance
         const nextPhaseIndex = (sess.phaseIndex + 1) % livePat.phases.length;
         const isNewCycle     = nextPhaseIndex === 0;
 
@@ -280,14 +304,12 @@ export default function BreathingGuide({
           setDisplayCycles(sess.cycleCount);
 
           if (sess.cycleCount >= CYCLES_PER_SESSION) {
-            // Session complete
             sess.running = false;
             clearTicker();
             stopCue();
             setIsRunning(false);
             setCircleScale(1.0);
             setDisplayRemain(0);
-            // Play completion cue
             setTimeout(() => playCue(CUE_COMPLETE), 50);
             onSessionEnd?.();
             return;
@@ -319,7 +341,6 @@ export default function BreathingGuide({
     onSessionEnd?.();
   }, [clearTicker, stopCue, onSessionEnd]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       sessionRef.current.running = false;
@@ -371,20 +392,22 @@ export default function BreathingGuide({
 
   // ── Derived display values ───────────────────────────────────────────────────
 
-  const currentPhase      = pattern.phases[displayPhaseIndex];
-  const phaseColor        = isRunning ? currentPhase.color : accentColor;
-  const cycleSec          = pattern.phases.reduce((s, p) => s + p.seconds, 0);
-  const transitionDur     = isRunning
-    ? `${currentPhase.seconds}s`
-    : "0.5s";
+  const currentPhase  = pattern.phases[displayPhaseIndex];
+  const phaseColor    = isRunning ? currentPhase.color : accentColor;
+  const transitionDur = isRunning ? `${currentPhase.seconds}s` : "0.5s";
+
+  // ── Style constants ──────────────────────────────────────────────────────────
+
+  const bg         = isLight ? "rgba(237,240,247,0.97)" : "rgba(10,11,20,0.93)";
+  const card       = isLight ? "rgba(255,255,255,0.85)"  : "rgba(255,255,255,0.03)";
+  const cardBorder = isLight ? "rgba(0,0,0,0.07)"        : "rgba(255,255,255,0.06)";
+  const mutedText  = "#6B7A99";
+  const bodyText   = isLight ? "#1A1D2E" : "#E8EDF5";
+
+  // All patterns for the selector list (Calm Breath rebuilt with current calmSec)
+  const allPatterns: Pattern[] = [...STATIC_PATTERNS, buildCalmPattern(calmSec)];
 
   // ── Render ───────────────────────────────────────────────────────────────────
-
-  const bg   = isLight ? "rgba(237,240,247,0.97)" : "rgba(10,11,20,0.93)";
-  const card = isLight ? "rgba(255,255,255,0.85)"  : "rgba(255,255,255,0.03)";
-  const cardBorder = isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.06)";
-  const mutedText = "#6B7A99";
-  const bodyText  = isLight ? "#1A1D2E" : "#E8EDF5";
 
   return (
     <div
@@ -425,39 +448,111 @@ export default function BreathingGuide({
             </p>
 
             <div className="space-y-2">
-              {BREATH_PATTERNS.map(p => {
-                const active = pattern.id === p.id;
+              {allPatterns.map(p => {
+                const active = patternId === p.id;
                 return (
-                  <button
-                    key={p.id}
-                    onClick={() => setPattern(p)}
-                    className="w-full p-3 rounded-xl text-left transition-all duration-200"
-                    style={{
-                      background: active ? `${p.accentColor}15` : card,
-                      border: `1px solid ${active ? `${p.accentColor}40` : cardBorder}`,
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span
-                        className="text-sm font-semibold"
-                        style={{ color: active ? bodyText : mutedText, fontFamily: "DM Sans, sans-serif" }}
+                  <div key={p.id}>
+                    <button
+                      onClick={() => setPatternId(p.id)}
+                      className="w-full p-3 rounded-xl text-left transition-all duration-200"
+                      style={{
+                        background: active ? `${p.accentColor}15` : card,
+                        border: `1px solid ${active ? `${p.accentColor}40` : cardBorder}`,
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span
+                          className="text-sm font-semibold"
+                          style={{ color: active ? bodyText : mutedText, fontFamily: "DM Sans, sans-serif" }}
+                        >
+                          {p.name}
+                        </span>
+                        <span
+                          className="text-[10px] px-2 py-0.5 rounded-full"
+                          style={{ background: `${p.accentColor}20`, color: p.accentColor, fontFamily: "DM Sans, sans-serif" }}
+                        >
+                          {p.phases.reduce((s, ph) => s + ph.seconds, 0)}s cycle
+                        </span>
+                      </div>
+                      <p className="text-xs mt-0.5" style={{ color: mutedText, fontFamily: "DM Sans, sans-serif" }}>
+                        {p.description}
+                      </p>
+                      <p className="text-[10px] mt-1 italic" style={{ color: isLight ? mutedText : "#4A5568", fontFamily: "DM Sans, sans-serif" }}>
+                        {p.benefit}
+                      </p>
+                    </button>
+
+                    {/* ── Calm Breath duration slider (shown when Calm is selected) ── */}
+                    {p.id === "calm" && active && (
+                      <div
+                        className="mt-2 px-3 py-3 rounded-xl"
+                        style={{
+                          background: `${p.accentColor}0A`,
+                          border: `1px solid ${p.accentColor}25`,
+                        }}
                       >
-                        {p.name}
-                      </span>
-                      <span
-                        className="text-[10px] px-2 py-0.5 rounded-full"
-                        style={{ background: `${p.accentColor}20`, color: p.accentColor, fontFamily: "DM Sans, sans-serif" }}
-                      >
-                        {p.phases.reduce((s, ph) => s + ph.seconds, 0)}s cycle
-                      </span>
-                    </div>
-                    <p className="text-xs mt-0.5" style={{ color: mutedText, fontFamily: "DM Sans, sans-serif" }}>
-                      {p.description}
-                    </p>
-                    <p className="text-[10px] mt-1 italic" style={{ color: isLight ? mutedText : "#4A5568", fontFamily: "DM Sans, sans-serif" }}>
-                      {p.benefit}
-                    </p>
-                  </button>
+                        <div className="flex items-center justify-between mb-2">
+                          <span
+                            className="text-[10px] uppercase tracking-widest font-semibold"
+                            style={{ color: p.accentColor, fontFamily: "DM Sans, sans-serif" }}
+                          >
+                            Breath Duration
+                          </span>
+                          <span
+                            className="text-sm font-bold tabular-nums"
+                            style={{ color: p.accentColor, fontFamily: "DM Mono, monospace" }}
+                          >
+                            {calmSec}s
+                          </span>
+                        </div>
+
+                        <input
+                          type="range"
+                          min={CALM_MIN_SEC}
+                          max={CALM_MAX_SEC}
+                          step={1}
+                          value={calmSec}
+                          onChange={e => setCalmSec(parseInt(e.target.value, 10))}
+                          className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                          style={{
+                            background: `linear-gradient(to right, ${p.accentColor} ${((calmSec - CALM_MIN_SEC) / (CALM_MAX_SEC - CALM_MIN_SEC)) * 100}%, ${isLight ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.12)"} ${((calmSec - CALM_MIN_SEC) / (CALM_MAX_SEC - CALM_MIN_SEC)) * 100}%)`,
+                            accentColor: p.accentColor,
+                          }}
+                        />
+
+                        {/* Tick labels */}
+                        <div className="flex justify-between mt-1.5">
+                          {[5, 7, 9, 11, 13, 15].map(v => (
+                            <button
+                              key={v}
+                              onClick={() => setCalmSec(v)}
+                              className="text-[9px] tabular-nums transition-colors duration-150"
+                              style={{
+                                color: calmSec === v ? p.accentColor : (isLight ? "#9CA3AF" : "#4A5568"),
+                                fontFamily: "DM Mono, monospace",
+                                fontWeight: calmSec === v ? 700 : 400,
+                              }}
+                            >
+                              {v}s
+                            </button>
+                          ))}
+                        </div>
+
+                        <p
+                          className="text-[10px] mt-2 text-center"
+                          style={{ color: isLight ? mutedText : "#4A5568", fontFamily: "DM Sans, sans-serif" }}
+                        >
+                          {calmSec <= 6
+                            ? "Energising pace — great for focus"
+                            : calmSec <= 9
+                            ? "Coherence breathing — heart rate sync"
+                            : calmSec <= 12
+                            ? "Deep relaxation — parasympathetic activation"
+                            : "Very slow — advanced pranayama pace"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -597,10 +692,15 @@ export default function BreathingGuide({
             </p>
           )}
 
-          {/* Pattern name during session */}
+          {/* Pattern name + pace hint during session */}
           {isRunning && (
             <p className="mt-2 text-sm font-semibold" style={{ color: isLight ? "#4A5568" : "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
               {pattern.name}
+              {patternId === "calm" && (
+                <span className="ml-1 text-xs font-normal" style={{ color: "#F59E0B", opacity: 0.8 }}>
+                  · {calmSec}s
+                </span>
+              )}
               {guided && (
                 <span className="ml-2 text-xs" style={{ color: "#00D4AA", opacity: 0.75 }}>
                   · Guided
