@@ -8,6 +8,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { X, Wind, Mic, MicOff } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 // ─── Breathing patterns ───────────────────────────────────────────────────────
 
@@ -98,6 +99,8 @@ interface BreathingGuideProps {
 }
 
 export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSessionStart, onSessionEnd, onBgVolumeChange, initialBgVolume = 0.12 }: BreathingGuideProps) {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const [selectedPattern, setSelectedPattern] = useState<BreathPattern>(BREATH_PATTERNS[0]);
   const [isRunning, setIsRunning] = useState(false);
   const [introPlaying, setIntroPlaying] = useState(false);
@@ -283,7 +286,7 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: "rgba(10,11,20,0.92)", backdropFilter: "blur(16px)" }}
+      style={{ background: isLight ? "rgba(237,240,247,0.96)" : "rgba(10,11,20,0.92)", backdropFilter: "blur(16px)" }}
     >
       {/* Particle canvas */}
       <canvas
@@ -299,8 +302,8 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
         <button
           onClick={() => { onSessionEnd?.(); onClose(); }}
           className="absolute -top-2 -right-2 w-9 h-9 rounded-full flex items-center justify-center z-10 transition-all duration-200"
-          style={{ background: "rgba(255,255,255,0.08)", color: "#6B7A99" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#E8EDF5"; }}
+          style={{ background: isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.08)", color: "#6B7A99" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = isLight ? "#1A1D2E" : "#E8EDF5"; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#6B7A99"; }}
         >
           <X size={16} />
@@ -322,14 +325,14 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
                   onClick={() => setSelectedPattern(pattern)}
                   className="w-full p-3 rounded-xl text-left transition-all duration-200"
                   style={{
-                    background: selectedPattern.id === pattern.id ? `${pattern.color}15` : "rgba(255,255,255,0.03)",
-                    border: `1px solid ${selectedPattern.id === pattern.id ? `${pattern.color}40` : "rgba(255,255,255,0.06)"}`,
+                    background: selectedPattern.id === pattern.id ? `${pattern.color}15` : (isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)"),
+                    border: `1px solid ${selectedPattern.id === pattern.id ? `${pattern.color}40` : (isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.06)")}`,
                   }}
                 >
                   <div className="flex items-center justify-between">
                     <span
                       className="text-sm font-semibold"
-                      style={{ color: selectedPattern.id === pattern.id ? "#E8EDF5" : "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}
+                      style={{ color: selectedPattern.id === pattern.id ? (isLight ? "#1A1D2E" : "#E8EDF5") : "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}
                     >
                       {pattern.name}
                     </span>
@@ -343,7 +346,7 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
                   <div className="text-xs mt-0.5" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
                     {pattern.description}
                   </div>
-                  <div className="text-[10px] mt-1 italic" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>
+                  <div className="text-[10px] mt-1 italic" style={{ color: isLight ? "#6B7A99" : "#4A5568", fontFamily: "DM Sans, sans-serif" }}>
                     {pattern.benefit}
                   </div>
                 </button>
@@ -356,8 +359,8 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
                 onClick={() => setGuided(true)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200"
                 style={{
-                  background: guided ? "rgba(0,212,170,0.12)" : "rgba(255,255,255,0.05)",
-                  border: `1px solid ${guided ? "rgba(0,212,170,0.35)" : "rgba(255,255,255,0.08)"}`,
+                  background: guided ? "rgba(0,212,170,0.12)" : (isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.05)"),
+                  border: `1px solid ${guided ? "rgba(0,212,170,0.35)" : (isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)")}`,
                   color: guided ? "#00D4AA" : "#6B7A99",
                   fontFamily: "DM Sans, sans-serif",
                 }}
@@ -369,8 +372,8 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
                 onClick={() => setGuided(false)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200"
                 style={{
-                  background: !guided ? "rgba(0,212,170,0.12)" : "rgba(255,255,255,0.05)",
-                  border: `1px solid ${!guided ? "rgba(0,212,170,0.35)" : "rgba(255,255,255,0.08)"}`,
+                  background: !guided ? "rgba(0,212,170,0.12)" : (isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.05)"),
+                  border: `1px solid ${!guided ? "rgba(0,212,170,0.35)" : (isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)")}`,
                   color: !guided ? "#00D4AA" : "#6B7A99",
                   fontFamily: "DM Sans, sans-serif",
                 }}
@@ -404,13 +407,13 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
                   }}
                   className="w-full h-1 rounded-full appearance-none cursor-pointer"
                   style={{
-                    background: `linear-gradient(to right, ${accentColor} ${bgVolume / 0.4 * 100}%, rgba(255,255,255,0.1) ${bgVolume / 0.4 * 100}%)`,
-                    accentColor,
-                  }}
-                />
-                <div className="flex justify-between mt-1">
-                  <span className="text-[9px]" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>Off</span>
-                  <span className="text-[9px]" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>40%</span>
+                  background: `linear-gradient(to right, ${accentColor} ${bgVolume / 0.4 * 100}%, ${isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'} ${bgVolume / 0.4 * 100}%)`,
+                  accentColor,
+                }}
+              />
+              <div className="flex justify-between mt-1">
+                  <span className="text-[9px]" style={{ color: isLight ? "#6B7A99" : "#4A5568", fontFamily: "DM Sans, sans-serif" }}>Off</span>
+                  <span className="text-[9px]" style={{ color: isLight ? "#6B7A99" : "#4A5568", fontFamily: "DM Sans, sans-serif" }}>40%</span>
                 </div>
               </div>
             )}
@@ -489,7 +492,7 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
                   style={{
                     width: i === phaseIndex ? "20px" : "6px",
                     height: "6px",
-                    background: i === phaseIndex ? phase.color : "rgba(255,255,255,0.15)",
+                    background: i === phaseIndex ? phase.color : (isLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.15)"),
                   }}
                 />
               ))}
@@ -497,13 +500,13 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
           )}
 
           {isRunning && cycleCount > 0 && (
-            <div className="mt-3 text-xs" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+            <div className="mt-3 text-xs" style={{ color: isLight ? "#4A5568" : "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
               {cycleCount} {cycleCount === 1 ? "cycle" : "cycles"} complete
             </div>
           )}
 
           {isRunning && (
-            <div className="mt-2 text-sm font-semibold" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
+            <div className="mt-2 text-sm font-semibold" style={{ color: isLight ? "#4A5568" : "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
               {selectedPattern.name}
               {guided && <span className="ml-2 text-xs" style={{ color: "#00D4AA", opacity: 0.7 }}>🎙 Guided</span>}
             </div>
@@ -516,10 +519,10 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
               className="mt-6 px-8 py-3 rounded-full font-semibold text-sm transition-all duration-200 active:scale-95"
               style={{
                 background: isRunning
-                  ? "rgba(255,255,255,0.06)"
+                  ? (isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)")
                   : `linear-gradient(135deg, ${selectedPattern.color}, ${selectedPattern.color}CC)`,
-                color: isRunning ? "#8FA3BF" : "#fff",
-                border: isRunning ? "1px solid rgba(255,255,255,0.1)" : "none",
+                color: isRunning ? (isLight ? "#4A5568" : "#8FA3BF") : "#fff",
+                border: isRunning ? (isLight ? "1px solid rgba(0,0,0,0.1)" : "1px solid rgba(255,255,255,0.1)") : "none",
                 boxShadow: isRunning ? "none" : `0 0 20px ${selectedPattern.color}40`,
                 fontFamily: "DM Sans, sans-serif",
               }}
@@ -531,7 +534,7 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
           {!isRunning && !introPlaying && (
             <p
               className="mt-4 text-xs text-center leading-relaxed"
-              style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif", maxWidth: "240px" }}
+              style={{ color: isLight ? "#6B7A99" : "#4A5568", fontFamily: "DM Sans, sans-serif", maxWidth: "240px" }}
             >
               {selectedPattern.benefit}
             </p>
@@ -561,7 +564,7 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
                 }}
                 className="w-full h-1 rounded-full appearance-none cursor-pointer"
                 style={{
-                  background: `linear-gradient(to right, ${accentColor} ${bgVolume / 0.4 * 100}%, rgba(255,255,255,0.1) ${bgVolume / 0.4 * 100}%)`,
+                  background: `linear-gradient(to right, ${accentColor} ${bgVolume / 0.4 * 100}%, ${isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'} ${bgVolume / 0.4 * 100}%`,
                   accentColor,
                 }}
               />

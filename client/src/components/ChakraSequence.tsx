@@ -12,6 +12,7 @@ import { trackChakraSequenceCompleted } from "@/hooks/useAnalytics";
 import { trpc } from "@/lib/trpc";
 import PremiumPaywall from "@/components/PremiumPaywall";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface ChakraStep {
   name: string;
@@ -391,18 +392,21 @@ export default function ChakraSequence({ onClose, autoStart = false, autoStartDu
   const totalElapsed = completedSteps.length * stepDuration + elapsed;
   const totalDuration = CHAKRA_STEPS.length * stepDuration;
 
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+
   return (
     <>
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)" }}
+      style={{ background: isLight ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)" }}
     >
       <div
         className="w-full max-w-lg rounded-3xl overflow-hidden relative"
         style={{
-          background: "linear-gradient(135deg, #0D0F1E 0%, #12152A 100%)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          boxShadow: `0 0 80px ${chakra.glowColor}30, 0 24px 80px rgba(0,0,0,0.6)`,
+          background: isLight ? "linear-gradient(135deg, #FFFFFF 0%, #F5F6F9 100%)" : "linear-gradient(135deg, #0D0F1E 0%, #12152A 100%)",
+          border: isLight ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.08)",
+          boxShadow: isLight ? `0 0 60px ${chakra.glowColor}15, 0 24px 60px rgba(0,0,0,0.15)` : `0 0 80px ${chakra.glowColor}30, 0 24px 80px rgba(0,0,0,0.6)`,
         }}
       >
         {/* Ambient glow bg */}
@@ -427,7 +431,7 @@ export default function ChakraSequence({ onClose, autoStart = false, autoStartDu
           <button
             onClick={() => { stopAudio(true); onClose(); }}
             className="w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200"
-            style={{ background: "rgba(255,255,255,0.06)", color: "#6B7A99" }}
+            style={{ background: isLight ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.06)", color: "#6B7A99" }}
           >
             <X size={16} />
           </button>
@@ -438,7 +442,7 @@ export default function ChakraSequence({ onClose, autoStart = false, autoStartDu
           <div className="relative px-6 pb-8">
             <h2
               className="text-2xl font-semibold mb-2"
-              style={{ fontFamily: "Cormorant Garamond, serif", color: "#E8EDF5" }}
+              style={{ fontFamily: "Cormorant Garamond, serif", color: isLight ? "#1A1D2E" : "#E8EDF5" }}
             >
               Align your chakras
             </h2>
@@ -474,8 +478,8 @@ export default function ChakraSequence({ onClose, autoStart = false, autoStartDu
                   onClick={() => setStepDuration(opt.value)}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200"
                   style={{
-                    background: stepDuration === opt.value ? "rgba(0,212,170,0.15)" : "rgba(255,255,255,0.04)",
-                    border: `1px solid ${stepDuration === opt.value ? "rgba(0,212,170,0.4)" : "rgba(255,255,255,0.06)"}`,
+                    background: stepDuration === opt.value ? "rgba(0,212,170,0.15)" : (isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)"),
+                    border: `1px solid ${stepDuration === opt.value ? "rgba(0,212,170,0.4)" : (isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)")}`,
                     color: stepDuration === opt.value ? "#00D4AA" : "#6B7A99",
                     fontFamily: "DM Sans, sans-serif",
                   }}
@@ -546,7 +550,7 @@ export default function ChakraSequence({ onClose, autoStart = false, autoStartDu
               <div className="text-center">
                 <div
                   className="text-2xl font-semibold mb-0.5"
-                  style={{ fontFamily: "Cormorant Garamond, serif", color: "#E8EDF5" }}
+                  style={{ fontFamily: "Cormorant Garamond, serif", color: isLight ? "#1A1D2E" : "#E8EDF5" }}
                 >
                   {chakra.name} Chakra
                 </div>
@@ -571,7 +575,7 @@ export default function ChakraSequence({ onClose, autoStart = false, autoStartDu
                 <span>{completedSteps.length + 1} of 7 chakras</span>
                 <span>{formatTime(totalElapsed)} / {formatTime(totalDuration)}</span>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)" }}>
                 <div
                   className="h-full rounded-full transition-all duration-1000"
                   style={{
@@ -622,7 +626,7 @@ export default function ChakraSequence({ onClose, autoStart = false, autoStartDu
               </div>
               <h2
                 className="text-2xl font-semibold mb-2"
-                style={{ fontFamily: "Cormorant Garamond, serif", color: "#E8EDF5" }}
+                style={{ fontFamily: "Cormorant Garamond, serif", color: isLight ? "#1A1D2E" : "#E8EDF5" }}
               >
                 All 7 Chakras Aligned
               </h2>
@@ -667,7 +671,7 @@ export default function ChakraSequence({ onClose, autoStart = false, autoStartDu
               <button
                 onClick={() => { setShowDurationPicker(true); setIsComplete(false); setCompletedSteps([]); setCurrentStep(0); setElapsed(0); }}
                 className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all duration-200"
-                style={{ background: "rgba(255,255,255,0.06)", color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}
+                style={{ background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)", color: isLight ? "#4A5568" : "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}
               >
                 Repeat
               </button>

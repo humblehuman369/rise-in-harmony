@@ -7,6 +7,7 @@
 import { useState, useEffect } from "react";
 import { X, BookOpen, Smile, Meh, Frown, Laugh, Angry } from "lucide-react";
 import { trackMoodLogged } from "@/hooks/useAnalytics";
+import { useTheme } from "@/contexts/ThemeContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -94,25 +95,27 @@ export default function SessionJournal({
   };
 
   const activeMood = MOODS.find(m => m.value === selectedMood);
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-      style={{ background: "rgba(10,11,20,0.85)", backdropFilter: "blur(12px)" }}
+      style={{ background: isLight ? "rgba(0,0,0,0.3)" : "rgba(10,11,20,0.85)", backdropFilter: "blur(12px)" }}
     >
       <div
         className="w-full max-w-sm rounded-2xl p-6 relative"
         style={{
-          background: "linear-gradient(160deg, #12152A, #0D0F1E)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
+          background: isLight ? "#FFFFFF" : "linear-gradient(160deg, #12152A, #0D0F1E)",
+          border: isLight ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.08)",
+          boxShadow: isLight ? "0 24px 80px rgba(0,0,0,0.12)" : "0 24px 80px rgba(0,0,0,0.5)",
         }}
       >
         {/* Close */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-          style={{ color: "#6B7A99", background: "rgba(255,255,255,0.05)" }}
+          style={{ color: "#6B7A99", background: isLight ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)" }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#E8EDF5"; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#6B7A99"; }}
         >
@@ -129,11 +132,11 @@ export default function SessionJournal({
               {activeMood && <activeMood.Icon size={28} style={{ color: activeMood.color }} />}
             </div>
             <h3
-              style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "1.4rem", fontWeight: 600, color: "#E8EDF5" }}
+              style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "1.4rem", fontWeight: 600, color: isLight ? "#1A1D2E" : "#E8EDF5" }}
             >
               Session logged
             </h3>
-            <p className="text-sm mt-1" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+            <p className="text-sm mt-1" style={{ color: isLight ? "#4A5568" : "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
               Your {durationMinutes}min session has been recorded
             </p>
           </div>
@@ -149,11 +152,11 @@ export default function SessionJournal({
               </div>
               <div>
                 <h3
-                  style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "1.25rem", fontWeight: 600, color: "#E8EDF5" }}
+                  style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "1.25rem", fontWeight: 600, color: isLight ? "#1A1D2E" : "#E8EDF5" }}
                 >
                   How do you feel?
                 </h3>
-                <p className="text-xs" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                <p className="text-xs" style={{ color: isLight ? "#4A5568" : "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
                   {frequencyHz}Hz · {frequencyName} · {durationMinutes} min
                 </p>
               </div>
@@ -167,8 +170,8 @@ export default function SessionJournal({
                   onClick={() => setSelectedMood(mood.value)}
                   className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all duration-200 active:scale-95"
                   style={{
-                    background: selectedMood === mood.value ? mood.bg : "rgba(255,255,255,0.03)",
-                    border: `1px solid ${selectedMood === mood.value ? mood.color + "50" : "rgba(255,255,255,0.06)"}`,
+                    background: selectedMood === mood.value ? mood.bg : (isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)"),
+                    border: `1px solid ${selectedMood === mood.value ? mood.color + "50" : (isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)")}`,
                     transform: selectedMood === mood.value ? "scale(1.06)" : "scale(1)",
                   }}
                 >
@@ -193,9 +196,9 @@ export default function SessionJournal({
             <div className="mb-5">
               <label
                 className="block text-xs font-semibold uppercase tracking-widest mb-2"
-                style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}
+                style={{ color: isLight ? "#4A5568" : "#6B7A99", fontFamily: "DM Sans, sans-serif" }}
               >
-                Note <span style={{ color: "#4A5568", textTransform: "none", letterSpacing: 0 }}>(optional)</span>
+                Note <span style={{ color: isLight ? "#6B7A99" : "#4A5568", textTransform: "none", letterSpacing: 0 }}>(optional)</span>
               </label>
               <textarea
                 value={note}
@@ -204,9 +207,9 @@ export default function SessionJournal({
                 rows={3}
                 className="w-full px-4 py-3 rounded-xl text-sm resize-none"
                 style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  color: "#E8EDF5",
+                  background: isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)",
+                  border: isLight ? "1px solid rgba(0,0,0,0.1)" : "1px solid rgba(255,255,255,0.08)",
+                  color: isLight ? "#1A1D2E" : "#E8EDF5",
                   fontFamily: "DM Sans, sans-serif",
                   outline: "none",
                   lineHeight: 1.6,
@@ -222,10 +225,10 @@ export default function SessionJournal({
                 onClick={onClose}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200"
                 style={{
-                  background: "rgba(255,255,255,0.04)",
-                  color: "#6B7A99",
+                  background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)",
+                  color: isLight ? "#4A5568" : "#6B7A99",
                   fontFamily: "DM Sans, sans-serif",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  border: isLight ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.06)",
                 }}
               >
                 Skip

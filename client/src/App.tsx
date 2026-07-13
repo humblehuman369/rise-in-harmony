@@ -3,7 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { ThemeProvider } from "./contexts/ThemeContext";
+import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Player from "./pages/Player";
 import Alarm from "./pages/Alarm";
@@ -52,15 +52,21 @@ function Router() {
 function AppContent() {
   const { showOnboarding, completeOnboarding } = useOnboarding();
   const { user } = useAuth();
+  const { theme } = useTheme();
   // Initialize PostHog, identify user, and reload feature flags after login
   useAnalytics(user?.id ?? undefined, user?.email ?? undefined);
   // One-time bulk import of localStorage sessions to server after login
   useLocalSessionImport(user?.id);
+  const isLight = theme === 'light';
   return (
     <>
       <Toaster
         toastOptions={{
-          style: {
+          style: isLight ? {
+            background: '#FFFFFF',
+            border: '1px solid rgba(0,0,0,0.08)',
+            color: '#1A1D2E',
+          } : {
             background: '#12152A',
             border: '1px solid rgba(255,255,255,0.08)',
             color: '#E8EDF5',
@@ -76,7 +82,7 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark">
+      <ThemeProvider defaultTheme="light" switchable={true}>
         <TooltipProvider>
           <AppContent />
         </TooltipProvider>

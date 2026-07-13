@@ -11,6 +11,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 import { trackUpgradeTapped } from "@/hooks/useAnalytics";
+import { useTheme } from "@/contexts/ThemeContext";
 
 // ─── Pricing tiers ────────────────────────────────────────────────────────────
 
@@ -104,17 +105,20 @@ export default function PremiumPaywall({
         ? "Claim Founder Lifetime"
         : "Subscribe Monthly";
 
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(10,11,20,0.88)", backdropFilter: "blur(16px)" }}
+      style={{ background: isLight ? "rgba(0,0,0,0.3)" : "rgba(10,11,20,0.88)", backdropFilter: "blur(16px)" }}
     >
       <div
         className="w-full max-w-sm rounded-2xl overflow-hidden relative"
         style={{
-          background: "linear-gradient(160deg, #12152A 0%, #0D0F1E 100%)",
-          border: "1px solid rgba(139,92,246,0.2)",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.6), 0 0 60px rgba(139,92,246,0.08)",
+          background: isLight ? "#FFFFFF" : "linear-gradient(160deg, #12152A 0%, #0D0F1E 100%)",
+          border: isLight ? "1px solid rgba(139,92,246,0.2)" : "1px solid rgba(139,92,246,0.2)",
+          boxShadow: isLight ? "0 32px 80px rgba(0,0,0,0.12), 0 0 40px rgba(139,92,246,0.06)" : "0 32px 80px rgba(0,0,0,0.6), 0 0 60px rgba(139,92,246,0.08)",
         }}
       >
         {/* Glow header strip */}
@@ -128,7 +132,7 @@ export default function PremiumPaywall({
           <button
             onClick={onClose}
             className="absolute top-5 right-5 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-            style={{ color: "#6B7A99", background: "rgba(255,255,255,0.05)" }}
+            style={{ color: "#6B7A99", background: isLight ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)" }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#E8EDF5"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#6B7A99"; }}
           >
@@ -147,7 +151,7 @@ export default function PremiumPaywall({
               <Lock size={24} style={{ color: "#8B5CF6" }} />
             </div>
             <h2
-              style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "1.6rem", fontWeight: 600, color: "#E8EDF5" }}
+              style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "1.6rem", fontWeight: 600, color: isLight ? "#1A1D2E" : "#E8EDF5" }}
             >
               Unlock Rise In Harmony
             </h2>
@@ -183,8 +187,8 @@ export default function PremiumPaywall({
                 onClick={() => setSelectedPlan(p.id)}
                 className="flex-1 relative flex flex-col items-center py-3 px-2 rounded-xl transition-all duration-200"
                 style={{
-                  background: selectedPlan === p.id ? `${p.color}15` : "rgba(255,255,255,0.03)",
-                  border: `1px solid ${selectedPlan === p.id ? `${p.color}50` : "rgba(255,255,255,0.06)"}`,
+                  background: selectedPlan === p.id ? `${p.color}15` : (isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)"),
+                  border: `1px solid ${selectedPlan === p.id ? `${p.color}50` : (isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)")}`,
                 }}
               >
                 {p.badge && (
@@ -209,7 +213,7 @@ export default function PremiumPaywall({
                 </span>
                 <span
                   className="text-[9px]"
-                  style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}
+                  style={{ color: isLight ? "#4A5568" : "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}
                 >
                   {p.period}
                 </span>

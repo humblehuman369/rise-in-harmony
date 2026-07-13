@@ -11,6 +11,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 import { trackUpgradeTapped } from "@/hooks/useAnalytics";
+import { useTheme } from "@/contexts/ThemeContext";
 
 type Tier = "monthly" | "annual" | "lifetime";
 
@@ -80,6 +81,8 @@ export default function PricingSection() {
   const billingConfig = trpc.billing.config.useQuery();
   const createCheckout = trpc.billing.createCheckoutSession.useMutation();
   const [pendingTier, setPendingTier] = useState<Tier | null>(null);
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   const seatsRemaining = billingConfig.data?.founderSeatsRemaining ?? null;
   const founderSoldOut = seatsRemaining !== null && seatsRemaining <= 0;
@@ -106,7 +109,7 @@ export default function PricingSection() {
   };
 
   return (
-    <section id="pricing" className="py-24" style={{ background: '#0D0F1E' }}>
+    <section id="pricing" className="py-24" style={{ background: isLight ? '#EDF0F7' : '#0D0F1E' }}>
       <div className="container">
         <div className="text-center mb-14">
           <div className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -116,7 +119,7 @@ export default function PricingSection() {
             fontFamily: 'Cormorant Garamond, serif',
             fontSize: 'clamp(2rem, 4vw, 3rem)',
             fontWeight: 600,
-            color: '#E8EDF5',
+            color: isLight ? '#1A1D2E' : '#E8EDF5',
           }}>
             Start free. Upgrade when ready.
           </h2>
@@ -136,10 +139,11 @@ export default function PricingSection() {
                 className="relative rounded-2xl p-6 flex flex-col"
                 style={{
                   background: plan.highlight
-                    ? `linear-gradient(160deg, ${plan.color}14 0%, #12152A 100%)`
-                    : '#11142A',
-                  border: `1px solid ${plan.highlight ? `${plan.color}45` : 'rgba(255,255,255,0.07)'}`,
-                  boxShadow: plan.highlight ? `0 0 48px ${plan.color}20` : 'none',
+                    ? (isLight ? `linear-gradient(160deg, ${plan.color}14 0%, #FFFFFF 100%)` : `linear-gradient(160deg, ${plan.color}14 0%, #12152A 100%)`)
+                    : (isLight ? '#FFFFFF' : '#11142A'),
+                  border: `1px solid ${plan.highlight ? `${plan.color}45` : (isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.07)')}`,
+                  boxShadow: plan.highlight ? `0 0 48px ${plan.color}20` : (isLight ? '0 2px 12px rgba(0,0,0,0.07)' : 'none'),
+
                 }}
               >
                 {plan.highlight && (
@@ -155,7 +159,7 @@ export default function PricingSection() {
                   {plan.label}
                 </div>
                 <div className="flex items-baseline gap-1 mb-1">
-                  <span className="text-3xl font-bold font-mono-brand" style={{ color: '#E8EDF5' }}>{plan.price}</span>
+                  <span className="text-3xl font-bold font-mono-brand" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5' }}>{plan.price}</span>
                   <span className="text-sm" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>{plan.period}</span>
                 </div>
                 <div className="text-xs mb-5" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -170,7 +174,7 @@ export default function PricingSection() {
                   {plan.features.map(f => (
                     <div key={f} className="flex items-start gap-2.5">
                       <Check size={14} className="flex-shrink-0 mt-0.5" style={{ color: plan.color }} />
-                      <span className="text-xs leading-relaxed" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
+                      <span className="text-xs leading-relaxed" style={{ color: isLight ? '#4A5568' : '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
                         {f}
                       </span>
                     </div>
@@ -205,7 +209,7 @@ export default function PricingSection() {
           })}
         </div>
 
-        <p className="text-center text-[11px] mt-8" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
+        <p className="text-center text-[11px] mt-8" style={{ color: isLight ? '#6B7A99' : '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
           Secure payment via Stripe · Cancel anytime · Wellness &amp; entertainment purposes only
         </p>
       </div>

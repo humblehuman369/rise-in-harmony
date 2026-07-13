@@ -18,6 +18,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { MEDITATIONS, MEDITATION_CATEGORIES, type MeditationTrack } from "@/data/meditations";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { useSoundStudio } from "@/hooks/useSoundStudio";
+import { useTheme } from "@/contexts/ThemeContext";
 
 // ─── Icon map ─────────────────────────────────────────────────────────────────
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -32,9 +33,11 @@ function MeditationIcon({ name, size = 20 }: { name: string; size?: number }) {
 
 // ─── Duration badge ───────────────────────────────────────────────────────────
 function DurationBadge({ minutes }: { minutes: number }) {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   return (
     <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
-      style={{ background: 'rgba(255,255,255,0.08)', color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
+      style={{ background: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)', color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
       <Timer size={10} />
       {minutes} min
     </span>
@@ -42,14 +45,14 @@ function DurationBadge({ minutes }: { minutes: number }) {
 }
 
 // ─── Guidance step display ────────────────────────────────────────────────────
-function GuidanceStep({ step, index, total }: { step: string; index: number; total: number }) {
+function GuidanceStep({ step, index, total, isLight }: { step: string; index: number; total: number; isLight: boolean }) {
   return (
-    <div className="flex gap-3 py-3" style={{ borderBottom: index < total - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+    <div className="flex gap-3 py-3" style={{ borderBottom: index < total - 1 ? (isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.05)') : 'none' }}>
       <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5"
         style={{ background: 'rgba(0,212,170,0.15)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
         {index + 1}
       </div>
-      <p className="text-sm leading-relaxed" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>{step}</p>
+      <p className="text-sm leading-relaxed" style={{ color: isLight ? '#4A5568' : '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>{step}</p>
     </div>
   );
 }
@@ -85,6 +88,8 @@ function MeditationCard({
 }) {
   const { isAuthenticated } = useAuth();
   const isLocked = meditation.isPremium && !isAuthenticated;
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   return (
     <button
@@ -93,10 +98,10 @@ function MeditationCard({
       style={{
         background: isActive
           ? `linear-gradient(135deg, ${meditation.color}22, ${meditation.colorSecondary}15)`
-          : 'rgba(255,255,255,0.03)',
+          : (isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.03)'),
         border: isActive
           ? `1px solid ${meditation.color}55`
-          : '1px solid rgba(255,255,255,0.06)',
+          : (isLight ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.06)'),
         boxShadow: isActive ? `0 0 20px ${meditation.color}20` : 'none',
       }}
     >
@@ -109,7 +114,7 @@ function MeditationCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-sm font-semibold leading-tight"
-              style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+              style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
               {meditation.title}
             </h3>
             {meditation.isPremium && (
@@ -119,7 +124,7 @@ function MeditationCard({
               </span>
             )}
           </div>
-          <p className="text-xs mt-0.5" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+          <p className="text-xs mt-0.5" style={{ color: isLight ? '#4A5568' : '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
             {meditation.subtitle}
           </p>
         </div>
@@ -134,7 +139,7 @@ function MeditationCard({
 
       {/* Benefit */}
       <p className="text-xs mt-2 leading-relaxed line-clamp-2"
-        style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+        style={{ color: isLight ? '#4A5568' : '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
         {meditation.benefit}
       </p>
 
@@ -350,22 +355,25 @@ function MeditationPlayer({
 
   const formatTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}>
+      style={{ background: isLight ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}>
       <div className="relative w-full sm:max-w-2xl max-h-[95vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl"
-        style={{ background: '#0E1020', border: '1px solid rgba(255,255,255,0.08)' }}>
+        style={{ background: isLight ? '#FFFFFF' : '#0E1020', border: isLight ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.08)' }}>
 
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-6 pt-6 pb-4"
-          style={{ background: '#0E1020', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          style={{ background: isLight ? '#FFFFFF' : '#0E1020', borderBottom: isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)' }}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center"
               style={{ background: `${meditation.color}20`, color: meditation.color }}>
               <MeditationIcon name={meditation.icon} size={18} />
             </div>
             <div>
-              <h2 className="text-base font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+              <h2 className="text-base font-semibold" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
                 {meditation.title}
               </h2>
               <p className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -392,7 +400,7 @@ function MeditationPlayer({
                   : 'rgba(255,255,255,0.08)',
                 border: `2px solid ${isPlaying ? meditation.color : 'rgba(255,255,255,0.12)'}`,
                 boxShadow: isPlaying ? `0 0 30px ${meditation.color}40` : 'none',
-                color: isPlaying ? '#0A0B14' : '#E8EDF5',
+                color: isPlaying ? '#0A0B14' : (isLight ? '#1A1D2E' : '#E8EDF5'),
               }}>
               {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" />}
             </button>
@@ -404,7 +412,7 @@ function MeditationPlayer({
               <span>{formatTime(elapsed)}</span>
               <span>{formatTime(totalSeconds)}</span>
             </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)' }}>
               <div className="h-full rounded-full transition-all duration-1000"
                 style={{
                   width: `${progress}%`,
@@ -415,7 +423,7 @@ function MeditationPlayer({
           </div>
 
           {/* Mode toggle */}
-          <div className="rounded-2xl p-1 flex gap-1" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="rounded-2xl p-1 flex gap-1" style={{ background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)', border: isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)' }}>
             {[
               { id: "sound", label: "Sound Only", icon: <Music2 size={14} /> },
               { id: "frequency", label: "Sound + Frequency", icon: <Radio size={14} /> },
@@ -439,7 +447,7 @@ function MeditationPlayer({
                   background: mode === opt.id
                     ? `linear-gradient(135deg, ${meditation.color}30, ${meditation.colorSecondary}20)`
                     : 'transparent',
-                  color: mode === opt.id ? meditation.color : '#6B7A99',
+                  color: mode === opt.id ? meditation.color : (isLight ? '#4A5568' : '#6B7A99'),
                   border: mode === opt.id ? `1px solid ${meditation.color}40` : '1px solid transparent',
                 }}>
                 {opt.icon}
@@ -485,10 +493,10 @@ function MeditationPlayer({
           )}
 
           {/* Ambient volume */}
-          <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="rounded-2xl p-4" style={{ background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)', border: isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)' }}>
             <div className="flex items-center gap-2 mb-3">
               <Music2 size={14} style={{ color: '#8FA3BF' }} />
-              <span className="text-sm font-medium" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
+              <span className="text-sm font-medium" style={{ color: isLight ? '#4A5568' : '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
                 Ambient Sound Volume
               </span>
             </div>
@@ -513,7 +521,7 @@ function MeditationPlayer({
 
           {/* Affirmation */}
           <div className="rounded-2xl p-4 text-center" style={{ background: `${meditation.color}10`, border: `1px solid ${meditation.color}25` }}>
-            <p className="text-sm italic leading-relaxed" style={{ color: '#C8D8E8', fontFamily: 'Cormorant Garamond, serif', fontSize: '1rem' }}>
+            <p className="text-sm italic leading-relaxed" style={{ color: isLight ? '#2D3748' : '#C8D8E8', fontFamily: 'Cormorant Garamond, serif', fontSize: '1rem' }}>
               "{meditation.affirmation}"
             </p>
           </div>
@@ -525,7 +533,7 @@ function MeditationPlayer({
               className="flex items-center gap-2 w-full mb-3"
             >
               <Info size={14} style={{ color: '#00D4AA' }} />
-              <span className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+              <span className="text-sm font-semibold" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
                 Guided Steps
               </span>
               <ChevronRight size={14} className={`ml-auto transition-transform ${showGuidance ? 'rotate-90' : ''}`}
@@ -533,11 +541,11 @@ function MeditationPlayer({
             </button>
 
             {showGuidance && (
-              <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="rounded-2xl overflow-hidden" style={{ background: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)', border: isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)' }}>
                 {meditation.guidance.map((step, i) => (
                   <div key={i} className={`px-4 transition-all duration-500 ${i === currentStep && isPlaying ? 'opacity-100' : 'opacity-60'}`}
                     style={i === currentStep && isPlaying ? { background: `${meditation.color}08` } : {}}>
-                    <GuidanceStep step={step} index={i} total={meditation.guidance.length} />
+                    <GuidanceStep step={step} index={i} total={meditation.guidance.length} isLight={isLight} />
                   </div>
                 ))}
               </div>
@@ -554,6 +562,8 @@ export default function Meditation() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [selectedMeditation, setSelectedMeditation] = useState<MeditationTrack | null>(null);
   const { isAuthenticated } = useAuth();
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   const filtered = activeCategory === "all"
     ? MEDITATIONS
@@ -573,7 +583,7 @@ export default function Meditation() {
         {/* Page header */}
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-4"
-            style={{ background: 'rgba(0,212,170,0.1)', border: '1px solid rgba(0,212,170,0.2)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+            style={{ background: 'rgba(0,212,170,0.1)', border: '1px solid rgba(0,212,170,0.25)', color: '#009E80', fontFamily: 'DM Sans, sans-serif' }}>
             <Sparkles size={12} />
             {MEDITATIONS.length} Guided Meditations
           </div>
@@ -581,13 +591,13 @@ export default function Meditation() {
             fontFamily: 'Cormorant Garamond, serif',
             fontSize: 'clamp(2rem, 5vw, 3rem)',
             fontWeight: 600,
-            color: '#E8EDF5',
+            color: isLight ? '#1A1D2E' : '#E8EDF5',
             lineHeight: 1.1,
           }}>
             Meditation Library
           </h1>
-          <p className="text-base" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif', maxWidth: '520px' }}>
-            Each meditation is available in two modes — <strong style={{ color: '#E8EDF5' }}>Sound Only</strong> for a pure ambient experience, or <strong style={{ color: '#00D4AA' }}>Sound + Frequency</strong> to layer a healing tone beneath the soundscape.
+          <p className="text-base" style={{ color: isLight ? '#4A5568' : '#8FA3BF', fontFamily: 'DM Sans, sans-serif', maxWidth: '520px' }}>
+            Each meditation is available in two modes — <strong style={{ color: isLight ? '#1A1D2E' : '#E8EDF5' }}>Sound Only</strong> for a pure ambient experience, or <strong style={{ color: '#009E80' }}>Sound + Frequency</strong> to layer a healing tone beneath the soundscape.
           </p>
         </div>
 
@@ -603,9 +613,9 @@ export default function Meditation() {
                 className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200"
                 style={{
                   fontFamily: 'DM Sans, sans-serif',
-                  background: active ? 'linear-gradient(135deg, #00D4AA, #00B894)' : 'rgba(255,255,255,0.05)',
-                  color: active ? '#0A0B14' : '#8FA3BF',
-                  border: active ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                  background: active ? 'linear-gradient(135deg, #00D4AA, #00B894)' : (isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.05)'),
+                  color: active ? '#0A0B14' : (isLight ? '#4A5568' : '#8FA3BF'),
+                  border: active ? 'none' : (isLight ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.08)'),
                   boxShadow: active ? '0 0 16px rgba(0,212,170,0.3)' : 'none',
                 }}>
                 <Icon size={13} />
@@ -623,12 +633,12 @@ export default function Meditation() {
             { label: "With Frequency", value: MEDITATIONS.length.toString() },
           ].map(stat => (
             <div key={stat.label} className="rounded-2xl p-4 text-center"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              style={{ background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)', border: isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)' }}>
               <div className="text-2xl font-bold mb-1"
                 style={{ color: '#00D4AA', fontFamily: 'Cormorant Garamond, serif' }}>
                 {stat.value}
               </div>
-              <div className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+              <div className="text-xs" style={{ color: isLight ? '#4A5568' : '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
                 {stat.label}
               </div>
             </div>

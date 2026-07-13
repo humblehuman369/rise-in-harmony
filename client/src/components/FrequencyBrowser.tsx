@@ -15,6 +15,7 @@ import { X, Search, Lock, Zap, ChevronRight, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   HEALING_FREQUENCIES,
   HEALING_CATEGORIES,
@@ -196,6 +197,8 @@ export default function FrequencyBrowser({
   ];
 
   const catColors = CATEGORY_COLORS[activeTab] ?? CATEGORY_COLORS.all;
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   return (
     <>
@@ -203,7 +206,7 @@ export default function FrequencyBrowser({
       <div
         className="fixed inset-0 z-40 transition-opacity duration-300"
         style={{
-          background: "rgba(0,0,0,0.55)",
+          background: isLight ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.55)",
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? "auto" : "none",
         }}
@@ -216,11 +219,11 @@ export default function FrequencyBrowser({
         className="fixed top-0 right-0 h-full z-50 flex flex-col"
         style={{
           width: "min(480px, 100vw)",
-          background: "linear-gradient(180deg, #0D0F1E 0%, #0A0B14 100%)",
-          borderLeft: "1px solid rgba(255,255,255,0.07)",
+          background: isLight ? "linear-gradient(180deg, #FFFFFF 0%, #F5F6F9 100%)" : "linear-gradient(180deg, #0D0F1E 0%, #0A0B14 100%)",
+          borderLeft: isLight ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.07)",
           transform: isOpen ? "translateX(0)" : "translateX(100%)",
           transition: "transform 0.32s cubic-bezier(0.23, 1, 0.32, 1)",
-          boxShadow: isOpen ? "-24px 0 80px rgba(0,0,0,0.6)" : "none",
+          boxShadow: isOpen ? (isLight ? "-24px 0 60px rgba(0,0,0,0.12)" : "-24px 0 80px rgba(0,0,0,0.6)") : "none",
         }}
         role="dialog"
         aria-label="Frequency Browser"
@@ -229,14 +232,14 @@ export default function FrequencyBrowser({
         {/* Header */}
         <div
           className="flex items-center justify-between px-5 py-4 shrink-0"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+          style={{ borderBottom: isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)" }}
         >
           <div>
             <div className="flex items-center gap-2">
               <Zap size={16} style={{ color: "#00D4AA" }} />
               <span
                 className="text-sm font-semibold tracking-wide"
-                style={{ color: "#E8EDF5", fontFamily: "DM Sans, sans-serif" }}
+                style={{ color: isLight ? "#1A1D2E" : "#E8EDF5", fontFamily: "DM Sans, sans-serif" }}
               >
                 Healing Frequency Browser
               </span>
@@ -252,8 +255,8 @@ export default function FrequencyBrowser({
             onClick={onClose}
             className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-95"
             style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: isLight ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)",
+              border: isLight ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.08)",
               color: "#6B7A99",
             }}
             aria-label="Close frequency browser"
@@ -278,9 +281,9 @@ export default function FrequencyBrowser({
               placeholder="Search by name, Hz, or keyword…"
               className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-150"
               style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                color: "#E8EDF5",
+                background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)",
+                border: isLight ? "1px solid rgba(0,0,0,0.09)" : "1px solid rgba(255,255,255,0.08)",
+                color: isLight ? "#1A1D2E" : "#E8EDF5",
                 fontFamily: "DM Sans, sans-serif",
               }}
               onFocus={(e) => {
@@ -288,8 +291,8 @@ export default function FrequencyBrowser({
                 e.currentTarget.style.background = "rgba(0,212,170,0.04)";
               }}
               onBlur={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-                e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                e.currentTarget.style.borderColor = isLight ? "rgba(0,0,0,0.09)" : "rgba(255,255,255,0.08)";
+                e.currentTarget.style.background = isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
               }}
             />
           </div>
@@ -318,9 +321,9 @@ export default function FrequencyBrowser({
                           fontFamily: "DM Sans, sans-serif",
                         }
                       : {
-                          background: "rgba(255,255,255,0.03)",
+                          background: isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)",
                           color: "#4A5568",
-                          border: "1px solid rgba(255,255,255,0.05)",
+                          border: isLight ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.05)",
                           fontFamily: "DM Sans, sans-serif",
                         }
                   }
@@ -344,7 +347,7 @@ export default function FrequencyBrowser({
         {/* Frequency list */}
         <div
           className="flex-1 overflow-y-auto px-5 pb-6"
-          style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.08) transparent" }}
+          style={{ scrollbarWidth: "thin", scrollbarColor: isLight ? "rgba(0,0,0,0.12) transparent" : "rgba(255,255,255,0.08) transparent" }}
         >
           {filtered.length === 0 ? (
             <div
@@ -381,10 +384,10 @@ export default function FrequencyBrowser({
                     style={{
                       background: isActive
                         ? "rgba(0,212,170,0.08)"
-                        : "rgba(255,255,255,0.025)",
+                        : (isLight ? "rgba(0,0,0,0.025)" : "rgba(255,255,255,0.025)"),
                       border: isActive
                         ? "1px solid rgba(0,212,170,0.25)"
-                        : "1px solid rgba(255,255,255,0.05)",
+                        : (isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.05)"),
                       opacity: isLocked ? 0.55 : 1,
                       cursor: isLocked ? "default" : "pointer",
                     }}
@@ -392,19 +395,19 @@ export default function FrequencyBrowser({
                       if (!isLocked) {
                         e.currentTarget.style.background = isActive
                           ? "rgba(0,212,170,0.12)"
-                          : "rgba(255,255,255,0.05)";
+                          : (isLight ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)");
                         e.currentTarget.style.borderColor = isActive
                           ? "rgba(0,212,170,0.35)"
-                          : "rgba(255,255,255,0.10)";
+                          : (isLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.10)");
                       }
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.background = isActive
                         ? "rgba(0,212,170,0.08)"
-                        : "rgba(255,255,255,0.025)";
+                        : (isLight ? "rgba(0,0,0,0.025)" : "rgba(255,255,255,0.025)");
                       e.currentTarget.style.borderColor = isActive
                         ? "rgba(0,212,170,0.25)"
-                        : "rgba(255,255,255,0.05)";
+                        : (isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.05)");
                     }}
                     aria-label={`Load ${freq.name} at ${freq.hz} Hz`}
                   >
@@ -444,7 +447,7 @@ export default function FrequencyBrowser({
                           <span
                             className="text-sm font-semibold truncate"
                             style={{
-                              color: isActive ? "#00D4AA" : "#E8EDF5",
+                              color: isActive ? "#00D4AA" : (isLight ? "#1A1D2E" : "#E8EDF5"),
                               fontFamily: "DM Sans, sans-serif",
                             }}
                           >
@@ -492,12 +495,12 @@ export default function FrequencyBrowser({
                           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggleFavorite(e as any, freq); } }}
                           className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-90 cursor-pointer"
                           style={{
-                            background: isFav
+                              background: isFav
                               ? "rgba(236,72,153,0.15)"
-                              : "rgba(255,255,255,0.04)",
+                              : (isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)"),
                             border: isFav
                               ? "1px solid rgba(236,72,153,0.3)"
-                              : "1px solid rgba(255,255,255,0.06)",
+                              : (isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)"),
                           }}
                           aria-label={isFav ? `Remove ${freq.name} from favorites` : `Add ${freq.name} to favorites`}
                           title={isFav ? "Remove from favorites" : "Add to favorites"}
@@ -534,8 +537,8 @@ export default function FrequencyBrowser({
           <div
             className="px-5 py-3 shrink-0 flex items-center gap-3"
             style={{
-              borderTop: "1px solid rgba(255,255,255,0.06)",
-              background: "rgba(139,92,246,0.06)",
+              borderTop: isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)",
+              background: isLight ? "rgba(139,92,246,0.05)" : "rgba(139,92,246,0.06)",
             }}
           >
             <Lock size={14} style={{ color: "#A78BFA", flexShrink: 0 }} />
@@ -551,8 +554,8 @@ export default function FrequencyBrowser({
           <div
             className="px-5 py-3 shrink-0 flex items-center gap-3"
             style={{
-              borderTop: "1px solid rgba(255,255,255,0.06)",
-              background: "rgba(0,212,170,0.04)",
+              borderTop: isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)",
+              background: isLight ? "rgba(0,212,170,0.04)" : "rgba(0,212,170,0.04)",
             }}
           >
             <Heart size={14} style={{ color: "#00D4AA", flexShrink: 0 }} />

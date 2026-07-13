@@ -7,6 +7,7 @@
  */
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   X, ChevronLeft, Play, Pause, AlarmClock, Moon, Brain, Heart, Zap, Sparkles, Waves,
   Headphones, Volume2, Clock, Lock,
@@ -156,17 +157,19 @@ export default function FrequencyWizard({ onClose }: FrequencyWizardProps) {
   };
 
   const stepIndex = step === "feeling" ? 0 : step === "context" ? 1 : 2;
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(4,5,10,0.85)', backdropFilter: 'blur(8px)' }}>
+      style={{ background: isLight ? 'rgba(0,0,0,0.3)' : 'rgba(4,5,10,0.85)', backdropFilter: 'blur(8px)' }}>
       <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl p-6 md:p-8"
-        style={{ background: '#12152A', border: '1px solid rgba(255,255,255,0.08)' }}>
+        style={{ background: isLight ? '#FFFFFF' : '#12152A', border: isLight ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.08)' }}>
 
         {/* Close */}
         <button onClick={handleClose} aria-label="Close wizard"
           className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200"
-          style={{ color: '#6B7A99', background: 'rgba(255,255,255,0.04)' }}>
+          style={{ color: '#6B7A99', background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)' }}>
           <X size={16} />
         </button>
 
@@ -176,7 +179,7 @@ export default function FrequencyWizard({ onClose }: FrequencyWizardProps) {
             <div key={i} className="h-1 rounded-full transition-all duration-500"
               style={{
                 width: i === stepIndex ? 28 : 12,
-                background: i <= stepIndex ? '#00D4AA' : 'rgba(255,255,255,0.1)',
+                background: i <= stepIndex ? '#00D4AA' : (isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
               }} />
           ))}
         </div>
@@ -184,7 +187,7 @@ export default function FrequencyWizard({ onClose }: FrequencyWizardProps) {
         {/* ── Step 1: Feeling ─────────────────────────────────────────────── */}
         {step === "feeling" && (
           <div className="animate-in fade-in duration-300">
-            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.75rem', fontWeight: 600, color: '#E8EDF5' }}>
+            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.75rem', fontWeight: 600, color: isLight ? '#1A1D2E' : '#E8EDF5' }}>
               How do you want to feel?
             </h2>
             <p className="text-sm mt-1 mb-5" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -197,11 +200,11 @@ export default function FrequencyWizard({ onClose }: FrequencyWizardProps) {
                   <button key={it.id}
                     onClick={() => { setIntention(it); setStep("context"); }}
                     className="text-left p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] active:scale-95"
-                    style={{ background: '#0A0B14', border: `1px solid ${it.color}30` }}
+                    style={{ background: isLight ? '#F5F6F9' : '#0A0B14', border: `1px solid ${it.color}30` }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${it.color}70`; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = `${it.color}30`; }}>
                     <Icon size={20} style={{ color: it.color }} className="mb-2" />
-                    <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+                    <div className="text-sm font-semibold" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
                       {it.label}
                     </div>
                     <div className="text-xs mt-0.5" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -222,7 +225,7 @@ export default function FrequencyWizard({ onClose }: FrequencyWizardProps) {
               style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
               <ChevronLeft size={14} /> Back
             </button>
-            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.75rem', fontWeight: 600, color: '#E8EDF5' }}>
+            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.75rem', fontWeight: 600, color: isLight ? '#1A1D2E' : '#E8EDF5' }}>
               Set your session
             </h2>
             <p className="text-sm mt-1 mb-5" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -238,10 +241,10 @@ export default function FrequencyWizard({ onClose }: FrequencyWizardProps) {
                 <button key={t.id} onClick={() => setTimeChoice(t.id)}
                   className="flex items-center justify-between p-3.5 rounded-xl transition-all duration-200 active:scale-[0.98]"
                   style={{
-                    background: timeChoice === t.id ? `${intention.color}10` : '#0A0B14',
-                    border: `1px solid ${timeChoice === t.id ? `${intention.color}60` : 'rgba(255,255,255,0.06)'}`,
+                    background: timeChoice === t.id ? `${intention.color}10` : (isLight ? '#F5F6F9' : '#0A0B14'),
+                    border: `1px solid ${timeChoice === t.id ? `${intention.color}60` : (isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)')}`,
                   }}>
-                  <span className="text-sm font-medium" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+                  <span className="text-sm font-medium" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
                     {t.label}
                   </span>
                   <span className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -265,10 +268,10 @@ export default function FrequencyWizard({ onClose }: FrequencyWizardProps) {
                   <button key={String(opt.v)} onClick={() => setHasHeadphones(opt.v)}
                     className="p-3.5 rounded-xl text-left transition-all duration-200 active:scale-[0.98]"
                     style={{
-                      background: hasHeadphones === opt.v ? `${intention.color}10` : '#0A0B14',
-                      border: `1px solid ${hasHeadphones === opt.v ? `${intention.color}60` : 'rgba(255,255,255,0.06)'}`,
+                      background: hasHeadphones === opt.v ? `${intention.color}10` : (isLight ? '#F5F6F9' : '#0A0B14'),
+                      border: `1px solid ${hasHeadphones === opt.v ? `${intention.color}60` : (isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)')}`,
                     }}>
-                    <div className="flex items-center gap-2 text-sm font-medium" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+                    <div className="flex items-center gap-2 text-sm font-medium" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
                       <Icon size={15} style={{ color: intention.color }} /> {opt.label}
                     </div>
                     <div className="text-xs mt-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -303,7 +306,7 @@ export default function FrequencyWizard({ onClose }: FrequencyWizardProps) {
               style={{ color: intention.color, fontFamily: 'DM Sans, sans-serif' }}>
               {intention.label}
             </div>
-            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.75rem', fontWeight: 600, color: '#E8EDF5' }}>
+            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.75rem', fontWeight: 600, color: isLight ? '#1A1D2E' : '#E8EDF5' }}>
               Your frequencies
             </h2>
             <p className="text-sm mt-1 mb-5" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -321,8 +324,8 @@ export default function FrequencyWizard({ onClose }: FrequencyWizardProps) {
                   <div key={entry.id}
                     className="p-4 rounded-2xl animate-in fade-in slide-in-from-bottom-4"
                     style={{
-                      background: isActive ? `${entry.color}0D` : '#0A0B14',
-                      border: `1px solid ${isActive ? `${entry.color}50` : i === 0 ? `${intention.color}40` : 'rgba(255,255,255,0.06)'}`,
+                      background: isActive ? `${entry.color}0D` : (isLight ? '#F5F6F9' : '#0A0B14'),
+                      border: `1px solid ${isActive ? `${entry.color}50` : i === 0 ? `${intention.color}40` : (isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)')}`,
                       animationDelay: `${i * 80}ms`,
                       animationFillMode: 'both',
                     }}>
@@ -339,7 +342,7 @@ export default function FrequencyWizard({ onClose }: FrequencyWizardProps) {
                       </button>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 flex-wrap">
-                          <span className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+                          <span className="text-sm font-semibold" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
                             {entry.name}
                           </span>
                           <span className="text-xs font-mono-brand" style={{ color: entry.color }}>
@@ -372,8 +375,8 @@ export default function FrequencyWizard({ onClose }: FrequencyWizardProps) {
             <button onClick={() => { setStep("feeling"); setIntention(null); stopAudio(); }}
               className="mt-5 w-full py-3 rounded-full text-sm font-medium transition-colors duration-200"
               style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
+                border: isLight ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.08)',
                 color: '#6B7A99',
                 fontFamily: 'DM Sans, sans-serif',
               }}>

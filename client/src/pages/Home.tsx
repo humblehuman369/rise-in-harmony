@@ -10,6 +10,7 @@ import Layout from "@/components/Layout";
 import PricingSection from "@/components/PricingSection";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { toast } from "sonner";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const features = [
   {
@@ -68,8 +69,10 @@ const useCases = [
 const freeFrequencies = FREQUENCIES.filter(f => !f.isPremium).slice(0, 3);
 
 export default function Home() {
-    const { user } = useAuth();
+  const { user } = useAuth();
   const [, navigate] = useLocation();
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   return (
     <Layout>
@@ -84,7 +87,9 @@ export default function Home() {
             style={{ opacity: 0.55 }}
           />
           <div className="absolute inset-0" style={{
-            background: 'linear-gradient(135deg, rgba(10,11,20,0.85) 0%, rgba(10,11,20,0.5) 50%, rgba(10,11,20,0.8) 100%)',
+            background: isLight
+              ? 'linear-gradient(135deg, rgba(245,246,249,0.82) 0%, rgba(245,246,249,0.45) 50%, rgba(245,246,249,0.75) 100%)'
+              : 'linear-gradient(135deg, rgba(10,11,20,0.85) 0%, rgba(10,11,20,0.5) 50%, rgba(10,11,20,0.8) 100%)',
           }} />
         </div>
 
@@ -124,7 +129,7 @@ export default function Home() {
               fontFamily: 'Cormorant Garamond, serif',
               fontSize: 'clamp(3rem, 7vw, 5.5rem)',
               fontWeight: 600,
-              color: '#E8EDF5',
+              color: isLight ? '#1A1D2E' : '#E8EDF5',
               lineHeight: 1.05,
             }}>
               Begin your day<br />
@@ -132,7 +137,7 @@ export default function Home() {
             </h1>
 
             <p className="text-lg leading-relaxed mb-10 max-w-xl" style={{
-              color: '#8FA3BF',
+              color: isLight ? '#4A5568' : '#8FA3BF',
               fontFamily: 'DM Sans, sans-serif',
             }}>
               Rise In Harmony replaces your jarring alarm with healing frequencies —
@@ -153,13 +158,13 @@ export default function Home() {
                 onClick={() => navigate("/alarm")}
                 className="flex items-center gap-2 px-8 py-3.5 text-base font-semibold rounded-full transition-all duration-200"
                 style={{
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  color: '#E8EDF5',
+                  background: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)',
+                  border: isLight ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.12)',
+                  color: isLight ? '#1A1D2E' : '#E8EDF5',
                   fontFamily: 'DM Sans, sans-serif',
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.10)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = isLight ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.10)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'; }}
               >
                 <AlarmClock size={18} />
                 Set Healing Alarm
@@ -190,7 +195,7 @@ export default function Home() {
       </section>
 
       {/* TrueHz technology banner */}
-      <section className="py-10" style={{ background: '#0A0B14' }}>
+      <section className="py-10" style={{ background: isLight ? '#F5F6F9' : '#0A0B14' }}>
         <div className="container">
           <button
             onClick={() => navigate("/technology")}
@@ -221,7 +226,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-24" style={{ background: '#0A0B14' }}>
+      <section className="py-24" style={{ background: isLight ? '#F5F6F9' : '#0A0B14' }}>
         <div className="container">
           <div className="text-center mb-16">
             <div className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
@@ -231,7 +236,7 @@ export default function Home() {
               fontFamily: 'Cormorant Garamond, serif',
               fontSize: 'clamp(2rem, 4vw, 3rem)',
               fontWeight: 600,
-              color: '#E8EDF5',
+              color: isLight ? '#1A1D2E' : '#E8EDF5',
             }}>
               Your morning ritual,<br />
               <span className="gradient-text">elevated.</span>
@@ -253,7 +258,7 @@ export default function Home() {
                   style={{ background: `${f.color}18`, border: `1px solid ${f.color}30` }}>
                   <f.icon size={20} style={{ color: f.color }} />
                 </div>
-                <h3 className="text-base font-semibold mb-2" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+                <h3 className="text-base font-semibold mb-2" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
                   {f.title}
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -266,7 +271,7 @@ export default function Home() {
       </section>
 
       {/* Free Frequencies Preview */}
-      <section className="py-24" style={{ background: '#0D0F1E' }}>
+      <section className="py-24" style={{ background: isLight ? '#EDF0F7' : '#0D0F1E' }}>
         <div className="container">
           <div className="flex flex-col lg:flex-row gap-16 items-center">
             {/* Left: Text */}
@@ -278,11 +283,11 @@ export default function Home() {
                 fontFamily: 'Cormorant Garamond, serif',
                 fontSize: 'clamp(2rem, 4vw, 2.8rem)',
                 fontWeight: 600,
-                color: '#E8EDF5',
+                color: isLight ? '#1A1D2E' : '#E8EDF5',
               }}>
                 Start healing.<br />No subscription needed.
               </h2>
-              <p className="text-base leading-relaxed mb-8" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+              <p className="text-base leading-relaxed mb-8" style={{ color: isLight ? '#4A5568' : '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
                 Three powerful frequencies are completely free. Experience the difference
                 before upgrading to the full {FREQUENCIES.length}-sound library.
               </p>
@@ -311,7 +316,7 @@ export default function Home() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold mb-0.5" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+                    <div className="text-sm font-semibold mb-0.5" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
                       {freq.name}
                     </div>
                     <div className="text-xs truncate" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -331,14 +336,14 @@ export default function Home() {
       </section>
 
       {/* Rituals — how people use it */}
-      <section className="py-24" style={{ background: '#0A0B14' }}>
+      <section className="py-24" style={{ background: isLight ? '#F5F6F9' : '#0A0B14' }}>
         <div className="container">
           <div className="text-center mb-16">
             <h2 style={{
               fontFamily: 'Cormorant Garamond, serif',
               fontSize: 'clamp(2rem, 4vw, 3rem)',
               fontWeight: 600,
-              color: '#E8EDF5',
+              color: isLight ? '#1A1D2E' : '#E8EDF5',
             }}>
               Built for your daily rituals.
             </h2>
@@ -349,7 +354,7 @@ export default function Home() {
                 <div className="text-sm font-semibold mb-3" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
                   {u.title}
                 </div>
-                <p className="text-sm leading-relaxed" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
+                <p className="text-sm leading-relaxed" style={{ color: isLight ? '#4A5568' : '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
                   {u.text}
                 </p>
               </div>
@@ -359,7 +364,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 relative overflow-hidden" style={{ background: '#0D0F1E' }}>
+      <section className="py-24 relative overflow-hidden" style={{ background: isLight ? '#EDF0F7' : '#0D0F1E' }}>
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-96 h-96 rounded-full" style={{
             background: 'radial-gradient(circle, rgba(0,212,170,0.08) 0%, transparent 70%)',
@@ -370,13 +375,13 @@ export default function Home() {
             fontFamily: 'Cormorant Garamond, serif',
             fontSize: 'clamp(2.5rem, 5vw, 4rem)',
             fontWeight: 600,
-            color: '#E8EDF5',
+            color: isLight ? '#1A1D2E' : '#E8EDF5',
           }}>
             Your morning.<br />
             <span className="gradient-text">Your frequency.</span><br />
             Your harmony.
           </h2>
-          <p className="text-base mb-10 max-w-md mx-auto" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+          <p className="text-base mb-10 max-w-md mx-auto" style={{ color: isLight ? '#4A5568' : '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
             Join thousands waking up with intention. Start with three free frequencies today.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
@@ -408,7 +413,7 @@ export default function Home() {
       <PricingSection />
 
       {/* Footer */}
-      <footer className="py-8 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)', background: '#0A0B14' }}>
+      <footer className="py-8 border-t" style={{ borderColor: isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)', background: isLight ? '#EDF0F7' : '#0A0B14' }}>
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <img src="/manus-storage/rih-logo-icon_0fedc44f.png" alt="Rise In Harmony logo" className="w-6 h-6 object-contain" />
@@ -416,16 +421,16 @@ export default function Home() {
               Rise In Harmony
             </span>
           </div>
-          <div className="text-xs" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
+          <div className="text-xs" style={{ color: isLight ? '#6B7A99' : '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
             © 2026 Rise In Harmony. Begin every morning in resonance.
           </div>
           <div className="flex gap-6">
             {['Privacy', 'Terms', 'Contact'].map(l => (
               <button key={l} onClick={() => toast(`${l} — coming soon`)}
                 className="text-xs transition-colors duration-200"
-                style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; }}>
+                style={{ color: isLight ? '#6B7A99' : '#4A5568', fontFamily: 'DM Sans, sans-serif' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = isLight ? '#1A1D2E' : '#6B7A99'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isLight ? '#6B7A99' : '#4A5568'; }}>
                 {l}
               </button>
             ))}

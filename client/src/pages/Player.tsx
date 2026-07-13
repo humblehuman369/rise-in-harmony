@@ -11,6 +11,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Play, Pause, Volume2, VolumeX, ChevronLeft, ChevronRight, Lock, Zap, Sparkles, Wind } from "lucide-react";
 import Layout from "@/components/Layout";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFrequencyPlayer";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
@@ -72,10 +73,13 @@ const CHAKRA_AFFIRMATIONS: Record<number, {
 
 // ─── Visualizer ───────────────────────────────────────────────────────────────
 
-function FrequencyVisualizer({ isPlaying, color, hz }: { isPlaying: boolean; color: string; hz: number }) {
+function FrequencyVisualizer({ isPlaying, color, hz, isLight }: { isPlaying: boolean; color: string; hz: number; isLight?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const timeRef = useRef(0);
+
+  // In light mode, use a darkened teal for ring strokes so they're visible on pearl bg
+  const ringColor = isLight ? '#007A62' : color;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -98,10 +102,10 @@ function FrequencyVisualizer({ isPlaying, color, hz }: { isPlaying: boolean; col
       const numRings = 5;
       for (let i = numRings; i >= 1; i--) {
         const radius = (size * 0.12 * i) * pulse;
-        const alpha = isPlaying ? (0.15 - i * 0.02) : 0.05;
+        const alpha = isPlaying ? (isLight ? 0.22 - i * 0.03 : 0.15 - i * 0.02) : (isLight ? 0.10 : 0.05);
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = `${color}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`;
+        ctx.strokeStyle = `${ringColor}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`;
         ctx.lineWidth = isPlaying ? 1.5 : 0.5;
         ctx.stroke();
       }
@@ -121,15 +125,19 @@ function FrequencyVisualizer({ isPlaying, color, hz }: { isPlaying: boolean; col
           else ctx.lineTo(x, y);
         }
         ctx.closePath();
-        ctx.strokeStyle = `${color}CC`;
+        ctx.strokeStyle = isLight ? `${ringColor}DD` : `${color}CC`;
         ctx.lineWidth = 2;
         ctx.stroke();
       }
 
       // Center glow
       const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 0.15);
-      gradient.addColorStop(0, `${color}${isPlaying ? '40' : '18'}`);
-      gradient.addColorStop(1, `${color}00`);
+      if (isLight) {
+        gradient.addColorStop(0, `${ringColor}${isPlaying ? '30' : '14'}`);
+      } else {
+        gradient.addColorStop(0, `${color}${isPlaying ? '40' : '18'}`);
+      }
+      gradient.addColorStop(1, `${ringColor}00`);
       ctx.beginPath();
       ctx.arc(cx, cy, size * 0.15, 0, Math.PI * 2);
       ctx.fillStyle = gradient;
@@ -138,7 +146,7 @@ function FrequencyVisualizer({ isPlaying, color, hz }: { isPlaying: boolean; col
       // Center dot
       ctx.beginPath();
       ctx.arc(cx, cy, isPlaying ? 6 + Math.sin(t * 0.004) * 2 : 4, 0, Math.PI * 2);
-      ctx.fillStyle = isPlaying ? color : `${color}80`;
+      ctx.fillStyle = isPlaying ? ringColor : `${ringColor}80`;
       ctx.fill();
 
       animRef.current = requestAnimationFrame(draw);
@@ -146,7 +154,7 @@ function FrequencyVisualizer({ isPlaying, color, hz }: { isPlaying: boolean; col
 
     animRef.current = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(animRef.current);
-  }, [isPlaying, color, hz]);
+  }, [isPlaying, color, hz, isLight, ringColor]);
 
   return (
     <canvas
@@ -217,6 +225,8 @@ function formatTime(seconds: number) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Player() {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const { isPlaying, currentFrequency, volume, playTime, timbre, togglePlay, setVolume, setTimbre, audioContextSuspended, unlockAudio } = useFrequencyPlayer(
     (msg) => toast.error(msg, { duration: 6000 })
   );
@@ -307,7 +317,7 @@ export default function Player() {
           onClose={() => setShowPaywall(false)}
         />
       )}
-      <div className="min-h-screen flex flex-col" style={{ background: '#0A0B14' }} onClick={unlockAudio}>
+      <div className="min-h-screen flex flex-col" style={{ background: isLight ? '#F5F6F9' : '#0A0B14' }} onClick={unlockAudio}>
         {/* Tap-to-enable audio banner — shown when AudioContext is suspended by autoplay policy */}
         {audioContextSuspended && (
           <div
@@ -336,7 +346,7 @@ export default function Player() {
                 fontFamily: 'Cormorant Garamond, serif',
                 fontSize: '2rem',
                 fontWeight: 600,
-                color: '#E8EDF5',
+                color: isLight ? '#1A1D2E' : '#E8EDF5',
               }}>
                 Healing Tones
               </h1>
@@ -409,7 +419,9 @@ export default function Player() {
                   style={{ opacity: 0.3 }}
                 />
                 <div className="absolute inset-0 rounded-2xl" style={{
-                  background: 'radial-gradient(circle at center, transparent 30%, rgba(10,11,20,0.8) 100%)',
+                  background: isLight
+                    ? 'radial-gradient(circle at center, transparent 30%, rgba(245,246,249,0.7) 100%)'
+                    : 'radial-gradient(circle at center, transparent 30%, rgba(10,11,20,0.8) 100%)',
                 }} />
               </div>
 
@@ -421,7 +433,7 @@ export default function Player() {
                     {selected.binauralOffset ? `/${selected.hz + selected.binauralOffset}` : ''}
                     <span className="text-lg ml-1" style={{ color: `${selected.color}80` }}>Hz</span>
                   </div>
-                  <div className="text-lg font-semibold mb-1" style={{ color: '#E8EDF5', fontFamily: 'Cormorant Garamond, serif' }}>
+                  <div className="text-lg font-semibold mb-1" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'Cormorant Garamond, serif' }}>
                     {selected.name}
                   </div>
                   <div className="text-xs px-3 py-1 rounded-full inline-block" style={{
@@ -460,8 +472,8 @@ export default function Player() {
               <button
                 onClick={handlePrev}
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
-                style={{ background: 'rgba(255,255,255,0.06)', color: '#6B7A99' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#E8EDF5'; }}
+                style={{ background: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)', color: '#6B7A99' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = isLight ? '#1A1D2E' : '#E8EDF5'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
               >
                 <ChevronLeft size={20} />
@@ -493,8 +505,8 @@ export default function Player() {
               <button
                 onClick={handleNext}
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
-                style={{ background: 'rgba(255,255,255,0.06)', color: '#6B7A99' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#E8EDF5'; }}
+                style={{ background: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)', color: '#6B7A99' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = isLight ? '#1A1D2E' : '#E8EDF5'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
               >
                 <ChevronRight size={20} />
@@ -521,8 +533,8 @@ export default function Player() {
                       color: selected.color,
                       fontFamily: 'DM Sans, sans-serif',
                     } : {
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.08)',
+                      background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
+                      border: isLight ? '1px solid rgba(0,0,0,0.08)' : '1px solid rgba(255,255,255,0.08)',
                       color: '#6B7A99',
                       fontFamily: 'DM Sans, sans-serif',
                     }}
@@ -637,8 +649,8 @@ export default function Player() {
                     }}
                     className="relative p-2 rounded-lg text-center transition-all duration-200"
                     style={{
-                      background: selectedIndex === i ? `${f.color}20` : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${selectedIndex === i ? f.color + '50' : 'rgba(255,255,255,0.06)'}`,
+                      background: selectedIndex === i ? `${f.color}20` : (isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)'),
+                      border: `1px solid ${selectedIndex === i ? f.color + '50' : (isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)')}`,
                     }}
                   >
                     {f.isPremium && (
@@ -649,7 +661,7 @@ export default function Player() {
                     <div className="font-mono-brand text-xs font-bold" style={{ color: selectedIndex === i ? f.color : '#6B7A99' }}>
                       {f.hz}
                     </div>
-                    <div className="text-[10px] mt-0.5 truncate" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
+                    <div className="text-[10px] mt-0.5 truncate" style={{ color: isLight ? '#6B7A99' : '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
                       {f.name.split(' ')[0]}
                     </div>
                   </button>

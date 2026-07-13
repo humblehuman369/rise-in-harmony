@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { trackOnboardingComplete, trackOnboardingStarted, trackFirstAlarmSet } from "@/hooks/useAnalytics";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const ONBOARDING_KEY = "rih_onboarding_complete";
 
@@ -201,11 +202,14 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
     }
   };
 
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{
-        background: "rgba(0,0,0,0.8)",
+        background: isLight ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.8)",
         backdropFilter: "blur(12px)",
         opacity: isVisible ? 1 : 0,
         transition: "opacity 0.4s ease",
@@ -214,9 +218,9 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
       <div
         className="w-full max-w-md rounded-3xl overflow-hidden relative"
         style={{
-          background: "linear-gradient(160deg, #0D0F1E 0%, #12152A 100%)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          boxShadow: "0 0 80px rgba(0,212,170,0.12), 0 32px 80px rgba(0,0,0,0.7)",
+          background: isLight ? "linear-gradient(160deg, #FFFFFF 0%, #F5F6F9 100%)" : "linear-gradient(160deg, #0D0F1E 0%, #12152A 100%)",
+          border: isLight ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.08)",
+          boxShadow: isLight ? "0 0 60px rgba(0,212,170,0.08), 0 24px 60px rgba(0,0,0,0.15)" : "0 0 80px rgba(0,212,170,0.12), 0 32px 80px rgba(0,0,0,0.7)",
           transform: isVisible ? "translateY(0) scale(1)" : "translateY(20px) scale(0.97)",
           transition: "transform 0.4s cubic-bezier(0.23, 1, 0.32, 1)",
         }}
@@ -233,7 +237,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
         <button
           onClick={handleComplete}
           className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200"
-          style={{ background: "rgba(255,255,255,0.06)", color: "#6B7A99" }}
+          style={{ background: isLight ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.06)", color: "#6B7A99" }}
         >
           <X size={14} />
         </button>
@@ -246,7 +250,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
               className="h-1 rounded-full transition-all duration-400"
               style={{
                 width: step === s ? "24px" : "8px",
-                background: step === s ? "#00D4AA" : "rgba(255,255,255,0.12)",
+                background: step === s ? "#00D4AA" : (isLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)"),
               }}
             />
           ))}
@@ -271,7 +275,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
 
             <h2
               className="text-center text-3xl font-semibold mb-3"
-              style={{ fontFamily: "Cormorant Garamond, serif", color: "#E8EDF5" }}
+              style={{ fontFamily: "Cormorant Garamond, serif", color: isLight ? "#1A1D2E" : "#E8EDF5" }}
             >
               Welcome to<br />
               <span style={{ background: "linear-gradient(135deg, #00D4AA, #8B5CF6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
@@ -296,10 +300,10 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
                 <div
                   key={i}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl"
-                  style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}
+                  style={{ background: isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)", border: isLight ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.05)" }}
                 >
                   <span style={{ fontSize: "1.1rem" }}>{item.icon}</span>
-                  <span className="text-sm" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
+                  <span className="text-sm" style={{ color: isLight ? "#4A5568" : "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
                     {item.text}
                   </span>
                 </div>
@@ -322,7 +326,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
             <div className="text-center mb-6">
               <h2
                 className="text-2xl font-semibold mb-2"
-                style={{ fontFamily: "Cormorant Garamond, serif", color: "#E8EDF5" }}
+                style={{ fontFamily: "Cormorant Garamond, serif", color: isLight ? "#1A1D2E" : "#E8EDF5" }}
               >
                 What brings you here?
               </h2>
@@ -338,8 +342,8 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
                   onClick={() => setSelectedGoal(goal)}
                   className="p-4 rounded-2xl text-left transition-all duration-200 relative overflow-hidden"
                   style={{
-                    background: selectedGoal?.id === goal.id ? `${goal.color}15` : "rgba(255,255,255,0.03)",
-                    border: `1px solid ${selectedGoal?.id === goal.id ? `${goal.color}50` : "rgba(255,255,255,0.06)"}`,
+                    background: selectedGoal?.id === goal.id ? `${goal.color}15` : (isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)"),
+                    border: `1px solid ${selectedGoal?.id === goal.id ? `${goal.color}50` : (isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.06)")}`,
                     transform: selectedGoal?.id === goal.id ? "scale(1.02)" : "scale(1)",
                   }}
                 >
@@ -357,7 +361,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
                   <div
                     className="text-sm font-semibold mb-0.5"
                     style={{
-                      color: selectedGoal?.id === goal.id ? "#E8EDF5" : "#8FA3BF",
+                      color: selectedGoal?.id === goal.id ? (isLight ? "#1A1D2E" : "#E8EDF5") : "#8FA3BF",
                       fontFamily: "DM Sans, sans-serif",
                     }}
                   >
@@ -390,7 +394,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
             <div className="text-center mb-6">
               <h2
                 className="text-2xl font-semibold mb-2"
-                style={{ fontFamily: "Cormorant Garamond, serif", color: "#E8EDF5" }}
+                style={{ fontFamily: "Cormorant Garamond, serif", color: isLight ? "#1A1D2E" : "#E8EDF5" }}
               >
                 Shape your ritual
               </h2>
@@ -414,8 +418,8 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
                     onClick={() => setWakeTime(t)}
                     className="py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
                     style={{
-                      background: wakeTime === t ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.03)",
-                      border: `1px solid ${wakeTime === t ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.06)"}`,
+                      background: wakeTime === t ? "rgba(245,158,11,0.15)" : (isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)"),
+                      border: `1px solid ${wakeTime === t ? "rgba(245,158,11,0.4)" : (isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.06)")}`,
                       color: wakeTime === t ? "#F59E0B" : "#6B7A99",
                       fontFamily: "DM Sans, sans-serif",
                     }}
@@ -444,8 +448,8 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
                     onClick={() => setHasHeadphones(opt.value)}
                     className="py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
                     style={{
-                      background: hasHeadphones === opt.value ? "rgba(139,92,246,0.15)" : "rgba(255,255,255,0.03)",
-                      border: `1px solid ${hasHeadphones === opt.value ? "rgba(139,92,246,0.4)" : "rgba(255,255,255,0.06)"}`,
+                      background: hasHeadphones === opt.value ? "rgba(139,92,246,0.15)" : (isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)"),
+                      border: `1px solid ${hasHeadphones === opt.value ? "rgba(139,92,246,0.4)" : (isLight ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.06)")}`,
                       color: hasHeadphones === opt.value ? "#C084FC" : "#6B7A99",
                       fontFamily: "DM Sans, sans-serif",
                     }}
@@ -481,7 +485,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
               </div>
               <h2
                 className="text-2xl font-semibold mb-1"
-                style={{ fontFamily: "Cormorant Garamond, serif", color: "#E8EDF5" }}
+                style={{ fontFamily: "Cormorant Garamond, serif", color: isLight ? "#1A1D2E" : "#E8EDF5" }}
               >
                 {recommendation.label}
               </h2>
@@ -491,7 +495,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
             <div
               className="rounded-2xl p-6 mb-5 text-center relative overflow-hidden"
               style={{
-                background: `linear-gradient(135deg, ${recommendation.color}12 0%, rgba(18,21,42,0.8) 100%)`,
+                background: isLight ? `linear-gradient(135deg, ${recommendation.color}10 0%, rgba(245,246,249,0.9) 100%)` : `linear-gradient(135deg, ${recommendation.color}12 0%, rgba(18,21,42,0.8) 100%)`,
                 border: `1px solid ${recommendation.color}30`,
                 boxShadow: `0 0 40px ${recommendation.color}15`,
               }}
@@ -522,7 +526,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
 
                 <div
                   className="text-xl font-semibold mb-1"
-                  style={{ fontFamily: "Cormorant Garamond, serif", color: "#E8EDF5" }}
+                  style={{ fontFamily: "Cormorant Garamond, serif", color: isLight ? "#1A1D2E" : "#E8EDF5" }}
                 >
                   {recommendation.recommendedName}
                 </div>
