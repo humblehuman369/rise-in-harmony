@@ -88,7 +88,7 @@ export default function Home() {
           />
           <div className="absolute inset-0" style={{
             background: isLight
-              ? 'linear-gradient(135deg, rgba(255,252,245,0.86) 0%, rgba(255,248,235,0.48) 40%, rgba(230,247,244,0.78) 100%)'
+              ? 'linear-gradient(135deg, rgba(237,240,247,0.92) 0%, rgba(237,240,247,0.72) 50%, rgba(237,240,247,0.90) 100%)'
               : 'linear-gradient(135deg, rgba(10,11,20,0.85) 0%, rgba(10,11,20,0.5) 50%, rgba(10,11,20,0.8) 100%)',
           }} />
         </div>
