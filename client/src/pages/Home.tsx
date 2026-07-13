@@ -84,11 +84,11 @@ export default function Home() {
             src="/manus-storage/rih-hero-bg_b01c003a.jpg"
             alt="Bioluminescent deep ocean scene representing healing frequency vibrations"
             className="w-full h-full object-cover"
-            style={{ opacity: isLight ? 0.65 : 0.55 }}
+            style={{ opacity: isLight ? 0.75 : 0.55 }}
           />
           <div className="absolute inset-0" style={{
             background: isLight
-              ? 'linear-gradient(135deg, rgba(237,240,247,0.92) 0%, rgba(237,240,247,0.72) 50%, rgba(237,240,247,0.90) 100%)'
+              ? 'linear-gradient(120deg, rgba(255,252,245,0.95) 0%, rgba(240,252,250,0.80) 45%, rgba(220,240,255,0.70) 75%, rgba(230,220,255,0.60) 100%)'
               : 'linear-gradient(135deg, rgba(10,11,20,0.85) 0%, rgba(10,11,20,0.5) 50%, rgba(10,11,20,0.8) 100%)',
           }} />
         </div>
@@ -115,9 +115,9 @@ export default function Home() {
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-8"
               style={{
-                background: 'rgba(0,212,170,0.1)',
-                border: '1px solid rgba(0,212,170,0.25)',
-                color: '#00D4AA',
+                background: isLight ? '#00C4A0' : 'rgba(0,212,170,0.1)',
+                border: isLight ? 'none' : '1px solid rgba(0,212,170,0.25)',
+                color: isLight ? '#FFFFFF' : '#00D4AA',
                 fontFamily: 'DM Sans, sans-serif',
               }}>
               <span className="w-1.5 h-1.5 rounded-full bg-[#00D4AA] animate-pulse" />
@@ -129,7 +129,7 @@ export default function Home() {
               fontFamily: 'Cormorant Garamond, serif',
               fontSize: 'clamp(3rem, 7vw, 5.5rem)',
               fontWeight: 600,
-              color: isLight ? '#1A1D2E' : '#E8EDF5',
+              color: isLight ? '#0D1B3E' : '#E8EDF5',
               lineHeight: 1.05,
             }}>
               Begin your day<br />
@@ -137,7 +137,7 @@ export default function Home() {
             </h1>
 
             <p className="text-lg leading-relaxed mb-10 max-w-xl" style={{
-              color: isLight ? '#4A5568' : '#8FA3BF',
+              color: isLight ? '#2D3748' : '#8FA3BF',
               fontFamily: 'DM Sans, sans-serif',
             }}>
               Rise In Harmony replaces your jarring alarm with healing frequencies —
@@ -158,13 +158,13 @@ export default function Home() {
                 onClick={() => navigate("/alarm")}
                 className="flex items-center gap-2 px-8 py-3.5 text-base font-semibold rounded-full transition-all duration-200"
                 style={{
-                  background: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)',
-                  border: isLight ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.12)',
-                  color: isLight ? '#1A1D2E' : '#E8EDF5',
+                  background: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.06)',
+                  border: isLight ? '2px solid #00C4A0' : '1px solid rgba(255,255,255,0.12)',
+                  color: isLight ? '#00A88A' : '#E8EDF5',
                   fontFamily: 'DM Sans, sans-serif',
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = isLight ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.10)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = isLight ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.10)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isLight ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.06)'; }}
               >
                 <AlarmClock size={18} />
                 Set Healing Alarm
@@ -176,7 +176,7 @@ export default function Home() {
               <div className="flex -space-x-2">
                 {['#00D4AA','#8B5CF6','#F59E0B','#3B82F6'].map((c, i) => (
                   <div key={i} className="w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold"
-                    style={{ background: c, borderColor: '#0A0B14', color: '#0A0B14' }}>
+                    style={{ background: c, borderColor: isLight ? '#FFFFFF' : '#0A0B14', color: '#FFFFFF' }}>
                     {['B','K','B','C'][i]}
                   </div>
                 ))}

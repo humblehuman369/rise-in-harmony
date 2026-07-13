@@ -363,9 +363,9 @@
     transform: translateY(-2px);
   }
 
-  /* Light mode gradient text (default) — deeper for contrast */
+  /* Light mode gradient text (default) — teal to purple per mockup */
   .gradient-text {
-    background: linear-gradient(135deg, #009E80 0%, #6D28D9 100%);
+    background: linear-gradient(90deg, #00C4A0 0%, #7B5CF6 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
