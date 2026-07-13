@@ -33,6 +33,7 @@ import SessionJournal from "@/components/SessionJournal";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
+import { useTheme } from "@/contexts/ThemeContext";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -257,6 +258,8 @@ function useMusicLayer(getAudioContext: () => AudioContext | null) {
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function FrequencyStudio() {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const player = usePrecisionPlayer();
   const background = useBackgroundLayer(() => player.getAudioContext());
   const nature = useNatureLayer(() => player.getAudioContext());
@@ -658,7 +661,7 @@ export default function FrequencyStudio() {
             <Activity size={12} />
             Precision Frequency Studio — DDS Precision Engine
           </div>
-          <h1 className="text-2xl font-semibold mb-0.5" style={{ fontFamily: "Cormorant Garamond, serif", color: "#E8EDF5" }}>
+          <h1 className="text-2xl font-semibold mb-0.5" style={{ fontFamily: "Cormorant Garamond, serif", color: isLight ? "#1A1D2E" : "#E8EDF5" }}>
             Precision Frequency Studio
           </h1>
           <p className="text-xs" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
@@ -671,7 +674,7 @@ export default function FrequencyStudio() {
           {/* ═══ LEFT COLUMN — Primary Controls ═══ */}
           <div className="space-y-4">
             {/* ── Frequency Input ─────────────────────────────────── */}
-            <div className="p-4 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="p-4 rounded-2xl" style={{ background: isLight ? "#FFFFFF" : "#11142A", border: isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)" }}>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
                   Frequency
@@ -695,9 +698,9 @@ export default function FrequencyStudio() {
                   }}
                     className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all"
                     style={customFreq === hz ? {
-                      background: "rgba(0,212,170,0.18)", color: "#00D4AA", border: "1px solid rgba(0,212,170,0.4)",
+                      background: "rgba(0,212,170,0.18)", color: isLight ? "#007A62" : "#00D4AA", border: "1px solid rgba(0,212,170,0.4)",
                     } : {
-                      background: "rgba(255,255,255,0.04)", color: "#8FA3BF", border: "1px solid rgba(255,255,255,0.08)",
+                      background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)", color: isLight ? "#4A5568" : "#8FA3BF", border: isLight ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.08)",
                     }}>
                     {hz} Hz
                   </button>
@@ -705,7 +708,7 @@ export default function FrequencyStudio() {
               </div>
               <div className="flex items-center gap-2 mb-3">
                 <button onClick={() => nudgeFreq(-1)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-                  style={{ background: "rgba(255,255,255,0.06)", color: "#8FA3BF", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  style={{ background: isLight ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.06)", color: isLight ? "#4A5568" : "#8FA3BF", border: isLight ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.08)" }}>
                   <Minus size={14} />
                 </button>
                 <input
@@ -715,11 +718,11 @@ export default function FrequencyStudio() {
                   onBlur={commitFreq}
                   onKeyDown={e => e.key === "Enter" && commitFreq()}
                   className="flex-1 text-center text-xl font-mono-brand px-3 py-2 rounded-xl outline-none"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#E8EDF5" }}
+                  style={{ background: isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)", border: isLight ? "1px solid rgba(0,0,0,0.10)" : "1px solid rgba(255,255,255,0.1)", color: isLight ? "#1A1D2E" : "#E8EDF5" }}
                 />
                 <span className="text-sm font-medium" style={{ color: "#6B7A99" }}>Hz</span>
                 <button onClick={() => nudgeFreq(1)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-                  style={{ background: "rgba(255,255,255,0.06)", color: "#8FA3BF", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  style={{ background: isLight ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.06)", color: isLight ? "#4A5568" : "#8FA3BF", border: isLight ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.08)" }}>
                   <Plus size={14} />
                 </button>
               </div>
@@ -736,33 +739,33 @@ export default function FrequencyStudio() {
                   }
                 }}
               />
-              <div className="flex justify-between text-[10px] mt-1" style={{ color: "#3A4A6B" }}>
+              <div className="flex justify-between text-[10px] mt-1" style={{ color: isLight ? "#9AA5B4" : "#3A4A6B" }}>
                 <span>1 Hz</span><span>2000 Hz</span>
               </div>
             </div>
 
             {/* ── Sound Engine (Waveform + Play Mode) ────────────── */}
-            <div className="p-4 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="p-4 rounded-2xl" style={{ background: isLight ? "#FFFFFF" : "#11142A", border: isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)" }}>
               <span className="text-xs font-semibold uppercase tracking-widest block mb-3" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
                 Sound Engine
               </span>
               {/* Waveform */}
-              <span className="text-[10px] font-medium uppercase tracking-wider block mb-1.5" style={{ color: "#4A5568" }}>Waveform</span>
+              <span className="text-[10px] font-medium uppercase tracking-wider block mb-1.5" style={{ color: isLight ? "#6B7A99" : "#4A5568" }}>Waveform</span>
               <div className="flex flex-wrap gap-1.5 mb-4">
                 {WAVEFORMS.map(w => (
                   <button key={w} onClick={() => handleWaveform(w)}
                     className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                     style={waveform === w ? {
-                      background: "rgba(0,212,170,0.15)", color: "#00D4AA", border: "1px solid rgba(0,212,170,0.3)",
+                      background: "rgba(0,212,170,0.15)", color: isLight ? "#007A62" : "#00D4AA", border: "1px solid rgba(0,212,170,0.3)",
                     } : {
-                      background: "rgba(255,255,255,0.04)", color: "#6B7A99", border: "1px solid rgba(255,255,255,0.06)",
+                      background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)", color: "#6B7A99", border: isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)",
                     }}>
                     {WAVEFORM_LABELS[w]}
                   </button>
                 ))}
               </div>
               {/* Play Mode */}
-              <span className="text-[10px] font-medium uppercase tracking-wider block mb-1.5" style={{ color: "#4A5568" }}>Play Mode</span>
+              <span className="text-[10px] font-medium uppercase tracking-wider block mb-1.5" style={{ color: isLight ? "#6B7A99" : "#4A5568" }}>Play Mode</span>
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {(["mono", "binaural", "isochronic"] as PlayMode[]).map(m => (
                   <button key={m} onClick={() => handlePlayMode(m)}
@@ -770,7 +773,7 @@ export default function FrequencyStudio() {
                     style={playMode === m ? {
                       background: "rgba(139,92,246,0.15)", color: "#8B5CF6", border: "1px solid rgba(139,92,246,0.3)",
                     } : {
-                      background: "rgba(255,255,255,0.04)", color: "#6B7A99", border: "1px solid rgba(255,255,255,0.06)",
+                      background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)", color: "#6B7A99", border: isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)",
                     }}>
                     {m}
                   </button>
@@ -811,7 +814,7 @@ export default function FrequencyStudio() {
             </div>
 
             {/* ── Ambient Layers (Nature / Music / Uploads) ──────── */}
-            <div className="p-4 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="p-4 rounded-2xl" style={{ background: isLight ? "#FFFFFF" : "#11142A", border: isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)" }}>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
                   Ambient Layers
@@ -823,9 +826,9 @@ export default function FrequencyStudio() {
                   <button key={tab} onClick={() => setAmbientTab(tab)}
                     className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize"
                     style={ambientTab === tab ? {
-                      background: "rgba(0,212,170,0.12)", color: "#00D4AA", border: "1px solid rgba(0,212,170,0.25)",
+                      background: "rgba(0,212,170,0.12)", color: isLight ? "#007A62" : "#00D4AA", border: "1px solid rgba(0,212,170,0.25)",
                     } : {
-                      background: "rgba(255,255,255,0.03)", color: "#6B7A99", border: "1px solid rgba(255,255,255,0.06)",
+                      background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.03)", color: "#6B7A99", border: isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)",
                     }}>
                     {tab}
                   </button>
@@ -845,7 +848,7 @@ export default function FrequencyStudio() {
                         style={nature.activeNature === ns.id ? {
                           background: `${ns.color}15`, border: `1px solid ${ns.color}40`, color: ns.color,
                         } : {
-                          background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
+                          background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.03)", border: isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
                         }}>
                         <ns.Icon size={14} />
                         {ns.label}
@@ -874,7 +877,7 @@ export default function FrequencyStudio() {
                         style={music.activeMusic === mm.id ? {
                           background: `${mm.color}15`, border: `1px solid ${mm.color}40`, color: mm.color,
                         } : {
-                          background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
+                          background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.03)", border: isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
                         }}>
                         {mm.label}
                       </button>
@@ -896,7 +899,7 @@ export default function FrequencyStudio() {
                     onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f); }} />
                   <button onClick={() => fileInputRef.current?.click()}
                     className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all mb-3"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(255,255,255,0.15)", color: "#8FA3BF" }}>
+                    style={{ background: isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)", border: isLight ? "1px dashed rgba(0,0,0,0.15)" : "1px dashed rgba(255,255,255,0.15)", color: isLight ? "#4A5568" : "#8FA3BF" }}>
                     {uploadProgress !== null ? <><Loader2 size={12} className="animate-spin" /> Uploading {Math.round(uploadProgress * 100)}%</> : <><Upload size={12} /> Upload MP3</>}
                   </button>
                   {uploadOptions.length > 0 && (
@@ -905,15 +908,15 @@ export default function FrequencyStudio() {
                         <button key={u.key} onClick={() => background.selectBackground("upload", u.key, player.isPlaying)}
                           className="w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all"
                           style={background.layer.key === u.key ? {
-                            background: "rgba(0,212,170,0.1)", color: "#00D4AA",
-                          } : { color: "#8FA3BF" }}>
+                            background: "rgba(0,212,170,0.1)", color: isLight ? "#007A62" : "#00D4AA",
+                          } : { color: isLight ? "#4A5568" : "#8FA3BF" }}>
                           {u.label}
                         </button>
                       ))}
                     </div>
                   )}
                   {uploadOptions.length === 0 && !uploadProgress && (
-                    <p className="text-[10px]" style={{ color: "#3A4A6B" }}>Upload an MP3 to use as a background layer.</p>
+                    <p className="text-[10px]" style={{ color: isLight ? "#9AA5B4" : "#3A4A6B" }}>Upload an MP3 to use as a background layer.</p>
                   )}
                   {background.layer.type === "upload" && (
                     <div className="flex items-center gap-2 mt-2">
@@ -927,10 +930,10 @@ export default function FrequencyStudio() {
             </div>
 
             {/* ── Signal Analysis (collapsible) ──────────────────── */}
-            <div className="rounded-2xl overflow-hidden" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="rounded-2xl overflow-hidden" style={{ background: isLight ? "#FFFFFF" : "#11142A", border: isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)" }}>
               <button onClick={() => setShowAnalysis(v => !v)}
                 className="w-full flex items-center justify-between p-4 text-xs font-semibold uppercase tracking-widest"
-                style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                style={{ color: isLight ? "#4A5568" : "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
                 Signal Analysis
                 {showAnalysis ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
@@ -962,7 +965,7 @@ export default function FrequencyStudio() {
           {/* ═══ RIGHT COLUMN — Playback & Library ═══ */}
           <div className="space-y-4">
             {/* ── Playback controls ──────────────────────────────── */}
-            <div className="p-4 rounded-2xl lg:sticky lg:top-4" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="p-4 rounded-2xl lg:sticky lg:top-4" style={{ background: isLight ? "#FFFFFF" : "#11142A", border: isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)" }}>
               {/* Play button + timer */}
               <div className="flex items-center gap-3 mb-4">
                 <button onClick={handlePlay}
@@ -975,7 +978,7 @@ export default function FrequencyStudio() {
                   {player.isPlaying ? <Square size={20} fill="currentColor" /> : <Play size={22} fill="currentColor" />}
                 </button>
                 <div className="flex-1">
-                  <div className="text-sm font-medium" style={{ color: "#E8EDF5", fontFamily: "DM Sans, sans-serif" }}>
+                  <div className="text-sm font-medium" style={{ color: isLight ? "#1A1D2E" : "#E8EDF5", fontFamily: "DM Sans, sans-serif" }}>
                     {player.isPlaying ? `Playing — ${customFreq.toFixed(customFreq % 1 === 0 ? 0 : 2)} Hz` : "Ready"}
                   </div>
                   <div className="text-xs" style={{ color: "#6B7A99" }}>
@@ -1007,11 +1010,11 @@ export default function FrequencyStudio() {
                   {SLEEP_OPTIONS.map(m => (
                     <button key={m} onClick={() => handleSleepTimer(m)}
                       className="px-2 py-1 rounded-lg text-[10px] transition-all"
-                      style={sleepMinutes === m ? {
-                        background: "rgba(139,92,246,0.2)", color: "#8B5CF6", border: "1px solid rgba(139,92,246,0.3)",
-                      } : {
-                        background: "rgba(255,255,255,0.04)", color: "#6B7A99", border: "1px solid rgba(255,255,255,0.06)",
-                      }}>
+                    style={sleepMinutes === m ? {
+                      background: "rgba(139,92,246,0.2)", color: "#8B5CF6", border: "1px solid rgba(139,92,246,0.3)",
+                    } : {
+                      background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)", color: "#6B7A99", border: isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)",
+                    }}>
                       {m}m
                     </button>
                   ))}
@@ -1049,7 +1052,7 @@ export default function FrequencyStudio() {
                     onChange={e => setFavNameInput(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && addFavorite()}
                     className="flex-1 px-3 py-1.5 rounded-lg text-xs outline-none"
-                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#E8EDF5" }} />
+                    style={{ background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)", border: isLight ? "1px solid rgba(0,0,0,0.10)" : "1px solid rgba(255,255,255,0.1)", color: isLight ? "#1A1D2E" : "#E8EDF5" }} />
                   <button onClick={addFavorite} className="px-3 py-1.5 rounded-lg text-xs font-medium"
                     style={{ background: "rgba(245,158,11,0.15)", color: "#F59E0B" }}>Add</button>
                 </div>
@@ -1060,7 +1063,7 @@ export default function FrequencyStudio() {
                     onChange={e => setSaveNameInput(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && saveSound()}
                     className="flex-1 px-3 py-1.5 rounded-lg text-xs outline-none"
-                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#E8EDF5" }} />
+                    style={{ background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)", border: isLight ? "1px solid rgba(0,0,0,0.10)" : "1px solid rgba(255,255,255,0.1)", color: isLight ? "#1A1D2E" : "#E8EDF5" }} />
                   <button onClick={() => void saveSound()} className="px-3 py-1.5 rounded-lg text-xs font-medium"
                     style={{ background: "rgba(59,130,246,0.15)", color: "#3B82F6" }}>
                     {createSound.isPending ? <Loader2 size={12} className="animate-spin" /> : "Save"}
@@ -1073,7 +1076,7 @@ export default function FrequencyStudio() {
                     onChange={e => setMixNameInput(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && saveCurrentMix()}
                     className="flex-1 px-3 py-1.5 rounded-lg text-xs outline-none"
-                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#E8EDF5" }} />
+                    style={{ background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)", border: isLight ? "1px solid rgba(0,0,0,0.10)" : "1px solid rgba(255,255,255,0.1)", color: isLight ? "#1A1D2E" : "#E8EDF5" }} />
                   <button onClick={saveCurrentMix} className="px-3 py-1.5 rounded-lg text-xs font-medium"
                     style={{ background: "rgba(139,92,246,0.15)", color: "#8B5CF6" }}>Save</button>
                 </div>
@@ -1081,7 +1084,7 @@ export default function FrequencyStudio() {
             </div>
 
             {/* ── Presets & Favorites ─────────────────────────────── */}
-            <div className="p-4 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="p-4 rounded-2xl" style={{ background: isLight ? "#FFFFFF" : "#11142A", border: isLight ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)" }}>
               {/* Tabs */}
               <div className="flex gap-1 mb-3 overflow-x-auto">
                 {([
@@ -1093,7 +1096,7 @@ export default function FrequencyStudio() {
                   <button key={t.id} onClick={() => setPresetTab(t.id)}
                     className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all"
                     style={presetTab === t.id ? {
-                      background: "rgba(0,212,170,0.12)", color: "#00D4AA",
+                      background: "rgba(0,212,170,0.12)", color: isLight ? "#007A62" : "#00D4AA",
                     } : { color: "#6B7A99" }}>
                     {t.label}
                   </button>
@@ -1109,7 +1112,7 @@ export default function FrequencyStudio() {
                       style={{
                         background: player.session?.name === p.session.name && player.isPlaying
                           ? `${p.color}18` : "transparent",
-                        color: "#8FA3BF", fontFamily: "DM Sans, sans-serif",
+                        color: isLight ? "#4A5568" : "#8FA3BF", fontFamily: "DM Sans, sans-serif",
                       }}>
                       <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />
                       {p.label}
@@ -1124,7 +1127,7 @@ export default function FrequencyStudio() {
                   {STUDIO_PRESETS.map(p => (
                     <button key={p.id} onClick={() => void handleLifestylePreset(p)}
                       className="w-full text-left px-3 py-2.5 rounded-xl transition-all"
-                      style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                      style={{ background: isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.02)", border: isLight ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.05)" }}>
                       <div className="flex items-center gap-2">
                         <span className="text-base">{p.icon}</span>
                         <div>
@@ -1141,7 +1144,7 @@ export default function FrequencyStudio() {
               {presetTab === "mixes" && (
                 <div>
                   {customMixes.length === 0 ? (
-                    <p className="text-xs py-4 text-center" style={{ color: "#3A4A6B" }}>
+                    <p className="text-xs py-4 text-center" style={{ color: isLight ? "#9AA5B4" : "#3A4A6B" }}>
                       No custom mixes yet. Use the "Mix" button above to save your current setup.
                     </p>
                   ) : (
@@ -1150,9 +1153,9 @@ export default function FrequencyStudio() {
                         <div key={mix.id} className="flex items-center gap-2 group">
                           <button onClick={() => void applyCustomMix(mix)}
                             className="flex-1 text-left px-3 py-2 rounded-xl text-xs transition-all"
-                            style={{ color: "#8FA3BF" }}>
-                            <span className="font-medium" style={{ color: "#E8EDF5" }}>{mix.name}</span>
-                            <span className="ml-2 text-[10px]" style={{ color: "#4A5568" }}>
+                            style={{ color: isLight ? "#4A5568" : "#8FA3BF" }}>
+                            <span className="font-medium" style={{ color: isLight ? "#1A1D2E" : "#E8EDF5" }}>{mix.name}</span>
+                            <span className="ml-2 text-[10px]" style={{ color: isLight ? "#6B7A99" : "#4A5568" }}>
                               {mix.freq} Hz · {mix.waveform}
                               {mix.natureSound ? ` + ${mix.natureSound}` : ""}
                               {mix.musicMode ? ` + ${mix.musicMode}` : ""}
@@ -1173,7 +1176,7 @@ export default function FrequencyStudio() {
               {presetTab === "favorites" && (
                 <div>
                   {favorites.length === 0 ? (
-                    <p className="text-xs py-4 text-center" style={{ color: "#3A4A6B" }}>
+                    <p className="text-xs py-4 text-center" style={{ color: isLight ? "#9AA5B4" : "#3A4A6B" }}>
                       No favorites yet — use the star button to save a frequency.
                     </p>
                   ) : (
@@ -1192,7 +1195,7 @@ export default function FrequencyStudio() {
                             if (music.activeMusic) music.startMusic(music.activeMusic, music.musicVolume);
                           })()}
                             className="flex-1 text-left px-3 py-1.5 rounded-lg text-xs transition-all"
-                            style={{ color: "#8FA3BF" }}>
+                            style={{ color: isLight ? "#4A5568" : "#8FA3BF" }}>
                             ★ {fav.name}
                           </button>
                           <button onClick={() => removeFavorite(fav.id)}
@@ -1211,7 +1214,7 @@ export default function FrequencyStudio() {
             <div className="p-3 rounded-xl" style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)" }}>
               <div className="flex items-start gap-2">
                 <Headphones size={14} style={{ color: "#F59E0B", marginTop: 2 }} />
-                <p className="text-[10px] leading-relaxed" style={{ color: "#8FA3BF" }}>
+                <p className="text-[10px] leading-relaxed" style={{ color: isLight ? "#4A5568" : "#8FA3BF" }}>
                   Use quality headphones for binaural beats. This is not a medical device. Consult a physician if you have epilepsy or seizure disorders.
                 </p>
               </div>
@@ -1227,11 +1230,13 @@ export default function FrequencyStudio() {
           <button onClick={handlePlay}
             className={`w-full flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all active:scale-[0.97] shadow-lg ${player.isPlaying ? 'animate-[playPulse_2.5s_ease-in-out_infinite]' : ''}`}
             style={player.isPlaying ? {
-              background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+              background: isLight ? 'rgba(239,68,68,0.10)' : 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
               backdropFilter: 'blur(20px)', color: '#EF4444',
+              boxShadow: isLight ? '0 4px 20px rgba(0,0,0,0.12)' : undefined,
             } : {
-              background: 'rgba(0,212,170,0.12)', border: '1px solid rgba(0,212,170,0.3)',
-              backdropFilter: 'blur(20px)', color: '#00D4AA',
+              background: isLight ? 'rgba(0,212,170,0.10)' : 'rgba(0,212,170,0.12)', border: '1px solid rgba(0,212,170,0.3)',
+              backdropFilter: 'blur(20px)', color: isLight ? '#007A62' : '#00D4AA',
+              boxShadow: isLight ? '0 4px 20px rgba(0,0,0,0.12)' : undefined,
             }}>
             {player.isPlaying ? <Square size={18} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
             <span className="text-sm font-semibold" style={{ fontFamily: 'DM Sans, sans-serif' }}>
