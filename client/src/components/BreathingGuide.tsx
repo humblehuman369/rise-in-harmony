@@ -31,7 +31,12 @@ interface BreathPattern {
 
 /** Number of cycles after which the completion cue plays */
 const COMPLETE_AFTER_CYCLES = 5;
-const COMPLETE_CUE = "/manus-storage/v2-complete_3b0e0367.wav";
+
+/** Single shared voice cue paths — all patterns use the same Inhale/Exhale/Hold/Complete words */
+const CUE_INHALE   = "/manus-storage/rih-breath-inhale-v3_d8576e3c.wav";
+const CUE_EXHALE   = "/manus-storage/rih-breath-exhale-v3_30eb22d8.wav";
+const CUE_HOLD     = "/manus-storage/rih-breath-hold-v3_bcc068ae.wav";
+const CUE_COMPLETE = "/manus-storage/rih-breath-complete-v3_0d6d4b26.wav";
 
 export const BREATH_PATTERNS: BreathPattern[] = [
   {
@@ -41,9 +46,9 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     benefit: "Calms the nervous system, ideal before sleep",
     color: "#8B5CF6",
     phases: [
-      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.4, voiceCue: "/manus-storage/breath-478-inhale_590b2009.wav" },
-      { label: "Hold", seconds: 7, color: "#8B5CF6", scale: 1.4, voiceCue: "/manus-storage/breath-478-hold_650f4e10.wav" },
-      { label: "Exhale", seconds: 8, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/breath-478-exhale_155e4a0e.wav" },
+      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.4, voiceCue: CUE_INHALE },
+      { label: "Hold",   seconds: 7, color: "#8B5CF6", scale: 1.4, voiceCue: CUE_HOLD },
+      { label: "Exhale", seconds: 8, color: "#3B82F6", scale: 0.7, voiceCue: CUE_EXHALE },
     ],
   },
   {
@@ -53,10 +58,10 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     benefit: "Reduces stress, sharpens focus and clarity",
     color: "#00D4AA",
     phases: [
-      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.35, voiceCue: "/manus-storage/breath-box-inhale_1fa5f9af.wav" },
-      { label: "Hold", seconds: 4, color: "#8B5CF6", scale: 1.35, voiceCue: "/manus-storage/breath-box-hold-top_55e2131f.wav" },
-      { label: "Exhale", seconds: 4, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/breath-box-exhale_8432a928.wav" },
-      { label: "Hold", seconds: 4, color: "#6B7A99", scale: 0.7, voiceCue: "/manus-storage/breath-box-hold-bottom_8ebb4b3f.wav" },
+      { label: "Inhale", seconds: 4, color: "#00D4AA", scale: 1.35, voiceCue: CUE_INHALE },
+      { label: "Hold",   seconds: 4, color: "#8B5CF6", scale: 1.35, voiceCue: CUE_HOLD },
+      { label: "Exhale", seconds: 4, color: "#3B82F6", scale: 0.7,  voiceCue: CUE_EXHALE },
+      { label: "Hold",   seconds: 4, color: "#6B7A99", scale: 0.7,  voiceCue: CUE_HOLD },
     ],
   },
   {
@@ -66,8 +71,8 @@ export const BREATH_PATTERNS: BreathPattern[] = [
     benefit: "Simple coherence breathing for grounding",
     color: "#F59E0B",
     phases: [
-      { label: "Inhale", seconds: 5, color: "#F59E0B", scale: 1.4, voiceCue: "/manus-storage/breath-calm-inhale_3b4982b3.wav" },
-      { label: "Exhale", seconds: 5, color: "#3B82F6", scale: 0.7, voiceCue: "/manus-storage/breath-calm-exhale_4c5b28f8.wav" },
+      { label: "Inhale", seconds: 5, color: "#F59E0B", scale: 1.4, voiceCue: CUE_INHALE },
+      { label: "Exhale", seconds: 5, color: "#3B82F6", scale: 0.7, voiceCue: CUE_EXHALE },
     ],
   },
 ];
@@ -100,7 +105,11 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
   const [bgVolume, setBgVolume] = useState(initialBgVolume);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Audio engine: preloaded AudioContext buffers + session-active guard
+  const audioCtxRef    = useRef<AudioContext | null>(null);
+  const audioBuffers   = useRef<Map<string, AudioBuffer>>(new Map());
+  const currentSrcRef  = useRef<AudioBufferSourceNode | null>(null);
+  const sessionActive  = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const timeRef = useRef(0);
@@ -155,26 +164,72 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
   }, [accentColor]);
 
   // ── Audio helpers ────────────────────────────────────────────────────────────
-  const stopAudio = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = "";
-      audioRef.current = null;
+
+  /** Lazily create (or reuse) the AudioContext */
+  const getAudioCtx = useCallback((): AudioContext => {
+    if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+      audioCtxRef.current = new AudioContext();
     }
+    return audioCtxRef.current;
   }, []);
 
-  const playVoiceCue = useCallback((path: string) => {
-    if (!guided) return;
-    stopAudio();
+  /** Preload a WAV into an AudioBuffer and cache it */
+  const preloadCue = useCallback(async (url: string) => {
+    if (audioBuffers.current.has(url)) return;
     try {
-      const audio = new Audio(path);
-      audio.volume = 1.0;
-      audio.play().catch(() => {/* swallow autoplay errors */});
-      audioRef.current = audio;
-    } catch {
-      // audio not critical
-    }
-  }, [guided, stopAudio]);
+      const ctx = getAudioCtx();
+      const resp = await fetch(url);
+      const arr  = await resp.arrayBuffer();
+      const buf  = await ctx.decodeAudioData(arr);
+      audioBuffers.current.set(url, buf);
+    } catch { /* not critical */ }
+  }, [getAudioCtx]);
+
+  /** Stop whatever cue is currently playing */
+  const stopAudio = useCallback(() => {
+    try {
+      currentSrcRef.current?.stop();
+    } catch { /* already stopped */ }
+    currentSrcRef.current = null;
+  }, []);
+
+  /** Play a single voice cue; silently aborts if session is no longer active */
+  const playVoiceCue = useCallback((url: string) => {
+    if (!guided || !sessionActive.current) return;
+    try {
+      const ctx = getAudioCtx();
+      if (ctx.state === 'suspended') ctx.resume();
+      const buf = audioBuffers.current.get(url);
+      if (!buf) {
+        // Buffer not yet loaded — fetch and play once ready
+        fetch(url)
+          .then(r => r.arrayBuffer())
+          .then(a => ctx.decodeAudioData(a))
+          .then(b => {
+            audioBuffers.current.set(url, b);
+            if (!sessionActive.current || !guided) return;
+            const src = ctx.createBufferSource();
+            src.buffer = b;
+            src.connect(ctx.destination);
+            src.start(0);
+            currentSrcRef.current = src;
+          })
+          .catch(() => {});
+        return;
+      }
+      stopAudio();
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+      currentSrcRef.current = src;
+    } catch { /* audio not critical */ }
+  }, [guided, getAudioCtx, stopAudio]);
+
+  /** Preload all cues when the component mounts */
+  useEffect(() => {
+    [CUE_INHALE, CUE_EXHALE, CUE_HOLD, CUE_COMPLETE].forEach(url => preloadCue(url));
+  }, [preloadCue]);
 
   // ── Timer helpers ────────────────────────────────────────────────────────────
   const stopTimer = useCallback(() => {
@@ -212,7 +267,7 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
               stopTimer();
               setIsRunning(false);
               setCircleScale(1.0);
-              playVoiceCue(COMPLETE_CUE);
+              playVoiceCue(CUE_COMPLETE);
               return;
             }
           }
@@ -226,11 +281,13 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
       }, 1000);
     };
 
+    sessionActive.current = true;
     onSessionStart?.();
     runTimer();
   }, [selectedPattern, guided, stopTimer, playVoiceCue, onSessionStart]);
 
   const stopBreathing = useCallback(() => {
+    sessionActive.current = false;
     stopTimer();
     stopAudio();
     setIsRunning(false);
@@ -243,6 +300,7 @@ export default function BreathingGuide({ onClose, accentColor = "#00D4AA", onSes
 
   useEffect(() => {
     return () => {
+      sessionActive.current = false;
       stopTimer();
       stopAudio();
     };
