@@ -113,11 +113,12 @@ const DURATION_OPTIONS = [
   { label: "5 min", value: 300 },
 ];
 
-// Sound character options — all synthesized through the DDS engine so the
-// fundamental stays at the exact tuned chakra frequency
+// Sound character options — both synthesized through the DDS engine so the
+// fundamental stays at the exact tuned chakra frequency. "Tuning Fork" is the
+// sustained continuous tone (matching the Player's existing behavior), NOT a
+// struck/decaying sound.
 const TIMBRE_OPTIONS: { id: ToneTimbre; label: string; hint: string }[] = [
-  { id: "pure", label: "Pure Tone", hint: "Clean continuous sine wave" },
-  { id: "fork", label: "Tuning Fork", hint: "Struck fork with a natural ring and decay" },
+  { id: "pure", label: "Tuning Fork", hint: "Sustained pure tone, like a continuously ringing fork" },
   { id: "bowl", label: "Singing Bowl", hint: "Warm shimmering bowl resonance" },
 ];
 

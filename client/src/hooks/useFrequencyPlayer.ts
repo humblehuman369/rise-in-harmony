@@ -18,7 +18,7 @@ import { getLibraryLoopUrl } from "@/data/backgroundLoops";
 export type AudioErrorCallback = (msg: string) => void;
 
 /** Tone character for synthesized catalog frequencies (recorded sessions are unaffected). */
-export type ToneTimbre = "pure" | "fork" | "bowl";
+export type ToneTimbre = "pure" | "bowl";
 
 export interface Frequency {
   id: string;
@@ -418,7 +418,7 @@ export function useFrequencyPlayer(onError?: AudioErrorCallback) {
     worklet.port.postMessage({ type: "setFreq", freqL, freqR });
     worklet.port.postMessage({
       type: "setWaveform",
-      waveform: timbreRef.current === "bowl" ? "bowl" : timbreRef.current === "fork" ? "fork" : "sine",
+      waveform: timbreRef.current === "bowl" ? "bowl" : "sine",
     });
     worklet.port.postMessage({ type: "setMode", mode });
     worklet.port.postMessage({ type: "setIsochronic", enabled: freq.isIsochronic === true });
@@ -460,7 +460,7 @@ export function useFrequencyPlayer(onError?: AudioErrorCallback) {
     setTimbreState(t);
     workletNodeRef.current?.port.postMessage({
       type: "setWaveform",
-      waveform: t === "bowl" ? "bowl" : t === "fork" ? "fork" : "sine",
+      waveform: t === "bowl" ? "bowl" : "sine",
     });
   }, []);
 
