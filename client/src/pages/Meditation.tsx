@@ -172,9 +172,13 @@ function MeditationPlayer({
   const [currentStep, setCurrentStep] = useState(0);
   const [showGuidance, setShowGuidance] = useState(true);
 
-  // tRPC session logging
-  const startSession = trpc.sessions.start.useMutation();
-  const endSession = trpc.sessions.end.useMutation();
+  // tRPC session logging (optional — guests must never be redirected to login)
+  const startSession = trpc.sessions.start.useMutation({
+    meta: { noAuthRedirect: true },
+  });
+  const endSession = trpc.sessions.end.useMutation({
+    meta: { noAuthRedirect: true },
+  });
   const sessionIdRef = useRef<number | null>(null);
 
   // Frequency synthesis — DDS AudioWorklet engine (SRS NFR-FREQ-004)

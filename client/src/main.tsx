@@ -32,7 +32,12 @@ queryClient.getQueryCache().subscribe(event => {
 queryClient.getMutationCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.mutation.state.error;
-    redirectToLoginIfUnauthorized(error);
+    // Mutations marked with `meta.noAuthRedirect` are optional fire-and-forget
+    // calls (e.g. session logging) that must not bounce guests to the login page.
+    const skipRedirect = event.mutation.meta?.noAuthRedirect === true;
+    if (!skipRedirect) {
+      redirectToLoginIfUnauthorized(error);
+    }
     console.error("[API Mutation Error]", error);
   }
 });

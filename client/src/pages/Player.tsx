@@ -520,7 +520,8 @@ export default function Player() {
                   Tone
                 </span>
                 {([
-                  { id: "pure", label: "Tuning Fork" },
+                  { id: "pure", label: "Pure Tone" },
+                  { id: "fork", label: "Tuning Fork" },
                   { id: "bowl", label: "Singing Bowl" },
                 ] as const).map(t => (
                   <button

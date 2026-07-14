@@ -6,7 +6,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Play, Pause, SkipForward, X, Zap } from "lucide-react";
-import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFrequencyPlayer";
+import { useFrequencyPlayer, FREQUENCIES, type Frequency, type ToneTimbre } from "@/hooks/useFrequencyPlayer";
 import { toast } from "sonner";
 import { trackChakraSequenceCompleted } from "@/hooks/useAnalytics";
 import { trpc } from "@/lib/trpc";
@@ -113,6 +113,14 @@ const DURATION_OPTIONS = [
   { label: "5 min", value: 300 },
 ];
 
+// Sound character options — all synthesized through the DDS engine so the
+// fundamental stays at the exact tuned chakra frequency
+const TIMBRE_OPTIONS: { id: ToneTimbre; label: string; hint: string }[] = [
+  { id: "pure", label: "Pure Tone", hint: "Clean continuous sine wave" },
+  { id: "fork", label: "Tuning Fork", hint: "Struck fork with a natural ring and decay" },
+  { id: "bowl", label: "Singing Bowl", hint: "Warm shimmering bowl resonance" },
+];
+
 function ChakraDot({ step, index, isActive, isCompleted, onClick }: {
   step: ChakraStep;
   index: number;
@@ -203,7 +211,7 @@ interface ChakraSequenceProps {
 }
 
 export default function ChakraSequence({ onClose, autoStart = false, autoStartDuration = 180 }: ChakraSequenceProps) {
-  const { playFrequency, stopAudio, isPlaying, currentFrequency } = useFrequencyPlayer();
+  const { playFrequency, stopAudio, isPlaying, currentFrequency, timbre, setTimbre } = useFrequencyPlayer();
   const [currentStep, setCurrentStep] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -217,8 +225,12 @@ export default function ChakraSequence({ onClose, autoStart = false, autoStartDu
 
   // tRPC mutations for auto-logging the completed chakra sequence as a session
   const utils = trpc.useUtils();
-  const startSession = trpc.sessions.start.useMutation();
+  const startSession = trpc.sessions.start.useMutation({
+    // Optional logging — guests must not be redirected to login when this fails
+    meta: { noAuthRedirect: true },
+  });
   const endSession = trpc.sessions.end.useMutation({
+    meta: { noAuthRedirect: true },
     onSuccess: () => {
       // Refresh Dashboard stats so Chakra Map and streak update immediately
       utils.sessions.stats.invalidate();
@@ -290,15 +302,19 @@ export default function ChakraSequence({ onClose, autoStart = false, autoStartDu
     setCompletedSteps([]);
     setIsComplete(false);
     playFrequency(getFreqForChakra(CHAKRA_STEPS[0]));
-    // Auto-log: start a chakra_sequence session (fire-and-forget, only when authenticated)
-    startSession.mutateAsync({
-      frequencyHz: 396,
-      frequencyName: "7-Chakra Journey",
-      sessionType: "chakra_sequence",
-    }).then(({ sessionId }) => {
-      sessionIdRef.current = sessionId;
-    }).catch(() => { /* unauthenticated — silently skip */ });
-  }, [playFrequency, getFreqForChakra, startSession]);
+    // Auto-log: start a chakra_sequence session (fire-and-forget). Only call the
+    // protected procedure when authenticated — guests skip logging entirely so no
+    // unauthorized request is ever fired.
+    if (user) {
+      startSession.mutateAsync({
+        frequencyHz: 396,
+        frequencyName: "7-Chakra Journey",
+        sessionType: "chakra_sequence",
+      }).then(({ sessionId }) => {
+        sessionIdRef.current = sessionId;
+      }).catch(() => { /* non-critical — silently skip */ });
+    }
+  }, [playFrequency, getFreqForChakra, startSession, user]);
 
   // Auto-start effect
   useEffect(() => {
@@ -469,6 +485,36 @@ export default function ChakraSequence({ onClose, autoStart = false, autoStartDu
               className="block text-xs font-semibold uppercase tracking-widest mb-3"
               style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}
             >
+              Sound
+            </label>
+            <div className="flex gap-2 mb-2">
+              {TIMBRE_OPTIONS.map(opt => (
+                <button
+                  key={opt.id}
+                  onClick={() => setTimbre(opt.id)}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200"
+                  style={{
+                    background: timbre === opt.id ? "rgba(0,212,170,0.15)" : (isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)"),
+                    border: `1px solid ${timbre === opt.id ? "rgba(0,212,170,0.4)" : (isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)")}`,
+                    color: timbre === opt.id ? "#00D4AA" : "#6B7A99",
+                    fontFamily: "DM Sans, sans-serif",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <div
+              className="text-xs text-center mb-6"
+              style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}
+            >
+              {TIMBRE_OPTIONS.find(o => o.id === timbre)?.hint}
+            </div>
+
+            <label
+              className="block text-xs font-semibold uppercase tracking-widest mb-3"
+              style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}
+            >
               Time per chakra
             </label>
             <div className="flex gap-2 mb-6">
@@ -584,6 +630,36 @@ export default function ChakraSequence({ onClose, autoStart = false, autoStartDu
                   }}
                 />
               </div>
+            </div>
+
+            {/* Sound character toggle — switches live via the DDS engine */}
+            <div className="flex items-center justify-center gap-2 mb-5">
+              <span
+                className="text-[10px] font-semibold uppercase tracking-widest"
+                style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}
+              >
+                Sound
+              </span>
+              {TIMBRE_OPTIONS.map(opt => (
+                <button
+                  key={opt.id}
+                  onClick={() => setTimbre(opt.id)}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200"
+                  style={timbre === opt.id ? {
+                    background: `${chakra.color}20`,
+                    border: `1px solid ${chakra.color}50`,
+                    color: chakra.color,
+                    fontFamily: "DM Sans, sans-serif",
+                  } : {
+                    background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)",
+                    border: isLight ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.08)",
+                    color: "#6B7A99",
+                    fontFamily: "DM Sans, sans-serif",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
 
             {/* Controls */}
