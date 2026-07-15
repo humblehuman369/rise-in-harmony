@@ -2,6 +2,15 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
+import { adminRouter } from "./routers/admin";
+import { alarmsRouter } from "./routers/alarms";
+import { billingRouter } from "./routers/billing";
+import { presetsRouter } from "./routers/presets";
+import { sessionsRouter } from "./routers/sessions";
+import { soundsRouter } from "./routers/sounds";
+import { subscriptionRouter } from "./routers/subscription";
+import { settingsRouter } from "./routers/settings";
+import { healingFavoritesRouter } from "./routers/healingFavorites";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -17,12 +26,16 @@ export const appRouter = router({
     }),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  // Rise In Harmony feature routers
+  sessions: sessionsRouter,
+  alarms: alarmsRouter,
+  billing: billingRouter,
+  presets: presetsRouter,
+  sounds: soundsRouter,
+  subscription: subscriptionRouter,
+  settings: settingsRouter,
+  healingFavorites: healingFavoritesRouter,
+  admin: adminRouter,
 });
 
 export type AppRouter = typeof appRouter;
