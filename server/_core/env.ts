@@ -7,18 +7,4 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
-  resendApiKey: process.env.RESEND_API_KEY ?? "",
-  // RIH_-prefixed on purpose: the Manus platform reserves STRIPE_SECRET_KEY /
-  // STRIPE_WEBHOOK_SECRET and injects its own values, which would silently
-  // route payments to the wrong Stripe account. No fallback by design.
-  stripeSecretKey: process.env.RIH_STRIPE_SECRET_KEY ?? "",
-  stripeWebhookSecret: process.env.RIH_STRIPE_WEBHOOK_SECRET ?? "",
-  /**
-   * Comma-separated emails promoted to admin on sign-in — a reliable
-   * alternative to OWNER_OPEN_ID (which the platform may not inject).
-   */
-  adminEmails: (process.env.RIH_ADMIN_EMAILS ?? "")
-    .split(",")
-    .map(e => e.trim().toLowerCase())
-    .filter(Boolean),
 };

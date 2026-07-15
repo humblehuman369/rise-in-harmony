@@ -1,12 +1,10 @@
 {
-  "include": ["client/src/**/*", "shared/**/*", "server/**/*", "packages/*/src/**/*"],
+  "include": ["client/src/**/*", "shared/**/*", "server/**/*"],
   "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
     "noEmit": true,
-    "target": "ES2022",
-    "downlevelIteration": true,
     "module": "ESNext",
     "strict": true,
     "lib": ["esnext", "dom", "dom.iterable"],
@@ -19,10 +17,7 @@
     "types": ["node", "vite/client"],
     "paths": {
       "@/*": ["./client/src/*"],
-      "@shared/*": ["./shared/*"],
-      "@rih/shared-utils": ["./packages/shared-utils/src/index.ts"],
-      "@rih/shared-types": ["./packages/shared-types/src/index.ts"],
-      "@rih/ui-tokens": ["./packages/ui-tokens/src/index.ts"]
+      "@shared/*": ["./shared/*"]
     }
   }
 }
