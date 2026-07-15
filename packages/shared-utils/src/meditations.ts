@@ -246,7 +246,7 @@ export const MEDITATIONS: Meditation[] = [
     icon: "Moon",
     color: "#6366F1",
     colorSecondary: "#8B5CF6",
-    soundscape: "night",
+    soundscape: "sleep-preparation",
     musicMode: "drone",
     recommendedFrequencyId: "delta",
     recommendedFrequencyLabel: "Delta Waves (2Hz)",

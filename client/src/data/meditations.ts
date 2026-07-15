@@ -37,7 +37,7 @@ export interface MeditationTrack {
   /** Secondary color for gradient */
   colorSecondary: string;
   /** Nature soundscape to layer underneath */
-  soundscape: "rain" | "ocean" | "forest" | "wind" | "fire" | "river" | "night" | "cave" | "bowl" | "silence";
+  soundscape: "rain" | "ocean" | "forest" | "wind" | "fire" | "river" | "night" | "cave" | "bowl" | "sleep-preparation" | "silence";
   /** Music mode to use underneath */
   musicMode: "ambient" | "drone" | "crystal" | "none";
   /** ID from FREQUENCIES catalog — the recommended pairing */
@@ -268,7 +268,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     icon: "Moon",
     color: "#6366F1",
     colorSecondary: "#8B5CF6",
-    soundscape: "night",    // soft night crickets — classic sleep-onset ambience
+    soundscape: "sleep-preparation",  // studio-produced recording — tuned for the 200Hz Delta carrier (notched), seamless loop
     musicMode: "drone",     // deep, continuous — most hypnotic for sleep
     recommendedFrequencyId: "delta",
     recommendedFrequencyLabel: "Delta Binaural (3Hz)",

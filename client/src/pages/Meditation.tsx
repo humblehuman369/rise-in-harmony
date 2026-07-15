@@ -293,12 +293,16 @@ function MeditationPlayer({
       // Always mute the studio's built-in frequency layer — the Meditation page
       // manages its own DDS overlay via startFrequency() in "Sound + Frequency" mode.
       // This prevents an unwanted 432Hz sine tone from playing in "Sound Only" mode.
-      setLayerVolume("frequency", 0);
-      setStudioNatureSound(meditation.soundscape === "silence" ? "none" : meditation.soundscape);
-      setStudioMusicMode(meditation.musicMode);
-      setLayerVolume("nature", volume);
-      setLayerVolume("music", volume);
-      studioPlay();
+      // Pass all settings directly into play() — setters + play() race React's
+      // batched updates, which made the layers start with stale state (e.g. the
+      // recorded "sleep-preparation" soundscape never loaded on first play).
+      studioPlay({
+        frequencyVolume: 0,
+        natureSound: meditation.soundscape === "silence" ? "none" : meditation.soundscape,
+        musicMode: meditation.musicMode,
+        natureVolume: volume,
+        musicVolume: volume,
+      });
 
       // Start frequency if in frequency mode
       if (mode === "frequency") startFrequency();

@@ -50,3 +50,18 @@
 - [x] Add guided voice toggle to BreathingGuide component
 - [x] Integrate expo-audio playback of phase cues in sync with breathing timer
 - [x] Commit, push to GitHub, save checkpoint
+
+## Completed — Sleep Preparation Recorded Soundscape (New Recording)
+
+- [x] Analyze uploaded SleepPreparation.wav (A-root ambient, 3:33, Suno recording)
+- [x] Tune recording for 200Hz Delta carrier: gentle -6dB notch at 200Hz, -21 LUFS normalization, seamless loop crossfade, MP3 encode
+- [x] Upload processed sleep-preparation.mp3 to webdev storage (/manus-storage/sleep-preparation_921174c5.mp3)
+- [x] Register "sleep-preparation" loop in client/src/data/backgroundLoops.ts (LIBRARY_LOOP_URLS)
+- [x] Add "sleep-preparation" to NatureSound union + RECORDED_NATURE_URLS recorded playback path in useSoundStudio.ts
+- [x] Set Sleep Preparation soundscape to "sleep-preparation" in client meditations.ts and shared-utils meditations.ts
+- [x] Add "sleep-preparation" to NatureSoundscape type in packages/shared-types
+- [x] Mobile fallback: map "sleep-preparation" to night synth in apps/mobile meditationSynth.ts
+- [x] Fix play() race: studioPlay now accepts setting overrides; Meditation.tsx passes soundscape/volumes directly
+- [x] Vitest spec for new soundscape wiring (server/sleep-preparation-soundscape.test.ts) — 34/34 pass
+- [x] Verify in browser: MP3 loads and plays with 200Hz Delta Waves layer
+- [ ] Commit + push to GitHub, save webdev checkpoint

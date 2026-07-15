@@ -831,7 +831,13 @@ export function startNatureSynth(
   sound: string,
 ): ProceduralSynthHandle | null {
   if (sound === "silence") return null;
-  const factory = NATURE_SYNTHS[sound as ProceduralNatureSound];
+  // Recorded web soundscapes have no procedural equivalent on mobile yet.
+  // Fall back to the closest synthesized texture so the nature layer stays audible.
+  const RECORDED_FALLBACKS: Record<string, ProceduralNatureSound> = {
+    "sleep-preparation": "night",
+  };
+  const resolved = RECORDED_FALLBACKS[sound] ?? sound;
+  const factory = NATURE_SYNTHS[resolved as ProceduralNatureSound];
   if (!factory) return null;
   return factory(ctx);
 }

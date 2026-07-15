@@ -5,9 +5,11 @@
  *   1. Healing Frequency — pure sine wave at the target Hz (Web Audio API)
  *   2. Musical Harmony  — bundled royalty-free ambient/drone/crystal loops
  *   3. Nature Soundscape — procedurally synthesized textures (rain, ocean, forest, wind, fire, river, night, cave, bowl)
+ *      plus recorded soundscapes (sleep-preparation) played as seamless loops
  *
  * Music layer uses HTMLAudioElement for looping of real recordings.
- * Nature layer is procedurally synthesized (natureSynth) — endless, never-looping textures.
+ * Nature layer is procedurally synthesized (natureSynth) — endless, never-looping textures —
+ * except for recorded keys listed in RECORDED_NATURE_URLS, which loop a studio-produced file.
  * Frequency layer uses Web Audio API oscillators.
  * A DynamicsCompressorNode on the master bus prevents level stacking.
  */
@@ -21,7 +23,19 @@ import type { AudioErrorCallback } from "./useFrequencyPlayer";
 export type NatureSound =
   | "rain" | "ocean" | "forest" | "wind" | "fire"
   | "river" | "night" | "cave" | "bowl"
+  | "sleep-preparation"
   | "none";
+
+/**
+ * Nature keys backed by a recorded (studio-produced) audio file instead of
+ * procedural synthesis. These play via HTMLAudioElement with looping enabled.
+ * Files are pre-processed for seamless looping (equal-power crossfaded tail)
+ * and tuned to keep the 200 Hz Delta binaural carrier zone clear (-6 dB notch),
+ * so the recording never masks the precision DDS frequency layer.
+ */
+const RECORDED_NATURE_URLS: Partial<Record<NatureSound, string>> = {
+  "sleep-preparation": getLibraryLoopUrl("sleep-preparation"),
+};
 export type MusicMode = "ambient" | "drone" | "crystal" | "none";
 
 export interface StudioState {
@@ -59,6 +73,9 @@ export function useSoundStudio() {
 
   // Procedural synth handle for the nature layer (never loops — synthesized live)
   const natureSynthRef = useRef<NatureSynthHandle | null>(null);
+  // HTMLAudioElement for recorded nature soundscapes (e.g. Sleep Preparation)
+  const natureAudioRef = useRef<HTMLAudioElement | null>(null);
+  const natureAudioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   // HTMLAudioElement for music real-audio playback
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
   const musicAudioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
@@ -136,6 +153,15 @@ export function useSoundStudio() {
       try { natureSynthRef.current.stop(); } catch {}
       natureSynthRef.current = null;
     }
+    if (natureAudioRef.current) {
+      natureAudioRef.current.pause();
+      natureAudioRef.current.currentTime = 0;
+      natureAudioRef.current = null;
+    }
+    if (natureAudioSourceRef.current) {
+      try { natureAudioSourceRef.current.disconnect(); } catch {}
+      natureAudioSourceRef.current = null;
+    }
   }, []);
 
   // ── Frequency layer ──────────────────────────────────────────────────────────
@@ -194,6 +220,33 @@ export function useSoundStudio() {
     stopNature();
     if (!natureGainRef.current) return;
 
+    // Recorded soundscape path — bypasses the procedural synth entirely.
+    // Used for studio-produced recordings (e.g. "sleep-preparation") that are
+    // pre-processed for seamless looping and 200 Hz Delta-carrier clearance.
+    const recordedUrl = RECORDED_NATURE_URLS[soundKey as NatureSound];
+    if (recordedUrl) {
+      const audio = new Audio(recordedUrl);
+      audio.loop = true;
+      audio.crossOrigin = "anonymous";
+      audio.volume = 1;
+
+      const source = ctx.createMediaElementSource(audio);
+      source.connect(natureGainRef.current);
+
+      const now = ctx.currentTime;
+      natureGainRef.current.gain.setValueAtTime(0, now);
+      natureGainRef.current.gain.linearRampToValueAtTime(
+        state.natureVolume,
+        now + 3  // 3-second fade-in
+      );
+
+      audio.play().catch(() => {});
+
+      natureAudioRef.current = audio;
+      natureAudioSourceRef.current = source;
+      return;
+    }
+
     const handle = startNatureSynth(ctx, soundKey);
     if (!handle) return;
 
@@ -238,9 +291,16 @@ export function useSoundStudio() {
 
   // ── Public API ───────────────────────────────────────────────────────────────
 
-  const play = useCallback(() => {
+  /**
+   * Start playback. Optional `overrides` are merged into the state *before*
+   * the layers start, guaranteeing the requested soundscape/music/volumes are
+   * used immediately. Without this, callers that invoke setters (e.g.
+   * setNatureSound) right before play() race React's batched state updates and
+   * the layers can start with stale settings.
+   */
+  const play = useCallback((overrides?: Partial<Omit<StudioState, "isPlaying">>) => {
     setState(prev => {
-      const next = { ...prev, isPlaying: true };
+      const next = { ...prev, ...overrides, isPlaying: true };
       startAllLayers(next);
       return next;
     });

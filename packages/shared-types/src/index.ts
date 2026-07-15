@@ -139,6 +139,7 @@ export type NatureSoundscape =
   | "night"
   | "cave"
   | "bowl"
+  | "sleep-preparation"
   | "silence";
 
 export type MusicMode = "ambient" | "drone" | "crystal" | "none";
