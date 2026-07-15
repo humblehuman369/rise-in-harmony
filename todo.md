@@ -64,4 +64,4 @@
 - [x] Fix play() race: studioPlay now accepts setting overrides; Meditation.tsx passes soundscape/volumes directly
 - [x] Vitest spec for new soundscape wiring (server/sleep-preparation-soundscape.test.ts) — 34/34 pass
 - [x] Verify in browser: MP3 loads and plays with 200Hz Delta Waves layer
-- [ ] Commit + push to GitHub, save webdev checkpoint
+- [x] Commit + push to GitHub, save webdev checkpoint
