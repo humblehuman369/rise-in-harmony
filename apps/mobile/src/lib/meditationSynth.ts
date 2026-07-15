@@ -835,6 +835,10 @@ export function startNatureSynth(
   // Fall back to the closest synthesized texture so the nature layer stays audible.
   const RECORDED_FALLBACKS: Record<string, ProceduralNatureSound> = {
     "sleep-preparation": "night",
+    "deep-focus": "river",
+    "anxiety-reset": "ocean",
+    "chakra-dawn": "forest",
+    "morning-breath": "forest",
   };
   const resolved = RECORDED_FALLBACKS[sound] ?? sound;
   const factory = NATURE_SYNTHS[resolved as ProceduralNatureSound];

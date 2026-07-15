@@ -23,7 +23,8 @@ import type { AudioErrorCallback } from "./useFrequencyPlayer";
 export type NatureSound =
   | "rain" | "ocean" | "forest" | "wind" | "fire"
   | "river" | "night" | "cave" | "bowl"
-  | "sleep-preparation"
+  | "sleep-preparation" | "deep-focus" | "anxiety-reset"
+  | "chakra-dawn" | "morning-breath"
   | "none";
 
 /**
@@ -35,6 +36,10 @@ export type NatureSound =
  */
 const RECORDED_NATURE_URLS: Partial<Record<NatureSound, string>> = {
   "sleep-preparation": getLibraryLoopUrl("sleep-preparation"),
+  "deep-focus": getLibraryLoopUrl("deep-focus"),
+  "anxiety-reset": getLibraryLoopUrl("anxiety-reset"),
+  "chakra-dawn": getLibraryLoopUrl("chakra-dawn"),
+  "morning-breath": getLibraryLoopUrl("morning-breath"),
 };
 export type MusicMode = "ambient" | "drone" | "crystal" | "none";
 

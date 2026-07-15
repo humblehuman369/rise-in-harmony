@@ -37,7 +37,7 @@ export interface MeditationTrack {
   /** Secondary color for gradient */
   colorSecondary: string;
   /** Nature soundscape to layer underneath */
-  soundscape: "rain" | "ocean" | "forest" | "wind" | "fire" | "river" | "night" | "cave" | "bowl" | "sleep-preparation" | "silence";
+  soundscape: "rain" | "ocean" | "forest" | "wind" | "fire" | "river" | "night" | "cave" | "bowl" | "sleep-preparation" | "deep-focus" | "anxiety-reset" | "chakra-dawn" | "morning-breath" | "silence";
   /** Music mode to use underneath */
   musicMode: "ambient" | "drone" | "crystal" | "none";
   /** ID from FREQUENCIES catalog — the recommended pairing */
@@ -66,7 +66,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     icon: "Sunrise",
     color: "#F59E0B",
     colorSecondary: "#F97316",
-    soundscape: "forest",   // gentle, uplifting — birds, soft breeze
+    soundscape: "morning-breath",  // studio-produced recording — tuned for the 432Hz carrier (notched), seamless loop
     musicMode: "ambient",   // stable harmonic chords, no random events
     recommendedFrequencyId: "432",
     recommendedFrequencyLabel: "432Hz Natural Harmony",
@@ -94,7 +94,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     icon: "Sparkles",
     color: "#00D4AA",
     colorSecondary: "#8B5CF6",
-    soundscape: "forest",   // changed from "bowl" — forest is gentler and more uplifting for morning
+    soundscape: "chakra-dawn",  // studio-produced recording — tuned for the 528Hz carrier (notched), seamless loop
     musicMode: "crystal",   // soft singing bowl strikes — infrequent, meditative
     recommendedFrequencyId: "528",
     recommendedFrequencyLabel: "528Hz Miracle Tone",
@@ -177,7 +177,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     icon: "Wind",
     color: "#06B6D4",
     colorSecondary: "#3B82F6",
-    soundscape: "ocean",    // slow wave rhythm mirrors the 4-7-8 breath cycle
+    soundscape: "anxiety-reset",  // studio-produced recording — 417Hz carrier zone naturally clear, seamless loop
     musicMode: "ambient",   // soft harmonic chords — warm and supportive
     recommendedFrequencyId: "417",
     recommendedFrequencyLabel: "417Hz Transmutation",
@@ -208,7 +208,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     icon: "Target",
     color: "#8B5CF6",
     colorSecondary: "#6366F1",
-    soundscape: "river",    // slow gentle river — steady, non-distracting flow
+    soundscape: "deep-focus",  // studio-produced recording — tuned for the 200Hz isochronic carrier (notched), seamless loop
     musicMode: "drone",     // stable, continuous — no chord changes to pull attention
     recommendedFrequencyId: "alpha-isochronic",
     recommendedFrequencyLabel: "Alpha Isochronic (10Hz)",

@@ -65,3 +65,16 @@
 - [x] Vitest spec for new soundscape wiring (server/sleep-preparation-soundscape.test.ts) — 34/34 pass
 - [x] Verify in browser: MP3 loads and plays with 200Hz Delta Waves layer
 - [x] Commit + push to GitHub, save webdev checkpoint
+
+## Completed — Four New Recorded Soundscapes (soundscape-replacer skill)
+
+- [x] Determine carrier frequency for each target meditation (Deep Focus, 4-7-8 Anxiety Reset, 7-Chakra Morning Activation, Morning Breath Awakening)
+- [x] Analyze/process/verify DeepFocusMeditation.wav (tuned to its carrier)
+- [x] Analyze/process/verify 4-7-8AnxietyReset.wav (tuned to its carrier)
+- [x] Analyze/process/verify SevenChakraDawn.wav (tuned to its carrier)
+- [x] Analyze/process/verify MorningBreathAwakening.wav (tuned to its carrier)
+- [x] Upload all four processed MP3s to webdev storage
+- [x] Register keys in backgroundLoops.ts, RECORDED_NATURE_URLS, type unions, meditations data (client + shared), mobile fallbacks
+- [x] Extend vitest spec for all four new soundscapes
+- [x] Browser-verify playback for at least one meditation end-to-end
+- [x] Commit, push to GitHub, save webdev checkpoint

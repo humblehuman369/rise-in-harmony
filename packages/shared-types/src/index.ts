@@ -140,6 +140,10 @@ export type NatureSoundscape =
   | "cave"
   | "bowl"
   | "sleep-preparation"
+  | "deep-focus"
+  | "anxiety-reset"
+  | "chakra-dawn"
+  | "morning-breath"
   | "silence";
 
 export type MusicMode = "ambient" | "drone" | "crystal" | "none";
