@@ -1,4 +1,9 @@
-import { AXIOS_TIMEOUT_MS, COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import {
+  AXIOS_TIMEOUT_MS,
+  COOKIE_NAME,
+  SESSION_ACCESS_MS,
+  SESSION_REFRESH_MS,
+} from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
 import axios, { type AxiosInstance } from "axios";
 import { parse as parseCookieHeader } from "cookie";
@@ -18,10 +23,14 @@ import type {
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0;
 
+export type SessionTokenUse = "access" | "refresh";
+
 export type SessionPayload = {
   openId: string;
   appId: string;
   name: string;
+  /** Defaults to access for backward-compatible tokens without the claim. */
+  tokenUse?: SessionTokenUse;
 };
 
 const EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
@@ -166,16 +175,33 @@ class SDKServer {
    */
   async createSessionToken(
     openId: string,
-    options: { expiresInMs?: number; name?: string } = {}
+    options: {
+      expiresInMs?: number;
+      name?: string;
+      tokenUse?: SessionTokenUse;
+    } = {}
   ): Promise<string> {
     return this.signSession(
       {
         openId,
         appId: ENV.appId,
         name: options.name || "",
+        tokenUse: options.tokenUse ?? "access",
       },
       options
     );
+  }
+
+  /** Issue a longer-lived refresh token for mobile clients. */
+  async createRefreshToken(
+    openId: string,
+    options: { name?: string } = {}
+  ): Promise<string> {
+    return this.createSessionToken(openId, {
+      name: options.name,
+      tokenUse: "refresh",
+      expiresInMs: SESSION_REFRESH_MS,
+    });
   }
 
   async signSession(
@@ -183,7 +209,10 @@ class SDKServer {
     options: { expiresInMs?: number } = {}
   ): Promise<string> {
     const issuedAt = Date.now();
-    const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS;
+    const tokenUse = payload.tokenUse ?? "access";
+    const defaultTtl =
+      tokenUse === "refresh" ? SESSION_REFRESH_MS : SESSION_ACCESS_MS;
+    const expiresInMs = options.expiresInMs ?? defaultTtl;
     const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1000);
     const secretKey = this.getSessionSecret();
 
@@ -191,6 +220,7 @@ class SDKServer {
       openId: payload.openId,
       appId: payload.appId,
       name: payload.name,
+      tokenUse,
     })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setExpirationTime(expirationSeconds)
@@ -198,8 +228,14 @@ class SDKServer {
   }
 
   async verifySession(
-    cookieValue: string | undefined | null
-  ): Promise<{ openId: string; appId: string; name: string } | null> {
+    cookieValue: string | undefined | null,
+    options: { allowRefreshToken?: boolean } = {}
+  ): Promise<{
+    openId: string;
+    appId: string;
+    name: string;
+    tokenUse: SessionTokenUse;
+  } | null> {
     if (!cookieValue) {
       console.warn("[Auth] Missing session cookie");
       return null;
@@ -210,7 +246,10 @@ class SDKServer {
       const { payload } = await jwtVerify(cookieValue, secretKey, {
         algorithms: ["HS256"],
       });
-      const { openId, appId, name } = payload as Record<string, unknown>;
+      const { openId, appId, name, tokenUse: rawUse } = payload as Record<
+        string,
+        unknown
+      >;
 
       if (
         !isNonEmptyString(openId) ||
@@ -221,10 +260,20 @@ class SDKServer {
         return null;
       }
 
+      // Legacy tokens omit tokenUse — treat as access.
+      const tokenUse: SessionTokenUse =
+        rawUse === "refresh" ? "refresh" : "access";
+
+      if (tokenUse === "refresh" && !options.allowRefreshToken) {
+        console.warn("[Auth] Refresh token rejected for API authentication");
+        return null;
+      }
+
       return {
         openId,
         appId,
         name,
+        tokenUse,
       };
     } catch (error) {
       console.warn("[Auth] Session verification failed", String(error));
@@ -312,10 +361,8 @@ class SDKServer {
       throw ForbiddenError("User not found");
     }
 
-    await db.upsertUser({
-      openId: user.openId,
-      lastSignedIn: signedInAt,
-    });
+    // Throttle lastSignedIn writes — every request used to hit the DB.
+    await db.touchLastSignedIn(user.openId, signedInAt);
 
     return user;
   }

@@ -13,13 +13,15 @@ import express from "express";
 import type Stripe from "stripe";
 import {
   getUserByStripeCustomerId,
+  hasProcessedExternalEvent,
   logSubscriptionEvent,
-  setFounder,
+  tryClaimFounderSeat,
   updateUserSubscription,
 } from "../db";
-import { getStripe, isStripeConfigured } from "../stripe";
+import { FOUNDER_SEAT_CAP, getStripe, isStripeConfigured } from "../stripe";
 import { ENV } from "./env";
 import { sendReceiptEmail } from "../email";
+import { log } from "../lib/logger";
 
 async function resolveUserId(
   event: { rihUserId?: string | null },
@@ -35,6 +37,22 @@ async function resolveUserId(
 }
 
 async function handleEvent(event: Stripe.Event): Promise<void> {
+  // Idempotency: Stripe event ids are unique and stable across retries
+  if (await hasProcessedExternalEvent(event.id)) {
+    log.info("Stripe webhook duplicate ignored", { eventId: event.id });
+    return;
+  }
+
+  const { inserted } = await logSubscriptionEvent({
+    eventType: `stripe.${event.type}`,
+    externalEventId: event.id,
+    rawPayload: { id: event.id, type: event.type },
+  });
+  if (!inserted) {
+    log.info("Stripe webhook race duplicate ignored", { eventId: event.id });
+    return;
+  }
+
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object;
@@ -54,13 +72,21 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
       await updateUserSubscription(userId, tier, expiresAt);
       // A paid lifetime checkout consumes one of the capped founder seats
       // (admin comps never set this flag)
-      if (tier === "lifetime") await setFounder(userId);
+      if (tier === "lifetime") {
+        const claimed = await tryClaimFounderSeat(userId, FOUNDER_SEAT_CAP);
+        if (!claimed) {
+          log.warn("Founder seat cap reached on checkout", { userId, sessionId: session.id });
+        }
+      }
+
+      // Enrich the audit log with user-specific fields (best effort update via new row is skipped —
+      // primary idempotency already recorded event.id above)
       await logSubscriptionEvent({
         userId,
-        eventType: `stripe.${event.type}`,
+        eventType: `stripe.${event.type}.applied`,
         productId: session.metadata?.tier ?? undefined,
         expiresAt: expiresAt ?? undefined,
-        rawPayload: { id: session.id, mode: session.mode },
+        rawPayload: { id: session.id, mode: session.mode, parentEventId: event.id },
       });
 
       const email = session.customer_details?.email;
@@ -68,7 +94,11 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
         const label = tier === "lifetime" ? "Founder Lifetime" : "Premium";
         const name = session.customer_details?.name ?? "Friend";
         const amount = `$${((session.amount_total ?? 0) / 100).toFixed(2)}`;
-        sendReceiptEmail(email, name, label, amount).catch(console.error);
+        sendReceiptEmail(email, name, label, amount).catch(err =>
+          log.error("Receipt email failed", {
+            error: err instanceof Error ? err.message : String(err),
+          })
+        );
       }
       break;
     }
@@ -85,12 +115,6 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
       const periodEnd = sub.items.data[0]?.current_period_end;
       const expiresAt = periodEnd ? new Date(periodEnd * 1000) : null;
       await updateUserSubscription(userId, active ? "premium" : "free", active ? expiresAt : null);
-      await logSubscriptionEvent({
-        userId,
-        eventType: `stripe.${event.type}`,
-        expiresAt: expiresAt ?? undefined,
-        rawPayload: { id: sub.id, status: sub.status },
-      });
       break;
     }
 
@@ -102,11 +126,6 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
       );
       if (userId === null) break;
       await updateUserSubscription(userId, "free", null);
-      await logSubscriptionEvent({
-        userId,
-        eventType: `stripe.${event.type}`,
-        rawPayload: { id: sub.id },
-      });
       break;
     }
 
@@ -141,7 +160,9 @@ export function registerStripeWebhook(app: Express) {
           ENV.stripeWebhookSecret,
         );
       } catch (err) {
-        console.error("[StripeWebhook] signature verification failed:", err);
+        log.error("Stripe webhook signature verification failed", {
+          error: err instanceof Error ? err.message : String(err),
+        });
         res.status(400).json({ error: "Invalid signature" });
         return;
       }
@@ -150,7 +171,10 @@ export function registerStripeWebhook(app: Express) {
         await handleEvent(event);
         res.json({ received: true });
       } catch (err) {
-        console.error("[StripeWebhook] handler error:", err);
+        log.error("Stripe webhook handler error", {
+          error: err instanceof Error ? err.message : String(err),
+          eventId: event.id,
+        });
         // 500 → Stripe retries with backoff
         res.status(500).json({ error: "Webhook handler failed" });
       }

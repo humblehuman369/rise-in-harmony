@@ -7,7 +7,7 @@ import { useLocation } from "wouter";
 import { ArrowLeft, Shield } from "lucide-react";
 import Layout from "@/components/Layout";
 
-const LAST_UPDATED = "June 29, 2026";
+const LAST_UPDATED = "July 14, 2026";
 const CONTACT_EMAIL = "privacy@riseinharmony.com";
 
 interface Section {
@@ -42,35 +42,36 @@ const SECTIONS: Section[] = [
     content: [
       "**Manus OAuth.** Authentication is handled by Manus. When you log in, Manus shares your name, email, and a unique identifier with us. Manus's privacy policy governs their handling of your data.",
       "**Resend.** Transactional emails are sent via Resend (resend.com). Your email address is transmitted to Resend solely for the purpose of delivering emails you have requested or that are necessary for the service. Resend does not use your data for advertising.",
-      "**PostHog.** If analytics are enabled, anonymised product events are sent to PostHog (posthog.com). PostHog is configured with `autocapture: false` — only explicitly coded events are sent, and none contain your name, email, or session content.",
-      "**RevenueCat.** If you subscribe to Rise In Harmony Premium, subscription management is handled by RevenueCat (revenuecat.com). RevenueCat receives a pseudonymous user identifier and your subscription status; it does not receive your name or email from us.",
+      "**PostHog.** If analytics are enabled, product events are sent to PostHog (posthog.com). PostHog is configured with `autocapture: false` — only explicitly coded events are sent.",
+      "**RevenueCat.** Mobile Premium subscriptions are managed by RevenueCat (revenuecat.com). RevenueCat receives a pseudonymous user identifier and subscription status; it does not receive your name or email from us.",
+      "**Stripe.** Web Premium and Founder Lifetime purchases are processed by Stripe (stripe.com). Stripe receives the payment details you enter at checkout and billing metadata needed to fulfill the purchase. Stripe's privacy policy governs payment data.",
     ],
   },
   {
     title: "4. Data Storage and Security",
     content: [
       "Your data is stored in a MySQL-compatible database hosted on a secure cloud provider. All connections are encrypted in transit using TLS 1.2 or higher.",
-      "Session cookies are signed with a secret key (JWT_SECRET) and are HttpOnly, meaning they cannot be accessed by JavaScript on the page.",
-      "We retain your account and session data for as long as your account is active. If you request deletion, we will remove your personal data within 30 days.",
+      "Session cookies are signed with a secret key and are HttpOnly, meaning they cannot be accessed by JavaScript on the page. In production they use the Secure and SameSite=Lax flags.",
+      "We retain your account and session data for as long as your account is active. If you delete your account in Settings (or request deletion), we remove your personal data from our systems; related billing may retain records as required by law or payment processors.",
       "No system is perfectly secure. If you discover a security vulnerability, please report it to " + CONTACT_EMAIL + " and we will respond within 72 hours.",
     ],
   },
   {
     title: "5. Your Rights",
     content: [
-      "**Access.** You may request a copy of all personal data we hold about you.",
-      "**Correction.** You may ask us to correct inaccurate information.",
-      "**Deletion.** You may request that we delete your account and all associated data. Note that anonymised analytics events cannot be deleted as they contain no personal identifiers.",
-      "**Opt-out of emails.** Every transactional email includes an unsubscribe link. You may also opt out by contacting us at " + CONTACT_EMAIL + ".",
-      "**Data portability.** You may request your session history in JSON format.",
-      "To exercise any of these rights, email " + CONTACT_EMAIL + " with the subject line \"Privacy Request\" and your registered email address.",
+      "**Access.** You may download a copy of your data from Settings → Export, or email us for assistance.",
+      "**Correction.** You may update your display name in Settings, or ask us to correct inaccurate information.",
+      "**Deletion.** You may delete your account in Settings (confirm with the phrase DELETE MY ACCOUNT). This cancels active web subscriptions where possible, revokes promotional mobile entitlements, and removes your account data. Anonymised analytics events cannot always be deleted.",
+      "**Opt-out of emails.** Contact us at " + CONTACT_EMAIL + " to stop non-essential transactional emails.",
+      "**Data portability.** Settings → Export returns your profile, sessions, alarms, presets, favorites, and subscription event history as JSON.",
+      "To exercise any of these rights offline, email " + CONTACT_EMAIL + " with the subject line \"Privacy Request\" and your registered email address.",
     ],
   },
   {
     title: "6. Cookies and Local Storage",
     content: [
-      "**Session cookie.** A single HttpOnly cookie (`rih_session`) is set on login to maintain your authenticated session. It expires after one year or when you log out.",
-      "**localStorage.** The app stores your journal entries, alarm settings, onboarding state, and studio presets in your browser's localStorage for offline access. This data never leaves your device unless you are logged in, in which case it is also synced to our servers.",
+      "**Session cookie.** A single HttpOnly cookie (`app_session_id`) is set on login to maintain your authenticated session. It expires after 7 days of validity (or when you log out) and is renewed when you sign in again.",
+      "**localStorage / device storage.** The app may store journal entries, alarm settings, onboarding state, and studio presets locally for offline access. When you are logged in, corresponding data may also be synced to our servers.",
       "We do not use third-party advertising cookies.",
     ],
   },

@@ -1,4 +1,4 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, SESSION_ACCESS_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { markWelcomeEmailSent } from "../db";
@@ -13,7 +13,7 @@ function getQueryParam(req: Request, key: string): string | undefined {
 
 /**
  * Shared OAuth exchange logic: validates code/state, upserts the user,
- * and returns the session token + user info. Throws on failure.
+ * and returns access (+ refresh for mobile) tokens + user info.
  */
 async function exchangeAndUpsertUser(code: string, state: string) {
   const tokenResponse = await sdk.exchangeCodeForToken(code, state);
@@ -33,10 +33,14 @@ async function exchangeAndUpsertUser(code: string, state: string) {
 
   const sessionToken = await sdk.createSessionToken(userInfo.openId, {
     name: userInfo.name || "",
-    expiresInMs: ONE_YEAR_MS,
+    expiresInMs: SESSION_ACCESS_MS,
+    tokenUse: "access",
+  });
+  const refreshToken = await sdk.createRefreshToken(userInfo.openId, {
+    name: userInfo.name || "",
   });
 
-  return { userInfo, isNewUser, sessionToken };
+  return { userInfo, isNewUser, sessionToken, refreshToken };
 }
 
 export function registerOAuthRoutes(app: Express) {
@@ -64,7 +68,10 @@ export function registerOAuthRoutes(app: Express) {
       }
 
       const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      res.cookie(COOKIE_NAME, sessionToken, {
+        ...cookieOptions,
+        maxAge: SESSION_ACCESS_MS,
+      });
       res.redirect(302, "/");
     } catch (error) {
       console.error("[OAuth] Callback failed", error);
@@ -87,9 +94,14 @@ export function registerOAuthRoutes(app: Express) {
     }
 
     try {
-      const { sessionToken } = await exchangeAndUpsertUser(code, state);
-      // Redirect to the mobile app via deep link with the token
-      const deepLink = `riseharmony://auth?token=${encodeURIComponent(sessionToken)}`;
+      const { sessionToken, refreshToken } = await exchangeAndUpsertUser(
+        code,
+        state
+      );
+      // Redirect to the mobile app via deep link with access + refresh tokens
+      const deepLink =
+        `riseharmony://auth?token=${encodeURIComponent(sessionToken)}` +
+        `&refresh=${encodeURIComponent(refreshToken)}`;
       res.redirect(302, deepLink);
     } catch (error) {
       console.error("[OAuth] Mobile callback failed", error);

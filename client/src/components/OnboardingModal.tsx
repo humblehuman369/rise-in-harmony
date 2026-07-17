@@ -13,11 +13,16 @@ import { trackOnboardingComplete, trackOnboardingStarted, trackFirstAlarmSet } f
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
+import {
+  GOAL_RECOMMENDED_FREQUENCY,
+  SPEAKER_SAFE_FREQUENCY_SWAP,
+} from "@rih/shared-utils";
+import type { OnboardingGoal } from "@rih/shared-types";
 
 const ONBOARDING_KEY = "rih_onboarding_complete";
 
 interface Goal {
-  id: string;
+  id: OnboardingGoal;
   label: string;
   description: string;
   icon: React.ElementType;
@@ -28,94 +33,56 @@ interface Goal {
   recommendedBenefit: string;
 }
 
+function goalFromShared(
+  id: OnboardingGoal,
+  label: string,
+  description: string,
+  icon: React.ElementType,
+  color: string
+): Goal {
+  const rec = GOAL_RECOMMENDED_FREQUENCY[id];
+  return {
+    id,
+    label,
+    description,
+    icon,
+    color,
+    recommendedFreqId: rec.frequencyId,
+    recommendedHz: rec.hz,
+    recommendedName: rec.name,
+    recommendedBenefit: rec.benefit,
+  };
+}
+
+/** UI chrome + copy; frequency recommendations come from shared-utils. */
 const GOALS: Goal[] = [
-  {
-    id: "sleep",
-    label: "Better Sleep",
-    description: "Fall asleep faster and wake up refreshed",
-    icon: Moon,
-    color: "#8B5CF6",
-    recommendedFreqId: "theta",
-    recommendedHz: 200,
-    recommendedName: "Theta Waves",
-    recommendedBenefit: "6Hz binaural beat guides your brain into deep, restorative sleep states.",
-  },
-  {
-    id: "stress",
-    label: "Reduce Stress",
-    description: "Release tension and find inner calm",
-    icon: Heart,
-    color: "#00D4AA",
-    recommendedFreqId: "432",
-    recommendedHz: 432,
-    recommendedName: "Natural Harmony",
-    recommendedBenefit: "432Hz aligns with nature's own frequency, dissolving anxiety and promoting deep calm.",
-  },
-  {
-    id: "focus",
-    label: "Sharpen Focus",
-    description: "Enhance concentration and mental clarity",
-    icon: Brain,
-    color: "#3B82F6",
-    recommendedFreqId: "alpha",
-    recommendedHz: 200,
-    recommendedName: "Alpha Waves",
-    recommendedBenefit: "10Hz alpha binaural beat puts your brain in the ideal zone for creative flow and focus.",
-  },
-  {
-    id: "morning",
-    label: "Energize Mornings",
-    description: "Wake up gently and align your energy",
-    icon: Zap,
-    color: "#F59E0B",
-    recommendedFreqId: "528",
-    recommendedHz: 528,
-    recommendedName: "Miracle Tone",
-    recommendedBenefit: "528Hz — the Miracle Tone — is the perfect morning frequency for energy and intention.",
-  },
-  {
-    id: "spiritual",
-    label: "Spiritual Growth",
-    description: "Deepen meditation and expand consciousness",
-    icon: Sparkles,
-    color: "#EC4899",
-    recommendedFreqId: "963",
-    recommendedHz: 963,
-    recommendedName: "Divine Consciousness",
-    recommendedBenefit: "963Hz — the highest Solfeggio tone — is traditionally used to connect with higher states of awareness.",
-  },
-  {
-    id: "healing",
-    label: "Physical Healing",
-    description: "Support your body's natural recovery",
-    icon: Waves,
-    color: "#EF4444",
-    recommendedFreqId: "174",
-    recommendedHz: 174,
-    recommendedName: "Foundation",
-    recommendedBenefit: "174Hz is the deepest Solfeggio tone — it reduces pain and promotes cellular healing.",
-  },
+  goalFromShared("sleep", "Better Sleep", "Fall asleep faster and wake up refreshed", Moon, "#8B5CF6"),
+  goalFromShared("stress", "Reduce Stress", "Release tension and find inner calm", Heart, "#00D4AA"),
+  goalFromShared("focus", "Sharpen Focus", "Enhance concentration and mental clarity", Brain, "#3B82F6"),
+  goalFromShared("morning", "Energize Mornings", "Wake up gently and align your energy", Zap, "#F59E0B"),
+  goalFromShared("spiritual", "Spiritual Growth", "Deepen meditation and expand consciousness", Sparkles, "#EC4899"),
+  goalFromShared("healing", "Physical Healing", "Support physical and emotional recovery", Waves, "#EF4444"),
 ];
 
 type Step = "welcome" | "goals" | "ritual" | "recommendation";
 
 const WAKE_TIMES = ["5:30", "6:00", "6:30", "7:00", "7:30", "8:00"];
 
-/** Speaker-safe swaps for headphone-dependent (binaural) recommendations. */
-const SPEAKER_SAFE_SWAP: Record<string, Pick<Goal, "recommendedFreqId" | "recommendedHz" | "recommendedName" | "recommendedBenefit">> = {
-  "theta": {
-    recommendedFreqId: "432",
-    recommendedHz: 432,
-    recommendedName: "Natural Harmony",
-    recommendedBenefit: "432Hz aligns with nature's frequency for calm, restful evenings — no headphones needed.",
-  },
-  "alpha": {
-    recommendedFreqId: "alpha-isochronic",
-    recommendedHz: 10,
-    recommendedName: "Alpha Isochronic",
-    recommendedBenefit: "10Hz isochronic pulses create focused clarity — and work on any speaker, no headphones needed.",
-  },
-};
+/** Speaker-safe swaps for headphone-dependent recommendations (shared catalog). */
+const SPEAKER_SAFE_SWAP: Record<
+  string,
+  Pick<Goal, "recommendedFreqId" | "recommendedHz" | "recommendedName" | "recommendedBenefit">
+> = Object.fromEntries(
+  Object.entries(SPEAKER_SAFE_FREQUENCY_SWAP).map(([id, rec]) => [
+    id,
+    {
+      recommendedFreqId: rec.frequencyId,
+      recommendedHz: rec.hz,
+      recommendedName: rec.name,
+      recommendedBenefit: rec.benefit,
+    },
+  ])
+);
 
 interface OnboardingModalProps {
   onComplete: () => void;

@@ -89,6 +89,8 @@ export default function TabLayout() {
       {/* Library duplicates the Player grid; keep it routable (linked from
           Home) but out of the tab bar so we stay at 7 tabs. */}
       <Tabs.Screen name="library" options={{ href: null }} />
+      {/* Programs — reachable from Dashboard / Home, not a primary tab */}
+      <Tabs.Screen name="programs" options={{ href: null, title: "Programs" }} />
       <Tabs.Screen
         name="learn"
         options={{

@@ -47,9 +47,16 @@ async function refreshAccessToken(): Promise<string | null> {
 
   if (!res.ok) return null;
 
-  const data = (await res.json()) as { accessToken?: string };
+  const data = (await res.json()) as {
+    accessToken?: string;
+    refreshToken?: string;
+  };
   if (data.accessToken) {
     await SecureStore.setItemAsync(TOKEN_KEY, data.accessToken);
+    // Rotate refresh token when the server issues a new one
+    if (data.refreshToken) {
+      await SecureStore.setItemAsync(REFRESH_KEY, data.refreshToken);
+    }
     return data.accessToken;
   }
   return null;
@@ -161,26 +168,68 @@ export interface CreateSoundInput {
   backgroundVolume?: number;
 }
 
+/**
+ * Unwrap tRPC HTTP response (superjson transformer).
+ * Supports non-batch `{ result: { data: { json } } }` and legacy batch arrays.
+ */
+function unwrapTrpcData<T>(json: unknown): T | null {
+  if (json == null) return null;
+  if (Array.isArray(json)) {
+    const first = json[0] as { result?: { data?: { json?: T } | T }; error?: unknown };
+    if (first?.error) return null;
+    const data = first?.result?.data;
+    if (data && typeof data === "object" && data !== null && "json" in data) {
+      return (data as { json: T }).json;
+    }
+    return (data as T) ?? null;
+  }
+  if (typeof json === "object" && json !== null && "result" in json) {
+    const data = (json as { result?: { data?: { json?: T } | T }; error?: unknown })
+      .result?.data;
+    if (data && typeof data === "object" && data !== null && "json" in data) {
+      return (data as { json: T }).json;
+    }
+    return (data as T) ?? null;
+  }
+  return null;
+}
+
+async function trpcFetch(
+  procedure: string,
+  options: { method: "GET" | "POST"; input?: unknown }
+): Promise<Response> {
+  const headers = await getAuthHeaders();
+  if (options.method === "GET") {
+    const qs =
+      options.input !== undefined
+        ? `?input=${encodeURIComponent(JSON.stringify({ json: options.input }))}`
+        : "";
+    return fetch(`${API_BASE_URL}/api/trpc/${procedure}${qs}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json", ...headers },
+    });
+  }
+  return fetch(`${API_BASE_URL}/api/trpc/${procedure}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    // superjson wire format for a single procedure
+    body: JSON.stringify({ json: options.input }),
+  });
+}
+
 async function trpcQuery<T>(
   procedure: string,
   input?: unknown
 ): Promise<T | null> {
   try {
-    const headers = await getAuthHeaders();
-    const url = `${API_BASE_URL}/api/trpc/${procedure}${
-      input !== undefined
-        ? `?input=${encodeURIComponent(JSON.stringify({ "0": { json: input } }))}`
-        : ""
-    }`;
-    const res = await fetch(url, {
-      method: "GET",
-      headers: { "Content-Type": "application/json", ...headers },
-    });
+    let res = await trpcFetch(procedure, { method: "GET", input });
+    if (res.status === 401) {
+      const newToken = await refreshAccessToken();
+      if (!newToken) return null;
+      res = await trpcFetch(procedure, { method: "GET", input });
+    }
     if (!res.ok) return null;
-    const json = await res.json();
-    // tRPC batch response: [{ result: { data: { json: T } } }]
-    return (json as Array<{ result: { data: { json: T } } }>)[0]?.result?.data
-      ?.json ?? null;
+    return unwrapTrpcData<T>(await res.json());
   } catch {
     return null;
   }
@@ -191,16 +240,14 @@ async function trpcMutation<T>(
   input: unknown
 ): Promise<T | null> {
   try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_BASE_URL}/api/trpc/${procedure}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...headers },
-      body: JSON.stringify({ "0": { json: input } }),
-    });
+    let res = await trpcFetch(procedure, { method: "POST", input });
+    if (res.status === 401) {
+      const newToken = await refreshAccessToken();
+      if (!newToken) return null;
+      res = await trpcFetch(procedure, { method: "POST", input });
+    }
     if (!res.ok) return null;
-    const json = await res.json();
-    return (json as Array<{ result: { data: { json: T } } }>)[0]?.result?.data
-      ?.json ?? null;
+    return unwrapTrpcData<T>(await res.json());
   } catch {
     return null;
   }

@@ -23,6 +23,16 @@ export {
   bowlFreqs,
 } from "./studio";
 
+export {
+  PROGRAMS,
+  getProgramById,
+  getProgramDay,
+  isProgramDayPremium,
+  type ProgramDefinition,
+  type ProgramDay,
+  type ProgramActivityType,
+} from "./programs";
+
 // ─── Frequency Catalog ────────────────────────────────────────────────────────
 
 export const FREQUENCIES: Frequency[] = [
@@ -229,32 +239,62 @@ export const FREE_FREQUENCIES = FREQUENCIES.filter((f) => !f.isPremium);
 
 // ─── Streak Calculation ───────────────────────────────────────────────────────
 
+/** Format a Date as YYYY-MM-DD in the given IANA timezone (default UTC). */
+export function formatDayKey(date: Date, timeZone = "UTC"): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(date);
+  } catch {
+    return date.toISOString().slice(0, 10);
+  }
+}
+
+function previousDayKey(dayKey: string, timeZone = "UTC"): string {
+  if (timeZone === "UTC") {
+    const d = new Date(`${dayKey}T00:00:00.000Z`);
+    d.setUTCDate(d.getUTCDate() - 1);
+    return d.toISOString().slice(0, 10);
+  }
+  let t = Date.parse(`${dayKey}T12:00:00.000Z`);
+  for (let i = 0; i < 48; i++) {
+    t -= 60 * 60 * 1000;
+    const key = formatDayKey(new Date(t), timeZone);
+    if (key !== dayKey) return key;
+  }
+  const utc = new Date(`${dayKey}T12:00:00.000Z`);
+  utc.setUTCDate(utc.getUTCDate() - 1);
+  return utc.toISOString().slice(0, 10);
+}
+
 /**
- * Calculate the current streak from a sorted list of session dates (UTC).
- * A streak is the number of consecutive calendar days (in UTC) ending today
- * or yesterday on which at least one session was completed.
+ * Calculate the current streak from session timestamps.
+ * Consecutive calendar days in `timeZone` ending today or yesterday.
  */
-export function calculateStreak(sessionDatesUtc: Date[]): number {
-  if (sessionDatesUtc.length === 0) return 0;
+export function calculateStreak(
+  sessionDates: Date[],
+  options: { timeZone?: string; now?: Date } = {}
+): number {
+  const timeZone = options.timeZone || "UTC";
+  const now = options.now ?? new Date();
+  if (sessionDates.length === 0) return 0;
 
-  const toDay = (d: Date) =>
-    Math.floor(d.getTime() / (1000 * 60 * 60 * 24));
+  const set = new Set(sessionDates.map(d => formatDayKey(d, timeZone)));
+  const todayKey = formatDayKey(now, timeZone);
+  const yesterdayKey = previousDayKey(todayKey, timeZone);
 
-  const today = toDay(new Date());
-  const uniqueDays = Array.from(
-    new Set(sessionDatesUtc.map((d) => toDay(d))),
-  ).sort((a, b) => b - a); // descending
+  let cursor: string | null = null;
+  if (set.has(todayKey)) cursor = todayKey;
+  else if (set.has(yesterdayKey)) cursor = yesterdayKey;
+  else return 0;
 
-  // Streak must include today or yesterday
-  if (uniqueDays[0] < today - 1) return 0;
-
-  let streak = 1;
-  for (let i = 1; i < uniqueDays.length; i++) {
-    if (uniqueDays[i - 1] - uniqueDays[i] === 1) {
-      streak++;
-    } else {
-      break;
-    }
+  let streak = 0;
+  while (cursor && set.has(cursor)) {
+    streak++;
+    cursor = previousDayKey(cursor, timeZone);
   }
   return streak;
 }
@@ -297,6 +337,86 @@ export const ONBOARDING_GOALS: Array<{
     description: "Support physical and emotional recovery",
   },
 ];
+
+/**
+ * Canonical goal → frequency id mapping (web + mobile must stay aligned).
+ * Frequency ids match the shared FREQUENCIES catalog.
+ */
+export const GOAL_RECOMMENDED_FREQUENCY: Record<
+  OnboardingGoal,
+  { frequencyId: string; hz: number; name: string; benefit: string }
+> = {
+  morning: {
+    frequencyId: "528",
+    hz: 528,
+    name: "Miracle Tone",
+    benefit:
+      "528Hz — the Miracle Tone — is a popular morning frequency for energy and intention.",
+  },
+  sleep: {
+    frequencyId: "delta",
+    hz: 200,
+    name: "Delta Waves",
+    benefit:
+      "Delta-range binaural pacing is commonly used for deep rest and sleep support (headphones recommended).",
+  },
+  stress: {
+    frequencyId: "432",
+    hz: 432,
+    name: "Universal Harmony",
+    benefit:
+      "432Hz is widely used for calm, grounded listening sessions without requiring headphones.",
+  },
+  focus: {
+    frequencyId: "alpha",
+    hz: 200,
+    name: "Alpha Waves",
+    benefit:
+      "Alpha binaural pacing is often used for relaxed focus and creative flow (headphones recommended).",
+  },
+  spiritual: {
+    frequencyId: "963",
+    hz: 963,
+    name: "Divine Consciousness",
+    benefit:
+      "963Hz is traditionally associated with meditative and contemplative practice.",
+  },
+  healing: {
+    frequencyId: "174",
+    hz: 174,
+    name: "Foundation",
+    benefit:
+      "174Hz is the deepest Solfeggio tone in our catalog — many people use it for grounding and body-scan rest.",
+  },
+};
+
+/** Speaker-safe alternatives when the primary recommendation needs headphones. */
+export const SPEAKER_SAFE_FREQUENCY_SWAP: Record<
+  string,
+  { frequencyId: string; hz: number; name: string; benefit: string }
+> = {
+  delta: {
+    frequencyId: "432",
+    hz: 432,
+    name: "Universal Harmony",
+    benefit:
+      "432Hz for calm evenings — works on any speaker, no headphones needed.",
+  },
+  theta: {
+    frequencyId: "432",
+    hz: 432,
+    name: "Universal Harmony",
+    benefit:
+      "432Hz for calm evenings — works on any speaker, no headphones needed.",
+  },
+  alpha: {
+    frequencyId: "alpha-isochronic",
+    hz: 10,
+    name: "Alpha Isochronic",
+    benefit:
+      "10Hz isochronic pulses for focus — works on speakers without headphones.",
+  },
+};
 
 // ─── Formatting Helpers ───────────────────────────────────────────────────────
 

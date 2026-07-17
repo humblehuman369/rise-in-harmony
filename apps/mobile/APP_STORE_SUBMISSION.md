@@ -19,7 +19,7 @@ Before submitting, confirm every item below is complete:
 - [ ] App Privacy ("nutrition label") completed in App Store Connect — PostHog collects user id/name/email + usage, which must be declared
 - [ ] Listing describes ONLY features present in the submitted build (Guided Meditations and Sound Studio are NOT yet implemented — do not advertise them until they ship; Guideline 2.3.1)
 
-> ⚠️ **Health-claim language:** In-app copy and this description reference effects such as "DNA repair", "tissue regeneration", and "pineal activation". These are unsubstantiated medical claims and are a common cause of rejection (Guidelines 1.4.1 / 2.3). Prefer experiential phrasing ("associated with", "many people use for") and keep the medical disclaimer prominent.
+> ⚠️ **Health-claim language:** Avoid unsubstantiated medical claims (e.g. "DNA repair", "tissue regeneration", "pineal activation") in listing copy and screenshots (Guidelines 1.4.1 / 2.3). Prefer experiential phrasing ("associated with", "many people use for") and keep the medical disclaimer prominent.
 
 ---
 

@@ -7,31 +7,78 @@ import {
   InsertStudioPreset,
   InsertUser,
   InsertUserSound,
+  InsertUserProgram,
+  InsertProgramDayCompletion,
   Session,
   StudioPreset,
   User,
   UserSound,
+  UserProgram,
+  ProgramDayCompletion,
   alarms,
+  healingFavorites,
+  programDayCompletions,
   sessions,
   studioPresets,
   subscriptionEvents,
+  userPrograms,
   userSounds,
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { getMysqlPool } from "./lib/dbPool";
+import { calculateStreakFromDates } from "./lib/streak";
+import {
+  calculateStreakWithFreezes,
+  currentMonthKey,
+} from "./lib/streakFreeze";
+import { isUserPremium } from "./lib/entitlements";
+import { log } from "./lib/logger";
 
-let _db: ReturnType<typeof drizzle> | null = null;
+/** Only write lastSignedIn if older than this (reduces write amplification). */
+const LAST_SIGNED_IN_THROTTLE_MS = 15 * 60 * 1000;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _db: any = null;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      const pool = getMysqlPool(process.env.DATABASE_URL);
+      // mysql2 Pool type can conflict under pnpm; runtime is correct.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      _db = drizzle(pool as any);
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      log.warn("Database pool init failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       _db = null;
     }
   }
-  return _db;
+  return _db as ReturnType<typeof drizzle> | null;
+}
+
+/**
+ * Update lastSignedIn at most once per throttle window per user.
+ * Returns true if a write was performed.
+ */
+export async function touchLastSignedIn(
+  openId: string,
+  at: Date = new Date()
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const threshold = new Date(at.getTime() - LAST_SIGNED_IN_THROTTLE_MS);
+  const result = await db
+    .update(users)
+    .set({ lastSignedIn: at })
+    .where(
+      and(
+        eq(users.openId, openId),
+        sql`(${users.lastSignedIn} IS NULL OR ${users.lastSignedIn} < ${threshold})`
+      )
+    );
+  return (result[0] as { affectedRows: number }).affectedRows > 0;
 }
 
 // ─── Users ────────────────────────────────────────────────────────────────────
@@ -102,6 +149,105 @@ export async function updateUserProfile(
   await db.update(users).set(fields).where(eq(users.id, userId));
 }
 
+/** Set user role (admin | user). Used by the admin dashboard. */
+export async function updateUserRole(
+  userId: number,
+  role: "user" | "admin"
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db
+    .update(users)
+    .set({ role })
+    .where(eq(users.id, userId));
+  return (result[0] as { affectedRows: number }).affectedRows > 0;
+}
+
+export async function countAdminUsers(): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(users)
+    .where(eq(users.role, "admin"));
+  return Number(rows[0]?.count ?? 0);
+}
+
+/**
+ * Candidates for re-engagement: have email, had at least one session, last
+ * session ≥ inactiveDays ago, and no re-engagement email within cooldownDays.
+ */
+export async function listUsersForReEngagement(options: {
+  inactiveDays?: number;
+  cooldownDays?: number;
+  limit?: number;
+} = {}): Promise<
+  Array<{
+    id: number;
+    email: string;
+    name: string | null;
+    lastSessionAt: Date;
+    daysSinceLast: number;
+  }>
+> {
+  const inactiveDays = options.inactiveDays ?? 7;
+  const cooldownDays = options.cooldownDays ?? 7;
+  const limit = Math.min(options.limit ?? 100, 500);
+  const db = await getDb();
+  if (!db) return [];
+
+  const inactiveCutoff = new Date(Date.now() - inactiveDays * 86_400_000);
+  const cooldownCutoff = new Date(Date.now() - cooldownDays * 86_400_000);
+
+  // Users with email whose most recent session is older than inactiveCutoff
+  // and who haven't been re-engaged within cooldownCutoff.
+  const rows = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+      lastReEngagementEmailAt: users.lastReEngagementEmailAt,
+      lastSessionAt: sql<Date>`MAX(${sessions.startedAt})`,
+    })
+    .from(users)
+    .innerJoin(sessions, eq(sessions.userId, users.id))
+    .where(sql`${users.email} IS NOT NULL AND ${users.email} != ''`)
+    .groupBy(
+      users.id,
+      users.email,
+      users.name,
+      users.lastReEngagementEmailAt
+    )
+    .having(sql`MAX(${sessions.startedAt}) < ${inactiveCutoff}`)
+    .orderBy(sql`MAX(${sessions.startedAt}) ASC`)
+    .limit(limit);
+
+  const now = Date.now();
+  return rows
+    .filter(r => {
+      if (!r.email) return false;
+      if (
+        r.lastReEngagementEmailAt &&
+        r.lastReEngagementEmailAt.getTime() > cooldownCutoff.getTime()
+      ) {
+        return false;
+      }
+      return true;
+    })
+    .map(r => {
+      const lastSessionAt = new Date(r.lastSessionAt);
+      return {
+        id: r.id,
+        email: r.email as string,
+        name: r.name,
+        lastSessionAt,
+        daysSinceLast: Math.floor(
+          (now - lastSessionAt.getTime()) / 86_400_000
+        ),
+      };
+    });
+}
+
 export async function updateUserPreferences(
   userId: number,
   prefs: Record<string, unknown>,
@@ -119,7 +265,92 @@ export async function updateUserPreferences(
 export async function deleteUserAccount(userId: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
+  // Cascades remove sessions, alarms, presets, sounds, favorites via FK.
   await db.delete(users).where(eq(users.id, userId));
+}
+
+/** Full GDPR-style data export for the account owner. */
+export async function exportUserData(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const user = await getUserById(userId);
+  if (!user) return null;
+
+  const [sessionRows, alarmRows, presetRows, soundRows, favoriteRows, eventRows] =
+    await Promise.all([
+      getUserSessions(userId, 500),
+      getUserAlarms(userId),
+      getUserPresets(userId),
+      getUserSounds(userId),
+      db
+        .select()
+        .from(healingFavorites)
+        .where(eq(healingFavorites.userId, userId)),
+      db
+        .select({
+          eventType: subscriptionEvents.eventType,
+          productId: subscriptionEvents.productId,
+          expiresAt: subscriptionEvents.expiresAt,
+          createdAt: subscriptionEvents.createdAt,
+        })
+        .from(subscriptionEvents)
+        .where(eq(subscriptionEvents.userId, userId))
+        .orderBy(desc(subscriptionEvents.createdAt))
+        .limit(200),
+    ]);
+
+  return {
+    exportedAt: new Date().toISOString(),
+    profile: {
+      name: user.name,
+      email: user.email,
+      memberSince: user.createdAt,
+      subscriptionTier: user.subscriptionTier,
+      subscriptionExpiresAt: user.subscriptionExpiresAt,
+      isFounder: user.isFounder,
+      onboardingGoal: user.onboardingGoal,
+      onboardingProfile: user.onboardingProfile,
+      preferences: user.preferences,
+      loginMethod: user.loginMethod,
+    },
+    sessions: sessionRows,
+    alarms: alarmRows,
+    studioPresets: presetRows,
+    userSounds: soundRows.map(s => ({
+      id: s.id,
+      name: s.name,
+      freqL: s.freqL,
+      beatHz: s.beatHz,
+      isoRate: s.isoRate,
+      isoDuty: s.isoDuty,
+      waveform: s.waveform,
+      mode: s.mode,
+      toneVolume: s.toneVolume,
+      backgroundType: s.backgroundType,
+      backgroundKey: s.backgroundKey,
+      backgroundVolume: s.backgroundVolume,
+      createdAt: s.createdAt,
+    })),
+    healingFavorites: favoriteRows,
+    subscriptionEvents: eventRows,
+  };
+}
+
+/**
+ * If premium has expired, write-back to free and return the updated view.
+ * Lifetime and free are left unchanged.
+ */
+export async function reconcileExpiredSubscription(
+  userId: number
+): Promise<User | undefined> {
+  const user = await getUserById(userId);
+  if (!user) return undefined;
+  if (user.subscriptionTier !== "premium") return user;
+  if (!user.subscriptionExpiresAt) return user;
+  if (user.subscriptionExpiresAt.getTime() > Date.now()) return user;
+
+  await updateUserSubscription(userId, "free", null);
+  return { ...user, subscriptionTier: "free", subscriptionExpiresAt: null };
 }
 
 export async function updateUserOnboarding(
@@ -175,11 +406,44 @@ export async function countFounderUsers(): Promise<number> {
   return Number(rows[0]?.count ?? 0);
 }
 
-/** Mark a user as a purchased founder seat. */
+/** Mark a user as a purchased founder seat (non-atomic; prefer tryClaimFounderSeat). */
 export async function setFounder(userId: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
   await db.update(users).set({ isFounder: true }).where(eq(users.id, userId));
+}
+
+/**
+ * Atomically claim a founder seat under the hard cap.
+ * Returns true if this user now holds a founder seat (already held or newly claimed).
+ * Returns false if the cap is full and the user is not already a founder.
+ */
+export async function tryClaimFounderSeat(
+  userId: number,
+  cap: number
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  return db.transaction(async tx => {
+    const existing = await tx
+      .select({ isFounder: users.isFounder })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (!existing[0]) return false;
+    if (existing[0].isFounder) return true;
+
+    const countRows = await tx
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(eq(users.isFounder, true));
+    const sold = Number(countRows[0]?.count ?? 0);
+    if (sold >= cap) return false;
+
+    await tx.update(users).set({ isFounder: true }).where(eq(users.id, userId));
+    return true;
+  });
 }
 
 export async function updateUserSubscription(
@@ -299,16 +563,21 @@ export async function createSession(data: InsertSession): Promise<number> {
   return (result[0] as { insertId: number }).insertId;
 }
 
+/**
+ * End a healing session. Ownership is enforced via userId — returns false
+ * when the session does not exist or belongs to another user (IDOR guard).
+ */
 export async function endSession(
   sessionId: number,
+  userId: number,
   durationSeconds: number,
   moodRating?: number,
   journalNote?: string,
   intention?: string
-): Promise<void> {
+): Promise<boolean> {
   const db = await getDb();
-  if (!db) return;
-  await db
+  if (!db) return false;
+  const result = await db
     .update(sessions)
     .set({
       endedAt: new Date(),
@@ -317,7 +586,8 @@ export async function endSession(
       ...(journalNote !== undefined ? { journalNote } : {}),
       ...(intention !== undefined ? { intention } : {}),
     })
-    .where(eq(sessions.id, sessionId));
+    .where(and(eq(sessions.id, sessionId), eq(sessions.userId, userId)));
+  return (result[0] as { affectedRows: number }).affectedRows > 0;
 }
 
 export async function getUserSessions(userId: number, limit = 50): Promise<Session[]> {
@@ -336,79 +606,140 @@ export async function getUserStats(userId: number) {
   if (!db) return null;
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
 
-  const [totalRows, recentRows, moodRows, topFreqRows, streakRows] = await Promise.all([
-    db
-      .select({
-        count: sql<number>`count(*)`,
-        totalSeconds: sql<number>`sum(durationSeconds)`,
-      })
-      .from(sessions)
-      .where(eq(sessions.userId, userId)),
-    db
-      .select()
-      .from(sessions)
-      .where(and(eq(sessions.userId, userId), gte(sessions.startedAt, thirtyDaysAgo)))
-      .orderBy(desc(sessions.startedAt)),
-    db
-      .select({ avg: sql<number>`avg(moodRating)`, count: sql<number>`count(*)` })
-      .from(sessions)
-      .where(and(eq(sessions.userId, userId), sql`moodRating IS NOT NULL`)),
-    db
-      .select({
-        frequencyName: sessions.frequencyName,
-        frequencyHz: sessions.frequencyHz,
-        count: sql<number>`count(*) as count`,
-      })
-      .from(sessions)
-      .where(eq(sessions.userId, userId))
-      .groupBy(sessions.frequencyName, sessions.frequencyHz)
-      .orderBy(desc(sql`count(*)`))
-      .limit(5),
-    // Fetch distinct session dates for streak calculation (last 60 days)
-    db
-      .select({
-        day: sql<string>`DATE(startedAt)`,
-      })
-      .from(sessions)
-      .where(and(
-        eq(sessions.userId, userId),
-        gte(sessions.startedAt, new Date(Date.now() - 60 * 24 * 60 * 60 * 1000))
-      ))
-      .groupBy(sql`DATE(startedAt)`)
-      .orderBy(desc(sql`DATE(startedAt)`)),
-  ]);
+  const [totalRows, recentRows, moodRows, topFreqRows, streakSessionRows, userRow] =
+    await Promise.all([
+      db
+        .select({
+          count: sql<number>`count(*)`,
+          totalSeconds: sql<number>`sum(durationSeconds)`,
+        })
+        .from(sessions)
+        .where(eq(sessions.userId, userId)),
+      db
+        .select()
+        .from(sessions)
+        .where(and(eq(sessions.userId, userId), gte(sessions.startedAt, thirtyDaysAgo)))
+        .orderBy(desc(sessions.startedAt)),
+      db
+        .select({ avg: sql<number>`avg(moodRating)`, count: sql<number>`count(*)` })
+        .from(sessions)
+        .where(and(eq(sessions.userId, userId), sql`moodRating IS NOT NULL`)),
+      db
+        .select({
+          frequencyName: sessions.frequencyName,
+          frequencyHz: sessions.frequencyHz,
+          count: sql<number>`count(*) as count`,
+        })
+        .from(sessions)
+        .where(eq(sessions.userId, userId))
+        .groupBy(sessions.frequencyName, sessions.frequencyHz)
+        .orderBy(desc(sql`count(*)`))
+        .limit(5),
+      // Raw startedAt timestamps — day boundaries computed in user timezone in JS
+      db
+        .select({ startedAt: sessions.startedAt })
+        .from(sessions)
+        .where(
+          and(eq(sessions.userId, userId), gte(sessions.startedAt, sixtyDaysAgo))
+        ),
+      db
+        .select({ preferences: users.preferences })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1),
+    ]);
 
-  // Compute streak: count consecutive days ending today or yesterday
-  let currentStreak = 0;
-  if (streakRows.length > 0) {
-    const sessionDays = new Set(streakRows.map(r => r.day as string));
-    const today = new Date();
-    // Start from today; if today has no session, allow yesterday as the streak anchor
-    let checkDate = new Date(today);
-    const todayStr = checkDate.toISOString().slice(0, 10);
-    if (!sessionDays.has(todayStr)) {
-      // Shift back one day — streak may have ended yesterday
-      checkDate.setDate(checkDate.getDate() - 1);
-    }
-    for (let i = 0; i < 60; i++) {
-      const dateStr = checkDate.toISOString().slice(0, 10);
-      if (sessionDays.has(dateStr)) {
-        currentStreak++;
-        checkDate.setDate(checkDate.getDate() - 1);
-      } else {
-        break;
-      }
-    }
+  const prefs = (userRow[0]?.preferences as Record<string, unknown> | null) ?? {};
+  const timeZone =
+    typeof prefs.timezone === "string" && prefs.timezone.length > 0
+      ? prefs.timezone
+      : "UTC";
+
+  // Ensure premium monthly freeze grant (idempotent per YYYY-MM)
+  const userFull = await getUserById(userId);
+  let freezesRemaining = userFull?.streakFreezesRemaining ?? 0;
+  if (userFull && isUserPremium(userFull)) {
+    freezesRemaining = await ensureMonthlyStreakFreeze(userId);
   }
+
+  const dates = streakSessionRows.map(r => new Date(r.startedAt));
+  const streakResult = calculateStreakWithFreezes(dates, {
+    timeZone,
+    freezesAvailable: freezesRemaining,
+    consumeFreezes: false, // display only; freezes are inventory, not auto-spent on view
+  });
+
+  // Also expose simple streak without freezes for debugging/coaching
+  const rawStreak = calculateStreakFromDates(dates, { timeZone });
 
   return {
     totalSessions: Number(totalRows[0]?.count ?? 0),
     totalMinutes: Math.round(Number(totalRows[0]?.totalSeconds ?? 0) / 60),
     avgMoodRating: Number(moodRows[0]?.avg ?? 0),
-    currentStreak,
+    currentStreak: Math.max(streakResult.streak, rawStreak),
+    rawStreak,
+    streakFreezesRemaining: freezesRemaining,
     recentSessions: recentRows,
     topFrequencies: topFreqRows,
+  };
+}
+
+/**
+ * Grant 1 streak freeze per calendar month for premium/lifetime users.
+ * Returns the user's freezes remaining after the check.
+ */
+export async function ensureMonthlyStreakFreeze(userId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const user = await getUserById(userId);
+  if (!user || !isUserPremium(user)) {
+    return user?.streakFreezesRemaining ?? 0;
+  }
+  const month = currentMonthKey();
+  if (user.streakFreezeMonthKey === month) {
+    return user.streakFreezesRemaining;
+  }
+  // New month: set freezes to 1 (premium monthly allotment)
+  await db
+    .update(users)
+    .set({ streakFreezesRemaining: 1, streakFreezeMonthKey: month })
+    .where(eq(users.id, userId));
+  return 1;
+}
+
+export async function consumeStreakFreeze(userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const user = await getUserById(userId);
+  if (!user || user.streakFreezesRemaining <= 0) return false;
+  await db
+    .update(users)
+    .set({ streakFreezesRemaining: user.streakFreezesRemaining - 1 })
+    .where(eq(users.id, userId));
+  return true;
+}
+
+/** Explicitly apply a freeze to bridge a one-day gap (user-initiated). */
+export async function applyStreakFreeze(userId: number): Promise<{
+  success: boolean;
+  remaining: number;
+  message?: string;
+}> {
+  const remaining = await ensureMonthlyStreakFreeze(userId);
+  if (remaining <= 0) {
+    return {
+      success: false,
+      remaining: 0,
+      message: "No streak freezes remaining this month",
+    };
+  }
+  const ok = await consumeStreakFreeze(userId);
+  const user = await getUserById(userId);
+  return {
+    success: ok,
+    remaining: user?.streakFreezesRemaining ?? 0,
   };
 }
 
@@ -553,6 +884,209 @@ export async function getUserUploadKeys(userId: number): Promise<string[]> {
   return Array.from(new Set(keys));
 }
 
+// ─── Programs ─────────────────────────────────────────────────────────────────
+
+export async function listUserPrograms(userId: number): Promise<UserProgram[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(userPrograms)
+    .where(and(eq(userPrograms.userId, userId), sql`${userPrograms.abandonedAt} IS NULL`))
+    .orderBy(desc(userPrograms.startedAt));
+}
+
+export async function getUserProgram(
+  userId: number,
+  programId: string
+): Promise<UserProgram | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select()
+    .from(userPrograms)
+    .where(
+      and(
+        eq(userPrograms.userId, userId),
+        eq(userPrograms.programId, programId),
+        sql`${userPrograms.abandonedAt} IS NULL`
+      )
+    )
+    .limit(1);
+  return rows[0];
+}
+
+export async function enrollProgram(
+  userId: number,
+  programId: string
+): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  // Reactivate abandoned enrollment or insert new
+  const existing = await db
+    .select()
+    .from(userPrograms)
+    .where(
+      and(eq(userPrograms.userId, userId), eq(userPrograms.programId, programId))
+    )
+    .limit(1);
+  if (existing[0]) {
+    await db
+      .update(userPrograms)
+      .set({
+        abandonedAt: null,
+        completedAt: null,
+        currentDay: existing[0].currentDay || 1,
+        startedAt: existing[0].startedAt ?? new Date(),
+      })
+      .where(eq(userPrograms.id, existing[0].id));
+    return existing[0].id;
+  }
+  const result = await db.insert(userPrograms).values({
+    userId,
+    programId,
+    currentDay: 1,
+  } satisfies InsertUserProgram);
+  return (result[0] as { insertId: number }).insertId;
+}
+
+export async function abandonProgram(
+  userId: number,
+  programId: string
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db
+    .update(userPrograms)
+    .set({ abandonedAt: new Date() })
+    .where(
+      and(eq(userPrograms.userId, userId), eq(userPrograms.programId, programId))
+    );
+  return (result[0] as { affectedRows: number }).affectedRows > 0;
+}
+
+export async function listProgramCompletions(
+  userId: number,
+  programId: string
+): Promise<ProgramDayCompletion[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(programDayCompletions)
+    .where(
+      and(
+        eq(programDayCompletions.userId, userId),
+        eq(programDayCompletions.programId, programId)
+      )
+    )
+    .orderBy(programDayCompletions.dayNumber);
+}
+
+export async function completeProgramDay(data: {
+  userId: number;
+  programId: string;
+  dayNumber: number;
+  sessionId?: number;
+  note?: string;
+  totalDays: number;
+}): Promise<{ completionId: number; programComplete: boolean }> {
+  const db = await getDb();
+  if (!db) return { completionId: 0, programComplete: false };
+
+  // Idempotent: if already completed, return existing
+  const existing = await db
+    .select()
+    .from(programDayCompletions)
+    .where(
+      and(
+        eq(programDayCompletions.userId, data.userId),
+        eq(programDayCompletions.programId, data.programId),
+        eq(programDayCompletions.dayNumber, data.dayNumber)
+      )
+    )
+    .limit(1);
+  if (existing[0]) {
+    const completions = await listProgramCompletions(data.userId, data.programId);
+    return {
+      completionId: existing[0].id,
+      programComplete: completions.length >= data.totalDays,
+    };
+  }
+
+  const result = await db.insert(programDayCompletions).values({
+    userId: data.userId,
+    programId: data.programId,
+    dayNumber: data.dayNumber,
+    sessionId: data.sessionId,
+    note: data.note,
+  } satisfies InsertProgramDayCompletion);
+  const completionId = (result[0] as { insertId: number }).insertId;
+
+  const nextDay = data.dayNumber + 1;
+  const programComplete = data.dayNumber >= data.totalDays;
+  await db
+    .update(userPrograms)
+    .set({
+      currentDay: programComplete ? data.totalDays : Math.max(nextDay, data.dayNumber),
+      ...(programComplete ? { completedAt: new Date() } : {}),
+    })
+    .where(
+      and(
+        eq(userPrograms.userId, data.userId),
+        eq(userPrograms.programId, data.programId)
+      )
+    );
+
+  return { completionId, programComplete };
+}
+
+export async function markWeeklyInsightEmailSent(userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const user = await getUserById(userId);
+  if (!user) return false;
+  const last = user.lastWeeklyInsightEmailAt;
+  if (last && Date.now() - last.getTime() < 6 * 86_400_000) return false;
+  await db
+    .update(users)
+    .set({ lastWeeklyInsightEmailAt: new Date() })
+    .where(eq(users.id, userId));
+  return true;
+}
+
+export async function listUsersForWeeklyInsights(limit = 100): Promise<
+  Array<{ id: number; email: string; name: string | null }>
+> {
+  const db = await getDb();
+  if (!db) return [];
+  const weekAgo = new Date(Date.now() - 7 * 86_400_000);
+  const rows = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+      lastWeeklyInsightEmailAt: users.lastWeeklyInsightEmailAt,
+    })
+    .from(users)
+    .where(sql`${users.email} IS NOT NULL AND ${users.email} != ''`)
+    .limit(limit * 2);
+
+  return rows
+    .filter(r => {
+      if (!r.email) return false;
+      if (
+        r.lastWeeklyInsightEmailAt &&
+        r.lastWeeklyInsightEmailAt.getTime() > weekAgo.getTime()
+      ) {
+        return false;
+      }
+      return true;
+    })
+    .slice(0, limit)
+    .map(r => ({ id: r.id, email: r.email as string, name: r.name }));
+}
+
 // ─── Email Deduplication Helpers ────────────────────────────────────────────
 
 /** Mark that the welcome email was sent for a user */
@@ -592,23 +1126,63 @@ export async function markReEngagementEmailSent(userId: number): Promise<boolean
 
 // ─── Subscription Events ──────────────────────────────────────────────────────
 
+/**
+ * Returns true if this external event id was already recorded (idempotency).
+ * Null/empty ids are treated as not-seen (caller should still process).
+ */
+export async function hasProcessedExternalEvent(
+  externalEventId: string | null | undefined
+): Promise<boolean> {
+  if (!externalEventId) return false;
+  const db = await getDb();
+  if (!db) return false;
+  const rows = await db
+    .select({ id: subscriptionEvents.id })
+    .from(subscriptionEvents)
+    .where(eq(subscriptionEvents.externalEventId, externalEventId))
+    .limit(1);
+  return rows.length > 0;
+}
+
+/**
+ * Log a subscription webhook event. Returns false if externalEventId was a
+ * duplicate (unique constraint / already present) so callers can skip side effects.
+ */
 export async function logSubscriptionEvent(data: {
   userId?: number;
   /** RevenueCat app_user_id for mobile events; omitted for Stripe web events */
   revenuecatUserId?: string;
   eventType: string;
   productId?: string;
+  externalEventId?: string;
   expiresAt?: Date;
   rawPayload?: unknown;
-}): Promise<void> {
+}): Promise<{ inserted: boolean }> {
   const db = await getDb();
-  if (!db) return;
-  await db.insert(subscriptionEvents).values({
-    userId: data.userId,
-    revenuecatUserId: data.revenuecatUserId,
-    eventType: data.eventType,
-    productId: data.productId,
-    expiresAt: data.expiresAt,
-    rawPayload: data.rawPayload,
-  });
+  if (!db) return { inserted: false };
+
+  if (data.externalEventId) {
+    const already = await hasProcessedExternalEvent(data.externalEventId);
+    if (already) return { inserted: false };
+  }
+
+  try {
+    await db.insert(subscriptionEvents).values({
+      userId: data.userId,
+      revenuecatUserId: data.revenuecatUserId,
+      eventType: data.eventType,
+      productId: data.productId,
+      externalEventId: data.externalEventId,
+      expiresAt: data.expiresAt,
+      rawPayload: data.rawPayload,
+    });
+    return { inserted: true };
+  } catch (err) {
+    // Race: concurrent insert of same externalEventId
+    const message = err instanceof Error ? err.message : String(err);
+    if (data.externalEventId && /duplicate|unique/i.test(message)) {
+      return { inserted: false };
+    }
+    throw err;
+  }
 }

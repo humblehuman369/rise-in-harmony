@@ -17,7 +17,11 @@ import { useRouter } from "expo-router";
 import { useState, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
-import { ONBOARDING_GOALS, FREQUENCIES } from "@rih/shared-utils";
+import {
+  ONBOARDING_GOALS,
+  FREQUENCIES,
+  GOAL_RECOMMENDED_FREQUENCY,
+} from "@rih/shared-utils";
 import type { OnboardingGoal } from "@rih/shared-types";
 import { trackOnboardingCompleted } from "@/hooks/useAnalytics";
 
@@ -25,14 +29,14 @@ export const ONBOARDING_COMPLETED_KEY = "rih_onboarding_completed";
 
 const { width } = Dimensions.get("window");
 
-// Map each goal to the recommended frequency id
+// Canonical map lives in @rih/shared-utils (shared with web)
 const GOAL_FREQUENCY_MAP: Record<OnboardingGoal, string> = {
-  morning: "528",
-  sleep: "delta",
-  stress: "432",
-  focus: "alpha",
-  spiritual: "963",
-  healing: "528",
+  morning: GOAL_RECOMMENDED_FREQUENCY.morning.frequencyId,
+  sleep: GOAL_RECOMMENDED_FREQUENCY.sleep.frequencyId,
+  stress: GOAL_RECOMMENDED_FREQUENCY.stress.frequencyId,
+  focus: GOAL_RECOMMENDED_FREQUENCY.focus.frequencyId,
+  spiritual: GOAL_RECOMMENDED_FREQUENCY.spiritual.frequencyId,
+  healing: GOAL_RECOMMENDED_FREQUENCY.healing.frequencyId,
 };
 
 const GOAL_EMOJI: Record<OnboardingGoal, string> = {

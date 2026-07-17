@@ -1,5 +1,27 @@
 # Rise In Harmony — Project TODO
 
+## Production hardening (S0–S3) — 2026-07-14
+
+- [x] S0 critical security (IDOR, webhooks, JWT, rate limits, storage, assets CI)
+- [x] S1 high (sessions, compliance export/delete, expiry, cookies, privacy)
+- [x] S2 medium (pool, streak TZ, healthz, premium gates, onboarding parity)
+- [x] S3 polish (re-engagement cron, admin roles, .env.example, PRODUCTION_HARDENING.md)
+- [ ] Apply migration `drizzle/0007_webhook_idempotency.sql` in staging/prod
+- [ ] Apply migration `drizzle/0008_phase2_retain.sql` (programs, freezes, alarm kind)
+- [ ] Register daily re-engagement Heartbeat or external cron with `CRON_SECRET`
+- [ ] Register Monday weekly-insights cron (`/api/scheduled/weekly-insights`)
+- [ ] Replace placeholder mobile MP3s with production audio before store submit
+
+## Phase 2 — Retain (2026-07-14)
+
+- [x] Resonance insights API + Dashboard card
+- [x] Programs catalog + tRPC + web page + mobile screen
+- [x] Wind-down alarm kind
+- [x] Streak freezes (premium monthly)
+- [x] Weekly insight email + freeze replenish cron endpoint
+
+See `PRODUCTION_HARDENING.md` for the full checklist.
+
 ## Completed — Initial Setup & Core Features
 
 - [x] Set up project structure and dependencies

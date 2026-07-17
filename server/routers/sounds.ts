@@ -1,14 +1,19 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "../_core/trpc";
+import { premiumProcedure, protectedProcedure, router } from "../_core/trpc";
 import {
   createUserSound,
   deleteUserSound,
   getUserSoundById,
   getUserSounds,
   getUserUploadKeys,
+  reconcileExpiredSubscription,
   renameUserSound,
 } from "../db";
+import { isUserPremium } from "../lib/entitlements";
+
+/** Free accounts may save a limited number of precision recipes. */
+const FREE_SOUND_LIMIT = 10;
 
 const waveformSchema = z.enum(["sine", "square", "triangle", "sawtooth", "bowl"]);
 const modeSchema = z.enum(["mono", "binaural", "isochronic"]);
@@ -66,7 +71,8 @@ export const soundsRouter = router({
       return sound;
     }),
 
-  listUploads: protectedProcedure.query(async ({ ctx }) => {
+  /** Uploaded custom backgrounds are a Premium capability. */
+  listUploads: premiumProcedure.query(async ({ ctx }) => {
     return getUserUploadKeys(ctx.user.id);
   }),
 
@@ -74,6 +80,29 @@ export const soundsRouter = router({
     .input(soundInputSchema)
     .mutation(async ({ ctx, input }) => {
       validateSoundInput(input);
+
+      // Custom uploads require premium; library/none backgrounds available to free.
+      if (input.backgroundType === "upload") {
+        const user = await reconcileExpiredSubscription(ctx.user.id);
+        if (!isUserPremium(user)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "PREMIUM_REQUIRED",
+          });
+        }
+      } else {
+        const user = await reconcileExpiredSubscription(ctx.user.id);
+        if (!isUserPremium(user)) {
+          const existing = await getUserSounds(ctx.user.id);
+          if (existing.length >= FREE_SOUND_LIMIT) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "FREE_SOUND_LIMIT",
+            });
+          }
+        }
+      }
+
       const id = await createUserSound({
         userId: ctx.user.id,
         name: input.name,

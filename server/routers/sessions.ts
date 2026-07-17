@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
 import {
   createSession,
@@ -7,9 +8,9 @@ import {
   getUserSessions,
   getUserStats,
   markStreakMilestoneEmailSent,
-  markReEngagementEmailSent,
 } from "../db";
-import { sendStreakMilestoneEmail, sendReEngagementEmail } from "../email";
+import { sendStreakMilestoneEmail } from "../email";
+import { processUserReEngagement } from "../lib/reEngagement";
 
 // Streak milestones that trigger an email (days)
 const STREAK_MILESTONES = new Set([7, 30]);
@@ -46,20 +47,27 @@ export const sessionsRouter = router({
     .input(
       z.object({
         sessionId: z.number(),
-        durationSeconds: z.number(),
+        durationSeconds: z.number().min(0).max(24 * 60 * 60),
         moodRating: z.number().min(1).max(5).optional(),
         journalNote: z.string().max(1000).optional(),
         intention: z.string().max(500).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      await endSession(
+      const updated = await endSession(
         input.sessionId,
+        ctx.user.id,
         input.durationSeconds,
         input.moodRating,
         input.journalNote,
         input.intention
       );
+      if (!updated) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Session not found",
+        });
+      }
 
       // Fire-and-forget: check streak milestones and send email if needed
       Promise.resolve().then(async () => {
@@ -150,6 +158,7 @@ export const sessionsRouter = router({
 
         await endSession(
           sessionId,
+          ctx.user.id,
           durationSeconds,
           entry.mood,
           entry.note,
@@ -163,45 +172,11 @@ export const sessionsRouter = router({
     }),
 
   /**
-   * Re-engagement check — called by the Heartbeat scheduler.
-   * Finds users who have not had a session in 7 days and sends a nudge email.
+   * Per-user re-engagement check (legacy / client-triggered).
+   * Prefer the bulk cron: POST /api/scheduled/re-engagement
    * Safe to call repeatedly; email is only sent once per 7-day window.
    */
   checkReEngagement: protectedProcedure.mutation(async ({ ctx }) => {
-    try {
-      const [stats, user] = await Promise.all([
-        getUserStats(ctx.user.id),
-        getUserById(ctx.user.id),
-      ]);
-      if (!stats || !user?.email) return { sent: false };
-
-      const recentSessions = stats.recentSessions;
-      if (recentSessions.length === 0) {
-        // No sessions at all — skip (welcome email already handles this)
-        return { sent: false };
-      }
-
-      const lastSession = recentSessions[0];
-      const daysSinceLast = Math.floor(
-        (Date.now() - new Date(lastSession.startedAt).getTime()) / 86400000
-      );
-
-      if (daysSinceLast >= 7) {
-        // markReEngagementEmailSent returns false if sent within the last 7 days
-        const shouldSend = await markReEngagementEmailSent(ctx.user.id);
-        if (shouldSend) {
-          await sendReEngagementEmail(
-            user.email,
-            user.name || "friend"
-          );
-        }
-        return { sent: shouldSend, daysSinceLast };
-      }
-
-      return { sent: false, daysSinceLast };
-    } catch (err) {
-      console.warn("[Email] Re-engagement check failed:", err);
-      return { sent: false };
-    }
+    return processUserReEngagement(ctx.user.id);
   }),
 });

@@ -6,10 +6,12 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { adminProcedure, router } from "../_core/trpc";
 import {
+  countAdminUsers,
   getAdminUserCounts,
   getUserById,
   listUsersForAdmin,
   logSubscriptionEvent,
+  updateUserRole,
   updateUserSubscription,
 } from "../db";
 import {
@@ -17,6 +19,7 @@ import {
   isRevenueCatConfigured,
   revokePromotionalEntitlement,
 } from "../revenuecat";
+import { processReEngagementBatch } from "../lib/reEngagement";
 
 export const adminRouter = router({
   /** Aggregate counts: total / active (paid) / cancelled / free */
@@ -129,5 +132,63 @@ export const adminRouter = router({
         revenueCatSynced,
         revenueCatConfigured: isRevenueCatConfigured(),
       };
+    }),
+
+  /**
+   * Promote or demote a user's admin role (DB-backed; no redeploy for RIH_ADMIN_EMAILS).
+   * Guards: cannot demote yourself; cannot demote the last remaining admin.
+   */
+  setUserRole: adminProcedure
+    .input(
+      z.object({
+        userId: z.number().int().positive(),
+        role: z.enum(["user", "admin"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (input.userId === ctx.user.id && input.role === "user") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You cannot demote yourself",
+        });
+      }
+
+      const target = await getUserById(input.userId);
+      if (!target) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      if (target.role === "admin" && input.role === "user") {
+        const adminCount = await countAdminUsers();
+        if (adminCount <= 1) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Cannot demote the last admin",
+          });
+        }
+      }
+
+      await updateUserRole(input.userId, input.role);
+      await logSubscriptionEvent({
+        userId: input.userId,
+        eventType: input.role === "admin" ? "ADMIN_ROLE_GRANT" : "ADMIN_ROLE_REVOKE",
+        rawPayload: {
+          changedByAdminId: ctx.user.id,
+          previousRole: target.role,
+          newRole: input.role,
+        },
+      });
+
+      return { success: true, role: input.role };
+    }),
+
+  /**
+   * Manually run the re-engagement email batch (same logic as the cron job).
+   * Useful for testing without waiting for the scheduler.
+   */
+  runReEngagementBatch: adminProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(500).default(50) }).optional())
+    .mutation(async ({ input }) => {
+      return processReEngagementBatch({ limit: input?.limit ?? 50 });
     }),
 });

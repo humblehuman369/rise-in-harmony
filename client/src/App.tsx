@@ -21,6 +21,7 @@ import Technology from "./pages/Technology";
 import Learn from "./pages/Learn";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
+import Programs from "./pages/Programs";
 import { useAuth } from "./_core/hooks/useAuth";
 import { useLocalSessionImport } from "./hooks/useLocalSessionImport";
 import { useAnalytics } from "./hooks/useAnalytics";
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/alarm" component={Alarm} />
       <Route path="/library" component={Library} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/programs" component={Programs} />
       <Route path="/meditation" component={Meditation} />
       <Route path="/precision">{() => { window.location.replace("/studio"); return null; }}</Route>
       <Route path="/privacy" component={Privacy} />

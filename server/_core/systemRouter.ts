@@ -3,14 +3,21 @@ import { notifyOwner } from "./notification";
 import { adminProcedure, publicProcedure, router } from "./trpc";
 
 export const systemRouter = router({
+  /**
+   * Lightweight liveness for tRPC clients.
+   * Prefer GET /healthz and GET /readyz for load balancers.
+   */
   health: publicProcedure
     .input(
-      z.object({
-        timestamp: z.number().min(0, "timestamp cannot be negative"),
-      })
+      z
+        .object({
+          timestamp: z.number().min(0).optional(),
+        })
+        .optional()
     )
     .query(() => ({
-      ok: true,
+      ok: true as const,
+      ts: Date.now(),
     })),
 
   notifyOwner: adminProcedure

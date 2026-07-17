@@ -123,5 +123,6 @@ references/audio/processed/
 # Mobile sound assets — too large for Manus webdev checkpoint system.
 # These files are already committed to GitHub and will be available for EAS builds
 # via git clone. They are excluded here only to unblock checkpoint saves.
+# Optional large audio dumps under mobile sounds (required set is force-tracked
+# via apps/mobile/assets/sounds/.gitignore negation rules).
 apps/mobile/assets/sounds/*.wav
-apps/mobile/assets/sounds/*.mp3

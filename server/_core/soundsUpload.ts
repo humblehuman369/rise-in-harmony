@@ -3,6 +3,8 @@ import express from "express";
 import { ForbiddenError } from "@shared/_core/errors";
 import { sdk } from "./sdk";
 import { storagePut } from "../storage";
+import { reconcileExpiredSubscription } from "../db";
+import { isUserPremium } from "../lib/entitlements";
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
 
@@ -43,6 +45,13 @@ export function registerSoundsUpload(app: Express) {
       const user = await authenticateUpload(req);
       if (!user || user.id <= 0) {
         res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      // Custom background uploads are premium-gated server-side.
+      const entitlementUser = await reconcileExpiredSubscription(user.id);
+      if (!isUserPremium(entitlementUser ?? user)) {
+        res.status(403).json({ error: "PREMIUM_REQUIRED" });
         return;
       }
 

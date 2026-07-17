@@ -3,6 +3,8 @@
  * Handles 6 transactional email templates from the development plan
  */
 import { Resend } from "resend";
+import { escapeHtml } from "./lib/htmlEscape";
+import { log } from "./lib/logger";
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -11,15 +13,14 @@ const resend = process.env.RESEND_API_KEY
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "hello@riseinharmony.app";
 const APP_URL = process.env.APP_URL || "https://riseinharmony.app";
 
-function log(msg: string) {
-  console.log(`[Email] ${msg}`);
-}
-
 // ─── Email Templates ──────────────────────────────────────────────────────────
 
 /** Welcome email sent after first login / onboarding completion */
 export async function sendWelcomeEmail(to: string, name: string, goal: string) {
-  if (!resend) { log("Resend not configured — skipping welcome email"); return; }
+  if (!resend) {
+    log.info("Resend not configured — skipping welcome email");
+    return;
+  }
   const goalLabel: Record<string, string> = {
     sleep: "better sleep",
     stress: "stress relief",
@@ -28,15 +29,17 @@ export async function sendWelcomeEmail(to: string, name: string, goal: string) {
     spiritual: "spiritual growth",
     healing: "physical healing",
   };
+  const safeName = escapeHtml(name);
+  const safeGoal = escapeHtml(goalLabel[goal] || goal);
   await resend.emails.send({
     from: FROM_EMAIL,
     to,
     subject: "Welcome to Rise In Harmony 🎵",
     html: `
       <div style="font-family: 'DM Sans', sans-serif; max-width: 560px; margin: 0 auto; background: #0A0B14; color: #E8EDF5; padding: 40px 32px; border-radius: 12px;">
-        <h1 style="font-family: Georgia, serif; font-size: 28px; color: #00D4AA; margin-bottom: 8px;">Welcome, ${name}.</h1>
+        <h1 style="font-family: Georgia, serif; font-size: 28px; color: #00D4AA; margin-bottom: 8px;">Welcome, ${safeName}.</h1>
         <p style="color: #8FA3BF; font-size: 16px; line-height: 1.6;">
-          You've joined Rise In Harmony with a goal of <strong style="color: #E8EDF5;">${goalLabel[goal] || goal}</strong>.
+          You've joined Rise In Harmony with a goal of <strong style="color: #E8EDF5;">${safeGoal}</strong>.
           Your first recommended frequency is ready to play.
         </p>
         <a href="${APP_URL}/player" style="display: inline-block; margin-top: 24px; padding: 14px 28px; background: #00D4AA; color: #0A0B14; border-radius: 50px; font-weight: 700; text-decoration: none; font-size: 15px;">
@@ -48,13 +51,17 @@ export async function sendWelcomeEmail(to: string, name: string, goal: string) {
       </div>
     `,
   });
-  log(`Welcome email sent to ${to}`);
+  log.info("Welcome email sent", { to });
 }
 
 /** Sent 2 days before a trial expires */
 export async function sendTrialEndingEmail(to: string, name: string, expiresAt: Date) {
-  if (!resend) { log("Resend not configured — skipping trial ending email"); return; }
+  if (!resend) {
+    log.info("Resend not configured — skipping trial ending email");
+    return;
+  }
   const daysLeft = Math.ceil((expiresAt.getTime() - Date.now()) / 86400000);
+  const safeName = escapeHtml(name);
   await resend.emails.send({
     from: FROM_EMAIL,
     to,
@@ -63,8 +70,8 @@ export async function sendTrialEndingEmail(to: string, name: string, expiresAt: 
       <div style="font-family: 'DM Sans', sans-serif; max-width: 560px; margin: 0 auto; background: #0A0B14; color: #E8EDF5; padding: 40px 32px; border-radius: 12px;">
         <h1 style="font-family: Georgia, serif; font-size: 24px; color: #F59E0B;">Your trial ends soon.</h1>
         <p style="color: #8FA3BF; font-size: 16px; line-height: 1.6;">
-          Hi ${name}, your Rise In Harmony premium trial expires in <strong style="color: #E8EDF5;">${daysLeft} day${daysLeft !== 1 ? "s" : ""}</strong>.
-          Keep access to all 13 healing frequencies, binaural beats, and the full Sound Studio.
+          Hi ${safeName}, your Rise In Harmony premium trial expires in <strong style="color: #E8EDF5;">${daysLeft} day${daysLeft !== 1 ? "s" : ""}</strong>.
+          Keep access to the full frequency library, binaural beats, and the Sound Studio.
         </p>
         <a href="${APP_URL}/premium" style="display: inline-block; margin-top: 24px; padding: 14px 28px; background: #8B5CF6; color: #fff; border-radius: 50px; font-weight: 700; text-decoration: none; font-size: 15px;">
           Continue Premium — $7.99/mo →
@@ -72,7 +79,7 @@ export async function sendTrialEndingEmail(to: string, name: string, expiresAt: 
       </div>
     `,
   });
-  log(`Trial ending email sent to ${to}`);
+  log.info("Trial ending email sent", { to });
 }
 
 /** Sent when a subscription payment is confirmed */
@@ -82,7 +89,13 @@ export async function sendReceiptEmail(
   tier: string,
   amount: string
 ) {
-  if (!resend) { log("Resend not configured — skipping receipt email"); return; }
+  if (!resend) {
+    log.info("Resend not configured — skipping receipt email");
+    return;
+  }
+  const safeName = escapeHtml(name);
+  const safeTier = escapeHtml(tier);
+  const safeAmount = escapeHtml(amount);
   await resend.emails.send({
     from: FROM_EMAIL,
     to,
@@ -90,11 +103,11 @@ export async function sendReceiptEmail(
     html: `
       <div style="font-family: 'DM Sans', sans-serif; max-width: 560px; margin: 0 auto; background: #0A0B14; color: #E8EDF5; padding: 40px 32px; border-radius: 12px;">
         <h1 style="font-family: Georgia, serif; font-size: 24px; color: #00D4AA;">Payment confirmed.</h1>
-        <p style="color: #8FA3BF; font-size: 16px;">Hi ${name}, thank you for subscribing to Rise In Harmony ${tier}.</p>
+        <p style="color: #8FA3BF; font-size: 16px;">Hi ${safeName}, thank you for subscribing to Rise In Harmony ${safeTier}.</p>
         <div style="background: #12152A; border-radius: 8px; padding: 16px 20px; margin: 20px 0;">
           <div style="display: flex; justify-content: space-between; color: #E8EDF5;">
-            <span>Rise In Harmony ${tier}</span>
-            <span style="color: #00D4AA; font-weight: 700;">${amount}</span>
+            <span>Rise In Harmony ${safeTier}</span>
+            <span style="color: #00D4AA; font-weight: 700;">${safeAmount}</span>
           </div>
         </div>
         <a href="${APP_URL}" style="display: inline-block; margin-top: 16px; padding: 14px 28px; background: #00D4AA; color: #0A0B14; border-radius: 50px; font-weight: 700; text-decoration: none; font-size: 15px;">
@@ -103,7 +116,7 @@ export async function sendReceiptEmail(
       </div>
     `,
   });
-  log(`Receipt email sent to ${to}`);
+  log.info("Receipt email sent", { to });
 }
 
 /** Sent when user reaches a 7-day streak milestone */
@@ -112,17 +125,22 @@ export async function sendStreakMilestoneEmail(
   name: string,
   streakDays: number
 ) {
-  if (!resend) { log("Resend not configured — skipping streak email"); return; }
+  if (!resend) {
+    log.info("Resend not configured — skipping streak email");
+    return;
+  }
+  const safeName = escapeHtml(name);
+  const days = Number.isFinite(streakDays) ? Math.floor(streakDays) : 0;
   await resend.emails.send({
     from: FROM_EMAIL,
     to,
-    subject: `🔥 ${streakDays}-day streak! You're rising in harmony.`,
+    subject: `🔥 ${days}-day streak! You're rising in harmony.`,
     html: `
       <div style="font-family: 'DM Sans', sans-serif; max-width: 560px; margin: 0 auto; background: #0A0B14; color: #E8EDF5; padding: 40px 32px; border-radius: 12px;">
-        <h1 style="font-family: Georgia, serif; font-size: 28px; color: #F59E0B;">🔥 ${streakDays} days in a row.</h1>
+        <h1 style="font-family: Georgia, serif; font-size: 28px; color: #F59E0B;">🔥 ${days} days in a row.</h1>
         <p style="color: #8FA3BF; font-size: 16px; line-height: 1.6;">
-          ${name}, you've maintained your healing practice for ${streakDays} consecutive days.
-          This consistency is where transformation happens.
+          ${safeName}, you've maintained your wellness practice for ${days} consecutive days.
+          Consistency is where lasting habits form.
         </p>
         <a href="${APP_URL}/dashboard" style="display: inline-block; margin-top: 24px; padding: 14px 28px; background: #F59E0B; color: #0A0B14; border-radius: 50px; font-weight: 700; text-decoration: none; font-size: 15px;">
           View Your Journey →
@@ -130,22 +148,77 @@ export async function sendStreakMilestoneEmail(
       </div>
     `,
   });
-  log(`Streak milestone email (${streakDays} days) sent to ${to}`);
+  log.info("Streak milestone email sent", { to, streakDays: days });
+}
+
+/** Weekly resonance insight summary (descriptive only — no medical claims). */
+export async function sendWeeklyInsightEmail(
+  to: string,
+  name: string,
+  summary: {
+    minutesThisWeek: number;
+    topFrequencyLabel?: string;
+    bestTimeOfDay?: string;
+    coachingLine?: string;
+  }
+) {
+  if (!resend) {
+    log.info("Resend not configured — skipping weekly insight email");
+    return;
+  }
+  const safeName = escapeHtml(name);
+  const lines: string[] = [];
+  lines.push(
+    `You logged <strong style="color:#E8EDF5;">${summary.minutesThisWeek} minutes</strong> of listening this week.`
+  );
+  if (summary.topFrequencyLabel) {
+    lines.push(escapeHtml(summary.topFrequencyLabel));
+  }
+  if (summary.bestTimeOfDay) {
+    lines.push(escapeHtml(summary.bestTimeOfDay));
+  }
+  if (summary.coachingLine) {
+    lines.push(escapeHtml(summary.coachingLine));
+  }
+  await resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: "Your week in resonance",
+    html: `
+      <div style="font-family: 'DM Sans', sans-serif; max-width: 560px; margin: 0 auto; background: #0A0B14; color: #E8EDF5; padding: 40px 32px; border-radius: 12px;">
+        <h1 style="font-family: Georgia, serif; font-size: 24px; color: #00D4AA;">Your Resonance, ${safeName}</h1>
+        <p style="color: #8FA3BF; font-size: 16px; line-height: 1.6;">
+          ${lines.join("</p><p style=\"color:#8FA3BF;font-size:16px;line-height:1.6;\">")}
+        </p>
+        <p style="color: #6B7A99; font-size: 13px; margin-top: 16px;">
+          These numbers describe your logged sessions only — not medical advice.
+        </p>
+        <a href="${APP_URL}/dashboard" style="display: inline-block; margin-top: 24px; padding: 14px 28px; background: #00D4AA; color: #0A0B14; border-radius: 50px; font-weight: 700; text-decoration: none; font-size: 15px;">
+          Open Dashboard →
+        </a>
+      </div>
+    `,
+  });
+  log.info("Weekly insight email sent", { to });
 }
 
 /** Re-engagement email sent after 7 days of inactivity */
 export async function sendReEngagementEmail(to: string, name: string) {
-  if (!resend) { log("Resend not configured — skipping re-engagement email"); return; }
+  if (!resend) {
+    log.info("Resend not configured — skipping re-engagement email");
+    return;
+  }
+  const safeName = escapeHtml(name);
   await resend.emails.send({
     from: FROM_EMAIL,
     to,
-    subject: "Your frequencies are waiting, " + name,
+    subject: "Your frequencies are waiting, " + name.replace(/[\r\n]/g, " ").slice(0, 80),
     html: `
       <div style="font-family: 'DM Sans', sans-serif; max-width: 560px; margin: 0 auto; background: #0A0B14; color: #E8EDF5; padding: 40px 32px; border-radius: 12px;">
-        <h1 style="font-family: Georgia, serif; font-size: 24px; color: #8B5CF6;">We miss you, ${name}.</h1>
+        <h1 style="font-family: Georgia, serif; font-size: 24px; color: #8B5CF6;">We miss you, ${safeName}.</h1>
         <p style="color: #8FA3BF; font-size: 16px; line-height: 1.6;">
-          It's been a few days since your last healing session. Even 5 minutes of 528Hz
-          can shift your energy. Your frequencies are ready when you are.
+          It's been a few days since your last session. Even 5 minutes of 528Hz
+          can help you reset. Your frequencies are ready when you are.
         </p>
         <a href="${APP_URL}/player" style="display: inline-block; margin-top: 24px; padding: 14px 28px; background: #8B5CF6; color: #fff; border-radius: 50px; font-weight: 700; text-decoration: none; font-size: 15px;">
           Return to Harmony →
@@ -153,5 +226,5 @@ export async function sendReEngagementEmail(to: string, name: string) {
       </div>
     `,
   });
-  log(`Re-engagement email sent to ${to}`);
+  log.info("Re-engagement email sent", { to });
 }

@@ -5,7 +5,19 @@
  * Bioluminescent Depth theme
  */
 import { useState } from "react";
-import { Users, UserCheck, UserX, Gift, ShieldOff, Search, ChevronLeft, ChevronRight, ShieldAlert } from "lucide-react";
+import {
+  Users,
+  UserCheck,
+  UserX,
+  Gift,
+  ShieldOff,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ShieldAlert,
+  Shield,
+  Mail,
+} from "lucide-react";
 import Layout from "@/components/Layout";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -92,6 +104,25 @@ export default function Admin() {
     onError: e => toast.error(e.message),
   });
 
+  const setRoleMutation = trpc.admin.setUserRole.useMutation({
+    onSuccess: (_data, vars) => {
+      toast.success(
+        vars.role === "admin" ? "User promoted to admin" : "Admin privileges removed"
+      );
+      refresh();
+    },
+    onError: e => toast.error(e.message),
+  });
+
+  const reEngagementMutation = trpc.admin.runReEngagementBatch.useMutation({
+    onSuccess: data => {
+      toast.success(
+        `Re-engagement batch: ${data.sent} sent · ${data.skipped} skipped · ${data.candidates} candidates`
+      );
+    },
+    onError: e => toast.error(e.message),
+  });
+
   // ── Access guard ────────────────────────────────────────────────────────────
   if (!authLoading && !isAdmin) {
     return (
@@ -128,13 +159,34 @@ export default function Admin() {
       <div className="min-h-screen" style={{ background: '#0A0B14' }}>
         <div className="px-6 pt-8 pb-10 max-w-6xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-              Administration
+          <div className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                Administration
+              </div>
+              <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5' }}>
+                User Management
+              </h1>
             </div>
-            <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5' }}>
-              User Management
-            </h1>
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm("Run the re-engagement email batch now? (inactive ≥7 days, cooldown respected)")) {
+                  reEngagementMutation.mutate({ limit: 50 });
+                }
+              }}
+              disabled={reEngagementMutation.isPending}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold self-start sm:self-auto"
+              style={{
+                background: "rgba(139,92,246,0.12)",
+                border: "1px solid rgba(139,92,246,0.35)",
+                color: "#A78BFA",
+                fontFamily: "DM Sans, sans-serif",
+              }}
+            >
+              <Mail size={14} />
+              {reEngagementMutation.isPending ? "Sending…" : "Run re-engagement"}
+            </button>
           </div>
 
           {/* Stats */}
@@ -239,7 +291,7 @@ export default function Admin() {
                         <td className="px-4 py-3 text-xs" style={{ color: '#8FA3BF' }}>{formatDate(u.createdAt)}</td>
                         <td className="px-4 py-3 text-xs" style={{ color: '#8FA3BF' }}>{formatDate(u.lastSignedIn)}</td>
                         <td className="px-4 py-3">
-                          <div className="relative flex items-center gap-2">
+                          <div className="relative flex items-center gap-2 flex-wrap">
                             {!isPaid ? (
                               <>
                                 <button
@@ -283,6 +335,38 @@ export default function Admin() {
                               >
                                 <ShieldOff size={12} />
                                 Revoke
+                              </button>
+                            )}
+                            {u.role === "admin" ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm(`Remove admin role from ${u.name || u.email || u.id}?`)) {
+                                    setRoleMutation.mutate({ userId: u.id, role: "user" });
+                                  }
+                                }}
+                                disabled={setRoleMutation.isPending || u.id === user?.id}
+                                title={u.id === user?.id ? "You cannot demote yourself" : "Remove admin"}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40"
+                                style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", color: "#F59E0B" }}
+                              >
+                                <Shield size={12} />
+                                Demote
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm(`Promote ${u.name || u.email || u.id} to admin?`)) {
+                                    setRoleMutation.mutate({ userId: u.id, role: "admin" });
+                                  }
+                                }}
+                                disabled={setRoleMutation.isPending}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                                style={{ background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.3)", color: "#60A5FA" }}
+                              >
+                                <Shield size={12} />
+                                Make admin
                               </button>
                             )}
                           </div>

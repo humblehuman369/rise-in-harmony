@@ -40,7 +40,11 @@ export const users = mysqlTable("users", {
   lastStreakMilestoneEmailAt: timestamp("lastStreakMilestoneEmailAt"),
   lastStreakMilestoneDays: int("lastStreakMilestoneDays").default(0).notNull(),
   lastReEngagementEmailAt: timestamp("lastReEngagementEmailAt"),
-  // User preferences (audio, notifications, theme)
+  lastWeeklyInsightEmailAt: timestamp("lastWeeklyInsightEmailAt"),
+  // Streak freezes (premium: 1/month replenished by cron)
+  streakFreezesRemaining: int("streakFreezesRemaining").default(0).notNull(),
+  streakFreezeMonthKey: varchar("streakFreezeMonthKey", { length: 7 }), // "YYYY-MM"
+  // User preferences (audio, notifications, theme, timezone)
   preferences: json("preferences"),
   // Timestamps
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -96,6 +100,8 @@ export const alarms = mysqlTable("alarms", {
   minute: int("minute").notNull(), // 0–59
   days: json("days").notNull(), // number[] — 0=Sun … 6=Sat
   isEnabled: boolean("isEnabled").default(true).notNull(),
+  /** wake = morning alarm; wind_down = evening bedtime ritual */
+  kind: mysqlEnum("kind", ["wake", "wind_down"]).default("wake").notNull(),
   // Sound config
   soundType: mysqlEnum("soundType", ["frequency", "studio_mix"])
     .default("frequency")
@@ -103,7 +109,7 @@ export const alarms = mysqlTable("alarms", {
   frequencyHz: float("frequencyHz"),
   frequencyName: varchar("frequencyName", { length: 128 }),
   studioMixName: varchar("studioMixName", { length: 128 }),
-  // Wake sequence
+  // Wake / wind-down sequence
   wakeSequence: varchar("wakeSequence", { length: 64 }).default("gentle"),
   fadeInMinutes: int("fadeInMinutes").default(5).notNull(),
   // Timestamps
@@ -193,9 +199,52 @@ export const subscriptionEvents = mysqlTable("subscription_events", {
   revenuecatUserId: varchar("revenuecatUserId", { length: 128 }),
   eventType: varchar("eventType", { length: 64 }).notNull(), // e.g. "INITIAL_PURCHASE"
   productId: varchar("productId", { length: 128 }),
+  /** Provider event id for idempotent webhook handling (Stripe evt_… / RC id). */
+  externalEventId: varchar("externalEventId", { length: 191 }),
   expiresAt: timestamp("expiresAt"),
   rawPayload: json("rawPayload"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export type SubscriptionEvent = typeof subscriptionEvents.$inferSelect;
+
+// ─── Structured Programs ──────────────────────────────────────────────────────
+
+export const userPrograms = mysqlTable(
+  "user_programs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Catalog id e.g. "21-days-resonance" | "7-nights-sleep" */
+    programId: varchar("programId", { length: 64 }).notNull(),
+    currentDay: int("currentDay").default(1).notNull(),
+    startedAt: timestamp("startedAt").defaultNow().notNull(),
+    completedAt: timestamp("completedAt"),
+    abandonedAt: timestamp("abandonedAt"),
+  },
+  t => [unique().on(t.userId, t.programId)],
+);
+
+export type UserProgram = typeof userPrograms.$inferSelect;
+export type InsertUserProgram = typeof userPrograms.$inferInsert;
+
+export const programDayCompletions = mysqlTable(
+  "program_day_completions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    programId: varchar("programId", { length: 64 }).notNull(),
+    dayNumber: int("dayNumber").notNull(),
+    completedAt: timestamp("completedAt").defaultNow().notNull(),
+    sessionId: int("sessionId"),
+    note: text("note"),
+  },
+  t => [unique().on(t.userId, t.programId, t.dayNumber)],
+);
+
+export type ProgramDayCompletion = typeof programDayCompletions.$inferSelect;
+export type InsertProgramDayCompletion = typeof programDayCompletions.$inferInsert;

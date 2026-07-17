@@ -78,7 +78,7 @@ const FREQUENCIES_EXPLAINED = [
   {
     hz: "528 Hz",
     name: "Miracle Tone",
-    description: "Called the \"Love Frequency\" and \"DNA Repair\" tone in some traditions. Widely used in meditation for its uplifting, transformative quality.",
+    description: "Often called the \"Love Frequency\" in wellness traditions. Many people use 528 Hz in meditation for its warm, uplifting quality — Rise In Harmony is a wellness tool, not a medical treatment.",
   },
   {
     hz: "639 Hz",

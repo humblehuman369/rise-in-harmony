@@ -50,6 +50,20 @@
       "when": 1783797979107,
       "tag": "0006_lively_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1784000000000,
+      "tag": "0007_webhook_idempotency",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1784100000000,
+      "tag": "0008_phase2_retain",
+      "breakpoints": true
     }
   ]
 }

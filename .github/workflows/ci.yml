@@ -25,14 +25,14 @@ jobs:
           node-version: 22
           cache: pnpm
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Typecheck
         run: npm run check
       - name: Server unit tests
         run: npx vitest run --root . server/
 
   mobile:
-    name: Mobile app (typecheck, jest)
+    name: Mobile app (typecheck, jest, assets)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -44,8 +44,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
+      - name: Verify required mobile audio assets
+        working-directory: .
+        run: node scripts/check-mobile-assets.mjs
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        # Install from monorepo root so the workspace lockfile is authoritative
+        working-directory: .
+        run: pnpm install --frozen-lockfile
       - name: Typecheck
         run: npm run typecheck
       - name: Unit tests

@@ -1,7 +1,17 @@
-# Audio files are bundled via EAS from the GitHub repo directly.
-# They are excluded from the webdev checkpoint system (too large).
-# Push audio files directly to GitHub using git push from your local machine.
-*.mp3
-*.wav
+# Large optional audio packs stay local. Required studio loops are tracked
+# (see REQUIRED_ASSETS.md) so CI and EAS builds can verify/bundle them.
 *.ogg
 *.m4a
+*.wav
+
+# Ignore ad-hoc mp3 dumps by default…
+*.mp3
+# …but always track the Sound Studio required set:
+!ambient-rain.mp3
+!ambient-ocean.mp3
+!ambient-forest.mp3
+!ambient-wind.mp3
+!ambient-fire.mp3
+!music-ambient.mp3
+!music-drone.mp3
+!music-crystal.mp3

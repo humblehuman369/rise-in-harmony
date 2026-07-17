@@ -1,23 +1,61 @@
+/**
+ * Subscription status, onboarding completion, and RevenueCat webhooks.
+ * Mobile billing is owned by RevenueCat; web billing lives in billing.ts.
+ * Both write users.subscriptionTier as the single entitlement source of truth.
+ */
+import { createHash, timingSafeEqual } from "crypto";
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import {
   getUserById,
+  hasProcessedExternalEvent,
   logSubscriptionEvent,
-  setFounder,
+  reconcileExpiredSubscription,
+  tryClaimFounderSeat,
   updateUserOnboarding,
   updateUserSubscription,
 } from "../db";
-import { sendWelcomeEmail, sendReceiptEmail } from "../email";
+import { sendWelcomeEmail } from "../email";
+import { FOUNDER_SEAT_CAP } from "../stripe";
+import { effectiveTier, isUserPremium } from "../lib/entitlements";
+import { log } from "../lib/logger";
+
+/** Constant-time comparison of bearer secrets (length-safe). */
+function safeEqualSecret(provided: string, expected: string): boolean {
+  const a = createHash("sha256").update(provided).digest();
+  const b = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(a, b);
+}
+
+function assertRevenueCatWebhookAuth(authHeader: string | undefined): void {
+  const webhookSecret = process.env.REVENUECAT_WEBHOOK_SECRET ?? "";
+  // Fail closed: missing secret means the endpoint must not process events.
+  if (!webhookSecret) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "RevenueCat webhook is not configured",
+    });
+  }
+  const expected = `Bearer ${webhookSecret}`;
+  if (typeof authHeader !== "string" || !safeEqualSecret(authHeader, expected)) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Unauthorized webhook",
+    });
+  }
+}
 
 export const subscriptionRouter = router({
-  // Get current user's subscription status
+  // Get current user's subscription status (enforces expiry write-back)
   status: protectedProcedure.query(async ({ ctx }) => {
-    const user = await getUserById(ctx.user.id);
+    const user =
+      (await reconcileExpiredSubscription(ctx.user.id)) ??
+      (await getUserById(ctx.user.id));
     return {
-      tier: user?.subscriptionTier ?? "free",
+      tier: user ? effectiveTier(user) : "free",
       expiresAt: user?.subscriptionExpiresAt ?? null,
-      isPremium:
-        user?.subscriptionTier === "premium" || user?.subscriptionTier === "lifetime",
+      isPremium: isUserPremium(user),
     };
   }),
 
@@ -39,7 +77,7 @@ export const subscriptionRouter = router({
     }),
 
   // RevenueCat webhook — called by RevenueCat server, not the user
-  // Protected by a shared secret in the Authorization header
+  // Protected by a shared secret in the Authorization header (fail-closed).
   revenuecatWebhook: publicProcedure
     .input(
       z.object({
@@ -56,15 +94,29 @@ export const subscriptionRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Validate webhook secret
-      const authHeader = ctx.req.headers["authorization"] as string | undefined;
-      const webhookSecret = process.env.REVENUECAT_WEBHOOK_SECRET;
-      if (webhookSecret && authHeader !== `Bearer ${webhookSecret}`) {
-        throw new Error("Unauthorized webhook");
-      }
+      assertRevenueCatWebhookAuth(
+        typeof ctx.req.headers["authorization"] === "string"
+          ? ctx.req.headers["authorization"]
+          : undefined
+      );
 
       const { type, app_user_id, product_id, expiration_at_ms, store, period_type } =
         input.event;
+
+      // Stable id for retries (RC payloads vary; type+user+product+expiry is enough)
+      const externalEventId = [
+        "rc",
+        type,
+        app_user_id,
+        product_id ?? "",
+        expiration_at_ms ?? "",
+        store ?? "",
+      ].join(":");
+
+      if (await hasProcessedExternalEvent(externalEventId)) {
+        log.info("RevenueCat webhook duplicate ignored", { externalEventId });
+        return { received: true, duplicate: true as const };
+      }
 
       // Determine tier from event type. Unrecognized event types (e.g.
       // TRANSFER, SUBSCRIPTION_PAUSED, ordinary NON_RENEWING_PURCHASE) are
@@ -103,23 +155,33 @@ export const subscriptionRouter = router({
       // RevenueCat app_user_id is set to the user's numeric ID as a string
       const userId = parseInt(app_user_id, 10);
 
+      // Record first (unique externalEventId) so concurrent retries skip side effects
+      const { inserted } = await logSubscriptionEvent({
+        userId: isNaN(userId) ? undefined : userId,
+        revenuecatUserId: app_user_id,
+        eventType: type,
+        productId: product_id,
+        externalEventId,
+        expiresAt: expiresAt ?? undefined,
+        rawPayload: input.event,
+      });
+      if (!inserted) {
+        return { received: true, duplicate: true as const };
+      }
+
       if (!isNaN(userId) && tier !== null) {
         await updateUserSubscription(userId, tier, expiresAt, app_user_id);
         // A store-purchased lifetime (not a promotional comp) consumes one of
         // the capped founder seats
         if (tier === "lifetime" && !isPromotionalGrant) {
-          await setFounder(userId);
+          const claimed = await tryClaimFounderSeat(userId, FOUNDER_SEAT_CAP);
+          if (!claimed) {
+            log.warn("Founder seat cap reached; lifetime grant without founder flag", {
+              userId,
+            });
+          }
         }
       }
-
-      await logSubscriptionEvent({
-        userId: isNaN(userId) ? undefined : userId,
-        revenuecatUserId: app_user_id,
-        eventType: type,
-        productId: product_id,
-        expiresAt: expiresAt ?? undefined,
-        rawPayload: input.event,
-      });
 
       return { received: true };
     }),

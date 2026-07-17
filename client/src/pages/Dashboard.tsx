@@ -16,6 +16,7 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 import { trackSubscriptionPurchased, trackPaywallTriggered } from "@/hooks/useAnalytics";
 import PremiumPaywall from "@/components/PremiumPaywall";
+import ResonanceInsights from "@/components/ResonanceInsights";
 
 // ─── Chakra Map ───────────────────────────────────────────────────────────────
 
@@ -634,6 +635,9 @@ export default function Dashboard() {
             </>
           )}
         </div>
+
+        {/* Phase 2 — Personal Resonance Insights */}
+        <ResonanceInsights />
 
         {/* Streak calendar */}
         <div className="mx-6 mb-6 glow-card p-5">

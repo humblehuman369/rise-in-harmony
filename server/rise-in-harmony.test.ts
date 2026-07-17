@@ -27,7 +27,7 @@ vi.mock("./db", () => ({
     loginMethod: "manus",
   }),
   createSession: vi.fn().mockResolvedValue(1),
-  endSession: vi.fn().mockResolvedValue(undefined),
+  endSession: vi.fn().mockResolvedValue(true),
   getUserSessions: vi.fn().mockResolvedValue([]),
   getUserStats: vi.fn().mockResolvedValue({
     totalSessions: 0,
@@ -44,6 +44,7 @@ vi.mock("./db", () => ({
   getUserByStripeCustomerId: vi.fn().mockResolvedValue(undefined),
   countFounderUsers: vi.fn().mockResolvedValue(0),
   setFounder: vi.fn().mockResolvedValue(undefined),
+  tryClaimFounderSeat: vi.fn().mockResolvedValue(true),
   updateAlarm: vi.fn().mockResolvedValue(undefined),
   deleteAlarm: vi.fn().mockResolvedValue(undefined),
   getPresetsByUser: vi.fn().mockResolvedValue([]),
@@ -57,9 +58,42 @@ vi.mock("./db", () => ({
   getUserUploadKeys: vi.fn().mockResolvedValue([]),
   updateUserOnboarding: vi.fn().mockResolvedValue(undefined),
   updateUserSubscription: vi.fn().mockResolvedValue(undefined),
-  logSubscriptionEvent: vi.fn().mockResolvedValue(undefined),
+  logSubscriptionEvent: vi.fn().mockResolvedValue({ inserted: true }),
+  hasProcessedExternalEvent: vi.fn().mockResolvedValue(false),
+  reconcileExpiredSubscription: vi.fn().mockImplementation(async (userId: number) => {
+    const { getUserById } = await import("./db");
+    return getUserById(userId);
+  }),
+  exportUserData: vi.fn().mockResolvedValue({
+    exportedAt: new Date().toISOString(),
+    profile: {},
+    sessions: [],
+    alarms: [],
+    studioPresets: [],
+    userSounds: [],
+    healingFavorites: [],
+    subscriptionEvents: [],
+  }),
+  deleteUserAccount: vi.fn().mockResolvedValue(undefined),
   getAdminUserCounts: vi.fn().mockResolvedValue({ total: 10, active: 3, cancelled: 2, free: 7 }),
   listUsersForAdmin: vi.fn().mockResolvedValue({ users: [], total: 0 }),
+  updateUserRole: vi.fn().mockResolvedValue(true),
+  countAdminUsers: vi.fn().mockResolvedValue(2),
+  listUsersForReEngagement: vi.fn().mockResolvedValue([]),
+  markStreakMilestoneEmailSent: vi.fn().mockResolvedValue(false),
+  markReEngagementEmailSent: vi.fn().mockResolvedValue(false),
+  markWelcomeEmailSent: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("./lib/reEngagement", () => ({
+  processUserReEngagement: vi.fn().mockResolvedValue({ sent: false, reason: "still_active" }),
+  processReEngagementBatch: vi.fn().mockResolvedValue({
+    candidates: 0,
+    sent: 0,
+    skipped: 0,
+    errors: 0,
+    details: [],
+  }),
 }));
 
 vi.mock("./revenuecat", () => ({
@@ -77,7 +111,12 @@ vi.mock("./email", () => ({
 }));
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
-function makeAuthCtx(overrides: Partial<TrpcContext["user"]> = {}): TrpcContext {
+const RC_WEBHOOK_SECRET = "test-revenuecat-webhook-secret";
+
+function makeAuthCtx(
+  overrides: Partial<TrpcContext["user"]> = {},
+  headers: Record<string, string> = {}
+): TrpcContext {
   return {
     user: {
       id: 1,
@@ -91,9 +130,16 @@ function makeAuthCtx(overrides: Partial<TrpcContext["user"]> = {}): TrpcContext 
       lastSignedIn: new Date(),
       ...overrides,
     },
-    req: { protocol: "https", headers: {} } as TrpcContext["req"],
+    req: { protocol: "https", headers } as TrpcContext["req"],
     res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
   };
+}
+
+function makeWebhookCtx(authHeader?: string): TrpcContext {
+  return makeAuthCtx(
+    {},
+    authHeader !== undefined ? { authorization: authHeader } : {}
+  );
 }
 
 // ─── Auth tests ───────────────────────────────────────────────────────────────
@@ -142,16 +188,40 @@ describe("sessions.start", () => {
 });
 
 describe("sessions.end", () => {
-  it("ends a session with mood rating", async () => {
+  it("ends a session with mood rating and scopes by userId", async () => {
+    const { endSession } = await import("./db");
+    vi.mocked(endSession).mockResolvedValueOnce(true);
     const ctx = makeAuthCtx();
     const caller = appRouter.createCaller(ctx);
     const result = await caller.sessions.end({
       sessionId: 1,
       durationSeconds: 300,
       moodRating: 4,
-      note: "Felt great",
+      journalNote: "Felt great",
     });
     expect(result).toHaveProperty("success");
+    // Ownership must always be passed (IDOR guard)
+    expect(endSession).toHaveBeenCalledWith(
+      1,
+      1, // ctx.user.id
+      300,
+      4,
+      "Felt great",
+      undefined
+    );
+  });
+
+  it("returns NOT_FOUND when session is missing or owned by another user", async () => {
+    const { endSession } = await import("./db");
+    vi.mocked(endSession).mockResolvedValueOnce(false);
+    const ctx = makeAuthCtx();
+    const caller = appRouter.createCaller(ctx);
+    await expect(
+      caller.sessions.end({
+        sessionId: 999,
+        durationSeconds: 60,
+      })
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });
 
@@ -352,16 +422,51 @@ describe("revenuecatWebhook promotional grants", () => {
   let savedSecret: string | undefined;
   beforeEach(() => {
     savedSecret = process.env.REVENUECAT_WEBHOOK_SECRET;
-    delete process.env.REVENUECAT_WEBHOOK_SECRET;
+    process.env.REVENUECAT_WEBHOOK_SECRET = RC_WEBHOOK_SECRET;
   });
   afterEach(() => {
     if (savedSecret !== undefined) process.env.REVENUECAT_WEBHOOK_SECRET = savedSecret;
     else delete process.env.REVENUECAT_WEBHOOK_SECRET;
   });
 
+  const validAuth = `Bearer ${RC_WEBHOOK_SECRET}`;
+
+  it("rejects when webhook secret is not configured (fail-closed)", async () => {
+    delete process.env.REVENUECAT_WEBHOOK_SECRET;
+    const ctx = makeWebhookCtx(validAuth);
+    const caller = appRouter.createCaller(ctx);
+    await expect(
+      caller.subscription.revenuecatWebhook({
+        event: {
+          type: "INITIAL_PURCHASE",
+          app_user_id: "1",
+          product_id: "rih_premium_monthly",
+        },
+      })
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+  });
+
+  it("rejects when Authorization header is missing or wrong", async () => {
+    const callerMissing = appRouter.createCaller(makeWebhookCtx());
+    await expect(
+      callerMissing.subscription.revenuecatWebhook({
+        event: { type: "INITIAL_PURCHASE", app_user_id: "1" },
+      })
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+
+    const callerWrong = appRouter.createCaller(
+      makeWebhookCtx("Bearer totally-wrong-secret")
+    );
+    await expect(
+      callerWrong.subscription.revenuecatWebhook({
+        event: { type: "INITIAL_PURCHASE", app_user_id: "1" },
+      })
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+
   it("maps a PROMOTIONAL NON_RENEWING_PURCHASE to premium", async () => {
     const { updateUserSubscription } = await import("./db");
-    const ctx = makeAuthCtx();
+    const ctx = makeWebhookCtx(validAuth);
     const caller = appRouter.createCaller(ctx);
     const expiration = Date.now() + 30 * 24 * 60 * 60 * 1000;
     const result = await caller.subscription.revenuecatWebhook({
@@ -384,9 +489,9 @@ describe("revenuecatWebhook promotional grants", () => {
   });
 
   it("maps a lifetime promotional grant to lifetime WITHOUT consuming a founder seat", async () => {
-    const { updateUserSubscription, setFounder } = await import("./db");
-    vi.mocked(setFounder).mockClear();
-    const ctx = makeAuthCtx();
+    const { updateUserSubscription, tryClaimFounderSeat } = await import("./db");
+    vi.mocked(tryClaimFounderSeat).mockClear();
+    const ctx = makeWebhookCtx(validAuth);
     const caller = appRouter.createCaller(ctx);
     await caller.subscription.revenuecatWebhook({
       event: {
@@ -399,13 +504,13 @@ describe("revenuecatWebhook promotional grants", () => {
     });
     expect(updateUserSubscription).toHaveBeenCalledWith(1, "lifetime", null, "1");
     // Promotional comps must never consume a capped founder seat
-    expect(setFounder).not.toHaveBeenCalled();
+    expect(tryClaimFounderSeat).not.toHaveBeenCalled();
   });
 
   it("marks a store-purchased lifetime as a founder seat", async () => {
-    const { setFounder } = await import("./db");
-    vi.mocked(setFounder).mockClear();
-    const ctx = makeAuthCtx();
+    const { tryClaimFounderSeat } = await import("./db");
+    vi.mocked(tryClaimFounderSeat).mockClear();
+    const ctx = makeWebhookCtx(validAuth);
     const caller = appRouter.createCaller(ctx);
     await caller.subscription.revenuecatWebhook({
       event: {
@@ -416,13 +521,30 @@ describe("revenuecatWebhook promotional grants", () => {
         period_type: "NORMAL",
       },
     });
-    expect(setFounder).toHaveBeenCalledWith(1);
+    expect(tryClaimFounderSeat).toHaveBeenCalledWith(1, 500);
+  });
+
+  it("skips side effects when the webhook event is a duplicate", async () => {
+    const { hasProcessedExternalEvent, updateUserSubscription } = await import("./db");
+    vi.mocked(hasProcessedExternalEvent).mockResolvedValueOnce(true);
+    vi.mocked(updateUserSubscription).mockClear();
+    const ctx = makeWebhookCtx(validAuth);
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.subscription.revenuecatWebhook({
+      event: {
+        type: "INITIAL_PURCHASE",
+        app_user_id: "1",
+        product_id: "rih_premium_monthly",
+      },
+    });
+    expect(result).toMatchObject({ received: true, duplicate: true });
+    expect(updateUserSubscription).not.toHaveBeenCalled();
   });
 
   it("does not touch the tier for non-promotional NON_RENEWING_PURCHASE", async () => {
     const { updateUserSubscription } = await import("./db");
     vi.mocked(updateUserSubscription).mockClear();
-    const ctx = makeAuthCtx();
+    const ctx = makeWebhookCtx(validAuth);
     const caller = appRouter.createCaller(ctx);
     const result = await caller.subscription.revenuecatWebhook({
       event: {
@@ -439,6 +561,7 @@ describe("revenuecatWebhook promotional grants", () => {
     expect(updateUserSubscription).not.toHaveBeenCalled();
   });
 });
+
 
 describe("subscription.completeOnboarding", () => {
   it("saves onboarding goal and triggers welcome email", async () => {

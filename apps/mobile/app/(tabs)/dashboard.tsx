@@ -22,6 +22,7 @@ import { useAuthStore } from "@/store/authStore";
 import { api } from "@/lib/api";
 import { loadJournalEntries, averageMood } from "@/lib/journal";
 import type { SessionStats, Session } from "@rih/shared-types";
+// Phase 2: Programs entry point is /(tabs)/programs
 
 const { width } = Dimensions.get("window");
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -260,6 +261,23 @@ export default function DashboardScreen() {
               </Text>
             </View>
           </View>
+        </View>
+
+        {/* Phase 2 — Programs */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.insightCard}
+            onPress={() => router.push("/(tabs)/programs")}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.insightEmoji}>📅</Text>
+            <View style={styles.insightText}>
+              <Text style={styles.insightTitle}>Programs</Text>
+              <Text style={styles.insightBody}>
+                21 Days of Resonance · 7 Nights of Deep Sleep — structured rituals that build habit.
+              </Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Mood Trend */}
