@@ -354,6 +354,20 @@ export default function FrequencyStudio() {
     toast.success(`Loaded "${sound.name}"`);
   }, [savedSoundQuery.data, applySavedSound]);
 
+  // Deep link from Library Healing Directory: /studio?hz=528
+  const hzDeepLinkLoadedRef = useRef(false);
+  useEffect(() => {
+    if (hzDeepLinkLoadedRef.current || typeof window === "undefined") return;
+    const raw = new URLSearchParams(window.location.search).get("hz");
+    if (!raw) return;
+    const hz = Number(raw);
+    if (!Number.isFinite(hz) || hz < 0.1 || hz > 22000) return;
+    hzDeepLinkLoadedRef.current = true;
+    setCustomFreq(hz);
+    setCustomFreqInput(hz.toFixed(2));
+    toast.success(`Loaded ${hz % 1 === 0 ? hz : hz.toFixed(2)} Hz from directory`);
+  }, []);
+
   // ── Build session from UI state ───────────────────────────────────────────
   const buildSession = useCallback((): PrecisionSession => {
     const base: PrecisionSession = { freqL: customFreq, waveform, mode: playMode, name: `${customFreq.toFixed(2)} Hz` };

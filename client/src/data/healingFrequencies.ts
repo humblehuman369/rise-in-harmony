@@ -1,7 +1,7 @@
 /**
  * 100 Healing Frequencies Catalog
  * Each entry includes a Hz value, name, short healing description, and category.
- * Categories map to the filter tabs in the FrequencyBrowser panel.
+ * Used by FrequencyBrowser, Library Healing Directory, and benefit search.
  */
 
 export type HealingCategory =
@@ -22,6 +22,28 @@ export interface HealingFrequency {
   category: HealingCategory;
   isPremium?: boolean;
 }
+
+/** Curated benefit chips — matched against name + description for Library search. */
+export interface HealingBenefitTag {
+  id: string;
+  label: string;
+  keywords: string[];
+}
+
+export const HEALING_BENEFIT_TAGS: HealingBenefitTag[] = [
+  { id: "pain", label: "Pain Relief", keywords: ["pain", "anaesthetic", "analges"] },
+  { id: "sleep", label: "Sleep & Rest", keywords: ["sleep", "insomnia", "rest", "melatonin", "night healing", "deep sleep"] },
+  { id: "focus", label: "Focus & Clarity", keywords: ["focus", "concentration", "clarity", "alert", "attention", "cognitive", "executive"] },
+  { id: "anxiety", label: "Calm & Anxiety", keywords: ["anxiety", "calm", "stress", "cortisol", "relax", "peace", "amygdala"] },
+  { id: "love", label: "Love & Heart", keywords: ["love", "heart", "relationship", "compassion", "connection", "oxytocin", "harmony"] },
+  { id: "grounding", label: "Grounding", keywords: ["ground", "safety", "security", "root", "schumann", "centred", "centered", "belonging"] },
+  { id: "healing", label: "Cellular Healing", keywords: ["dna", "cell", "tissue", "regenerat", "repair", "wound", "mitochondri", "stem", "telomere"] },
+  { id: "immune", label: "Immune Support", keywords: ["immune", "viral", "bacterial", "lymph", "inflammation", "anti-inflammatory"] },
+  { id: "intuition", label: "Intuition & Spirit", keywords: ["intuition", "spiritual", "pineal", "divine", "consciousness", "third eye", "transcend", "oneness"] },
+  { id: "creativity", label: "Creativity", keywords: ["creative", "creativity", "inspiration", "imagination", "artistic", "hypnagogic"] },
+  { id: "detox", label: "Release & Clear", keywords: ["toxin", "detox", "cleanse", "clear", "release", "guilt", "fear", "grief"] },
+  { id: "energy", label: "Energy & Vitality", keywords: ["energy", "vitality", "motivation", "life force", "atp", "radiance"] },
+];
 
 export const HEALING_FREQUENCIES: HealingFrequency[] = [
   // ── Solfeggio (16) ────────────────────────────────────────────────────────
@@ -805,14 +827,96 @@ export const HEALING_FREQUENCIES: HealingFrequency[] = [
   },
 ];
 
-export const HEALING_CATEGORIES: { id: HealingCategory | "all"; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "solfeggio", label: "Solfeggio" },
-  { id: "planetary", label: "Planetary" },
-  { id: "brainwave", label: "Brainwave" },
-  { id: "chakra", label: "Chakra" },
-  { id: "therapeutic", label: "Therapeutic" },
-  { id: "earth", label: "Earth" },
-  { id: "sacred", label: "Sacred" },
-  { id: "sleep", label: "Sleep" },
+export const HEALING_CATEGORIES: {
+  id: HealingCategory | "all";
+  label: string;
+  description: string;
+}[] = [
+  {
+    id: "all",
+    label: "All",
+    description: "Complete healing frequency directory, sorted by Hz",
+  },
+  {
+    id: "solfeggio",
+    label: "Solfeggio",
+    description: "Ancient Solfeggio and angelic tones for emotional and spiritual healing",
+  },
+  {
+    id: "planetary",
+    label: "Planetary",
+    description: "Orbital resonances of the Sun, Moon, and planets",
+  },
+  {
+    id: "brainwave",
+    label: "Brainwave",
+    description: "Delta through gamma entrainment for sleep, focus, and peak cognition",
+  },
+  {
+    id: "chakra",
+    label: "Chakra",
+    description: "Vedic scale tones aligned with the seven energy centers",
+  },
+  {
+    id: "therapeutic",
+    label: "Therapeutic",
+    description: "Body-system and Rife-style frequencies used in wellness practice",
+  },
+  {
+    id: "earth",
+    label: "Earth",
+    description: "Schumann resonance and natural Earth harmonics",
+  },
+  {
+    id: "sacred",
+    label: "Sacred",
+    description: "Geometric, bowl, and traditional sacred tones",
+  },
+  {
+    id: "sleep",
+    label: "Sleep",
+    description: "Frequencies curated for rest, recovery, and overnight repair",
+  },
 ];
+
+const CATEGORY_ACCENT: Record<HealingCategory | "all", string> = {
+  all: "#8FA3BF",
+  solfeggio: "#00D4AA",
+  planetary: "#A78BFA",
+  brainwave: "#60A5FA",
+  chakra: "#FCD34D",
+  therapeutic: "#F472B6",
+  earth: "#4ADE80",
+  sacred: "#FDE68A",
+  sleep: "#818CF8",
+};
+
+export function getCategoryAccent(category: HealingCategory | "all"): string {
+  return CATEGORY_ACCENT[category];
+}
+
+export function frequencyMatchesBenefit(
+  freq: HealingFrequency,
+  benefitId: string
+): boolean {
+  const tag = HEALING_BENEFIT_TAGS.find(t => t.id === benefitId);
+  if (!tag) return false;
+  const haystack = `${freq.name} ${freq.description}`.toLowerCase();
+  return tag.keywords.some(k => haystack.includes(k.toLowerCase()));
+}
+
+export function getBenefitsForFrequency(freq: HealingFrequency): HealingBenefitTag[] {
+  return HEALING_BENEFIT_TAGS.filter(tag => frequencyMatchesBenefit(freq, tag.id));
+}
+
+/** Full catalog sorted lowest → highest Hz (stable by name on ties). */
+export function getFrequenciesSortedByHz(): HealingFrequency[] {
+  return [...HEALING_FREQUENCIES].sort(
+    (a, b) => a.hz - b.hz || a.name.localeCompare(b.name)
+  );
+}
+
+export function formatHz(hz: number): string {
+  if (Number.isInteger(hz)) return String(hz);
+  return Number(hz.toFixed(2)).toString();
+}

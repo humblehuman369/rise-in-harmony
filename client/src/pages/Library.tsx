@@ -1,15 +1,17 @@
 /**
  * Library — Rise In Harmony Frequency Library
- * Full catalog of all 13 healing frequencies with categories
+ * Playable tones + Healing Directory (100 frequencies by Hz / benefit / category)
  * Bioluminescent Depth theme
- * Features: Chakra category filter with progression header, Sanskrit pronunciation guides
  */
 import { useState } from "react";
-import { Play, Pause, Lock, Search, Filter, ChevronDown, ChevronUp, Volume2 } from "lucide-react";
+import { Play, Pause, Lock, Search, Filter, ChevronDown, ChevronUp, Volume2, BookOpen, Waves } from "lucide-react";
 import Layout from "@/components/Layout";
+import HealingDirectory from "@/components/HealingDirectory";
 import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFrequencyPlayer";
-import { toast } from "sonner";
+import { HEALING_FREQUENCIES } from "@/data/healingFrequencies";
 import PremiumPaywall from "@/components/PremiumPaywall";
+
+type LibraryView = "playable" | "directory";
 
 const CATEGORIES = ["all", "chakra", "solfeggio", "binaural", "recorded"] as const;
 type Category = typeof CATEGORIES[number];
@@ -218,6 +220,7 @@ function FrequencyCard({ freq, isPlaying, onPlay, showChakraPosition }: {
 
 export default function Library() {
   const { isPlaying, currentFrequency, togglePlay } = useFrequencyPlayer();
+  const [view, setView] = useState<LibraryView>("playable");
   const [activeCategory, setActiveCategory] = useState<Category>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [paywallFreq, setPaywallFreq] = useState<Frequency | null>(null);
@@ -257,149 +260,206 @@ export default function Library() {
     <Layout>
       <div className="min-h-screen" style={{ background: '#0A0B14' }}>
         {/* Header */}
-        <div className="px-6 pt-8 pb-6">
+        <div className="px-6 pt-8 pb-4">
           <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
             Frequency Library
           </div>
           <h1 className="mb-2" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5' }}>
             Healing Tones
           </h1>
-          <div className="flex gap-4 text-sm" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-            <span style={{ color: '#00D4AA' }}>{freeCount} free</span>
-            <span>·</span>
-            <span style={{ color: '#8B5CF6' }}>{premiumCount} premium</span>
-            <span>·</span>
-            <span>{FREQUENCIES.length} total</span>
+          <div className="flex gap-4 text-sm mb-5" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+            {view === "playable" ? (
+              <>
+                <span style={{ color: '#00D4AA' }}>{freeCount} free</span>
+                <span>·</span>
+                <span style={{ color: '#8B5CF6' }}>{premiumCount} premium</span>
+                <span>·</span>
+                <span>{FREQUENCIES.length} playable</span>
+              </>
+            ) : (
+              <>
+                <span style={{ color: '#00D4AA' }}>{HEALING_FREQUENCIES.length} frequencies</span>
+                <span>·</span>
+                <span>sorted by Hz</span>
+                <span>·</span>
+                <span>search by benefit</span>
+              </>
+            )}
           </div>
-        </div>
 
-        {/* Search */}
-        <div className="px-6 mb-4">
-          <div className="relative">
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: '#6B7A99' }} />
-            <input
-              type="text"
-              placeholder="Search frequencies, benefits..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-xl text-sm"
-              style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: '#E8EDF5',
-                fontFamily: 'DM Sans, sans-serif',
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Category tabs */}
-        <div className="px-6 mb-6">
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200"
-                style={{
-                  background: activeCategory === cat
-                    ? cat === 'chakra' ? 'rgba(139,92,246,0.15)' : 'rgba(0,212,170,0.15)'
-                    : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${activeCategory === cat
-                    ? cat === 'chakra' ? 'rgba(139,92,246,0.35)' : 'rgba(0,212,170,0.35)'
-                    : 'rgba(255,255,255,0.06)'}`,
-                  color: activeCategory === cat
-                    ? cat === 'chakra' ? '#8B5CF6' : '#00D4AA'
-                    : '#6B7A99',
-                  fontFamily: 'DM Sans, sans-serif',
-                }}
-              >
-                {cat === 'chakra' && '✦ '}{CATEGORY_INFO[cat].label}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs mt-2" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
-            {CATEGORY_INFO[activeCategory].description}
-          </p>
-        </div>
-
-        {/* Chakra progression header — shown only when chakra category is active */}
-        {activeCategory === 'chakra' && <ChakraProgressionHeader />}
-
-        {/* Currently playing banner */}
-        {isPlaying && currentFrequency && (
-          <div className="mx-6 mb-4 p-4 rounded-xl flex items-center gap-3"
-            style={{
-              background: `${currentFrequency.color}12`,
-              border: `1px solid ${currentFrequency.color}30`,
-            }}>
-            <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: currentFrequency.color }} />
-            <div className="flex-1">
-              <span className="text-sm font-semibold" style={{ color: currentFrequency.color, fontFamily: 'DM Sans, sans-serif' }}>
-                Now Playing: {currentFrequency.hz}Hz — {currentFrequency.name}
-              </span>
-            </div>
+          {/* View toggle: Playable vs Directory */}
+          <div
+            className="flex p-1 rounded-xl gap-1"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+            role="tablist"
+            aria-label="Library section"
+          >
             <button
-              onClick={() => togglePlay(currentFrequency)}
-              className="text-xs px-3 py-1 rounded-full"
-              style={{ background: `${currentFrequency.color}20`, color: currentFrequency.color, fontFamily: 'DM Sans, sans-serif' }}>
-              Stop
+              type="button"
+              role="tab"
+              aria-selected={view === "playable"}
+              onClick={() => setView("playable")}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+              style={{
+                background: view === "playable" ? "rgba(0,212,170,0.15)" : "transparent",
+                color: view === "playable" ? "#00D4AA" : "#6B7A99",
+                fontFamily: "DM Sans, sans-serif",
+              }}
+            >
+              <Waves size={15} />
+              Playable
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === "directory"}
+              onClick={() => setView("directory")}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+              style={{
+                background: view === "directory" ? "rgba(139,92,246,0.15)" : "transparent",
+                color: view === "directory" ? "#A78BFA" : "#6B7A99",
+                fontFamily: "DM Sans, sans-serif",
+              }}
+            >
+              <BookOpen size={15} />
+              Directory
             </button>
           </div>
-        )}
+        </div>
 
-        {/* Frequency grid */}
-        <div className="px-6 pb-8 space-y-3">
-          {filtered.length === 0 ? (
-            <div className="glow-card p-12 text-center">
-              <Filter size={32} className="mx-auto mb-4" style={{ color: '#4A5568' }} />
-              <div className="text-sm" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-                No frequencies match your search
-              </div>
-            </div>
-          ) : (
-            filtered.map((freq, i) => (
-              <div
-                key={freq.id}
-                style={{
-                  animation: 'fade-up 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards',
-                  animationDelay: `${i * 50}ms`,
-                  opacity: 0,
-                }}
-              >
-                <FrequencyCard
-                  freq={freq}
-                  isPlaying={isPlaying && currentFrequency?.id === freq.id}
-                  onPlay={handlePlay}
-                  showChakraPosition={activeCategory === 'chakra'}
+        {view === "directory" ? (
+          <HealingDirectory />
+        ) : (
+          <>
+            {/* Search */}
+            <div className="px-6 mb-4">
+              <div className="relative">
+                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: '#6B7A99' }} />
+                <input
+                  type="text"
+                  placeholder="Search frequencies, benefits..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl text-sm"
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: '#E8EDF5',
+                    fontFamily: 'DM Sans, sans-serif',
+                  }}
                 />
               </div>
-            ))
-          )}
-        </div>
+            </div>
 
-        {/* Premium CTA */}
-        <div className="mx-6 mb-8 p-6 rounded-2xl" style={{
-          background: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(0,212,170,0.06))',
-          border: '1px solid rgba(139,92,246,0.2)',
-        }}>
-          <div className="text-sm font-semibold mb-1" style={{ color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>
-            ✦ Unlock the Full Library
-          </div>
-          <div className="text-xs leading-relaxed mb-4" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-            Get access to all {premiumCount} premium frequencies, unlimited alarms, offline downloads, and Chakra awakening sequences.
-          </div>
-          <button
-            onClick={() => setPaywallFreq({ id: 'cta', hz: 0, name: 'Full Library', isPremium: true } as Frequency)}
-            className="text-sm font-semibold px-5 py-2.5 rounded-full transition-all duration-200"
-            style={{
-              background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
-              color: '#fff',
-              fontFamily: 'DM Sans, sans-serif',
+            {/* Category tabs */}
+            <div className="px-6 mb-6">
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200"
+                    style={{
+                      background: activeCategory === cat
+                        ? cat === 'chakra' ? 'rgba(139,92,246,0.15)' : 'rgba(0,212,170,0.15)'
+                        : 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${activeCategory === cat
+                        ? cat === 'chakra' ? 'rgba(139,92,246,0.35)' : 'rgba(0,212,170,0.35)'
+                        : 'rgba(255,255,255,0.06)'}`,
+                      color: activeCategory === cat
+                        ? cat === 'chakra' ? '#8B5CF6' : '#00D4AA'
+                        : '#6B7A99',
+                      fontFamily: 'DM Sans, sans-serif',
+                    }}
+                  >
+                    {cat === 'chakra' && '✦ '}{CATEGORY_INFO[cat].label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs mt-2" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
+                {CATEGORY_INFO[activeCategory].description}
+              </p>
+            </div>
+
+            {/* Chakra progression header — shown only when chakra category is active */}
+            {activeCategory === 'chakra' && <ChakraProgressionHeader />}
+
+            {/* Currently playing banner */}
+            {isPlaying && currentFrequency && (
+              <div className="mx-6 mb-4 p-4 rounded-xl flex items-center gap-3"
+                style={{
+                  background: `${currentFrequency.color}12`,
+                  border: `1px solid ${currentFrequency.color}30`,
+                }}>
+                <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: currentFrequency.color }} />
+                <div className="flex-1">
+                  <span className="text-sm font-semibold" style={{ color: currentFrequency.color, fontFamily: 'DM Sans, sans-serif' }}>
+                    Now Playing: {currentFrequency.hz}Hz — {currentFrequency.name}
+                  </span>
+                </div>
+                <button
+                  onClick={() => togglePlay(currentFrequency)}
+                  className="text-xs px-3 py-1 rounded-full"
+                  style={{ background: `${currentFrequency.color}20`, color: currentFrequency.color, fontFamily: 'DM Sans, sans-serif' }}>
+                  Stop
+                </button>
+              </div>
+            )}
+
+            {/* Frequency grid */}
+            <div className="px-6 pb-8 space-y-3">
+              {filtered.length === 0 ? (
+                <div className="glow-card p-12 text-center">
+                  <Filter size={32} className="mx-auto mb-4" style={{ color: '#4A5568' }} />
+                  <div className="text-sm" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                    No frequencies match your search
+                  </div>
+                </div>
+              ) : (
+                filtered.map((freq, i) => (
+                  <div
+                    key={freq.id}
+                    style={{
+                      animation: 'fade-up 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards',
+                      animationDelay: `${i * 50}ms`,
+                      opacity: 0,
+                    }}
+                  >
+                    <FrequencyCard
+                      freq={freq}
+                      isPlaying={isPlaying && currentFrequency?.id === freq.id}
+                      onPlay={handlePlay}
+                      showChakraPosition={activeCategory === 'chakra'}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Premium CTA */}
+            <div className="mx-6 mb-8 p-6 rounded-2xl" style={{
+              background: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(0,212,170,0.06))',
+              border: '1px solid rgba(139,92,246,0.2)',
             }}>
-            Upgrade to Premium — $7.99/mo
-          </button>
-        </div>
+              <div className="text-sm font-semibold mb-1" style={{ color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>
+                ✦ Unlock the Full Library
+              </div>
+              <div className="text-xs leading-relaxed mb-4" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                Get access to all {premiumCount} premium frequencies, unlimited alarms, offline downloads, and Chakra awakening sequences.
+              </div>
+              <button
+                onClick={() => setPaywallFreq({ id: 'cta', hz: 0, name: 'Full Library', isPremium: true } as Frequency)}
+                className="text-sm font-semibold px-5 py-2.5 rounded-full transition-all duration-200"
+                style={{
+                  background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+                  color: '#fff',
+                  fontFamily: 'DM Sans, sans-serif',
+                }}>
+                Upgrade to Premium — $7.99/mo
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Premium Paywall Modal */}
