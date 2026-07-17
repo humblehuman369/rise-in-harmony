@@ -316,33 +316,35 @@ Estimates assume one engineer + AI agent, focused days (not calendar weeks with 
 
 ---
 
-### Phase 3 — Polish, trust, monetization · ~5–6 dev-days
+### Phase 3 — Polish, trust, monetization · ~5–6 dev-days · **IMPLEMENTED 2026-07-17**
 
 **Goal:** launch-ready UX and money path.
 
-| # | Task | Days |
-|---|------|------|
-| 3.1 | Landing + Technology cross-links + disclaimer UX | 1 |
-| 3.2 | Library UI, rename, delete, expiry messaging | 1 |
-| 3.3 | Stripe Checkout or RIH premium gate for Convert Pro | 1.5 |
-| 3.4 | PostHog events + funnel dashboard | 0.5 |
-| 3.5 | Rate limits, abuse (virus scan optional: ClamAV later) | 0.5 |
-| 3.6 | Email “job ready” via existing Resend | 0.5 |
-| 3.7 | Soft launch checklist + support playbook | 0.5 |
+| # | Task | Status |
+|---|------|--------|
+| 3.1 | Landing + Technology/Home cross-links + disclaimer UX | ✅ |
+| 3.2 | Library rename/delete + expiry messaging | ✅ |
+| 3.3 | Premium paywall from Convert + checkout return paths | ✅ |
+| 3.4 | PostHog convert funnel events | ✅ |
+| 3.5 | Convert upload rate limit (20/hr prod) + rights attestation | ✅ |
+| 3.6 | Resend “job ready” email | ✅ |
+| 3.7 | Soft launch checklist + support playbook | ✅ `docs/CONVERT_SOFT_LAUNCH.md` |
 
 **Exit criteria:** Feature flag on for beta users; paid conversion path works; support FAQ published.
 
 ---
 
-### Phase 4 — Scale & optional mobile · ~5+ dev-days (post-v1)
+### Phase 4 — Scale & optional mobile · ~5+ dev-days · **IMPLEMENTED 2026-07-17**
 
-| # | Task | Days |
-|---|------|------|
-| 4.1 | Redis/BullMQ workers + horizontal scale | 2 |
-| 4.2 | Subdomain productization (Option B) | 2 |
-| 4.3 | Mobile: upload + job status (processing still server-side) | 2 |
-| 4.4 | Batch convert / multi-target packs | 1+ |
-| 4.5 | Optional pitch detection (estimate source A) — experimental | 2+ |
+| # | Task | Status |
+|---|------|--------|
+| 4.1 | Multi-slot worker + stale reaper (`CONVERT_WORKER_CONCURRENCY`) | ✅ (DB queue; Redis optional later) |
+| 4.2 | Subdomain host redirect + `docs/CONVERT_SUBDOMAIN.md` | ✅ |
+| 4.3 | Mobile `/convert` job list + web upload deep-link | ✅ |
+| 4.4 | Batch convert `createBatch` multi-target packs | ✅ |
+| 4.5 | Experimental pitch detect (`detectPitch` + ACF) | ✅ |
+
+**Env:** `CONVERT_WORKER_CONCURRENCY` (1–4), `CONVERT_STALE_MINUTES` (default 30)
 
 ---
 

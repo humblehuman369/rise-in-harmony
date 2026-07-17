@@ -145,3 +145,64 @@ export function trackPaywallShownAtSequenceEnd() {
   if (!POSTHOG_KEY) return;
   posthog.capture("paywall_shown", { source: "sequence_completion", trigger: "sequence_end" });
 }
+
+// ─── TrueHz Convert funnel ───────────────────────────────────────────────────
+
+export function trackConvertPageViewed(source?: string) {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("convert_page_viewed", { source: source ?? "direct" });
+}
+
+export function trackConvertUploadStarted(props: {
+  bytes: number;
+  format?: string;
+}) {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("convert_upload_started", props);
+}
+
+export function trackConvertUploadCompleted(props: {
+  bytes: number;
+  format?: string;
+}) {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("convert_upload_completed", props);
+}
+
+export function trackConvertJobCreated(props: {
+  sourceA: number;
+  targetA: number;
+  hybrid: boolean;
+  formant: boolean;
+  quality: string;
+}) {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("convert_job_created", props);
+}
+
+export function trackConvertJobCompleted(props: {
+  processingMs?: number | null;
+  algorithmVersion?: string | null;
+  hybrid: boolean;
+}) {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("convert_job_completed", props);
+}
+
+export function trackConvertJobFailed(errorCode?: string | null) {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("convert_job_failed", { errorCode: errorCode ?? "unknown" });
+}
+
+export function trackConvertDownload(format: "mp3" | "wav") {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("convert_download", { format });
+}
+
+export function trackConvertPaywallViewed(
+  trigger: "hybrid" | "formant" | "quality" | "wav" | "upsell_banner",
+) {
+  if (!POSTHOG_KEY) return;
+  posthog.capture("convert_paywall_viewed", { trigger });
+  posthog.capture("paywall_shown", { source: "convert", trigger });
+}

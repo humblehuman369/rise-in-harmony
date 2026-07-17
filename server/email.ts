@@ -202,6 +202,61 @@ export async function sendWeeklyInsightEmail(
   log.info("Weekly insight email sent", { to });
 }
 
+/** TrueHz Convert — job finished and ready to download */
+export async function sendConvertJobReadyEmail(
+  to: string,
+  name: string,
+  details: {
+    filename: string;
+    sourcePitchA: number;
+    targetPitchA: number;
+    cents: number;
+    hybridHz?: number | null;
+    jobId: string;
+  },
+) {
+  if (!resend) {
+    log.info("Resend not configured — skipping convert ready email");
+    return;
+  }
+  const safeName = escapeHtml(name);
+  const safeFile = escapeHtml(details.filename);
+  const cents =
+    details.cents > 0
+      ? `+${details.cents.toFixed(2)}`
+      : details.cents.toFixed(2);
+  const hybridLine =
+    details.hybridHz != null
+      ? `<p style="color:#8FA3BF;font-size:14px;line-height:1.5;">TrueHz™ pure-tone bed: <strong style="color:#E8EDF5;">${Number(details.hybridHz).toFixed(2)} Hz</strong> (exact layer only).</p>`
+      : "";
+  await resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `Your track is ready — ${details.filename.slice(0, 60)}`,
+    html: `
+      <div style="font-family: 'DM Sans', sans-serif; max-width: 560px; margin: 0 auto; background: #0A0B14; color: #E8EDF5; padding: 40px 32px; border-radius: 12px;">
+        <h1 style="font-family: Georgia, serif; font-size: 24px; color: #00D4AA;">Convert complete.</h1>
+        <p style="color: #8FA3BF; font-size: 16px; line-height: 1.6;">
+          Hi ${safeName}, <strong style="color:#E8EDF5;">${safeFile}</strong> has been retuned
+          from A=${details.sourcePitchA} to A=${details.targetPitchA}
+          (<strong style="color:#E8EDF5;">${escapeHtml(cents)} ¢</strong>).
+        </p>
+        ${hybridLine}
+        <p style="color: #6B7A99; font-size: 13px; line-height: 1.5;">
+          This is a pitch-ratio retune of your upload — not a claim that the whole mix is a pure TrueHz tone.
+        </p>
+        <a href="${APP_URL}/convert?job=${encodeURIComponent(details.jobId)}" style="display: inline-block; margin-top: 24px; padding: 14px 28px; background: #00D4AA; color: #0A0B14; border-radius: 50px; font-weight: 700; text-decoration: none; font-size: 15px;">
+          Open Convert library →
+        </a>
+        <p style="color: #4A5568; font-size: 12px; margin-top: 32px;">
+          Rise In Harmony · TrueHz Convert
+        </p>
+      </div>
+    `,
+  });
+  log.info("Convert ready email sent", { to, jobId: details.jobId });
+}
+
 /** Re-engagement email sent after 7 days of inactivity */
 export async function sendReEngagementEmail(to: string, name: string) {
   if (!resend) {

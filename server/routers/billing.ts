@@ -56,7 +56,22 @@ export const billingRouter = router({
   }),
 
   createCheckoutSession: protectedProcedure
-    .input(z.object({ tier: tierSchema }))
+    .input(
+      z.object({
+        tier: tierSchema,
+        /** Optional in-app return paths (must start with /). */
+        successPath: z
+          .string()
+          .regex(/^\/[A-Za-z0-9/?&=._-]*$/)
+          .max(200)
+          .optional(),
+        cancelPath: z
+          .string()
+          .regex(/^\/[A-Za-z0-9/?&=._-]*$/)
+          .max(200)
+          .optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       if (!isStripeConfigured()) {
         throw new TRPCError({
@@ -82,6 +97,17 @@ export const billingRouter = router({
       const customerId = await getOrCreateCustomer(ctx.user.id);
       const priceId = await getPriceId(tier);
       const base = appBaseUrl(ctx.req);
+      const successPath =
+        input.successPath ??
+        "/dashboard?billing=success&session_id={CHECKOUT_SESSION_ID}";
+      // Stripe requires the session_id placeholder only on success_url when used;
+      // if caller omitted it, append for dashboard default only.
+      const successUrl = successPath.includes("{CHECKOUT_SESSION_ID}")
+        ? `${base}${successPath}`
+        : successPath.includes("?")
+          ? `${base}${successPath}&session_id={CHECKOUT_SESSION_ID}`
+          : `${base}${successPath}?session_id={CHECKOUT_SESSION_ID}`;
+      const cancelUrl = `${base}${input.cancelPath ?? "/library?billing=cancelled"}`;
 
       const session = await stripe.checkout.sessions.create({
         mode: tier === "lifetime" ? "payment" : "subscription",
@@ -93,8 +119,8 @@ export const billingRouter = router({
         allow_promotion_codes: true,
         client_reference_id: String(ctx.user.id),
         metadata: { rihUserId: String(ctx.user.id), tier },
-        success_url: `${base}/dashboard?billing=success&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${base}/library?billing=cancelled`,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
       });
 
       return { url: session.url };

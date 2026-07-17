@@ -142,6 +142,14 @@ export default function TechnologyScreen() {
           <Text style={styles.ctaBtnText}>Try the Precision Player →</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={[styles.ctaBtn, styles.ctaSecondary]}
+          onPress={() => router.push("/convert")}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.ctaSecondaryText}>TrueHz Convert →</Text>
+        </TouchableOpacity>
+
         <Text style={styles.footnote}>
           Rise In Harmony is a wellness tool, not a medical device. Frequency
           experiences are personal; claims about specific health outcomes are not
@@ -286,12 +294,23 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     paddingVertical: spacing[4],
     alignItems: "center",
-    marginBottom: spacing[5],
+    marginBottom: spacing[3],
   },
   ctaBtnText: {
     fontSize: fontSizes.base,
     fontWeight: "700",
     color: "#04211C",
+  },
+  ctaSecondary: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: colors.purple,
+    marginBottom: spacing[5],
+  },
+  ctaSecondaryText: {
+    fontSize: fontSizes.base,
+    fontWeight: "700",
+    color: colors.purple,
   },
   footnote: {
     fontSize: fontSizes.xs,

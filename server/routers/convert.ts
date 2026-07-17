@@ -10,6 +10,9 @@ import {
 } from "../../packages/shared-utils/src/pitchMath.ts";
 import { clampHz } from "../../packages/shared-utils/src/trueHzOffline.ts";
 import { protectedProcedure, router } from "../_core/trpc";
+import { promises as fs } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import {
   countActiveConvertJobs,
   createConvertJob,
@@ -17,17 +20,143 @@ import {
   getConvertJobByPublicId,
   listConvertJobs,
   reconcileExpiredSubscription,
+  renameConvertJob,
 } from "../db";
 import { isUserPremium } from "../lib/entitlements";
 import {
   CONVERT_ERROR_CODES,
   isConvertEnabled,
   limitsForPremium,
+  type ConvertTierLimits,
 } from "../lib/convert/limits";
+import { detectConcertAFromWavFile } from "../lib/convert/pitchDetect";
+import { which } from "../lib/convert/pipeline";
 import { storageGet, storageGetSignedUrl } from "../storage";
+import { spawn } from "node:child_process";
 
 const pitchASchema = z.number().min(400).max(480);
 const qualitySchema = z.enum(["standard", "high"]);
+
+const jobCreateFields = z.object({
+  sourceKey: z.string().min(1).max(512),
+  sourceFilename: z.string().min(1).max(256),
+  sourcePitchA: pitchASchema.default(440),
+  targetPitchA: pitchASchema,
+  quality: qualitySchema.default("standard"),
+  hybridEnabled: z.boolean().default(false),
+  hybridHz: z.number().min(1).max(22000).optional(),
+  hybridGainDb: z.number().min(-48).max(0).default(-18),
+  formantPreserve: z.boolean().default(false),
+  sourceDurationSec: z.number().positive().max(3600).optional(),
+});
+
+type JobCreateInput = z.infer<typeof jobCreateFields>;
+
+function assertConvertEnabled() {
+  if (!isConvertEnabled()) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: CONVERT_ERROR_CODES.FEATURE_DISABLED,
+    });
+  }
+}
+
+function assertSourceKey(userId: number, sourceKey: string) {
+  const expectedPrefix = `convert/${userId}/`;
+  if (!sourceKey.startsWith(expectedPrefix)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Invalid sourceKey",
+    });
+  }
+}
+
+function assertPremiumOptions(
+  input: Pick<
+    JobCreateInput,
+    "quality" | "hybridEnabled" | "formantPreserve"
+  >,
+  limits: ConvertTierLimits,
+) {
+  if (input.quality === "high" && !limits.allowHighQuality) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: CONVERT_ERROR_CODES.PREMIUM_REQUIRED,
+    });
+  }
+  if (input.hybridEnabled && !limits.allowHybrid) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: CONVERT_ERROR_CODES.PREMIUM_REQUIRED,
+    });
+  }
+  if (input.formantPreserve && !limits.allowFormant) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: CONVERT_ERROR_CODES.PREMIUM_REQUIRED,
+    });
+  }
+}
+
+async function insertConvertJobForUser(
+  userId: number,
+  input: JobCreateInput,
+  limits: ConvertTierLimits,
+  premium: boolean,
+) {
+  assertSourceKey(userId, input.sourceKey);
+  assertPremiumOptions(input, limits);
+
+  if (
+    input.sourceDurationSec != null &&
+    input.sourceDurationSec > limits.maxDurationSec
+  ) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: CONVERT_ERROR_CODES.TOO_LONG,
+    });
+  }
+
+  const sourceA = clampConcertA(input.sourcePitchA);
+  const targetA = clampConcertA(input.targetPitchA);
+  const retune = describeRetune(sourceA, targetA);
+  const publicId = nanoid(16);
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + limits.retentionDays);
+
+  const hybridOn = input.hybridEnabled && limits.allowHybrid;
+  const hybridHz = hybridOn ? clampHz(input.hybridHz ?? 528) : null;
+
+  const job = await createConvertJob({
+    publicId,
+    userId,
+    status: "queued",
+    stage: "queued",
+    progressPct: 0,
+    sourceKey: input.sourceKey,
+    sourceFilename: input.sourceFilename.slice(0, 256),
+    sourceDurationSec: input.sourceDurationSec ?? null,
+    sourceFormat: null,
+    sourcePitchA: sourceA,
+    targetPitchA: targetA,
+    pitchRatio: retune.ratio,
+    cents: retune.cents,
+    hybridEnabled: hybridOn,
+    hybridHz,
+    hybridGainDb: input.hybridGainDb,
+    formantPreserve: input.formantPreserve && limits.allowFormant,
+    quality: input.quality,
+    expiresAt,
+  });
+
+  if (!job) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Database unavailable",
+    });
+  }
+  return jobDto(job, { isPremium: premium });
+}
 
 function jobDto(
   job: NonNullable<Awaited<ReturnType<typeof getConvertJobByPublicId>>>,
@@ -121,60 +250,12 @@ export const convertRouter = router({
    * POST /api/convert/upload (returns sourceKey).
    */
   createJob: protectedProcedure
-    .input(
-      z.object({
-        sourceKey: z.string().min(1).max(512),
-        sourceFilename: z.string().min(1).max(256),
-        sourcePitchA: pitchASchema.default(440),
-        targetPitchA: pitchASchema,
-        quality: qualitySchema.default("standard"),
-        hybridEnabled: z.boolean().default(false),
-        hybridHz: z.number().min(1).max(22000).optional(),
-        hybridGainDb: z.number().min(-48).max(0).default(-18),
-        formantPreserve: z.boolean().default(false),
-        /** Optional duration from client/ffprobe if known */
-        sourceDurationSec: z.number().positive().max(3600).optional(),
-      }),
-    )
+    .input(jobCreateFields)
     .mutation(async ({ ctx, input }) => {
-      if (!isConvertEnabled()) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: CONVERT_ERROR_CODES.FEATURE_DISABLED,
-        });
-      }
-
+      assertConvertEnabled();
       const user = await reconcileExpiredSubscription(ctx.user.id);
       const premium = isUserPremium(user ?? ctx.user);
       const limits = limitsForPremium(premium);
-
-      // Ownership: key must live under this user's convert prefix
-      const expectedPrefix = `convert/${ctx.user.id}/`;
-      if (!input.sourceKey.startsWith(expectedPrefix)) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Invalid sourceKey",
-        });
-      }
-
-      if (input.quality === "high" && !limits.allowHighQuality) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: CONVERT_ERROR_CODES.PREMIUM_REQUIRED,
-        });
-      }
-      if (input.hybridEnabled && !limits.allowHybrid) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: CONVERT_ERROR_CODES.PREMIUM_REQUIRED,
-        });
-      }
-      if (input.formantPreserve && !limits.allowFormant) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: CONVERT_ERROR_CODES.PREMIUM_REQUIRED,
-        });
-      }
 
       const active = await countActiveConvertJobs(ctx.user.id);
       if (active >= limits.maxConcurrent) {
@@ -184,58 +265,138 @@ export const convertRouter = router({
         });
       }
 
-      if (
-        input.sourceDurationSec != null &&
-        input.sourceDurationSec > limits.maxDurationSec
-      ) {
+      return insertConvertJobForUser(ctx.user.id, input, limits, premium);
+    }),
+
+  /**
+   * Batch pack: one upload → multiple target concert pitches (e.g. 432 + 444).
+   * Free: max 2 targets; Premium: max 5. Counts against concurrent limit.
+   */
+  createBatch: protectedProcedure
+    .input(
+      jobCreateFields
+        .omit({ targetPitchA: true })
+        .extend({
+          targetPitchAs: z
+            .array(pitchASchema)
+            .min(1)
+            .max(5),
+        }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      assertConvertEnabled();
+      const user = await reconcileExpiredSubscription(ctx.user.id);
+      const premium = isUserPremium(user ?? ctx.user);
+      const limits = limitsForPremium(premium);
+
+      const maxTargets = premium ? 5 : 2;
+      if (input.targetPitchAs.length > maxTargets) {
         throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: CONVERT_ERROR_CODES.TOO_LONG,
+          code: "FORBIDDEN",
+          message: CONVERT_ERROR_CODES.PREMIUM_REQUIRED,
         });
       }
 
-      const sourceA = clampConcertA(input.sourcePitchA);
-      const targetA = clampConcertA(input.targetPitchA);
-      const retune = describeRetune(sourceA, targetA);
-      const publicId = nanoid(16);
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + limits.retentionDays);
+      // Dedupe targets
+      const targets = Array.from(new Set(input.targetPitchAs.map(clampConcertA)));
+      const active = await countActiveConvertJobs(ctx.user.id);
+      if (active + targets.length > limits.maxConcurrent + (premium ? 3 : 0)) {
+        // Allow batch to exceed concurrent slightly for paid packs, but not free spam
+        if (!premium || active + targets.length > limits.maxConcurrent + 4) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: CONVERT_ERROR_CODES.CONCURRENT_LIMIT,
+          });
+        }
+      }
 
-      const hybridOn = input.hybridEnabled && limits.allowHybrid;
-      const hybridHz = hybridOn
-        ? clampHz(input.hybridHz ?? 528)
-        : null;
+      const jobs = [];
+      for (const targetPitchA of targets) {
+        const job = await insertConvertJobForUser(
+          ctx.user.id,
+          { ...input, targetPitchA },
+          limits,
+          premium,
+        );
+        jobs.push(job);
+      }
+      return { jobs, count: jobs.length };
+    }),
 
-      const job = await createConvertJob({
-        publicId,
-        userId: ctx.user.id,
-        status: "queued",
-        stage: "queued",
-        progressPct: 0,
-        sourceKey: input.sourceKey,
-        sourceFilename: input.sourceFilename.slice(0, 256),
-        sourceDurationSec: input.sourceDurationSec ?? null,
-        sourceFormat: null,
-        sourcePitchA: sourceA,
-        targetPitchA: targetA,
-        pitchRatio: retune.ratio,
-        cents: retune.cents,
-        hybridEnabled: hybridOn,
-        hybridHz,
-        hybridGainDb: input.hybridGainDb,
-        formantPreserve: input.formantPreserve && limits.allowFormant,
-        quality: input.quality,
-        expiresAt,
-      });
+  /**
+   * Experimental: download source, decode snippet, estimate concert A.
+   */
+  detectPitch: protectedProcedure
+    .input(z.object({ sourceKey: z.string().min(1).max(512) }))
+    .mutation(async ({ ctx, input }) => {
+      assertConvertEnabled();
+      assertSourceKey(ctx.user.id, input.sourceKey);
 
-      if (!job) {
+      const ffmpeg = await which("ffmpeg");
+      if (!ffmpeg) {
         throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Database unavailable",
+          code: "PRECONDITION_FAILED",
+          message: CONVERT_ERROR_CODES.TOOLING_MISSING,
         });
       }
 
-      return jobDto(job, { isPremium: premium });
+      const workDir = await fs.mkdtemp(
+        path.join(os.tmpdir(), "rih-pitch-"),
+      );
+      try {
+        let sourceUrl: string;
+        try {
+          sourceUrl = await storageGetSignedUrl(input.sourceKey);
+        } catch {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: CONVERT_ERROR_CODES.DOWNLOAD_FAILED,
+          });
+        }
+        const srcPath = path.join(workDir, "src");
+        const wavPath = path.join(workDir, "snip.wav");
+        const dl = await fetch(sourceUrl);
+        if (!dl.ok) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: CONVERT_ERROR_CODES.DOWNLOAD_FAILED,
+          });
+        }
+        await fs.writeFile(srcPath, Buffer.from(await dl.arrayBuffer()));
+
+        // First 8s mono 48k for analysis
+        await new Promise<void>((resolve, reject) => {
+          const child = spawn(
+            ffmpeg,
+            [
+              "-y",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-t",
+              "8",
+              "-i",
+              srcPath,
+              "-ac",
+              "1",
+              "-ar",
+              "48000",
+              wavPath,
+            ],
+            { stdio: "ignore" },
+          );
+          child.on("error", reject);
+          child.on("close", code =>
+            code === 0
+              ? resolve()
+              : reject(new Error("ffmpeg snippet failed")),
+          );
+        });
+
+        return detectConcertAFromWavFile(wavPath);
+      } finally {
+        await fs.rm(workDir, { recursive: true, force: true }).catch(() => undefined);
+      }
     }),
 
   getDownloadUrl: protectedProcedure
@@ -316,6 +477,28 @@ export const convertRouter = router({
     .mutation(async ({ ctx, input }) => {
       const deleted = await deleteConvertJob(input.id, ctx.user.id);
       if (!deleted) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: CONVERT_ERROR_CODES.NOT_FOUND,
+        });
+      }
+      return { success: true as const };
+    }),
+
+  rename: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().min(8).max(32),
+        name: z.string().min(1).max(256),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const updated = await renameConvertJob(
+        input.id,
+        ctx.user.id,
+        input.name.trim(),
+      );
+      if (!updated) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: CONVERT_ERROR_CODES.NOT_FOUND,

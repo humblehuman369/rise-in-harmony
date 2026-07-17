@@ -1290,7 +1290,7 @@ export async function claimNextQueuedConvertJob(): Promise<ConvertJob | null> {
     .limit(1);
   const job = rows[0];
   if (!job) return null;
-  // Optimistic claim
+  // Optimistic claim — multi-instance safe when race loses (affectedRows 0)
   const result = await db
     .update(convertJobs)
     .set({ status: "processing", stage: "processing", progressPct: 1 })
@@ -1300,6 +1300,34 @@ export async function claimNextQueuedConvertJob(): Promise<ConvertJob | null> {
   const affected = (result[0] as { affectedRows: number }).affectedRows;
   if (affected === 0) return null;
   return { ...job, status: "processing", stage: "processing", progressPct: 1 };
+}
+
+/**
+ * Fail jobs stuck in `processing` longer than `staleMinutes` (crashed worker recovery).
+ * Returns number of jobs marked failed.
+ */
+export async function failStaleConvertJobs(
+  staleMinutes = 30,
+): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const cutoff = new Date(Date.now() - staleMinutes * 60 * 1000);
+  const result = await db
+    .update(convertJobs)
+    .set({
+      status: "failed",
+      stage: "error",
+      progressPct: 0,
+      errorCode: "TIMEOUT",
+      errorMessage: `Stale processing job reaped after ${staleMinutes}m`,
+    })
+    .where(
+      and(
+        eq(convertJobs.status, "processing"),
+        lt(convertJobs.updatedAt, cutoff),
+      ),
+    );
+  return (result[0] as { affectedRows: number }).affectedRows ?? 0;
 }
 
 export async function markConvertJobCompleted(
@@ -1370,6 +1398,22 @@ export async function deleteConvertJob(
       and(eq(convertJobs.publicId, publicId), eq(convertJobs.userId, userId)),
     );
   return existing;
+}
+
+export async function renameConvertJob(
+  publicId: string,
+  userId: number,
+  sourceFilename: string,
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db
+    .update(convertJobs)
+    .set({ sourceFilename: sourceFilename.slice(0, 256) })
+    .where(
+      and(eq(convertJobs.publicId, publicId), eq(convertJobs.userId, userId)),
+    );
+  return (result[0] as { affectedRows: number }).affectedRows > 0;
 }
 
 /** Mark expired completed jobs (TTL). Returns count. */

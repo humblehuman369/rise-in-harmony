@@ -264,3 +264,55 @@ export const soundsApi = {
     }),
   delete: (id: number) => trpcMutation<{ success: boolean }>("sounds.delete", { id }),
 };
+
+// ─── TrueHz Convert (server-side DSP; mobile is status + deep-link) ───────────
+
+export type ConvertJobDto = {
+  id: string;
+  status: string;
+  stage: string;
+  progressPct: number;
+  sourceFilename: string;
+  sourcePitchA: number;
+  targetPitchA: number;
+  cents: number;
+  hybridEnabled: boolean;
+  hybridHz: number | null;
+  hasMp3: boolean;
+  hasWav: boolean;
+  errorCode: string | null;
+  errorMessage: string | null;
+  expiresAt: string | Date | null;
+  algorithmVersion: string | null;
+  processingMs: number | null;
+};
+
+export type ConvertStatusDto = {
+  enabled: boolean;
+  isPremium: boolean;
+  activeJobs: number;
+  limits: {
+    maxDurationSec: number;
+    maxFileBytes: number;
+    maxConcurrent: number;
+    retentionDays: number;
+  };
+};
+
+export const convertApi = {
+  status: () => trpcQuery<ConvertStatusDto>("convert.status"),
+  list: () => trpcQuery<ConvertJobDto[]>("convert.list"),
+  get: (id: string) => trpcQuery<ConvertJobDto>("convert.get", { id }),
+  delete: (id: string) =>
+    trpcMutation<{ success: boolean }>("convert.delete", { id }),
+  getDownloadUrl: (id: string, format: "mp3" | "wav" | "source") =>
+    trpcQuery<{ url: string; format: string }>("convert.getDownloadUrl", {
+      id,
+      format,
+    }),
+};
+
+/** Web Convert URL for upload (processing is server-side). */
+export function convertWebUrl(path = "/convert"): string {
+  return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}

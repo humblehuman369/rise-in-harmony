@@ -196,7 +196,7 @@ export default function Home() {
 
       {/* TrueHz technology banner */}
       <section className="py-10" style={{ background: isLight ? '#F5F6F9' : '#0A0B14' }}>
-        <div className="container">
+        <div className="container space-y-4">
           <button
             onClick={() => navigate("/technology")}
             className="w-full text-left rounded-2xl p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-5 transition-transform hover:scale-[1.01]"
@@ -220,6 +220,27 @@ export default function Home() {
             </div>
             <span className="text-sm font-semibold flex-shrink-0" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
               See why it matters →
+            </span>
+          </button>
+          <button
+            onClick={() => navigate("/convert?from=home")}
+            className="w-full text-left rounded-2xl p-5 md:p-6 flex flex-col md:flex-row md:items-center gap-4 transition-transform hover:scale-[1.01]"
+            style={{
+              background: isLight ? '#FFFFFF' : '#12152A',
+              border: '1px solid rgba(139,92,246,0.25)',
+            }}
+          >
+            <div className="flex-1">
+              <div className="text-sm font-bold mb-1" style={{ color: '#A78BFA', fontFamily: 'DM Sans, sans-serif' }}>
+                TrueHz Convert
+              </div>
+              <p className="text-sm leading-relaxed" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
+                Upload your own track and retune it by concert pitch (e.g. A=440 → A=432).
+                Optional TrueHz pure-tone bed under the mix.
+              </p>
+            </div>
+            <span className="text-sm font-semibold flex-shrink-0" style={{ color: '#A78BFA', fontFamily: 'DM Sans, sans-serif' }}>
+              Open Convert →
             </span>
           </button>
         </div>

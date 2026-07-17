@@ -50,7 +50,7 @@ const PREMIUM_FEATURES = [
   { Icon: Waves,  text: "Sound Studio with music & nature layers" },
   { Icon: Zap,    text: "7-Chakra guided morning sequence" },
   { Icon: Star,   text: "Unlimited healing alarms" },
-  { Icon: Sparkles, text: "Unlimited session journal & mood history" },
+  { Icon: Sparkles, text: "TrueHz Convert: hybrid bed, formant, WAV & high quality" },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -59,12 +59,17 @@ interface PremiumPaywallProps {
   triggerFrequencyName?: string;
   triggerFrequencyHz?: number;
   onClose: () => void;
+  /** Return path after Stripe checkout (e.g. /convert?billing=success) */
+  successPath?: string;
+  cancelPath?: string;
 }
 
 export default function PremiumPaywall({
   triggerFrequencyName,
   triggerFrequencyHz,
   onClose,
+  successPath,
+  cancelPath,
 }: PremiumPaywallProps) {
   // A/B test: "annual-first" highlights annual plan, "lifetime-highlight" highlights lifetime
   const pricingVariant = useFeatureFlag<string>("pricing-test", "control");
@@ -90,7 +95,11 @@ export default function PremiumPaywall({
       return;
     }
     try {
-      const { url } = await createCheckout.mutateAsync({ tier });
+      const { url } = await createCheckout.mutateAsync({
+        tier,
+        ...(successPath ? { successPath } : {}),
+        ...(cancelPath ? { cancelPath } : {}),
+      });
       if (url) window.location.href = url;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not start checkout");

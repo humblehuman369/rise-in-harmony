@@ -1,6 +1,13 @@
 /**
- * In-process convert job worker — claims queued jobs and runs the DSP pipeline.
- * Single-instance safe; multi-instance would need Redis/FOR UPDATE SKIP LOCKED.
+ * Convert job worker — multi-slot DB claim (horizontal-scale ready).
+ *
+ * Scale knobs:
+ * - CONVERT_WORKER_CONCURRENCY (default 1, max 4) — parallel jobs per process
+ * - Multiple app instances each poll/claim safely via optimistic status update
+ * - Stale processing jobs reaped every tick cycle (default 30 min)
+ *
+ * Redis/BullMQ: optional future path when REDIS_URL is set (see docs).
+ * Current design intentionally uses MySQL as the queue for zero new deps.
  */
 import { promises as fs } from "node:fs";
 import os from "node:os";
@@ -8,20 +15,32 @@ import path from "node:path";
 import {
   claimNextQueuedConvertJob,
   failConvertJob,
+  failStaleConvertJobs,
   getConvertJobById,
+  getUserById,
   markConvertJobCompleted,
   reconcileExpiredSubscription,
   updateConvertJobProgress,
 } from "../../db";
+import { sendConvertJobReadyEmail } from "../../email";
 import { storageGetSignedUrl, storagePut } from "../../storage";
 import { isUserPremium } from "../entitlements";
 import { log } from "../logger";
 import { CONVERT_ERROR_CODES, limitsForPremium } from "./limits";
 import { runConvertPipeline, which } from "./pipeline";
 
-const POLL_MS = 2000;
+const POLL_MS = 1500;
+const STALE_MINUTES = Number(process.env.CONVERT_STALE_MINUTES ?? 30) || 30;
+
+function workerConcurrency(): number {
+  const n = Number(process.env.CONVERT_WORKER_CONCURRENCY ?? 1);
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return Math.min(4, Math.floor(n));
+}
+
 let loopStarted = false;
-let running = false;
+/** In-flight job count for this process */
+let activeSlots = 0;
 
 async function downloadToFile(url: string, dest: string): Promise<void> {
   const resp = await fetch(url);
@@ -32,11 +51,13 @@ async function downloadToFile(url: string, dest: string): Promise<void> {
   await fs.writeFile(dest, buf);
 }
 
-async function processJob(jobId: number): Promise<void> {
+export async function processConvertJob(jobId: number): Promise<void> {
   const job = await getConvertJobById(jobId);
   if (!job) return;
 
-  const workDir = await fs.mkdtemp(path.join(os.tmpdir(), `rih-convert-${job.publicId}-`));
+  const workDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), `rih-convert-${job.publicId}-`),
+  );
   const sourcePath = path.join(workDir, "source");
 
   try {
@@ -49,7 +70,6 @@ async function processJob(jobId: number): Promise<void> {
     try {
       sourceUrl = await storageGetSignedUrl(job.sourceKey);
     } catch {
-      // Local/dev fallback: manus-storage paths may be absolute URL via ENV — try public path
       throw Object.assign(new Error("Could not get signed URL for source"), {
         code: CONVERT_ERROR_CODES.DOWNLOAD_FAILED,
       });
@@ -61,7 +81,6 @@ async function processJob(jobId: number): Promise<void> {
     const premium = isUserPremium(user);
     const limits = limitsForPremium(premium);
 
-    const encodeMp3 = true;
     const result = await runConvertPipeline({
       sourcePath,
       workDir,
@@ -72,13 +91,12 @@ async function processJob(jobId: number): Promise<void> {
       hybridEnabled: job.hybridEnabled && limits.allowHybrid,
       hybridHz: job.hybridHz,
       hybridGainDb: job.hybridGainDb ?? -18,
-      encodeMp3,
+      encodeMp3: true,
       onProgress: async (stage, pct) => {
         await updateConvertJobProgress(job.id, { stage, progressPct: pct });
       },
     });
 
-    // Enforce duration limit post-probe (upload may not have known duration)
     if (result.probe.durationSec > limits.maxDurationSec + 0.5) {
       throw Object.assign(new Error("Source audio too long for your plan"), {
         code: CONVERT_ERROR_CODES.TOO_LONG,
@@ -93,18 +111,13 @@ async function processJob(jobId: number): Promise<void> {
     });
 
     const baseKey = `convert/${job.userId}/${job.publicId}`;
-    let outputWavKey: string | null = null;
-    let outputMp3Key: string | null = null;
-
-    // Always keep WAV server-side for quality; free tier may only expose MP3 in API
     const wavBuf = await fs.readFile(result.wavPath);
     const wavPut = await storagePut(
       `${baseKey}/out.wav`,
       wavBuf,
       "audio/wav",
     );
-    outputWavKey = wavPut.key;
-
+    let outputMp3Key: string | null = null;
     if (result.mp3Path) {
       const mp3Buf = await fs.readFile(result.mp3Path);
       const mp3Put = await storagePut(
@@ -116,7 +129,7 @@ async function processJob(jobId: number): Promise<void> {
     }
 
     await markConvertJobCompleted(job.id, {
-      outputWavKey,
+      outputWavKey: wavPut.key,
       outputMp3Key,
       algorithmVersion: result.algorithmVersion,
       processingMs: result.processingMs,
@@ -131,6 +144,25 @@ async function processJob(jobId: number): Promise<void> {
       processingMs: result.processingMs,
       algorithm: result.algorithmVersion,
     });
+
+    try {
+      const owner = await getUserById(job.userId);
+      if (owner?.email) {
+        await sendConvertJobReadyEmail(owner.email, owner.name || "friend", {
+          filename: job.sourceFilename,
+          sourcePitchA: job.sourcePitchA,
+          targetPitchA: job.targetPitchA,
+          cents: result.cents,
+          hybridHz: result.hybridHz,
+          jobId: job.publicId,
+        });
+      }
+    } catch (mailErr) {
+      log.warn("convert ready email failed", {
+        jobId: job.publicId,
+        error: mailErr instanceof Error ? mailErr.message : String(mailErr),
+      });
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const code =
@@ -149,24 +181,35 @@ async function processJob(jobId: number): Promise<void> {
       error: message.slice(0, 200),
     });
   } finally {
-    await fs.rm(workDir, { recursive: true, force: true }).catch(() => undefined);
+    await fs
+      .rm(workDir, { recursive: true, force: true })
+      .catch(() => undefined);
+  }
+}
+
+async function fillSlots(): Promise<void> {
+  const max = workerConcurrency();
+  while (activeSlots < max) {
+    const job = await claimNextQueuedConvertJob();
+    if (!job) break;
+    activeSlots++;
+    void processConvertJob(job.id).finally(() => {
+      activeSlots--;
+    });
   }
 }
 
 async function tick(): Promise<void> {
-  if (running) return;
-  running = true;
   try {
-    const job = await claimNextQueuedConvertJob();
-    if (job) {
-      await processJob(job.id);
+    const reaped = await failStaleConvertJobs(STALE_MINUTES);
+    if (reaped > 0) {
+      log.warn("convert stale jobs reaped", { count: reaped, staleMinutes: STALE_MINUTES });
     }
+    await fillSlots();
   } catch (err) {
     log.warn("convert worker tick error", {
       error: err instanceof Error ? err.message : String(err),
     });
-  } finally {
-    running = false;
   }
 }
 
@@ -174,8 +217,8 @@ async function tick(): Promise<void> {
 export function startConvertWorker(): void {
   if (loopStarted) return;
   loopStarted = true;
+  const concurrency = workerConcurrency();
 
-  // Warm check tooling once
   void (async () => {
     const [rb, ff, fp] = await Promise.all([
       which("rubberband"),
@@ -186,6 +229,8 @@ export function startConvertWorker(): void {
       rubberband: rb ?? "missing",
       ffmpeg: ff ?? "missing",
       ffprobe: fp ?? "missing",
+      concurrency,
+      staleMinutes: STALE_MINUTES,
     });
   })();
 
@@ -193,7 +238,6 @@ export function startConvertWorker(): void {
     void tick();
   }, POLL_MS);
 
-  // Immediate first tick
   void tick();
-  log.info("convert worker started", { pollMs: POLL_MS });
+  log.info("convert worker started", { pollMs: POLL_MS, concurrency });
 }

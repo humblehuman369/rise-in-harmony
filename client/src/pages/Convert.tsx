@@ -1,10 +1,9 @@
 /**
- * TrueHz Convert — upload a track, retune by concert-pitch ratio, download.
- * Companion product: does NOT claim TrueHz exact-Hz accuracy on mixed music.
- * Phase 2: hybrid TrueHz bed, formant preserve, A/B preview.
+ * TrueHz Convert — upload, retune by concert-pitch ratio, download.
+ * Phase 3: paywall, analytics, expiry, rename, rights attestation, A/B.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import {
   ArrowLeft,
   Download,
@@ -12,11 +11,14 @@ import {
   Loader2,
   Music2,
   Pause,
+  Pencil,
   Play,
+  Sparkles,
   Trash2,
   Upload,
 } from "lucide-react";
 import Layout from "@/components/Layout";
+import PremiumPaywall from "@/components/PremiumPaywall";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
@@ -27,6 +29,16 @@ import {
 import { formatCents } from "@rih/shared-utils";
 import { toast } from "sonner";
 import { useTheme } from "@/contexts/ThemeContext";
+import {
+  trackConvertDownload,
+  trackConvertJobCompleted,
+  trackConvertJobCreated,
+  trackConvertJobFailed,
+  trackConvertPageViewed,
+  trackConvertPaywallViewed,
+  trackConvertUploadCompleted,
+  trackConvertUploadStarted,
+} from "@/hooks/useAnalytics";
 
 const PRESETS: { label: string; sourceA: number; targetA: number }[] = [
   { label: "A=440 → A=432 (Natural Harmony)", sourceA: 440, targetA: 432 },
@@ -41,28 +53,68 @@ const HYBRID_PRESETS = [
   { hz: 741, label: "741 Hz" },
 ];
 
+function formatExpiry(expiresAt: Date | string | null | undefined): string {
+  if (!expiresAt) return "";
+  const d = typeof expiresAt === "string" ? new Date(expiresAt) : expiresAt;
+  if (Number.isNaN(d.getTime())) return "";
+  const ms = d.getTime() - Date.now();
+  if (ms <= 0) return "Expired";
+  const days = Math.ceil(ms / 86400000);
+  if (days === 1) return "Expires tomorrow";
+  if (days < 14) return `Expires in ${days} days`;
+  return `Expires ${d.toLocaleDateString()}`;
+}
+
 export default function Convert() {
   const [, navigate] = useLocation();
+  const search = useSearch();
   const { user, isAuthenticated } = useAuth();
   const { theme } = useTheme();
   const isLight = theme === "light";
 
   const [sourceA, setSourceA] = useState(440);
   const [targetA, setTargetA] = useState(432);
+  /** Extra targets for batch pack (premium packs up to 5 total including primary). */
+  const [batchTargets, setBatchTargets] = useState<number[]>([]);
   const [quality, setQuality] = useState<"standard" | "high">("standard");
   const [formantPreserve, setFormantPreserve] = useState(false);
   const [hybridEnabled, setHybridEnabled] = useState(false);
   const [hybridHz, setHybridHz] = useState(528);
   const [hybridGainDb, setHybridGainDb] = useState(-18);
+  const [rightsOk, setRightsOk] = useState(false);
+  const [detectNote, setDetectNote] = useState<string | null>(null);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  /** Local original for A/B without re-fetch */
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [paywallTrigger, setPaywallTrigger] = useState<
+    "hybrid" | "formant" | "quality" | "wav" | "upsell_banner"
+  >("upsell_banner");
   const [localOriginalUrl, setLocalOriginalUrl] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [abSide, setAbSide] = useState<"original" | "converted">("converted");
   const [playing, setPlaying] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const trackedComplete = useRef<Set<string>>(new Set());
+  const trackedFail = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    trackConvertPageViewed(
+      new URLSearchParams(search).get("from") ?? "nav",
+    );
+  }, [search]);
+
+  // Deep-link ?job= and billing return
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const job = params.get("job");
+    if (job) setActiveJobId(job);
+    if (params.get("billing") === "success") {
+      toast.success("Premium unlocked — Convert Pro features are yours.");
+    }
+  }, [search]);
 
   const statusQuery = trpc.convert.status.useQuery(undefined, {
     enabled: isAuthenticated,
@@ -79,8 +131,18 @@ export default function Convert() {
     },
   });
   const createJob = trpc.convert.createJob.useMutation();
+  const createBatch = trpc.convert.createBatch.useMutation();
+  const detectPitch = trpc.convert.detectPitch.useMutation();
   const deleteJob = trpc.convert.delete.useMutation({
     onSuccess: () => void listQuery.refetch(),
+  });
+  const renameJob = trpc.convert.rename.useMutation({
+    onSuccess: () => {
+      void listQuery.refetch();
+      void utils.convert.get.invalidate();
+      setRenamingId(null);
+      toast.success("Renamed");
+    },
   });
   const utils = trpc.useUtils();
 
@@ -97,6 +159,7 @@ export default function Convert() {
   );
 
   const isPremium = statusQuery.data?.isPremium ?? false;
+  const retentionDays = statusQuery.data?.limits.retentionDays ?? 7;
 
   const c = isLight
     ? {
@@ -116,20 +179,34 @@ export default function Convert() {
 
   const centsLabel = useMemo(() => {
     try {
-      const ratio = targetA / sourceA;
-      return formatCents(1200 * Math.log2(ratio));
+      return formatCents(1200 * Math.log2(targetA / sourceA));
     } catch {
       return "—";
     }
   }, [sourceA, targetA]);
 
-  // Load result URL when job completes
+  const openPaywall = (
+    trigger: "hybrid" | "formant" | "quality" | "wav" | "upsell_banner",
+  ) => {
+    setPaywallTrigger(trigger);
+    trackConvertPaywallViewed(trigger);
+    setShowPaywall(true);
+  };
+
   useEffect(() => {
     let cancelled = false;
     async function loadResult() {
       if (!jobQuery.data || jobQuery.data.status !== "completed") {
         setResultUrl(null);
         return;
+      }
+      if (!trackedComplete.current.has(jobQuery.data.id)) {
+        trackedComplete.current.add(jobQuery.data.id);
+        trackConvertJobCompleted({
+          processingMs: jobQuery.data.processingMs,
+          algorithmVersion: jobQuery.data.algorithmVersion,
+          hybrid: jobQuery.data.hybridEnabled,
+        });
       }
       try {
         const fmt = jobQuery.data.hasMp3 ? "mp3" : "wav";
@@ -150,13 +227,22 @@ export default function Convert() {
   }, [jobQuery.data, utils.convert.getDownloadUrl]);
 
   useEffect(() => {
+    if (
+      jobQuery.data?.status === "failed" &&
+      !trackedFail.current.has(jobQuery.data.id)
+    ) {
+      trackedFail.current.add(jobQuery.data.id);
+      trackConvertJobFailed(jobQuery.data.errorCode);
+    }
+  }, [jobQuery.data]);
+
+  useEffect(() => {
     return () => {
       if (localOriginalUrl) URL.revokeObjectURL(localOriginalUrl);
     };
   }, [localOriginalUrl]);
 
-  const activeSrc =
-    abSide === "original" ? localOriginalUrl : resultUrl;
+  const activeSrc = abSide === "original" ? localOriginalUrl : resultUrl;
 
   useEffect(() => {
     const el = audioRef.current;
@@ -176,15 +262,20 @@ export default function Convert() {
       el.pause();
       setPlaying(false);
     } else {
-      void el.play().then(() => setPlaying(true)).catch(() => {
-        toast.error("Playback failed");
-      });
+      void el
+        .play()
+        .then(() => setPlaying(true))
+        .catch(() => toast.error("Playback failed"));
     }
   };
 
   const onFile = useCallback(
     async (file: File | null) => {
       if (!file || !isAuthenticated) return;
+      if (!rightsOk) {
+        toast.error("Confirm you have rights to this file before uploading");
+        return;
+      }
       if (!isAcceptedConvertFile(file)) {
         toast.error("Use MP3, WAV, FLAC, M4A, or OGG");
         return;
@@ -199,21 +290,79 @@ export default function Convert() {
       setLocalOriginalUrl(URL.createObjectURL(file));
       setResultUrl(null);
       setAbSide("converted");
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      trackConvertUploadStarted({ bytes: file.size, format: ext });
       try {
         const uploaded = await uploadConvertSource(file, setUploadPct);
-        const job = await createJob.mutateAsync({
+        trackConvertUploadCompleted({
+          bytes: uploaded.bytes,
+          format: uploaded.format,
+        });
+
+        // Experimental pitch detect — suggest only; user-selected sourceA wins unless empty
+        let effectiveSourceA = sourceA;
+        try {
+          const det = await detectPitch.mutateAsync({
+            sourceKey: uploaded.key,
+          });
+          if (det.confidence >= 0.35) {
+            setDetectNote(
+              `Detected ~${det.dominantHz} Hz → suggested source A=${det.suggestedSourceA} (confidence ${Math.round(det.confidence * 100)}%). Using your selected source A=${sourceA} for this job. ${det.note}`,
+            );
+          } else {
+            setDetectNote(det.note);
+          }
+        } catch {
+          setDetectNote(null);
+        }
+
+        const targets = Array.from(
+          new Set([targetA, ...batchTargets].map(Number)),
+        ).filter(t => t >= 400 && t <= 480);
+        const shared = {
           sourceKey: uploaded.key,
           sourceFilename: uploaded.filename,
-          sourcePitchA: sourceA,
-          targetPitchA: targetA,
-          quality: isPremium ? quality : "standard",
+          sourcePitchA: effectiveSourceA,
+          quality: (isPremium ? quality : "standard") as "standard" | "high",
           formantPreserve: isPremium && formantPreserve,
           hybridEnabled: isPremium && hybridEnabled,
           hybridHz: isPremium && hybridEnabled ? hybridHz : undefined,
-          hybridGainDb: hybridGainDb,
-        });
-        setActiveJobId(job.id);
-        toast.success("Job queued — retuning…");
+          hybridGainDb,
+        };
+
+        if (targets.length > 1) {
+          const { jobs } = await createBatch.mutateAsync({
+            ...shared,
+            targetPitchAs: targets,
+          });
+          for (const j of jobs) {
+            trackConvertJobCreated({
+              sourceA: effectiveSourceA,
+              targetA: j.targetPitchA,
+              hybrid: isPremium && hybridEnabled,
+              formant: isPremium && formantPreserve,
+              quality: shared.quality,
+            });
+          }
+          setActiveJobId(jobs[0]?.id ?? null);
+          toast.success(
+            `${jobs.length} jobs queued — we'll email when each is ready.`,
+          );
+        } else {
+          const job = await createJob.mutateAsync({
+            ...shared,
+            targetPitchA: targets[0] ?? targetA,
+          });
+          trackConvertJobCreated({
+            sourceA: effectiveSourceA,
+            targetA: targets[0] ?? targetA,
+            hybrid: isPremium && hybridEnabled,
+            formant: isPremium && formantPreserve,
+            quality: shared.quality,
+          });
+          setActiveJobId(job.id);
+          toast.success("Job queued — we'll email you when it's ready.");
+        }
         void utils.convert.list.invalidate();
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Convert failed";
@@ -225,10 +374,14 @@ export default function Convert() {
     },
     [
       isAuthenticated,
+      rightsOk,
       statusQuery.data?.enabled,
       createJob,
+      createBatch,
+      detectPitch,
       sourceA,
       targetA,
+      batchTargets,
       quality,
       formantPreserve,
       hybridEnabled,
@@ -243,6 +396,7 @@ export default function Convert() {
   const download = async (id: string, format: "mp3" | "wav") => {
     try {
       const res = await utils.convert.getDownloadUrl.fetch({ id, format });
+      trackConvertDownload(format);
       window.open(res.url, "_blank", "noopener,noreferrer");
     } catch {
       toast.error("Download unavailable");
@@ -276,14 +430,14 @@ export default function Convert() {
               TrueHz Convert
             </h1>
             <p className={`text-sm mt-1 ${c.muted}`}>
-              Retune your own tracks by concert-pitch ratio (e.g. A=440 → A=432).
-              Optional TrueHz™ pure-tone bed is the only layer claimed exact.
+              Retune your tracks by concert-pitch ratio. Optional TrueHz™
+              pure-tone bed is the only layer claimed mathematically exact.
             </p>
           </div>
         </div>
 
         <div
-          className={`rounded-xl p-4 mb-6 flex gap-3 text-sm ${c.card}`}
+          className={`rounded-xl p-4 mb-4 flex gap-3 text-sm ${c.card}`}
           style={{ borderColor: "rgba(0,212,170,0.25)" }}
         >
           <Info
@@ -291,18 +445,48 @@ export default function Convert() {
             className="shrink-0 mt-0.5"
             style={{ color: c.accent }}
           />
-          <p className={c.muted}>
-            Pitch-shifting is not TrueHz live synthesis. For exact pure tones use{" "}
-            <Link
-              href="/studio"
-              className="underline"
-              style={{ color: c.accent }}
-            >
-              Precision Studio
-            </Link>
-            . Current shift: <strong className={c.text}>{centsLabel}</strong>.
-          </p>
+          <div className={c.muted}>
+            <p>
+              <strong className={c.text}>What Convert does:</strong> shifts the
+              whole file by a documented ratio (currently{" "}
+              <strong className={c.text}>{centsLabel}</strong>).
+            </p>
+            <p className="mt-2">
+              <strong className={c.text}>What it does not do:</strong> claim
+              your MP3 is pure 528.00 Hz throughout. For exact pure tones use{" "}
+              <Link
+                href="/studio"
+                className="underline"
+                style={{ color: c.accent }}
+              >
+                Precision Studio
+              </Link>
+              .
+            </p>
+          </div>
         </div>
+
+        {!isPremium && isAuthenticated && (
+          <button
+            type="button"
+            onClick={() => openPaywall("upsell_banner")}
+            className={`w-full rounded-xl p-4 mb-6 text-left flex items-center gap-3 ${c.card}`}
+            style={{ borderColor: "rgba(139,92,246,0.35)" }}
+          >
+            <Sparkles size={20} style={{ color: "#8B5CF6" }} />
+            <div>
+              <p className={`text-sm font-semibold ${c.text}`}>
+                Unlock Convert Pro with Premium
+              </p>
+              <p className={`text-xs ${c.muted}`}>
+                TrueHz bed · formant preserve · high quality · WAV ·{" "}
+                {statusQuery.data?.limits
+                  ? `${Math.round(CONVERT_PAID_MIN / 60)} min files`
+                  : "longer files"}
+              </p>
+            </div>
+          </button>
+        )}
 
         {!isAuthenticated ? (
           <div className={`rounded-2xl p-8 text-center ${c.card}`}>
@@ -382,8 +566,50 @@ export default function Convert() {
 
               <p className={`text-xs ${c.muted}`}>
                 Shift: <strong className={c.text}>{centsLabel}</strong> · ratio{" "}
-                {(targetA / sourceA).toFixed(6)}
+                {(targetA / sourceA).toFixed(6)} · library keeps files{" "}
+                <strong className={c.text}>{retentionDays} days</strong>
               </p>
+
+              {detectNote && (
+                <p className={`text-xs rounded-lg px-3 py-2 ${c.muted}`} style={{ background: "rgba(139,92,246,0.08)" }}>
+                  Experimental pitch detect: {detectNote}
+                </p>
+              )}
+
+              <div>
+                <label className={`text-xs ${c.muted}`}>
+                  Batch pack — also retune to (optional)
+                </label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {[432, 440, 444].map(hz => {
+                    const on = batchTargets.includes(hz) || targetA === hz;
+                    return (
+                      <button
+                        key={hz}
+                        type="button"
+                        onClick={() => {
+                          if (targetA === hz) return;
+                          setBatchTargets(prev =>
+                            prev.includes(hz)
+                              ? prev.filter(x => x !== hz)
+                              : [...prev, hz],
+                          );
+                        }}
+                        className="px-2.5 py-1 rounded-md text-xs border"
+                        style={{
+                          borderColor: on ? c.accent : "rgba(128,128,128,0.25)",
+                          color: on ? c.accent : undefined,
+                        }}
+                      >
+                        A={hz}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className={`text-[10px] mt-1 ${c.muted}`}>
+                  Free: up to 2 targets · Premium: up to 5. Upload creates one job per target.
+                </p>
+              </div>
 
               {isPremium ? (
                 <div className="space-y-4 pt-2 border-t border-white/10">
@@ -413,8 +639,7 @@ export default function Convert() {
                         Formant preserve
                       </span>
                       <span className={`block text-xs ${c.muted}`}>
-                        Keeps vocal/instrument timbre more natural when shifting
-                        pitch (Rubber Band −F).
+                        Keeps vocal/instrument timbre more natural when shifting.
                       </span>
                     </span>
                   </label>
@@ -431,8 +656,7 @@ export default function Convert() {
                         TrueHz™ pure-tone bed
                       </span>
                       <span className={`block text-xs ${c.muted}`}>
-                        Mix an exact sine under the track. Only this layer is
-                        TrueHz-verified (±0.05 Hz).
+                        Mix an exact sine under the track (±0.05 Hz verified).
                       </span>
                     </span>
                   </label>
@@ -460,9 +684,7 @@ export default function Convert() {
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className={`text-xs ${c.muted}`}>
-                            Bed Hz
-                          </label>
+                          <label className={`text-xs ${c.muted}`}>Bed Hz</label>
                           <input
                             type="number"
                             min={1}
@@ -494,15 +716,46 @@ export default function Convert() {
                   )}
                 </div>
               ) : (
-                <p className={`text-xs ${c.muted}`}>
-                  Premium unlocks high quality, formant preserve, TrueHz bed, and
-                  WAV download.
-                </p>
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-white/10">
+                  {(
+                    [
+                      ["quality", "High quality"],
+                      ["formant", "Formant preserve"],
+                      ["hybrid", "TrueHz bed"],
+                      ["wav", "WAV export"],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => openPaywall(key)}
+                      className="px-3 py-1.5 rounded-lg text-xs border"
+                      style={{ borderColor: "rgba(139,92,246,0.4)", color: "#A78BFA" }}
+                    >
+                      {label} · Premium
+                    </button>
+                  ))}
+                </div>
               )}
+
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rightsOk}
+                  onChange={e => setRightsOk(e.target.checked)}
+                  className="mt-1"
+                />
+                <span className={`text-xs ${c.muted}`}>
+                  I certify I own or have the right to process this audio. I will
+                  not upload material that infringes copyright.
+                </span>
+              </label>
 
               <label
                 className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-10 cursor-pointer transition-opacity ${
-                  busy ? "opacity-60 pointer-events-none" : "hover:opacity-90"
+                  busy || !rightsOk
+                    ? "opacity-60 pointer-events-none"
+                    : "hover:opacity-90"
                 }`}
                 style={{ borderColor: "rgba(0,212,170,0.35)" }}
               >
@@ -517,30 +770,32 @@ export default function Convert() {
                 <span className={`text-sm font-medium ${c.text}`}>
                   {uploadPct != null
                     ? `Uploading… ${uploadPct}%`
-                    : "Drop or choose audio"}
+                    : rightsOk
+                      ? "Drop or choose audio"
+                      : "Accept rights checkbox first"}
                 </span>
                 <span className={`text-xs ${c.muted}`}>
                   MP3 / WAV / FLAC / M4A · free max{" "}
                   {Math.round(
                     (statusQuery.data?.limits.maxDurationSec ?? 300) / 60,
                   )}{" "}
-                  min
+                  min · {retentionDays}-day library
                 </span>
                 <input
                   type="file"
                   accept=".mp3,.wav,.flac,.m4a,.ogg,audio/*"
                   className="hidden"
+                  disabled={!rightsOk}
                   onChange={e => void onFile(e.target.files?.[0] ?? null)}
                 />
               </label>
             </div>
 
-            {/* Active job */}
             {jobQuery.data && (
               <div className={`rounded-2xl p-5 mb-6 ${c.card}`}>
                 <div className="flex justify-between items-start gap-3">
-                  <div>
-                    <p className={`font-medium text-sm ${c.text}`}>
+                  <div className="min-w-0">
+                    <p className={`font-medium text-sm truncate ${c.text}`}>
                       {jobQuery.data.sourceFilename}
                     </p>
                     <p className={`text-xs mt-1 ${c.muted}`}>
@@ -548,13 +803,18 @@ export default function Convert() {
                       {jobQuery.data.progressPct}%
                     </p>
                     <p className={`text-xs mt-1 ${c.muted}`}>
-                      {jobQuery.data.sourcePitchA} → {jobQuery.data.targetPitchA}{" "}
-                      Hz · {formatCents(jobQuery.data.cents)}
+                      {jobQuery.data.sourcePitchA} →{" "}
+                      {jobQuery.data.targetPitchA} Hz ·{" "}
+                      {formatCents(jobQuery.data.cents)}
                       {jobQuery.data.hybridEnabled && jobQuery.data.hybridHz
                         ? ` · TrueHz bed ${jobQuery.data.hybridHz} Hz`
                         : ""}
-                      {jobQuery.data.formantPreserve ? " · formant" : ""}
                     </p>
+                    {jobQuery.data.expiresAt && (
+                      <p className={`text-xs mt-1 ${c.muted}`}>
+                        {formatExpiry(jobQuery.data.expiresAt)}
+                      </p>
+                    )}
                   </div>
                   {(jobQuery.data.status === "queued" ||
                     jobQuery.data.status === "processing") && (
@@ -581,7 +841,6 @@ export default function Convert() {
                 )}
                 {jobQuery.data.status === "completed" && (
                   <>
-                    {/* A/B preview */}
                     {(localOriginalUrl || resultUrl) && (
                       <div className="mt-4 p-3 rounded-xl border border-white/10 space-y-3">
                         <p className={`text-xs font-medium ${c.text}`}>
@@ -659,7 +918,7 @@ export default function Convert() {
                           <Download size={14} /> MP3
                         </button>
                       )}
-                      {jobQuery.data.hasWav && (
+                      {jobQuery.data.hasWav ? (
                         <button
                           type="button"
                           onClick={() =>
@@ -668,6 +927,18 @@ export default function Convert() {
                           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm border ${c.text}`}
                         >
                           <Download size={14} /> WAV
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => openPaywall("wav")}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm border"
+                          style={{
+                            borderColor: "rgba(139,92,246,0.4)",
+                            color: "#A78BFA",
+                          }}
+                        >
+                          <Download size={14} /> WAV · Premium
                         </button>
                       )}
                     </div>
@@ -684,10 +955,13 @@ export default function Convert() {
               </div>
             )}
 
-            {/* Library */}
             <h2 className={`text-sm font-semibold mb-3 ${c.text}`}>
-              Your jobs
+              Your library
             </h2>
+            <p className={`text-xs mb-3 ${c.muted}`}>
+              Free: {retentionDays}-day retention · Premium: up to 90 days.
+              Expired jobs are marked and may be removed.
+            </p>
             {!listQuery.data?.length ? (
               <p className={`text-sm ${c.muted}`}>No conversions yet.</p>
             ) : (
@@ -697,23 +971,63 @@ export default function Convert() {
                     key={job.id}
                     className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 ${c.card}`}
                   >
-                    <button
-                      type="button"
-                      className="text-left min-w-0 flex-1"
-                      onClick={() => setActiveJobId(job.id)}
-                    >
-                      <p className={`text-sm truncate ${c.text}`}>
-                        {job.sourceFilename}
-                      </p>
-                      <p className={`text-xs ${c.muted}`}>
-                        {job.status} · {job.sourcePitchA}→{job.targetPitchA} ·{" "}
-                        {formatCents(job.cents)}
-                        {job.hybridEnabled && job.hybridHz
-                          ? ` · bed ${job.hybridHz}`
-                          : ""}
-                      </p>
-                    </button>
-                    <div className="flex items-center gap-1 shrink-0">
+                    {renamingId === job.id ? (
+                      <form
+                        className="flex-1 flex gap-2"
+                        onSubmit={e => {
+                          e.preventDefault();
+                          if (renameValue.trim()) {
+                            renameJob.mutate({
+                              id: job.id,
+                              name: renameValue.trim(),
+                            });
+                          }
+                        }}
+                      >
+                        <input
+                          value={renameValue}
+                          onChange={e => setRenameValue(e.target.value)}
+                          className={`flex-1 rounded-lg px-2 py-1 text-sm ${c.input}`}
+                          autoFocus
+                        />
+                        <button
+                          type="submit"
+                          className="text-xs font-medium"
+                          style={{ color: c.accent }}
+                        >
+                          Save
+                        </button>
+                      </form>
+                    ) : (
+                      <button
+                        type="button"
+                        className="text-left min-w-0 flex-1"
+                        onClick={() => setActiveJobId(job.id)}
+                      >
+                        <p className={`text-sm truncate ${c.text}`}>
+                          {job.sourceFilename}
+                        </p>
+                        <p className={`text-xs ${c.muted}`}>
+                          {job.status === "expired" ? "expired" : job.status} ·{" "}
+                          {job.sourcePitchA}→{job.targetPitchA}
+                          {job.expiresAt
+                            ? ` · ${formatExpiry(job.expiresAt)}`
+                            : ""}
+                        </p>
+                      </button>
+                    )}
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <button
+                        type="button"
+                        aria-label="Rename"
+                        onClick={() => {
+                          setRenamingId(job.id);
+                          setRenameValue(job.sourceFilename);
+                        }}
+                        className="p-2 rounded-lg hover:bg-white/5"
+                      >
+                        <Pencil size={14} className={c.muted} />
+                      </button>
                       {job.status === "completed" && job.hasMp3 && (
                         <button
                           type="button"
@@ -750,13 +1064,25 @@ export default function Convert() {
 
             {user && (
               <p className={`text-xs mt-8 ${c.muted}`}>
-                Signed in as {user.email ?? user.name ?? "member"}. You certify
-                you have rights to process uploaded files.
+                Signed in as {user.email ?? user.name ?? "member"}. Wellness tool
+                only — not a medical device.
               </p>
             )}
           </>
         )}
       </div>
+
+      {showPaywall && (
+        <PremiumPaywall
+          triggerFrequencyName="TrueHz Convert Pro"
+          onClose={() => setShowPaywall(false)}
+          successPath="/convert?billing=success"
+          cancelPath="/convert?billing=cancelled"
+        />
+      )}
     </Layout>
   );
 }
+
+/** Paid max duration minutes for upsell copy */
+const CONVERT_PAID_MIN = 30 * 60;

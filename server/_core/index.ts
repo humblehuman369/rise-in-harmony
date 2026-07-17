@@ -101,6 +101,19 @@ async function startServer() {
     }
   });
 
+  // convert.* host → land on /convert (Phase 4 subdomain productization)
+  app.use((req, res, next) => {
+    const host = String(req.headers.host ?? "");
+    if (
+      host.startsWith("convert.") &&
+      (req.path === "/" || req.path === "")
+    ) {
+      res.redirect(302, "/convert");
+      return;
+    }
+    next();
+  });
+
   // Security headers. Relax CSP in dev so Vite HMR / inline tooling works.
   app.use(
     helmet({
@@ -147,7 +160,15 @@ async function startServer() {
     message: { error: "Upload limit exceeded, please try again later." },
   });
   app.use("/api/sounds/upload", uploadLimiter);
-  app.use("/api/convert/upload", uploadLimiter);
+  // Convert uploads are larger / heavier — tighter hourly cap in production.
+  const convertUploadLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: ENV.isProduction ? 20 : 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Convert upload limit exceeded, please try again later." },
+  });
+  app.use("/api/convert/upload", convertUploadLimiter);
 
   // Keep API bodies small; large audio uploads use express.raw on their own route.
   app.use(express.json({ limit: API_BODY_LIMIT }));
