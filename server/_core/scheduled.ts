@@ -124,7 +124,9 @@ export function registerScheduledRoutes(app: Express) {
           continue;
         }
         const insights = computeWeeklyInsights(sessions);
-        if (!insights.ready && insights.moodLoggedCount < 1) {
+        // Skip unless insights have enough signal AND at least one mood log
+        // (ready can be true from session count alone with no mood analytics).
+        if (!insights.ready || insights.moodLoggedCount < 1) {
           skipped++;
           continue;
         }
