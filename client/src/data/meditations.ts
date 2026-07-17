@@ -37,7 +37,7 @@ export interface MeditationTrack {
   /** Secondary color for gradient */
   colorSecondary: string;
   /** Nature soundscape to layer underneath */
-  soundscape: "rain" | "ocean" | "forest" | "wind" | "fire" | "river" | "night" | "cave" | "bowl" | "sleep-preparation" | "deep-focus" | "anxiety-reset" | "chakra-dawn" | "morning-breath" | "silence";
+  soundscape: "rain" | "ocean" | "forest" | "wind" | "fire" | "river" | "night" | "cave" | "bowl" | "sleep-preparation" | "deep-focus" | "anxiety-reset" | "chakra-dawn" | "morning-breath" | "reiki-432" | "silence";
   /** Music mode to use underneath */
   musicMode: "ambient" | "drone" | "crystal" | "none";
   /** ID from FREQUENCIES catalog — the recommended pairing */
@@ -340,6 +340,42 @@ export const MEDITATIONS: MeditationTrack[] = [
   },
 
   // ─── HEALING ─────────────────────────────────────────────────────────────────
+  {
+    id: "reiki-432",
+    title: "432Hz Reiki Healing",
+    subtitle: "Channel universal life energy",
+    category: "healing",
+    durationMinutes: 20,
+    description: "A 20-minute Reiki-inspired healing session tuned to 432Hz — the frequency of natural harmony. Crystal singing bowls and Tibetan resonance create a sacred field for deep cellular healing, energy clearing, and inner restoration.",
+    benefit: "Deep cellular healing, energy field clearing, emotional release, inner peace",
+    icon: "Sparkles",
+    color: "#00D4AA",
+    colorSecondary: "#8B5CF6",
+    soundscape: "reiki-432",  // studio-produced 432Hz Reiki ambient — crystal bowls + Tibetan tones, seamless loop
+    musicMode: "none",   // the Reiki soundscape is self-contained — no additional music layer
+    recommendedFrequencyId: "432",
+    recommendedFrequencyLabel: "432Hz Natural Harmony",
+    frequencyRationale: "432Hz is tuned to the mathematical frequency of nature — the same resonance as the Schumann field and the harmonic series of the cosmos. In Reiki practice, this frequency is believed to align the body's energy centers (chakras) and amplify the flow of universal life force (Ki). The DDS engine synthesizes it with double-precision accuracy, ensuring no drift across the full session.",
+    affirmation: "Universal life energy flows through me, healing every cell, clearing every block, restoring perfect harmony.",
+    guidance: [
+      "Find a comfortable position — lying down is ideal. Close your eyes and take three deep, releasing breaths.",
+      "Set a healing intention. It may be physical, emotional, or spiritual. Hold it gently in your awareness.",
+      "Imagine a warm, golden-teal light entering through the crown of your head with each inhale.",
+      "Feel this light moving slowly down through your head, face, and neck — dissolving any tension it encounters.",
+      "The light reaches your heart center. Feel it expand outward in all directions — a sphere of healing warmth.",
+      "Allow the 432Hz frequency to resonate in your chest. This is the sound of your body's natural harmony.",
+      "The light continues down through your solar plexus — releasing any stored stress or anxiety.",
+      "Your sacral center now — the light clears old emotional patterns, restoring creative flow and joy.",
+      "The light reaches your root — grounding you deeply into the earth's own healing field.",
+      "Your entire energy body is now bathed in 432Hz resonance. Simply receive. There is nothing to do.",
+      "If you notice sensations — warmth, tingling, pulsing — these are signs of energy moving and healing.",
+      "Rest in this field of pure healing intention. The frequency is doing the work. You only need to be present.",
+      "Gently scan your body from head to toe. Notice any areas that feel lighter than when you began.",
+      "Take three deep breaths. With each exhale, release anything that no longer serves your highest good.",
+      "Slowly return your awareness to the room. Wiggle your fingers and toes. Open your eyes when ready.",
+    ],
+    isPremium: false,
+  },
   {
     id: "loving-kindness",
     title: "Loving-Kindness (Metta)",

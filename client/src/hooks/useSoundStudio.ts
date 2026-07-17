@@ -24,7 +24,7 @@ export type NatureSound =
   | "rain" | "ocean" | "forest" | "wind" | "fire"
   | "river" | "night" | "cave" | "bowl"
   | "sleep-preparation" | "deep-focus" | "anxiety-reset"
-  | "chakra-dawn" | "morning-breath"
+  | "chakra-dawn" | "morning-breath" | "reiki-432"
   | "none";
 
 /**
@@ -40,6 +40,7 @@ const RECORDED_NATURE_URLS: Partial<Record<NatureSound, string>> = {
   "anxiety-reset": getLibraryLoopUrl("anxiety-reset"),
   "chakra-dawn": getLibraryLoopUrl("chakra-dawn"),
   "morning-breath": getLibraryLoopUrl("morning-breath"),
+  "reiki-432": getLibraryLoopUrl("reiki-432"),
 };
 export type MusicMode = "ambient" | "drone" | "crystal" | "none";
 

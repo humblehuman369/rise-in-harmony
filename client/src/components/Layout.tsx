@@ -8,7 +8,7 @@ import { Link, useLocation } from "wouter";
 import {
   Home, Music2, AlarmClock, BookOpen, BarChart3, Settings,
   Layers, Headphones, ShieldCheck, LogIn, LogOut, User,
-  GraduationCap, Sun, Moon, CalendarRange, AudioLines,
+  GraduationCap, Sun, Moon, CalendarRange, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -20,9 +20,9 @@ import { useTheme } from "@/contexts/ThemeContext";
 const mobileNavItems = [
   { href: "/alarm", icon: AlarmClock, label: "Alarm" },
   { href: "/player", icon: Music2, label: "Player" },
+  { href: "/reiki", icon: Sparkles, label: "Reiki" },
   { href: "/meditation", icon: Headphones, label: "Meditate" },
   { href: "/studio", icon: Layers, label: "Studio" },
-  { href: "/convert", icon: AudioLines, label: "Convert" },
   { href: "/library", icon: BookOpen, label: "Library" },
   { href: "/programs", icon: CalendarRange, label: "Programs" },
   { href: "/learn", icon: GraduationCap, label: "Learn" },
@@ -36,9 +36,9 @@ const adminNavItem = { href: "/admin", icon: ShieldCheck, label: "Admin" };
 const baseNavItems = [
   { href: "/alarm", icon: AlarmClock, label: "Alarm" },
   { href: "/player", icon: Music2, label: "Player" },
+  { href: "/reiki", icon: Sparkles, label: "Reiki" },
   { href: "/meditation", icon: Headphones, label: "Meditate" },
   { href: "/studio", icon: Layers, label: "Studio" },
-  { href: "/convert", icon: AudioLines, label: "Convert" },
   { href: "/library", icon: BookOpen, label: "Library" },
   { href: "/programs", icon: CalendarRange, label: "Programs" },
   { href: "/learn", icon: GraduationCap, label: "Learn" },
