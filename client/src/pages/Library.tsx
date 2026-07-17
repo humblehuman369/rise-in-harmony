@@ -13,6 +13,14 @@ import PremiumPaywall from "@/components/PremiumPaywall";
 
 type LibraryView = "playable" | "directory";
 
+function initialLibraryView(): LibraryView {
+  if (typeof window === "undefined") return "directory";
+  const param = new URLSearchParams(window.location.search).get("view");
+  if (param === "playable") return "playable";
+  if (param === "directory") return "directory";
+  return "directory";
+}
+
 const CATEGORIES = ["all", "chakra", "solfeggio", "binaural", "recorded"] as const;
 type Category = typeof CATEGORIES[number];
 
@@ -220,10 +228,19 @@ function FrequencyCard({ freq, isPlaying, onPlay, showChakraPosition }: {
 
 export default function Library() {
   const { isPlaying, currentFrequency, togglePlay } = useFrequencyPlayer();
-  const [view, setView] = useState<LibraryView>("playable");
+  const [view, setView] = useState<LibraryView>(initialLibraryView);
   const [activeCategory, setActiveCategory] = useState<Category>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [paywallFreq, setPaywallFreq] = useState<Frequency | null>(null);
+
+  const setLibraryView = (next: LibraryView) => {
+    setView(next);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("view", next);
+      window.history.replaceState({}, "", url.toString());
+    }
+  };
 
   const handlePlay = (freq: Frequency) => {
     if (freq.isPremium) {
@@ -267,7 +284,7 @@ export default function Library() {
           <h1 className="mb-2" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5' }}>
             Healing Tones
           </h1>
-          <div className="flex gap-4 text-sm mb-5" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+          <div className="flex gap-4 text-sm mb-5 flex-wrap" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
             {view === "playable" ? (
               <>
                 <span style={{ color: '#00D4AA' }}>{freeCount} free</span>
@@ -287,42 +304,52 @@ export default function Library() {
             )}
           </div>
 
-          {/* View toggle: Playable vs Directory */}
+          {/* View toggle: Healing Directory (default) vs Playable Tones */}
           <div
-            className="flex p-1 rounded-xl gap-1"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+            className="flex p-1.5 rounded-2xl gap-1.5"
+            style={{
+              background: 'rgba(139,92,246,0.08)',
+              border: '1px solid rgba(139,92,246,0.28)',
+              boxShadow: '0 0 24px rgba(139,92,246,0.08)',
+            }}
             role="tablist"
             aria-label="Library section"
           >
             <button
               type="button"
               role="tab"
-              aria-selected={view === "playable"}
-              onClick={() => setView("playable")}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+              aria-selected={view === "directory"}
+              onClick={() => setLibraryView("directory")}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-semibold transition-all duration-200"
               style={{
-                background: view === "playable" ? "rgba(0,212,170,0.15)" : "transparent",
-                color: view === "playable" ? "#00D4AA" : "#6B7A99",
+                background: view === "directory"
+                  ? "linear-gradient(135deg, rgba(139,92,246,0.35), rgba(0,212,170,0.18))"
+                  : "transparent",
+                color: view === "directory" ? "#E8EDF5" : "#8FA3BF",
                 fontFamily: "DM Sans, sans-serif",
+                boxShadow: view === "directory" ? "0 0 16px rgba(139,92,246,0.25)" : "none",
               }}
             >
-              <Waves size={15} />
-              Playable
+              <BookOpen size={16} style={{ color: view === "directory" ? "#A78BFA" : "#6B7A99" }} />
+              Healing Directory
             </button>
             <button
               type="button"
               role="tab"
-              aria-selected={view === "directory"}
-              onClick={() => setView("directory")}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+              aria-selected={view === "playable"}
+              onClick={() => setLibraryView("playable")}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-semibold transition-all duration-200"
               style={{
-                background: view === "directory" ? "rgba(139,92,246,0.15)" : "transparent",
-                color: view === "directory" ? "#A78BFA" : "#6B7A99",
+                background: view === "playable"
+                  ? "rgba(0,212,170,0.22)"
+                  : "transparent",
+                color: view === "playable" ? "#E8EDF5" : "#8FA3BF",
                 fontFamily: "DM Sans, sans-serif",
+                boxShadow: view === "playable" ? "0 0 16px rgba(0,212,170,0.2)" : "none",
               }}
             >
-              <BookOpen size={15} />
-              Directory
+              <Waves size={16} style={{ color: view === "playable" ? "#00D4AA" : "#6B7A99" }} />
+              Playable Tones
             </button>
           </div>
         </div>
