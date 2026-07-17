@@ -8,6 +8,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerMobileAuthRoutes } from "./mobileAuth";
 import { registerOAuthRoutes } from "./oauth";
 import { registerSoundsUpload } from "./soundsUpload";
+import { registerConvertUpload } from "./convertUpload";
 import { registerStorageProxy } from "./storageProxy";
 import { registerStripeWebhook } from "./stripeWebhook";
 import { registerScheduledRoutes } from "./scheduled";
@@ -19,6 +20,8 @@ import { getDb } from "../db";
 import { pingPool } from "../lib/dbPool";
 import { log } from "../lib/logger";
 import { sql } from "drizzle-orm";
+import { startConvertWorker } from "../lib/convert/worker";
+import { isConvertEnabled } from "../lib/convert/limits";
 
 /** JSON/urlencoded body limit for API routes (uploads use a dedicated raw route). */
 const API_BODY_LIMIT = "1mb";
@@ -144,6 +147,7 @@ async function startServer() {
     message: { error: "Upload limit exceeded, please try again later." },
   });
   app.use("/api/sounds/upload", uploadLimiter);
+  app.use("/api/convert/upload", uploadLimiter);
 
   // Keep API bodies small; large audio uploads use express.raw on their own route.
   app.use(express.json({ limit: API_BODY_LIMIT }));
@@ -153,6 +157,7 @@ async function startServer() {
   registerMobileAuthRoutes(app);
   registerOAuthRoutes(app);
   registerSoundsUpload(app);
+  registerConvertUpload(app);
   // Cron callbacks (Manus Heartbeat / external CRON_SECRET)
   registerScheduledRoutes(app);
 
@@ -185,6 +190,11 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    if (isConvertEnabled()) {
+      startConvertWorker();
+    } else {
+      log.info("convert worker not started (RIH_CONVERT_ENABLED off)");
+    }
   });
 
   server.on("error", (err: NodeJS.ErrnoException) => {

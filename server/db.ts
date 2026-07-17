@@ -1,8 +1,10 @@
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   Alarm,
+  ConvertJob,
   InsertAlarm,
+  InsertConvertJob,
   InsertSession,
   InsertStudioPreset,
   InsertUser,
@@ -16,6 +18,7 @@ import {
   UserProgram,
   ProgramDayCompletion,
   alarms,
+  convertJobs,
   healingFavorites,
   programDayCompletions,
   sessions,
@@ -1185,4 +1188,202 @@ export async function logSubscriptionEvent(data: {
     }
     throw err;
   }
+}
+
+// ─── TrueHz Convert jobs ──────────────────────────────────────────────────────
+
+export async function createConvertJob(
+  data: InsertConvertJob,
+): Promise<ConvertJob | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(convertJobs).values(data);
+  const insertId = (result[0] as { insertId: number }).insertId;
+  const rows = await db
+    .select()
+    .from(convertJobs)
+    .where(eq(convertJobs.id, insertId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getConvertJobByPublicId(
+  publicId: string,
+  userId: number,
+): Promise<ConvertJob | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select()
+    .from(convertJobs)
+    .where(
+      and(eq(convertJobs.publicId, publicId), eq(convertJobs.userId, userId)),
+    )
+    .limit(1);
+  return rows[0];
+}
+
+export async function getConvertJobById(
+  id: number,
+): Promise<ConvertJob | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select()
+    .from(convertJobs)
+    .where(eq(convertJobs.id, id))
+    .limit(1);
+  return rows[0];
+}
+
+export async function listConvertJobs(
+  userId: number,
+  limit = 50,
+): Promise<ConvertJob[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(convertJobs)
+    .where(eq(convertJobs.userId, userId))
+    .orderBy(desc(convertJobs.createdAt))
+    .limit(limit);
+}
+
+export async function countActiveConvertJobs(userId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(convertJobs)
+    .where(
+      and(
+        eq(convertJobs.userId, userId),
+        inArray(convertJobs.status, ["queued", "processing"]),
+      ),
+    );
+  return Number(rows[0]?.n ?? 0);
+}
+
+export async function updateConvertJobProgress(
+  id: number,
+  patch: {
+    stage?: string;
+    progressPct?: number;
+    sourceDurationSec?: number;
+    sourceFormat?: string;
+  },
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(convertJobs).set(patch).where(eq(convertJobs.id, id));
+}
+
+export async function claimNextQueuedConvertJob(): Promise<ConvertJob | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(convertJobs)
+    .where(eq(convertJobs.status, "queued"))
+    .orderBy(asc(convertJobs.createdAt))
+    .limit(1);
+  const job = rows[0];
+  if (!job) return null;
+  // Optimistic claim
+  const result = await db
+    .update(convertJobs)
+    .set({ status: "processing", stage: "processing", progressPct: 1 })
+    .where(
+      and(eq(convertJobs.id, job.id), eq(convertJobs.status, "queued")),
+    );
+  const affected = (result[0] as { affectedRows: number }).affectedRows;
+  if (affected === 0) return null;
+  return { ...job, status: "processing", stage: "processing", progressPct: 1 };
+}
+
+export async function markConvertJobCompleted(
+  id: number,
+  data: {
+    outputWavKey: string | null;
+    outputMp3Key: string | null;
+    algorithmVersion: string;
+    processingMs: number;
+    sourceDurationSec: number;
+    sourceFormat: string;
+    pitchRatio: number;
+    cents: number;
+  },
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(convertJobs)
+    .set({
+      status: "completed",
+      stage: "done",
+      progressPct: 100,
+      outputWavKey: data.outputWavKey,
+      outputMp3Key: data.outputMp3Key,
+      algorithmVersion: data.algorithmVersion,
+      processingMs: data.processingMs,
+      sourceDurationSec: data.sourceDurationSec,
+      sourceFormat: data.sourceFormat,
+      pitchRatio: data.pitchRatio,
+      cents: data.cents,
+      errorCode: null,
+      errorMessage: null,
+    })
+    .where(eq(convertJobs.id, id));
+}
+
+export async function failConvertJob(
+  id: number,
+  errorCode: string,
+  errorMessage: string,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(convertJobs)
+    .set({
+      status: "failed",
+      stage: "error",
+      progressPct: 0,
+      errorCode,
+      errorMessage,
+    })
+    .where(eq(convertJobs.id, id));
+}
+
+export async function deleteConvertJob(
+  publicId: string,
+  userId: number,
+): Promise<ConvertJob | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const existing = await getConvertJobByPublicId(publicId, userId);
+  if (!existing) return undefined;
+  await db
+    .delete(convertJobs)
+    .where(
+      and(eq(convertJobs.publicId, publicId), eq(convertJobs.userId, userId)),
+    );
+  return existing;
+}
+
+/** Mark expired completed jobs (TTL). Returns count. */
+export async function expireOldConvertJobs(): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db
+    .update(convertJobs)
+    .set({ status: "expired", stage: "expired" })
+    .where(
+      and(
+        eq(convertJobs.status, "completed"),
+        lt(convertJobs.expiresAt, sql`NOW()`),
+      ),
+    );
+  return (result[0] as { affectedRows: number }).affectedRows ?? 0;
 }

@@ -64,6 +64,20 @@
       "when": 1784100000000,
       "tag": "0008_phase2_retain",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1784300000000,
+      "tag": "0009_convert_jobs",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1784400000000,
+      "tag": "0010_convert_formant",
+      "breakpoints": true
     }
   ]
 }

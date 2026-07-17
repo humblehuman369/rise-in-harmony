@@ -33,6 +33,23 @@ export {
   type ProgramActivityType,
 } from "./programs";
 
+export {
+  pitchRatio,
+  ratioToCents,
+  centsToRatio,
+  describeRetune,
+  clampConcertA,
+  formatCents,
+  expectedPeakHz,
+  type PitchRetune,
+} from "./pitchMath";
+
+export {
+  clampHz,
+  renderSinePcm,
+  dbToLinear,
+} from "./trueHzOffline";
+
 // ─── Frequency Catalog ────────────────────────────────────────────────────────
 
 export const FREQUENCIES: Frequency[] = [

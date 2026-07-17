@@ -5,6 +5,7 @@ import { publicProcedure, router } from "./_core/trpc";
 import { adminRouter } from "./routers/admin";
 import { alarmsRouter } from "./routers/alarms";
 import { billingRouter } from "./routers/billing";
+import { convertRouter } from "./routers/convert";
 import { presetsRouter } from "./routers/presets";
 import { sessionsRouter } from "./routers/sessions";
 import { soundsRouter } from "./routers/sounds";
@@ -32,6 +33,7 @@ export const appRouter = router({
   sessions: sessionsRouter,
   alarms: alarmsRouter,
   billing: billingRouter,
+  convert: convertRouter,
   presets: presetsRouter,
   sounds: soundsRouter,
   subscription: subscriptionRouter,

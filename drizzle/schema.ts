@@ -248,3 +248,52 @@ export const programDayCompletions = mysqlTable(
 
 export type ProgramDayCompletion = typeof programDayCompletions.$inferSelect;
 export type InsertProgramDayCompletion = typeof programDayCompletions.$inferInsert;
+
+// ─── TrueHz Convert (offline pitch-ratio jobs) ────────────────────────────────
+
+export const convertJobs = mysqlTable("convert_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Public job id for API/UI (nanoid). */
+  publicId: varchar("publicId", { length: 32 }).notNull().unique(),
+  userId: int("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  status: mysqlEnum("status", [
+    "queued",
+    "processing",
+    "completed",
+    "failed",
+    "expired",
+  ])
+    .default("queued")
+    .notNull(),
+  /** Fine-grained stage for progress UI: queued|downloading|analyzing|retuning|encoding|uploading|done|error */
+  stage: varchar("stage", { length: 64 }).default("queued").notNull(),
+  progressPct: int("progressPct").default(0).notNull(),
+  sourceKey: varchar("sourceKey", { length: 512 }).notNull(),
+  sourceFilename: varchar("sourceFilename", { length: 256 }).notNull(),
+  sourceDurationSec: float("sourceDurationSec"),
+  sourceFormat: varchar("sourceFormat", { length: 32 }),
+  sourcePitchA: float("sourcePitchA").default(440).notNull(),
+  targetPitchA: float("targetPitchA").notNull(),
+  pitchRatio: float("pitchRatio").notNull(),
+  cents: float("cents").notNull(),
+  hybridEnabled: boolean("hybridEnabled").default(false).notNull(),
+  hybridHz: float("hybridHz"),
+  hybridGainDb: float("hybridGainDb").default(-18),
+  /** Rubber Band formant preservation when pitch-shifting (premium / vocal). */
+  formantPreserve: boolean("formantPreserve").default(false).notNull(),
+  quality: mysqlEnum("quality", ["standard", "high"]).default("standard").notNull(),
+  outputWavKey: varchar("outputWavKey", { length: 512 }),
+  outputMp3Key: varchar("outputMp3Key", { length: 512 }),
+  errorCode: varchar("errorCode", { length: 64 }),
+  errorMessage: text("errorMessage"),
+  algorithmVersion: varchar("algorithmVersion", { length: 64 }),
+  processingMs: int("processingMs"),
+  expiresAt: timestamp("expiresAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ConvertJob = typeof convertJobs.$inferSelect;
+export type InsertConvertJob = typeof convertJobs.$inferInsert;

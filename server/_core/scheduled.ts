@@ -12,6 +12,7 @@ import { sdk } from "./sdk";
 import { processReEngagementBatch } from "../lib/reEngagement";
 import {
   ensureMonthlyStreakFreeze,
+  expireOldConvertJobs,
   getDb,
   getUserSessions,
   listUsersForWeeklyInsights,
@@ -153,6 +154,30 @@ export function registerScheduledRoutes(app: Express) {
       res.json({ ok: true, freezesRefreshed, sent, skipped, candidates: candidates.length });
     } catch (err) {
       log.error("Scheduled weekly-insights failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "handler failed",
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  /**
+   * Expire TrueHz Convert library rows past retention TTL.
+   * Suggested: daily. Does not delete S3 objects yet (Phase 3 lifecycle).
+   */
+  app.post("/api/scheduled/convert-expire", async (req: Request, res: Response) => {
+    try {
+      const ok = await authorizeCron(req);
+      if (!ok) {
+        res.status(403).json({ error: "cron-only" });
+        return;
+      }
+      const expired = await expireOldConvertJobs();
+      res.json({ ok: true, expired });
+    } catch (err) {
+      log.error("Scheduled convert-expire failed", {
         error: err instanceof Error ? err.message : String(err),
       });
       res.status(500).json({

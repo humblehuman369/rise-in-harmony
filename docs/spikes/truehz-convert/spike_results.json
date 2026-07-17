@@ -1,0 +1,74 @@
+{
+  "spike": "truehz-convert-dsp-v1",
+  "timestamp": "2026-07-17T08:48:34.138816+00:00",
+  "source_hz": 440.0,
+  "source_a": 440.0,
+  "target_a": 432.0,
+  "pitch_ratio": 0.9818181818181818,
+  "cents": -31.766653633429282,
+  "expected_peak_hz": 432.0,
+  "sample_rate": 48000,
+  "duration_sec": 5.0,
+  "methods": {
+    "rubberband": {
+      "run": {
+        "cmd": "/opt/homebrew/bin/rubberband -f 0.9818181818 -c 2 /Users/bradgeisen/rise-in-harmony/docs/spikes/truehz-convert/source_440hz_5s.wav /Users/bradgeisen/rise-in-harmony/docs/spikes/truehz-convert/out_rubberband_432ratio.wav",
+        "returncode": 0,
+        "stderr_tail": " \n77% \n78% \n79% \n80% \n81% \n82% \n83% \n84% \n85% \n86% \n87% \n88% \n89% \n90% \n91% \n92% \n93% \n94% \n95% \n96% \n97% \n98% \n99% \nCalculating profile...\nPass 2: Processing...\n\n0% \n1% \n2% \n3% \n4% \n5% \n6% \n7% \n8% \n9% \n10% \n11% \n12% \n13% \n14% \n15% \n16% \n17% \n18% \n19% \n20% \n21% \n22% \n23% \n24% \n25% \n26% \n27% \n28% \n29% \n30% \n31% \n32% \n33% \n34% \n35% \n36% \n37% \n38% \n39% \n40% \n41% \n42% \n43% \n44% \n45% \n46% \n47% \n48% \n49% \n50% \n51% \n52% \n53% \n54% \n55% \n56% \n57% \n58% \n59% \n60% \n61% \n62% \n63% \n64% \n65% \n66% \n67% \n68% \n69% \n70% \n71% \n72% \n73% \n74% \n75% \n76% \n77% \n78% \n79% \n80% \n81% \n82% \n83% \n84% \n85% \n86% \n87% \n88% \n89% \n90% \n91% \n92% \n93% \n94% \n95% \n96% \n97% \n98% \n99% \n    \nin: 240000, out: 240000, ratio: 1, ideal output: 240000, error: 0\nelapsed time: 0.034282 sec, in frames/sec: 7000758, out frames/sec: 7000758\n",
+        "stdout_tail": "",
+        "elapsed_ms": 39
+      },
+      "peak": {
+        "peak_hz": 431.99999999751634,
+        "bin_hz": 432.0,
+        "snr_db_approx": 141.02559972179975,
+        "n_samples": 192000,
+        "fs": 48000
+      },
+      "error_hz": -2.4836595002852846e-09,
+      "abs_error_hz": 2.4836595002852846e-09,
+      "thd_percent": 0.0014800632122057896,
+      "duration_sec": 5.0,
+      "pass_peak_within_0_05": true,
+      "pass_peak_within_0_5": true
+    },
+    "ffmpeg_asetrate": {
+      "run": {
+        "cmd": "ffmpeg -y -hide_banner -loglevel error -i /Users/bradgeisen/rise-in-harmony/docs/spikes/truehz-convert/source_440hz_5s.wav -af asetrate=47127.27272727273,aresample=48000,atempo=1.0185185185 /Users/bradgeisen/rise-in-harmony/docs/spikes/truehz-convert/out_ffmpeg_asetrate_432ratio.wav",
+        "returncode": 0,
+        "stderr_tail": "",
+        "stdout_tail": "",
+        "elapsed_ms": 63
+      },
+      "filter": "asetrate=47127.27272727273,aresample=48000,atempo=1.0185185185",
+      "peak": {
+        "peak_hz": 431.9920623437004,
+        "bin_hz": 432.0,
+        "snr_db_approx": 138.40317224281944,
+        "n_samples": 192000,
+        "fs": 48000
+      },
+      "error_hz": -0.00793765629958898,
+      "abs_error_hz": 0.00793765629958898,
+      "thd_percent": 0.0030673903529930637,
+      "duration_sec": 5.000125,
+      "pass_peak_within_0_05": true,
+      "pass_peak_within_0_5": true
+    }
+  },
+  "source_measurement": {
+    "peak": {
+      "peak_hz": 440.0,
+      "bin_hz": 440.0,
+      "snr_db_approx": 241.6826675818174,
+      "n_samples": 192000,
+      "fs": 48000
+    },
+    "error_hz": 0.0
+  },
+  "verdict": {
+    "rubberband_recommended": true,
+    "spike_pass": true,
+    "notes": "PASS: Rubber Band lands pure-tone peak near expected ratio target."
+  }
+}

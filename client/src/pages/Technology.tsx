@@ -183,9 +183,20 @@ export default function Technology() {
           {/* CTA */}
           <button
             onClick={() => navigate("/studio")}
-            className="btn-teal w-full py-3.5 text-base font-semibold mb-8"
+            className="btn-teal w-full py-3.5 text-base font-semibold mb-3"
           >
             Try the Precision Player →
+          </button>
+          <button
+            onClick={() => navigate("/convert")}
+            className="w-full py-3.5 text-base font-semibold mb-8 rounded-xl border transition-colors"
+            style={{
+              borderColor: "rgba(0,212,170,0.35)",
+              color: "#00D4AA",
+              background: "transparent",
+            }}
+          >
+            TrueHz Convert — retune your tracks →
           </button>
 
           <p className="text-xs text-center leading-relaxed pb-10" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
