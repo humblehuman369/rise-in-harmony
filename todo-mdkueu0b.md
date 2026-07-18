@@ -46,4 +46,10 @@
 - [x] Set RIH_RELAY_URL secret to HTTPS tunnel URL
 - [x] Add relay.url.test.ts to validate tunnel reachability (107 tests pass)
 - [x] Production build clean
-- [ ] Checkpoint and publish
+- [x] Checkpoint and publish (checkpoint d0fef5a4 saved — ready to Publish)
+
+## Upload Progress Enhancement (Speed + ETA)
+
+- [x] Extend convertUpload.ts onProgress callback with bytes/speed/ETA metrics
+- [x] Update Convert.tsx progress UI to show upload speed (MB/s) and time remaining
+- [x] Verify visually, tests pass (116), checkpoint

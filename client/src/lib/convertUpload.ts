@@ -26,6 +26,76 @@ export type ConvertUploadResult = {
   format: string;
 };
 
+/** Rich progress info emitted during uploads. */
+export type UploadProgress = {
+  /** 0–100 overall percentage. */
+  pct: number;
+  /** Bytes sent so far (0 when unknown). */
+  loadedBytes: number;
+  /** Total bytes to send (0 when unknown). */
+  totalBytes: number;
+  /** Smoothed upload speed in bytes/second (null until measurable). */
+  bytesPerSec: number | null;
+  /** Estimated seconds remaining (null until measurable). */
+  etaSec: number | null;
+};
+
+export type UploadProgressCallback = (progress: UploadProgress) => void;
+
+/**
+ * Tracks upload speed with exponential smoothing so the MB/s readout
+ * doesn't jump around, and derives a stable ETA from it.
+ */
+function createSpeedTracker(totalBytes: number) {
+  let lastTime = performance.now();
+  let lastLoaded = 0;
+  let smoothedBps: number | null = null;
+  const ALPHA = 0.25; // smoothing factor — lower = smoother
+
+  return (loaded: number): { bytesPerSec: number | null; etaSec: number | null } => {
+    const now = performance.now();
+    const dtMs = now - lastTime;
+    // Sample at most every 300 ms to avoid noisy instantaneous readings
+    if (dtMs < 300) {
+      const etaSec =
+        smoothedBps && smoothedBps > 0
+          ? Math.max(0, (totalBytes - loaded) / smoothedBps)
+          : null;
+      return { bytesPerSec: smoothedBps, etaSec };
+    }
+    const dBytes = loaded - lastLoaded;
+    const instantBps = (dBytes / dtMs) * 1000;
+    smoothedBps =
+      smoothedBps == null ? instantBps : smoothedBps + ALPHA * (instantBps - smoothedBps);
+    lastTime = now;
+    lastLoaded = loaded;
+    const etaSec =
+      smoothedBps > 0 ? Math.max(0, (totalBytes - loaded) / smoothedBps) : null;
+    return { bytesPerSec: smoothedBps, etaSec };
+  };
+}
+
+/** Format bytes/second as a human-readable speed, e.g. "3.2 MB/s". */
+export function formatUploadSpeed(bytesPerSec: number | null): string {
+  if (bytesPerSec == null || !isFinite(bytesPerSec) || bytesPerSec <= 0) return "—";
+  if (bytesPerSec >= 1024 * 1024) return `${(bytesPerSec / (1024 * 1024)).toFixed(1)} MB/s`;
+  if (bytesPerSec >= 1024) return `${(bytesPerSec / 1024).toFixed(0)} KB/s`;
+  return `${Math.round(bytesPerSec)} B/s`;
+}
+
+/** Format seconds remaining as "Xm Ys" / "Ys" / "<1s". */
+export function formatEta(etaSec: number | null): string {
+  if (etaSec == null || !isFinite(etaSec)) return "—";
+  if (etaSec < 1) return "<1s";
+  const s = Math.round(etaSec);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  if (m < 60) return rem > 0 ? `${m}m ${rem}s` : `${m}m`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m`;
+}
+
 const ACCEPTED_EXT = [
   ".mp3", ".wav", ".flac", ".m4a", ".ogg", ".aac",
   ".mp4", ".mkv", ".mov", ".avi", ".webm",
@@ -88,9 +158,18 @@ async function apiFetch(url: string, init: RequestInit): Promise<Response> {
  */
 async function uploadViaRelay(
   file: File,
-  onProgress?: (pct: number) => void,
+  onProgress?: UploadProgressCallback,
 ): Promise<ConvertUploadResult> {
-  onProgress?.(2);
+  const emit = (pct: number, loaded = 0, extras?: { bytesPerSec: number | null; etaSec: number | null }) =>
+    onProgress?.({
+      pct,
+      loadedBytes: loaded,
+      totalBytes: file.size,
+      bytesPerSec: extras?.bytesPerSec ?? null,
+      etaSec: extras?.etaSec ?? null,
+    });
+
+  emit(2);
 
   // Step 1: Get a short-lived HMAC token from the server
   // We use a raw fetch here because the trpc client hook is React-only.
@@ -102,10 +181,11 @@ async function uploadViaRelay(
   const tokenJson = await tokenRes.json() as [{ result: { data: { token: string; relayUrl: string } } }];
   const { token, relayUrl } = tokenJson[0].result.data;
 
-  onProgress?.(5);
+  emit(5);
 
   // Step 2: POST the raw file directly to the relay
   // Use XMLHttpRequest so we can track upload progress.
+  const speedTracker = createSpeedTracker(file.size);
   const { key, url } = await new Promise<{ key: string; url: string }>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `${relayUrl}/upload`, true);
@@ -117,7 +197,8 @@ async function uploadViaRelay(
       if (e.lengthComputable) {
         // Map upload progress to 5%–95% range
         const pct = 5 + Math.round((e.loaded / e.total) * 90);
-        onProgress?.(pct);
+        const { bytesPerSec, etaSec } = speedTracker(e.loaded);
+        emit(pct, e.loaded, { bytesPerSec, etaSec });
       }
     });
 
@@ -146,7 +227,7 @@ async function uploadViaRelay(
     xhr.send(file);
   });
 
-  onProgress?.(100);
+  emit(100, file.size, { bytesPerSec: null, etaSec: 0 });
 
   return {
     key,
@@ -165,7 +246,7 @@ async function uploadViaRelay(
  */
 export async function uploadConvertSource(
   file: File,
-  onProgress?: (pct: number) => void,
+  onProgress?: UploadProgressCallback,
 ): Promise<ConvertUploadResult> {
   if (!isAcceptedConvertFile(file)) {
     throw new Error("Supported formats: MP3, WAV, FLAC, M4A, OGG, AAC, MP4, MKV, MOV, AVI, WEBM");
@@ -175,13 +256,13 @@ export async function uploadConvertSource(
 
   // ── Small file: single-shot legacy route (stays under proxy limit) ──────────
   if (file.size <= DIRECT_UPLOAD_THRESHOLD) {
-    onProgress?.(10);
+    onProgress?.({ pct: 10, loadedBytes: 0, totalBytes: file.size, bytesPerSec: null, etaSec: null });
     const res = await apiFetch("/api/convert/upload", {
       method: "POST",
       headers: { "Content-Type": contentType, "x-filename": file.name },
       body: file,
     });
-    onProgress?.(100);
+    onProgress?.({ pct: 100, loadedBytes: file.size, totalBytes: file.size, bytesPerSec: null, etaSec: 0 });
     const data = await res.json() as ConvertUploadResult;
     return data;
   }

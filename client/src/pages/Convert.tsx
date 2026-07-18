@@ -25,6 +25,9 @@ import { trpc } from "@/lib/trpc";
 import {
   isAcceptedConvertFile,
   uploadConvertSource,
+  formatUploadSpeed,
+  formatEta,
+  type UploadProgress,
 } from "@/lib/convertUpload";
 import { formatCents } from "@rih/shared-utils";
 import { toast } from "sonner";
@@ -83,7 +86,7 @@ export default function Convert() {
   const [hybridGainDb, setHybridGainDb] = useState(-18);
   const [rightsOk, setRightsOk] = useState(false);
   const [detectNote, setDetectNote] = useState<string | null>(null);
-  const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -285,7 +288,7 @@ export default function Convert() {
         return;
       }
       setBusy(true);
-      setUploadPct(0);
+      setUploadProgress({ pct: 0, loadedBytes: 0, totalBytes: file.size, bytesPerSec: null, etaSec: null });
       if (localOriginalUrl) URL.revokeObjectURL(localOriginalUrl);
       setLocalOriginalUrl(URL.createObjectURL(file));
       setResultUrl(null);
@@ -293,7 +296,7 @@ export default function Convert() {
       const ext = file.name.split(".").pop()?.toLowerCase();
       trackConvertUploadStarted({ bytes: file.size, format: ext });
       try {
-        const uploaded = await uploadConvertSource(file, setUploadPct);
+        const uploaded = await uploadConvertSource(file, setUploadProgress);
         trackConvertUploadCompleted({
           bytes: uploaded.bytes,
           format: uploaded.format,
@@ -369,7 +372,7 @@ export default function Convert() {
         toast.error(msg);
       } finally {
         setBusy(false);
-        setUploadPct(null);
+        setUploadProgress(null);
       }
     },
     [
@@ -768,12 +771,42 @@ export default function Convert() {
                   <Upload style={{ color: c.accent }} />
                 )}
                 <span className={`text-sm font-medium ${c.text}`}>
-                  {uploadPct != null
-                    ? `Uploading… ${uploadPct}%`
+                  {uploadProgress != null
+                    ? `Uploading… ${uploadProgress.pct}%`
                     : rightsOk
                       ? "Drop or choose audio"
                       : "Accept rights checkbox first"}
                 </span>
+                {uploadProgress != null && (
+                  <div className="w-full max-w-xs flex flex-col items-center gap-2">
+                    <div
+                      className="w-full h-1.5 rounded-full overflow-hidden"
+                      style={{ backgroundColor: "rgba(0,212,170,0.15)" }}
+                    >
+                      <div
+                        className="h-full rounded-full transition-[width] duration-300 ease-out"
+                        style={{
+                          width: `${uploadProgress.pct}%`,
+                          backgroundColor: c.accent,
+                        }}
+                      />
+                    </div>
+                    <span className={`text-xs tabular-nums ${c.muted}`}>
+                      {uploadProgress.totalBytes > 0 && (
+                        <>
+                          {(uploadProgress.loadedBytes / (1024 * 1024)).toFixed(1)} /{" "}
+                          {(uploadProgress.totalBytes / (1024 * 1024)).toFixed(1)} MB
+                        </>
+                      )}
+                      {uploadProgress.bytesPerSec != null && (
+                        <> · {formatUploadSpeed(uploadProgress.bytesPerSec)}</>
+                      )}
+                      {uploadProgress.etaSec != null && uploadProgress.pct < 100 && (
+                        <> · {formatEta(uploadProgress.etaSec)} left</>
+                      )}
+                    </span>
+                  </div>
+                )}
                 <span className={`text-xs ${c.muted}`}>
                   MP3 / WAV / FLAC / M4A · free max{" "}
                   {Math.round(
