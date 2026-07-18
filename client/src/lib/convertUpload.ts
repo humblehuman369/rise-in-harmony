@@ -22,7 +22,7 @@ export type ConvertUploadResult = {
 };
 
 const ACCEPTED_EXT = [".mp3", ".wav", ".flac", ".m4a", ".ogg", ".aac"];
-const CHUNK_SIZE = 3 * 1024 * 1024; // 3 MB — must match server CHUNK_LIMIT
+const CHUNK_SIZE = 2 * 1024 * 1024; // 2 MB — must stay under the ~3 MB proxy body limit
 
 export function isAcceptedConvertFile(file: File): boolean {
   const name = file.name.toLowerCase();

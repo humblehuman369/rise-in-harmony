@@ -24,8 +24,8 @@ import {
 } from "../lib/convert/limits";
 import { nanoid } from "nanoid";
 
-/** Each individual chunk must be ≤ this to stay under the proxy limit. */
-const CHUNK_LIMIT = 3 * 1024 * 1024; // 3 MB
+/** Each individual chunk must be ≤ this to stay under the ~3 MB proxy limit. */
+const CHUNK_LIMIT = 2 * 1024 * 1024; // 2 MB — proxy silently drops bodies ≥ 3.5 MB
 
 /** How long (ms) an incomplete upload session lives before being GC'd. */
 const SESSION_TTL_MS = 30 * 60 * 1000; // 30 min
