@@ -114,10 +114,46 @@ async function startServer() {
     next();
   });
 
-  // Security headers. Relax CSP in dev so Vite HMR / inline tooling works.
+  // Security headers. Production CSP must allow analytics + Manus OAuth/storage.
+  // (Helmet defaults blocked us.i.posthog.com — console CSP errors.)
   app.use(
     helmet({
-      contentSecurityPolicy: ENV.isProduction ? undefined : false,
+      contentSecurityPolicy: ENV.isProduction
+        ? {
+            useDefaults: true,
+            directives: {
+              "default-src": ["'self'"],
+              "script-src": [
+                "'self'",
+                "https://us.i.posthog.com",
+                "https://*.posthog.com",
+                "https://fonts.googleapis.com",
+              ],
+              "script-src-elem": [
+                "'self'",
+                "https://us.i.posthog.com",
+                "https://*.posthog.com",
+              ],
+              "connect-src": [
+                "'self'",
+                "https://us.i.posthog.com",
+                "https://*.posthog.com",
+                "https://manus.im",
+                "https://*.manus.im",
+                "https://*.manuscdn.com",
+                "https://*.amazonaws.com",
+                "https://*.r2.cloudflarestorage.com",
+                "blob:",
+              ],
+              "img-src": ["'self'", "data:", "blob:", "https:"],
+              "media-src": ["'self'", "blob:", "https:", "data:"],
+              "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
+              "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+              "frame-src": ["'self'", "https://manus.im", "https://*.manus.im"],
+              "worker-src": ["'self'", "blob:"],
+            },
+          }
+        : false,
       crossOriginEmbedderPolicy: false,
     })
   );

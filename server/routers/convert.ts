@@ -31,7 +31,7 @@ import {
 } from "../lib/convert/limits";
 import { detectConcertAFromWavFile } from "../lib/convert/pitchDetect";
 import { which } from "../lib/convert/pipeline";
-import { storageGet, storageGetSignedUrl } from "../storage";
+import { storageGet, storageGetSignedUrl, storagePresignPut } from "../storage";
 import { spawn } from "node:child_process";
 
 const pitchASchema = z.number().min(400).max(480);
@@ -246,8 +246,64 @@ export const convertRouter = router({
     }),
 
   /**
+   * Presign a direct-to-S3 PUT for Convert sources.
+   * Avoids Manus/Cloudflare request-body 413 limits on /api/convert/upload.
+   */
+  createUploadUrl: protectedProcedure
+    .input(
+      z.object({
+        filename: z.string().min(1).max(256),
+        contentType: z.string().min(3).max(128).default("application/octet-stream"),
+        byteSize: z.number().int().positive().max(100 * 1024 * 1024),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      assertConvertEnabled();
+      const user = await reconcileExpiredSubscription(ctx.user.id);
+      const premium = isUserPremium(user ?? ctx.user);
+      const limits = limitsForPremium(premium);
+
+      if (input.byteSize > limits.maxFileBytes) {
+        throw new TRPCError({
+          code: "PAYLOAD_TOO_LARGE",
+          message: CONVERT_ERROR_CODES.TOO_LARGE,
+        });
+      }
+
+      const ext =
+        input.filename.toLowerCase().match(/\.(mp3|wav|flac|m4a|ogg|aac)$/)?.[1] ??
+        "bin";
+      const safeBase = input.filename
+        .replace(/[^a-zA-Z0-9._-]/g, "_")
+        .slice(0, 64);
+      const filename = safeBase.toLowerCase().endsWith(`.${ext}`)
+        ? safeBase
+        : `${safeBase || "upload"}.${ext}`;
+      const uploadId = nanoid(12);
+      const relKey = `convert/${ctx.user.id}/${uploadId}/${filename}`;
+
+      try {
+        const { key, uploadUrl, publicUrl } = await storagePresignPut(relKey);
+        return {
+          key,
+          uploadUrl,
+          publicUrl,
+          filename,
+          contentType: input.contentType,
+          maxBytes: limits.maxFileBytes,
+        };
+      } catch (err) {
+        console.error("[convert.createUploadUrl]", err);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: CONVERT_ERROR_CODES.UPLOAD_FAILED,
+        });
+      }
+    }),
+
+  /**
    * Create a job after the client has uploaded source audio via
-   * POST /api/convert/upload (returns sourceKey).
+   * createUploadUrl (presigned S3) or POST /api/convert/upload.
    */
   createJob: protectedProcedure
     .input(jobCreateFields)

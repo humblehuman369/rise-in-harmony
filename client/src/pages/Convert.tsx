@@ -777,9 +777,14 @@ export default function Convert() {
                 <span className={`text-xs ${c.muted}`}>
                   MP3 / WAV / FLAC / M4A · free max{" "}
                   {Math.round(
+                    (statusQuery.data?.limits.maxFileBytes ?? 25 * 1024 * 1024) /
+                      (1024 * 1024),
+                  )}{" "}
+                  MB /{" "}
+                  {Math.round(
                     (statusQuery.data?.limits.maxDurationSec ?? 300) / 60,
                   )}{" "}
-                  min · {retentionDays}-day library
+                  min · {retentionDays}-day library · direct cloud upload
                 </span>
                 <input
                   type="file"

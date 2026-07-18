@@ -28,15 +28,16 @@ function appendHashSuffix(relKey: string): string {
   return `${relKey.slice(0, lastDot)}_${hash}${relKey.slice(lastDot)}`;
 }
 
-export async function storagePut(
+/**
+ * Presign a PUT so the browser can upload directly to S3 (bypasses Manus
+ * reverse-proxy body limits that cause HTTP 413 on large Convert files).
+ */
+export async function storagePresignPut(
   relKey: string,
-  data: Buffer | Uint8Array | string,
-  contentType = "application/octet-stream",
-): Promise<{ key: string; url: string }> {
+): Promise<{ key: string; uploadUrl: string; publicUrl: string }> {
   const { forgeUrl, forgeKey } = getForgeConfig();
   const key = appendHashSuffix(normalizeKey(relKey));
 
-  // 1. Get presigned PUT URL from Forge
   const presignUrl = new URL("v1/storage/presign/put", forgeUrl + "/");
   presignUrl.searchParams.set("path", key);
 
@@ -52,13 +53,27 @@ export async function storagePut(
   const { url: s3Url } = (await presignResp.json()) as { url: string };
   if (!s3Url) throw new Error("Forge returned empty presign URL");
 
-  // 2. PUT file directly to S3
+  return {
+    key,
+    uploadUrl: s3Url,
+    publicUrl: `/manus-storage/${key}`,
+  };
+}
+
+export async function storagePut(
+  relKey: string,
+  data: Buffer | Uint8Array | string,
+  contentType = "application/octet-stream",
+): Promise<{ key: string; url: string }> {
+  const { key, uploadUrl, publicUrl } = await storagePresignPut(relKey);
+
+  // PUT file directly to S3
   const blob =
     typeof data === "string"
       ? new Blob([data], { type: contentType })
       : new Blob([data as any], { type: contentType });
 
-  const uploadResp = await fetch(s3Url, {
+  const uploadResp = await fetch(uploadUrl, {
     method: "PUT",
     headers: { "Content-Type": contentType },
     body: blob,
@@ -68,7 +83,7 @@ export async function storagePut(
     throw new Error(`Storage upload to S3 failed (${uploadResp.status})`);
   }
 
-  return { key, url: `/manus-storage/${key}` };
+  return { key, url: publicUrl };
 }
 
 export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
