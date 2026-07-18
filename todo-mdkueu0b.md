@@ -12,8 +12,8 @@
 - [x] Set env: CONVERT_STALE_MINUTES=30
 - [x] Verify Dockerfile present with ffmpeg + rubberband-cli
 - [x] Build and checkpoint
-- [ ] Publish to production
-- [ ] Verify: /api/trpc/convert.status is NOT "No procedure found"
-- [ ] Verify: production JS bundle contains "TrueHz Convert" or "/api/convert"
-- [ ] Verify: convert_jobs table exists with formantPreserve
-- [ ] Report commit SHA + all verification results
+- [x] Publish to production
+- [x] Verify: /api/trpc/convert.status is NOT "No procedure found" (returns 401 UNAUTHORIZED — correct)
+- [x] Verify: production JS bundle contains "TrueHz Convert" or "/api/convert" (3 markers found)
+- [x] Verify: convert_jobs table exists with formantPreserve (confirmed)
+- [x] Report commit SHA + all verification results
