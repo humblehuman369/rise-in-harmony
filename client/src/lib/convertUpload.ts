@@ -120,12 +120,10 @@ export async function uploadConvertSource(
     const end = Math.min(start + CHUNK_SIZE, file.size);
     const chunk = file.slice(start, end);
 
-    await apiFetch("/api/convert/upload/chunk", {
+    await apiFetch(`/api/convert/upload/chunk?uploadId=${encodeURIComponent(uploadId)}&chunkIndex=${i}`, {
       method: "POST",
       headers: {
         "Content-Type": contentType,
-        "x-upload-id": uploadId,
-        "x-chunk-index": String(i),
       },
       body: chunk,
     });

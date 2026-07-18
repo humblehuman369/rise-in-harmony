@@ -170,12 +170,12 @@ export function registerConvertUpload(app: Express) {
     const user = await authenticateUpload(req);
     if (!user || user.id <= 0) { res.status(401).json({ error: "Unauthorized" }); return; }
 
-    const uploadId = req.headers["x-upload-id"] as string;
-    const chunkIndexStr = req.headers["x-chunk-index"] as string;
+    const uploadId = (req.query["uploadId"] as string) || (req.headers["x-upload-id"] as string);
+    const chunkIndexStr = (req.query["chunkIndex"] as string) || (req.headers["x-chunk-index"] as string);
     const chunkIndex = parseInt(chunkIndexStr ?? "", 10);
 
     if (!uploadId || isNaN(chunkIndex) || chunkIndex < 0) {
-      res.status(400).json({ error: "x-upload-id and x-chunk-index headers required" }); return;
+      res.status(400).json({ error: "uploadId and chunkIndex required (query string)" }); return;
     }
 
     const session = sessions.get(uploadId);
