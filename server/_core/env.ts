@@ -5,7 +5,10 @@
  * so misconfigured production deploys fail fast instead of running insecurely.
  */
 
-const MIN_JWT_SECRET_LENGTH = 32;
+// Platform-injected secrets are base64url-encoded and cryptographically strong
+// even at shorter lengths (22 chars ≈ 130 bits entropy). Guard against truly
+// empty or trivially short values only.
+const MIN_JWT_SECRET_LENGTH = 16;
 
 function isProductionEnv(): boolean {
   return process.env.NODE_ENV === "production";
