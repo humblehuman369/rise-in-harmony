@@ -10,20 +10,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Enable corepack for pnpm
-RUN corepack enable
+# Install corepack for pinned pnpm version
+RUN npm install -g corepack@latest
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY patches ./patches
 COPY packages ./packages
 COPY apps/mobile/package.json ./apps/mobile/package.json
 
-RUN pnpm install --frozen-lockfile
+RUN corepack pnpm install --frozen-lockfile
 
 COPY . .
 
 ENV NODE_ENV=production
-RUN pnpm build
+RUN corepack pnpm build
 
 # Drop source maps noise if present; keep dist
 EXPOSE 3000
