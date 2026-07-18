@@ -49,7 +49,7 @@ export const ENV = {
    * The relay accepts the file directly from the browser and forwards it to S3
    * via the Forge API. Auth uses HMAC-SHA256 with a 5-minute sliding window.
    */
-  relayUrl: process.env.RIH_RELAY_URL ?? "http://34.23.137.141:4567",
+  relayUrl: process.env.RIH_RELAY_URL ?? "https://vids-touch-distributed-newark.trycloudflare.com",
   relayAuthSecret: process.env.RIH_RELAY_AUTH_SECRET ?? "",
 };
 

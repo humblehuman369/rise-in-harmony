@@ -33,3 +33,17 @@
 - [x] All 106 tests pass (including 4 new relay.token.test.ts tests)
 - [x] Production build verified: relay markers in server + client bundles
 - [x] Checkpoint and publish (checkpoint 7478b74e saved — ready to Publish)
+
+## Cloudflare Tunnel Fix (Mixed Content / HTTPS)
+
+- [x] Diagnose root cause: browser blocks HTTP XHR from HTTPS page (mixed content)
+- [x] Install cloudflared on cloud computer
+- [x] Create start-tunnel.sh script that captures tunnel URL to file
+- [x] Create rih-tunnel systemd service (auto-starts with rih-upload-relay)
+- [x] Tunnel URL: https://vids-touch-distributed-newark.trycloudflare.com
+- [x] Update env.ts default relayUrl to HTTPS tunnel URL
+- [x] Update CSP connect-src to https://*.trycloudflare.com wildcard
+- [x] Set RIH_RELAY_URL secret to HTTPS tunnel URL
+- [x] Add relay.url.test.ts to validate tunnel reachability (107 tests pass)
+- [x] Production build clean
+- [ ] Checkpoint and publish
