@@ -125,14 +125,20 @@ async function startServer() {
               "default-src": ["'self'"],
               "script-src": [
                 "'self'",
+                "'unsafe-inline'",
                 "https://us.i.posthog.com",
                 "https://*.posthog.com",
                 "https://fonts.googleapis.com",
+                "https://manus-analytics.com",
+                "https://*.manus-analytics.com",
               ],
               "script-src-elem": [
                 "'self'",
+                "'unsafe-inline'",
                 "https://us.i.posthog.com",
                 "https://*.posthog.com",
+                "https://manus-analytics.com",
+                "https://*.manus-analytics.com",
               ],
               "connect-src": [
                 "'self'",
