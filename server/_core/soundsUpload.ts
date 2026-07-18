@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import express from "express";
-import { ForbiddenError } from "@shared/_core/errors";
+import { HttpError } from "@shared/_core/errors";
 import { sdk } from "./sdk";
 import { storagePut } from "../storage";
 import { reconcileExpiredSubscription } from "../db";
@@ -27,7 +27,7 @@ async function authenticateUpload(req: Request) {
   try {
     return await sdk.authenticateRequest(req);
   } catch (error) {
-    if (error instanceof ForbiddenError) {
+    if (error instanceof HttpError && error.statusCode === 403) {
       return null;
     }
     throw error;

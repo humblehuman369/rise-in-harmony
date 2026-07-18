@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from "express";
-import { ForbiddenError } from "@shared/_core/errors";
+import { HttpError } from "@shared/_core/errors";
 import { ENV } from "./env";
 import { sdk } from "./sdk";
 
@@ -13,7 +13,7 @@ async function tryAuthenticate(req: Request) {
   try {
     return await sdk.authenticateRequest(req);
   } catch (error) {
-    if (error instanceof ForbiddenError) return null;
+    if (error instanceof HttpError && error.statusCode === 403) return null;
     throw error;
   }
 }
