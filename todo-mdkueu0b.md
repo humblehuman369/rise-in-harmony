@@ -32,4 +32,4 @@
 - [x] Set RIH_RELAY_AUTH_SECRET project secret
 - [x] All 106 tests pass (including 4 new relay.token.test.ts tests)
 - [x] Production build verified: relay markers in server + client bundles
-- [ ] Checkpoint and publish
+- [x] Checkpoint and publish (checkpoint 7478b74e saved — ready to Publish)
