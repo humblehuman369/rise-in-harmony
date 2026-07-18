@@ -181,11 +181,21 @@ class SDKServer {
       tokenUse?: SessionTokenUse;
     } = {}
   ): Promise<string> {
+    // verifySession requires non-empty name/appId — never sign empty strings
+    // (OAuth often returns no display name; empty name made every API call unauthenticated).
+    const name =
+      typeof options.name === "string" && options.name.trim().length > 0
+        ? options.name.trim()
+        : "Member";
+    const appId =
+      typeof ENV.appId === "string" && ENV.appId.trim().length > 0
+        ? ENV.appId.trim()
+        : "rise-in-harmony";
     return this.signSession(
       {
         openId,
-        appId: ENV.appId,
-        name: options.name || "",
+        appId,
+        name,
         tokenUse: options.tokenUse ?? "access",
       },
       options
@@ -251,12 +261,10 @@ class SDKServer {
         unknown
       >;
 
-      if (
-        !isNonEmptyString(openId) ||
-        !isNonEmptyString(appId) ||
-        !isNonEmptyString(name)
-      ) {
-        console.warn("[Auth] Session payload missing required fields");
+      // openId is the only hard requirement. Empty name/appId used to fail every
+      // request (users appeared "signed in" then got bounced to OAuth on any action).
+      if (!isNonEmptyString(openId)) {
+        console.warn("[Auth] Session payload missing openId");
         return null;
       }
 
@@ -271,8 +279,8 @@ class SDKServer {
 
       return {
         openId,
-        appId,
-        name,
+        appId: isNonEmptyString(appId) ? appId : ENV.appId || "rise-in-harmony",
+        name: isNonEmptyString(name) ? name : "Member",
         tokenUse,
       };
     } catch (error) {

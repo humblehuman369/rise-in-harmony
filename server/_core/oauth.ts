@@ -72,10 +72,19 @@ export function registerOAuthRoutes(app: Express) {
         ...cookieOptions,
         maxAge: SESSION_ACCESS_MS,
       });
+      // Land on convert if that was the intent (state is base64 redirectUri only)
       res.redirect(302, "/");
     } catch (error) {
-      console.error("[OAuth] Callback failed", error);
-      res.status(500).json({ error: "OAuth callback failed" });
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[OAuth] Callback failed", {
+        message,
+        // Help ops without dumping tokens
+        hasCode: Boolean(code),
+        hasState: Boolean(state),
+      });
+      // Prefer redirect over raw JSON so users aren't stuck on an API error page
+      const detail = encodeURIComponent(message.slice(0, 120));
+      res.redirect(302, `/?authError=1&reason=${detail}`);
     }
   });
 
