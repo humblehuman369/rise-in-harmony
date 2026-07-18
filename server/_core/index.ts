@@ -205,6 +205,8 @@ async function startServer() {
     message: { error: "Convert upload limit exceeded, please try again later." },
   });
   app.use("/api/convert/upload", convertUploadLimiter);
+  app.use("/api/convert/upload/chunk", convertUploadLimiter);
+  app.use("/api/convert/upload/finalize", convertUploadLimiter);
 
   // Keep API bodies small; large audio uploads use express.raw on their own route.
   app.use(express.json({ limit: API_BODY_LIMIT }));

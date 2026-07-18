@@ -1,4 +1,17 @@
-import { getAuthHeaders } from "./soundUpload";
+/**
+ * Chunked upload client for TrueHz Convert.
+ *
+ * Splits large audio files into 3 MB chunks and sends them sequentially
+ * to bypass the Manus/Cloudflare reverse-proxy body-size limit that silently
+ * drops connections for large single-shot POSTs.
+ *
+ * Protocol:
+ *   POST /api/convert/upload/init      → { uploadId, chunkSize, maxChunks }
+ *   POST /api/convert/upload/chunk     → { received }  (≤ 3 MB raw body)
+ *   POST /api/convert/upload/finalize  → { key, url, filename, bytes, format }
+ *
+ * Small files (≤ 3 MB) still use the legacy single-shot route for simplicity.
+ */
 
 export type ConvertUploadResult = {
   key: string;
@@ -9,6 +22,7 @@ export type ConvertUploadResult = {
 };
 
 const ACCEPTED_EXT = [".mp3", ".wav", ".flac", ".m4a", ".ogg", ".aac"];
+const CHUNK_SIZE = 3 * 1024 * 1024; // 3 MB — must match server CHUNK_LIMIT
 
 export function isAcceptedConvertFile(file: File): boolean {
   const name = file.name.toLowerCase();
@@ -31,9 +45,31 @@ function formatExt(file: File): string {
   return m?.[1] ?? "bin";
 }
 
+/** Fetch wrapper that throws a descriptive Error on non-2xx responses. */
+async function apiFetch(url: string, init: RequestInit): Promise<Response> {
+  const res = await fetch(url, { credentials: "include", ...init });
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const body = await res.json();
+      msg = body?.error ?? body?.message ?? msg;
+    } catch {
+      // ignore parse errors
+    }
+    if (res.status === 401) throw new Error("Please sign in again to upload");
+    if (res.status === 413) throw new Error(
+      typeof msg === "string" && msg.includes("MB")
+        ? msg
+        : "File too large for your plan (free 40 MB, Premium 100 MB)"
+    );
+    throw new Error(String(msg));
+  }
+  return res;
+}
+
 /**
- * Upload via presigned S3 PUT (preferred).
- * Avoids HTTP 413 from Manus/Cloudflare body limits on /api/convert/upload.
+ * Upload an audio file using the chunked protocol.
+ * Falls back to single-shot for files ≤ CHUNK_SIZE.
  */
 export async function uploadConvertSource(
   file: File,
@@ -46,88 +82,66 @@ export async function uploadConvertSource(
     throw new Error("File too large (max 100 MB)");
   }
 
-  onProgress?.(5);
   const contentType = contentTypeForFile(file);
 
-  // 1) Small JSON request — get presigned PUT URL (no audio body through Manus)
-  const presignRes = await fetch("/api/trpc/convert.createUploadUrl", {
+  // ── Small file: single-shot legacy route ─────────────────────────────────
+  if (file.size <= CHUNK_SIZE) {
+    onProgress?.(10);
+    const res = await apiFetch("/api/convert/upload", {
+      method: "POST",
+      headers: { "Content-Type": contentType, "x-filename": file.name },
+      body: file,
+    });
+    onProgress?.(100);
+    const data = await res.json() as ConvertUploadResult;
+    return data;
+  }
+
+  // ── Large file: chunked protocol ─────────────────────────────────────────
+  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+  // 1) Init session
+  onProgress?.(2);
+  const initRes = await apiFetch("/api/convert/upload/init", {
     method: "POST",
-    credentials: "include",
-    headers: {
-      ...getAuthHeaders(),
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      json: {
-        filename: file.name,
-        contentType,
-        byteSize: file.size,
-      },
+      filename: file.name,
+      contentType,
+      totalBytes: file.size,
+      totalChunks,
     }),
   });
+  const { uploadId } = await initRes.json() as { uploadId: string };
 
-  if (!presignRes.ok) {
-    const errBody = await presignRes.json().catch(() => null);
-    const msg =
-      errBody?.error?.json?.message ??
-      errBody?.error?.message ??
-      `Could not start upload (${presignRes.status})`;
-    if (String(msg).includes("TOO_LARGE") || presignRes.status === 413) {
-      // Server message may already include sizes: "TOO_LARGE: file is X; plan allows Y"
-      const cleaned = String(msg).replace(/^TOO_LARGE:\s*/i, "").trim();
-      throw new Error(
-        cleaned && cleaned !== "TOO_LARGE"
-          ? cleaned
-          : "File too large for your plan (free 40 MB, Premium 100 MB)",
-      );
-    }
-    if (presignRes.status === 401) {
-      throw new Error("Please sign in again to upload");
-    }
-    throw new Error(String(msg));
+  // 2) Send chunks
+  for (let i = 0; i < totalChunks; i++) {
+    const start = i * CHUNK_SIZE;
+    const end = Math.min(start + CHUNK_SIZE, file.size);
+    const chunk = file.slice(start, end);
+
+    await apiFetch("/api/convert/upload/chunk", {
+      method: "POST",
+      headers: {
+        "Content-Type": contentType,
+        "x-upload-id": uploadId,
+        "x-chunk-index": String(i),
+      },
+      body: chunk,
+    });
+
+    // Progress: 2% init + 88% for chunks + 10% finalize
+    onProgress?.(2 + Math.round(((i + 1) / totalChunks) * 88));
   }
 
-  const presignJson = (await presignRes.json()) as {
-    result?: {
-      data?: {
-        json?: {
-          key: string;
-          uploadUrl: string;
-          publicUrl: string;
-          filename: string;
-        };
-      };
-    };
-  };
-  const presign = presignJson?.result?.data?.json;
-  if (!presign?.uploadUrl || !presign?.key) {
-    throw new Error("Upload URL missing from server response");
-  }
-
-  onProgress?.(20);
-
-  // 2) PUT file directly to object storage (bypasses app body limit)
-  const putRes = await fetch(presign.uploadUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": contentType,
-    },
-    body: file,
+  // 3) Finalize
+  const finalRes = await apiFetch("/api/convert/upload/finalize", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ uploadId }),
   });
-
-  if (!putRes.ok) {
-    throw new Error(
-      `Storage upload failed (${putRes.status}). Try a smaller file or retry.`,
-    );
-  }
-
   onProgress?.(100);
 
-  return {
-    key: presign.key,
-    url: presign.publicUrl,
-    filename: presign.filename || file.name,
-    bytes: file.size,
-    format: formatExt(file),
-  };
+  const data = await finalRes.json() as ConvertUploadResult;
+  return data;
 }
