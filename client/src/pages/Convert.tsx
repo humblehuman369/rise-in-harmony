@@ -788,7 +788,7 @@ export default function Convert() {
                 </span>
                 <input
                   type="file"
-                  accept=".mp3,.wav,.flac,.m4a,.ogg,audio/*"
+                  accept=".mp3,.wav,.flac,.m4a,.ogg,.aac,.mp4,.mkv,.mov,.avi,.webm,audio/*,video/*"
                   className="hidden"
                   disabled={!rightsOk}
                   onChange={e => void onFile(e.target.files?.[0] ?? null)}

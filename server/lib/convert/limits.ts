@@ -18,7 +18,8 @@ export const CONVERT_LIMITS = {
   },
   paid: {
     maxDurationSec: 30 * 60,
-    maxFileBytes: 100 * 1024 * 1024,
+    /** ~500 MB — supports large video files (20+ min HD recordings via EC2 relay) */
+    maxFileBytes: 500 * 1024 * 1024,
     maxConcurrent: 2,
     retentionDays: 90,
     allowHighQuality: true,

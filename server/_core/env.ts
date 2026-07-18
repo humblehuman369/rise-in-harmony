@@ -43,6 +43,14 @@ export const ENV = {
     .filter(Boolean),
   /** Optional shared secret for POST /api/scheduled/* outside Manus cron. */
   cronSecret: process.env.CRON_SECRET ?? "",
+  /**
+   * EC2 upload relay — bypasses the Manus/Cloudflare 3 MB proxy body limit
+   * for large Convert uploads (100–500 MB video files).
+   * The relay accepts the file directly from the browser and forwards it to S3
+   * via the Forge API. Auth uses HMAC-SHA256 with a 5-minute sliding window.
+   */
+  relayUrl: process.env.RIH_RELAY_URL ?? "http://34.23.137.141:4567",
+  relayAuthSecret: process.env.RIH_RELAY_AUTH_SECRET ?? "",
 };
 
 /**

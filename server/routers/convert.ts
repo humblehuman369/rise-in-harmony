@@ -34,6 +34,8 @@ import { detectConcertAFromWavFile } from "../lib/convert/pitchDetect";
 import { which } from "../lib/convert/pipeline";
 import { storageGet, storageGetSignedUrl, storagePresignPut } from "../storage";
 import { spawn } from "node:child_process";
+import { createHmac } from "node:crypto";
+import { ENV } from "../_core/env";
 
 const pitchASchema = z.number().min(400).max(480);
 const qualitySchema = z.enum(["standard", "high"]);
@@ -563,4 +565,30 @@ export const convertRouter = router({
       }
       return { success: true as const };
     }),
+
+  /**
+   * Generate a short-lived HMAC token that authorises the browser to POST
+   * directly to the EC2 upload relay (bypassing the Manus/Cloudflare 3 MB
+   * body-size limit). The secret never leaves the server.
+   *
+   * Token format: `{timestamp}.{hex_hmac_sha256}`
+   * The relay validates the HMAC and rejects tokens older than 5 minutes.
+   */
+  getRelayToken: protectedProcedure.query(({ ctx: _ctx }) => {
+    const secret = ENV.relayAuthSecret;
+    if (!secret) {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "Upload relay is not configured on this server.",
+      });
+    }
+    // Relay verifyToken uses seconds-based Unix timestamp (Math.floor(Date.now()/1000))
+    // and a 5-minute sliding window (|now - ts| <= 300 seconds).
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const sig = createHmac("sha256", secret)
+      .update(timestamp)
+      .digest("hex");
+    const token = `${timestamp}.${sig}`;
+    return { token, relayUrl: ENV.relayUrl };
+  }),
 });

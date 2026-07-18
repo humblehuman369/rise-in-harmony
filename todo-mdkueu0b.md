@@ -17,3 +17,19 @@
 - [x] Verify: production JS bundle contains "TrueHz Convert" or "/api/convert" (3 markers found)
 - [x] Verify: convert_jobs table exists with formantPreserve (confirmed)
 - [x] Report commit SHA + all verification results
+
+## EC2 Upload Relay Integration (Large File Upload Fix)
+
+- [x] EC2 relay server running on cloud computer (34.23.137.141:4567)
+- [x] Relay health check confirmed: GET /health → {"ok":true}
+- [x] UFW port 4567 opened on cloud computer
+- [x] Add relay config to server/_core/env.ts (relayUrl, relayAuthSecret)
+- [x] Add getRelayToken procedure to server/routers/convert.ts (HMAC-SHA256, 5-min window)
+- [x] Rewrite client/src/lib/convertUpload.ts to use relay for files > 2 MB
+- [x] Add video format support (MP4, MKV, MOV, AVI, WEBM) to convertUpload.ts
+- [x] Update Convert.tsx file input accept attribute to include video formats
+- [x] Increase premium maxFileBytes from 100 MB to 500 MB in limits.ts
+- [x] Set RIH_RELAY_AUTH_SECRET project secret
+- [x] All 106 tests pass (including 4 new relay.token.test.ts tests)
+- [x] Production build verified: relay markers in server + client bundles
+- [ ] Checkpoint and publish
