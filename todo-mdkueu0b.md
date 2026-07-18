@@ -53,3 +53,15 @@
 - [x] Extend convertUpload.ts onProgress callback with bytes/speed/ETA metrics
 - [x] Update Convert.tsx progress UI to show upload speed (MB/s) and time remaining
 - [x] Verify visually, tests pass (116), checkpoint
+
+## Upload Still Failing (Post-Tunnel)
+
+- [x] Diagnose: relay/tunnel logs, prod deploy state, reproduce failure (root causes: relay v1 buffered uploads in RAM → OOM-killed on files >~120MB; quick-tunnel URL rotates on restart → static RIH_RELAY_URL goes stale)
+- [x] Rewrite relay to v2 disk-streaming (request → /tmp → node:https streaming PUT to S3; flat ~76MB RSS on 500MB file)
+- [x] Add GET /tunnel-url endpoint to relay; resolveRelayUrl() in convert.ts fetches live URL with 60s cache + static fallback
+- [x] Decouple rih-tunnel unit from relay restarts; add MemoryMax=700M + Restart=always to relay unit
+- [x] Rewrite relay.url.test.ts for dynamic discovery chain (expects relay v2)
+- [x] Verify end-to-end: 100MB (3.2s), 150MB via tunnel, 500MB (12s) all HTTP 200 → S3; 116 tests pass; build clean
+- [x] Confirm final rih-tunnel.service has no Requires= dependency (only After=network-online.target, Restart=always)
+- [x] Re-verify full production path on final relay v2: 150MB through live HTTPS tunnel → HTTP 200 → S3, relay RSS 91MB
+- [ ] Checkpoint and deliver

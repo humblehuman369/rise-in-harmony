@@ -574,7 +574,7 @@ export const convertRouter = router({
    * Token format: `{timestamp}.{hex_hmac_sha256}`
    * The relay validates the HMAC and rejects tokens older than 5 minutes.
    */
-  getRelayToken: protectedProcedure.query(({ ctx: _ctx }) => {
+  getRelayToken: protectedProcedure.query(async ({ ctx: _ctx }) => {
     const secret = ENV.relayAuthSecret;
     if (!secret) {
       throw new TRPCError({
@@ -589,6 +589,47 @@ export const convertRouter = router({
       .update(timestamp)
       .digest("hex");
     const token = `${timestamp}.${sig}`;
-    return { token, relayUrl: ENV.relayUrl };
+    const relayUrl = await resolveRelayUrl();
+    return { token, relayUrl };
   }),
 });
+
+/**
+ * Resolve the current relay HTTPS URL.
+ *
+ * Cloudflare quick-tunnel URLs rotate whenever the tunnel process restarts,
+ * so a statically configured URL goes stale. The relay VM exposes the live
+ * tunnel URL at `http://<relay-ip>:4567/tunnel-url` (server-to-server plain
+ * HTTP is fine — no browser mixed-content rules apply). We fetch it with a
+ * short in-memory cache and fall back to the static env value if the VM is
+ * unreachable.
+ */
+const RELAY_DIRECT_URL = "http://34.23.137.141:4567";
+const RELAY_URL_CACHE_TTL_MS = 60_000;
+let cachedRelayUrl: { url: string; fetchedAt: number } | null = null;
+
+async function resolveRelayUrl(): Promise<string> {
+  const now = Date.now();
+  if (cachedRelayUrl && now - cachedRelayUrl.fetchedAt < RELAY_URL_CACHE_TTL_MS) {
+    return cachedRelayUrl.url;
+  }
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5_000);
+    const resp = await fetch(`${RELAY_DIRECT_URL}/tunnel-url`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (resp.ok) {
+      const data = (await resp.json()) as { url?: string };
+      if (data.url && data.url.startsWith("https://")) {
+        cachedRelayUrl = { url: data.url, fetchedAt: now };
+        return data.url;
+      }
+    }
+  } catch {
+    // fall through to static fallback
+  }
+  // Fallback: statically configured URL (may be stale if the tunnel rotated)
+  return cachedRelayUrl?.url ?? ENV.relayUrl;
+}
