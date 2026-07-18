@@ -18,10 +18,16 @@ export function isSubscriptionActive(
 }
 
 export function isUserPremium(
-  user: Pick<User, "subscriptionTier" | "subscriptionExpiresAt"> | null | undefined,
+  user:
+    | Pick<User, "subscriptionTier" | "subscriptionExpiresAt" | "role">
+    | Pick<User, "subscriptionTier" | "subscriptionExpiresAt">
+    | null
+    | undefined,
   now: Date = new Date()
 ): boolean {
   if (!user) return false;
+  // Admins get full product access (Convert Pro limits, hybrid, etc.)
+  if ("role" in user && user.role === "admin") return true;
   return isSubscriptionActive(user.subscriptionTier, user.subscriptionExpiresAt, now);
 }
 

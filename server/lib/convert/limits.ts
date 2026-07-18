@@ -6,8 +6,9 @@ export const CONVERT_ALGORITHM_VERSION = "rb-4.0-v1";
 
 export const CONVERT_LIMITS = {
   free: {
-    maxDurationSec: 5 * 60,
-    maxFileBytes: 25 * 1024 * 1024,
+    maxDurationSec: 8 * 60,
+    /** ~40 MB — covers most phone voice notes / short m4a without Premium */
+    maxFileBytes: 40 * 1024 * 1024,
     maxConcurrent: 1,
     retentionDays: 7,
     allowHighQuality: false,
@@ -26,6 +27,10 @@ export const CONVERT_LIMITS = {
     allowWavOutput: true,
   },
 } as const;
+
+export function formatBytesMb(bytes: number): string {
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export type ConvertTierLimits = {
   maxDurationSec: number;

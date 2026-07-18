@@ -25,6 +25,7 @@ import {
 import { isUserPremium } from "../lib/entitlements";
 import {
   CONVERT_ERROR_CODES,
+  formatBytesMb,
   isConvertEnabled,
   limitsForPremium,
   type ConvertTierLimits,
@@ -266,7 +267,7 @@ export const convertRouter = router({
       if (input.byteSize > limits.maxFileBytes) {
         throw new TRPCError({
           code: "PAYLOAD_TOO_LARGE",
-          message: CONVERT_ERROR_CODES.TOO_LARGE,
+          message: `TOO_LARGE: file is ${formatBytesMb(input.byteSize)}; your plan allows ${formatBytesMb(limits.maxFileBytes)}${premium ? "" : " (upgrade to Premium for 100 MB)"}`,
         });
       }
 

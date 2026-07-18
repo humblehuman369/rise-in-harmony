@@ -73,8 +73,12 @@ export async function uploadConvertSource(
       errBody?.error?.message ??
       `Could not start upload (${presignRes.status})`;
     if (String(msg).includes("TOO_LARGE") || presignRes.status === 413) {
+      // Server message may already include sizes: "TOO_LARGE: file is X; plan allows Y"
+      const cleaned = String(msg).replace(/^TOO_LARGE:\s*/i, "").trim();
       throw new Error(
-        "File too large for your plan (free 25 MB, Premium 100 MB)",
+        cleaned && cleaned !== "TOO_LARGE"
+          ? cleaned
+          : "File too large for your plan (free 40 MB, Premium 100 MB)",
       );
     }
     if (presignRes.status === 401) {
