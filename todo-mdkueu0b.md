@@ -64,4 +64,13 @@
 - [x] Verify end-to-end: 100MB (3.2s), 150MB via tunnel, 500MB (12s) all HTTP 200 → S3; 116 tests pass; build clean
 - [x] Confirm final rih-tunnel.service has no Requires= dependency (only After=network-online.target, Restart=always)
 - [x] Re-verify full production path on final relay v2: 150MB through live HTTPS tunnel → HTTP 200 → S3, relay RSS 91MB
+- [x] Checkpoint and deliver (checkpoint 67098329 saved — ready to Publish)
+
+## Network Connect Error Fix (Robust Relay URL Resolution)
+
+- [x] Add server-side health check in resolveRelayUrl: verify candidate URL responds before returning it
+- [x] Extend last-known-good cache (10 min grace) and add discovery retry; throw clear PRECONDITION_FAILED instead of returning a dead URL
+- [x] Client: pre-flight GET /health on relayUrl before XHR upload; clearer error message with the relay hostname
+- [x] Update RIH_RELAY_URL secret + env.ts fallback to current live tunnel URL
+- [x] Verify: 116 tests pass (relay.url.test.ts validates live discovery chain), build clean, /convert renders
 - [ ] Checkpoint and deliver

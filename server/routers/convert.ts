@@ -600,36 +600,89 @@ export const convertRouter = router({
  * Cloudflare quick-tunnel URLs rotate whenever the tunnel process restarts,
  * so a statically configured URL goes stale. The relay VM exposes the live
  * tunnel URL at `http://<relay-ip>:4567/tunnel-url` (server-to-server plain
- * HTTP is fine — no browser mixed-content rules apply). We fetch it with a
- * short in-memory cache and fall back to the static env value if the VM is
- * unreachable.
+ * HTTP is fine — no browser mixed-content rules apply).
+ *
+ * Hardening (a stale URL handed to the browser = "Network connect error"):
+ * 1. Candidates are HEALTH-CHECKED (GET /health via HTTPS) before being
+ *    returned — we never hand the client an unverified URL if any candidate
+ *    passes.
+ * 2. Last-known-good URL is cached and reused for up to 10 minutes if fresh
+ *    discovery fails (rides out transient VM/network blips).
+ * 3. Discovery fetch gets one retry — 5s may be too tight on cold starts.
  */
 const RELAY_DIRECT_URL = "http://34.23.137.141:4567";
-const RELAY_URL_CACHE_TTL_MS = 60_000;
-let cachedRelayUrl: { url: string; fetchedAt: number } | null = null;
+const RELAY_URL_FRESH_MS = 60_000; // reuse verified URL without re-checking
+const RELAY_URL_STALE_OK_MS = 10 * 60_000; // last-known-good grace window
+let cachedRelayUrl: { url: string; verifiedAt: number } | null = null;
+
+async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function relayHealthOk(baseUrl: string): Promise<boolean> {
+  try {
+    const resp = await fetchWithTimeout(`${baseUrl}/health`, 8_000);
+    if (!resp.ok) return false;
+    const body = (await resp.json()) as { ok?: boolean };
+    return body.ok === true;
+  } catch {
+    return false;
+  }
+}
+
+async function discoverTunnelUrl(): Promise<string | null> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const resp = await fetchWithTimeout(`${RELAY_DIRECT_URL}/tunnel-url`, 6_000);
+      if (resp.ok) {
+        const data = (await resp.json()) as { url?: string };
+        if (data.url && data.url.startsWith("https://")) return data.url;
+      }
+    } catch {
+      // retry once
+    }
+  }
+  return null;
+}
 
 async function resolveRelayUrl(): Promise<string> {
   const now = Date.now();
-  if (cachedRelayUrl && now - cachedRelayUrl.fetchedAt < RELAY_URL_CACHE_TTL_MS) {
+  // Recently verified — reuse without re-checking
+  if (cachedRelayUrl && now - cachedRelayUrl.verifiedAt < RELAY_URL_FRESH_MS) {
     return cachedRelayUrl.url;
   }
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5_000);
-    const resp = await fetch(`${RELAY_DIRECT_URL}/tunnel-url`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    if (resp.ok) {
-      const data = (await resp.json()) as { url?: string };
-      if (data.url && data.url.startsWith("https://")) {
-        cachedRelayUrl = { url: data.url, fetchedAt: now };
-        return data.url;
-      }
-    }
-  } catch {
-    // fall through to static fallback
+
+  // Build candidate list in priority order, de-duplicated
+  const candidates: string[] = [];
+  const discovered = await discoverTunnelUrl();
+  if (discovered) candidates.push(discovered);
+  if (cachedRelayUrl && now - cachedRelayUrl.verifiedAt < RELAY_URL_STALE_OK_MS) {
+    if (!candidates.includes(cachedRelayUrl.url)) candidates.push(cachedRelayUrl.url);
   }
-  // Fallback: statically configured URL (may be stale if the tunnel rotated)
-  return cachedRelayUrl?.url ?? ENV.relayUrl;
+  if (ENV.relayUrl && !candidates.includes(ENV.relayUrl)) candidates.push(ENV.relayUrl);
+
+  // Return the first candidate that passes a live health check
+  for (const url of candidates) {
+    if (await relayHealthOk(url)) {
+      cachedRelayUrl = { url, verifiedAt: now };
+      console.log(`[relay] resolved relayUrl=${url}`);
+      return url;
+    }
+  }
+
+  // Nothing verified — surface a clear error instead of a dead URL
+  console.error(
+    `[relay] no reachable relay URL (discovered=${discovered ?? "none"}, env=${ENV.relayUrl})`,
+  );
+  throw new TRPCError({
+    code: "PRECONDITION_FAILED",
+    message:
+      "The upload relay is temporarily unreachable. Please try again in a minute.",
+  });
 }

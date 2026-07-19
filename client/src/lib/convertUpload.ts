@@ -181,6 +181,21 @@ async function uploadViaRelay(
   const tokenJson = await tokenRes.json() as [{ result: { data: { token: string; relayUrl: string } } }];
   const { token, relayUrl } = tokenJson[0].result.data;
 
+  emit(4);
+
+  // Step 1.5: Pre-flight the relay before pushing a large file.
+  // Fails fast with a clear message instead of a mid-upload network error.
+  try {
+    const healthRes = await fetch(`${relayUrl}/health`, {
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!healthRes.ok) throw new Error(`health ${healthRes.status}`);
+  } catch {
+    throw new Error(
+      "The upload server is temporarily unreachable. Please wait a minute and try again.",
+    );
+  }
+
   emit(5);
 
   // Step 2: POST the raw file directly to the relay
@@ -221,7 +236,13 @@ async function uploadViaRelay(
       }
     });
 
-    xhr.addEventListener("error", () => reject(new Error("Network error during upload — check your connection")));
+    xhr.addEventListener("error", () =>
+      reject(
+        new Error(
+          `Network error while uploading to ${new URL(relayUrl).hostname} — check your connection and try again`,
+        ),
+      ),
+    );
     xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")));
 
     xhr.send(file);
