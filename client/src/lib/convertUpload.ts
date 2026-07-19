@@ -104,9 +104,39 @@ const ACCEPTED_EXT = [
 /** Threshold below which we use the simple single-shot route. */
 const DIRECT_UPLOAD_THRESHOLD = 2 * 1024 * 1024; // 2 MB
 
+/**
+ * Known-good relay endpoint. Used as a hard fallback if the server ever
+ * returns a missing/invalid relayUrl (e.g. a stale cached response from an
+ * older deployment). Must stay in sync with RELAY_STABLE_URL on the server
+ * and the CSP connect-src allowlist.
+ */
+const RELAY_FALLBACK_URL = "https://34-23-137-141.sslip.io";
+
+/** Returns a validated absolute https URL for the relay, or the fallback. */
+function sanitizeRelayUrl(raw: unknown): string {
+  if (typeof raw === "string" && raw.length > 0) {
+    try {
+      const u = new URL(raw);
+      if (u.protocol === "https:") return u.origin;
+    } catch {
+      /* fall through to fallback */
+    }
+  }
+  return RELAY_FALLBACK_URL;
+}
+
 export function isAcceptedConvertFile(file: File): boolean {
   const name = file.name.toLowerCase();
   return ACCEPTED_EXT.some(ext => name.endsWith(ext));
+}
+
+/** new URL() that can never throw — returns the raw string on failure. */
+function safeHostname(raw: string): string {
+  try {
+    return new URL(raw).hostname;
+  } catch {
+    return raw || "(unknown)";
+  }
 }
 
 function contentTypeForFile(file: File): string {
@@ -171,28 +201,38 @@ async function uploadViaRelay(
 
   emit(2);
 
-  // Step 1: Get a short-lived HMAC token from the server
+  // Step 1: Get a short-lived HMAC token from the server.
   // We use a raw fetch here because the trpc client hook is React-only.
-  // The tRPC HTTP endpoint is at /api/trpc/convert.getRelayToken
+  // `cache: "no-store"` + a timestamp param guarantee the browser can never
+  // serve a stale cached response from an older deployment (which previously
+  // caused an invalid relayUrl to be used silently).
   const tokenRes = await apiFetch(
-    "/api/trpc/convert.getRelayToken?batch=1&input=%7B%220%22%3A%7B%7D%7D",
-    { method: "GET" }
+    `/api/trpc/convert.getRelayToken?batch=1&input=%7B%220%22%3A%7B%7D%7D&_ts=${Date.now()}`,
+    { method: "GET", cache: "no-store" }
   );
   const tokenJson = await tokenRes.json() as [{ result: { data: { token: string; relayUrl: string } } }];
-  const { token, relayUrl } = tokenJson[0].result.data;
+  const { token } = tokenJson[0].result.data;
+  // Never trust the URL blindly: validate it and fall back to the known-good
+  // endpoint if it is missing, relative, or non-https.
+  const relayUrl = sanitizeRelayUrl(tokenJson[0].result.data.relayUrl);
 
   emit(4);
 
   // Step 1.5: Pre-flight the relay before pushing a large file.
   // Fails fast with a clear message instead of a mid-upload network error.
+  // The response must be the relay's own JSON ({ ok: true }) — an HTML page
+  // (e.g. the SPA served by our own origin) is rejected as an impostor.
   try {
     const healthRes = await fetch(`${relayUrl}/health`, {
       signal: AbortSignal.timeout(10_000),
+      cache: "no-store",
     });
     if (!healthRes.ok) throw new Error(`health ${healthRes.status}`);
+    const health = (await healthRes.json()) as { ok?: boolean };
+    if (health?.ok !== true) throw new Error("health body not ok");
   } catch {
     throw new Error(
-      "The upload server is temporarily unreachable. Please wait a minute and try again.",
+      `The upload server (${safeHostname(relayUrl)}) is not reachable from your browser. — If this persists, your network/DNS may be blocking it; try a different network or contact support.`,
     );
   }
 
@@ -239,7 +279,7 @@ async function uploadViaRelay(
     xhr.addEventListener("error", () =>
       reject(
         new Error(
-          `Network error while uploading to ${new URL(relayUrl).hostname} — check your connection and try again`,
+          `Network error while uploading to ${safeHostname(relayUrl)} — check your connection and try again`,
         ),
       ),
     );

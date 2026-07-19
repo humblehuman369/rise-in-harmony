@@ -574,7 +574,14 @@ export const convertRouter = router({
    * Token format: `{timestamp}.{hex_hmac_sha256}`
    * The relay validates the HMAC and rejects tokens older than 5 minutes.
    */
-  getRelayToken: protectedProcedure.query(async ({ ctx: _ctx }) => {
+  getRelayToken: protectedProcedure.query(async ({ ctx }) => {
+    // Tokens are short-lived and the relayUrl must always be current —
+    // forbid any browser/proxy caching of this response.
+    try {
+      ctx.res.setHeader("Cache-Control", "no-store");
+    } catch {
+      /* header may already be sent in edge cases; never fail the query */
+    }
     const secret = ENV.relayAuthSecret;
     if (!secret) {
       throw new TRPCError({

@@ -81,9 +81,23 @@
 - [x] Capture the failing hop: browser→tunnel (Cloudflare quick tunnel throttles/drops large bodies)
 - [x] Implement the definitive fix (Caddy + Let's Encrypt direct HTTPS, tunnel removed)
 - [x] Verify with a real large upload through the production path (150MB from sandbox + 400MB from VM → HTTP 200 → S3, relay RSS 83MB)
-- [ ] Checkpoint and deliver
+- [x] Checkpoint and deliver (checkpoint dd1dd639 saved — ready to Publish)
 - [x] Root cause confirmed: Cloudflare quick tunnel throttles/drops large request bodies (90MB test stalled at 55MB after 240s and died at CF edge; relay→S3 leg is 25MB/s). Fix = remove tunnel from upload path.
 - [x] Install Caddy on VM: HTTPS on 443 for 34-23-137-141.sslip.io with Let's Encrypt, reverse_proxy to localhost:4567 (2GB body, 30m timeouts)
 - [x] Open ports 443/80 in ufw; disable rih-tunnel; update AGENTS.md
 - [x] Update app: static relay URL with health-check gate, CSP connect-src → sslip.io + manus-analytics.com, env fallback + RIH_RELAY_URL secret updated, relay.url.test.ts rewritten (118 tests pass)
 - [x] Verify large upload through the new HTTPS endpoint from outside the VM (150MB sandbox + 400MB VM, both HTTP 200)
+
+## Pinpointed Fix: net::ERR_SSL_BAD_* on /upload + Invalid URL TypeError (user DevTools evidence)
+
+- [x] Diagnose: user's "health" row returned 106kB/10s = own-origin SPA HTML (real relay /health is 36 bytes) → relayUrl in the running tab was empty/invalid (stale browser-cached token response from an older deployment); fetch(url+"/health") resolved relative to own origin and falsely passed; upload XHR then failed and the error handler crashed on new URL(invalid)
+- [x] Verify infra NOT at fault — concrete outputs saved to /home/ubuntu/relay-evidence-*.txt: openssl s_client → Verify return code 0 (ok), CN=34-23-137-141.sslip.io, issuer Let's Encrypt, TLSv1.3; curl /health → HTTP 200 {"ok":true,"v":2}; curl OPTIONS /upload with Origin https://www.riseinharmony.com → HTTP 204 with correct access-control-allow-* headers via Caddy
+- [x] Note: stale-cached-token-response is the best-supported inference (106kB/10s "health" row = own-origin SPA HTML, real /health is 36 bytes JSON); regardless of which path produced the invalid relayUrl, sanitizeRelayUrl + no-store + JSON-strict health check close every such path
+- [x] Fix client: sanitizeRelayUrl() validates server URL (must be absolute https) with hard fallback to https://34-23-137-141.sslip.io
+- [x] Fix client: token fetch uses cache:"no-store" + _ts cache-buster (browser can never reuse stale response)
+- [x] Fix client: health pre-flight now requires JSON body {ok:true} — rejects own-origin HTML impostor
+- [x] Fix client: safeHostname() — XHR error handler can no longer crash on invalid URL
+- [x] Fix server: getRelayToken sets Cache-Control: no-store
+- [x] VM cleanup: removed stale tunnel-url.txt (relay /tunnel-url no longer advertises dead tunnel)
+- [x] New relay.sanitize.test.ts contract tests (8 tests); 126 tests pass; tsc clean; build clean
+- [ ] Checkpoint and deliver
