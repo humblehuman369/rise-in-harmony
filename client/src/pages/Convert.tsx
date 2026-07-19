@@ -102,6 +102,16 @@ export default function Convert() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const trackedComplete = useRef<Set<string>>(new Set());
   const trackedFail = useRef<Set<string>>(new Set());
+  /**
+   * Holds a successfully-uploaded source whose job creation failed, so the
+   * user can retry creating the job WITHOUT re-uploading the (possibly
+   * hundreds of MB) file. Cleared once a job is created.
+   */
+  const [pendingUpload, setPendingUpload] = useState<{
+    key: string;
+    filename: string;
+    bytes: number;
+  } | null>(null);
 
   useEffect(() => {
     trackConvertPageViewed(
@@ -272,6 +282,77 @@ export default function Convert() {
     }
   };
 
+  /**
+   * Create job(s) for an uploaded source. Shared by the initial upload flow
+   * and the “Retry conversion” path (which reuses an existing upload).
+   */
+  const createJobsForUpload = useCallback(
+    async (uploaded: { key: string; filename: string }) => {
+      const targets = Array.from(
+        new Set([targetA, ...batchTargets].map(Number)),
+      ).filter(t => t >= 400 && t <= 480);
+      const shared = {
+        sourceKey: uploaded.key,
+        sourceFilename: uploaded.filename,
+        sourcePitchA: sourceA,
+        quality: (isPremium ? quality : "standard") as "standard" | "high",
+        formantPreserve: isPremium && formantPreserve,
+        hybridEnabled: isPremium && hybridEnabled,
+        hybridHz: isPremium && hybridEnabled ? hybridHz : undefined,
+        hybridGainDb,
+      };
+
+      if (targets.length > 1) {
+        const { jobs } = await createBatch.mutateAsync({
+          ...shared,
+          targetPitchAs: targets,
+        });
+        for (const j of jobs) {
+          trackConvertJobCreated({
+            sourceA,
+            targetA: j.targetPitchA,
+            hybrid: isPremium && hybridEnabled,
+            formant: isPremium && formantPreserve,
+            quality: shared.quality,
+          });
+        }
+        setActiveJobId(jobs[0]?.id ?? null);
+        toast.success(
+          `${jobs.length} jobs queued — we'll email when each is ready.`,
+        );
+      } else {
+        const job = await createJob.mutateAsync({
+          ...shared,
+          targetPitchA: targets[0] ?? targetA,
+        });
+        trackConvertJobCreated({
+          sourceA,
+          targetA: targets[0] ?? targetA,
+          hybrid: isPremium && hybridEnabled,
+          formant: isPremium && formantPreserve,
+          quality: shared.quality,
+        });
+        setActiveJobId(job.id);
+        toast.success("Job queued — we'll email you when it's ready.");
+      }
+      void utils.convert.list.invalidate();
+    },
+    [
+      createJob,
+      createBatch,
+      sourceA,
+      targetA,
+      batchTargets,
+      quality,
+      formantPreserve,
+      hybridEnabled,
+      hybridHz,
+      hybridGainDb,
+      isPremium,
+      utils.convert.list,
+    ],
+  );
+
   const onFile = useCallback(
     async (file: File | null) => {
       if (!file || !isAuthenticated) return;
@@ -295,15 +376,15 @@ export default function Convert() {
       setAbSide("converted");
       const ext = file.name.split(".").pop()?.toLowerCase();
       trackConvertUploadStarted({ bytes: file.size, format: ext });
+      let uploaded: Awaited<ReturnType<typeof uploadConvertSource>> | null = null;
       try {
-        const uploaded = await uploadConvertSource(file, setUploadProgress);
+        uploaded = await uploadConvertSource(file, setUploadProgress);
         trackConvertUploadCompleted({
           bytes: uploaded.bytes,
           format: uploaded.format,
         });
 
         // Experimental pitch detect — suggest only; user-selected sourceA wins unless empty
-        let effectiveSourceA = sourceA;
         try {
           const det = await detectPitch.mutateAsync({
             sourceKey: uploaded.key,
@@ -319,82 +400,56 @@ export default function Convert() {
           setDetectNote(null);
         }
 
-        const targets = Array.from(
-          new Set([targetA, ...batchTargets].map(Number)),
-        ).filter(t => t >= 400 && t <= 480);
-        const shared = {
-          sourceKey: uploaded.key,
-          sourceFilename: uploaded.filename,
-          sourcePitchA: effectiveSourceA,
-          quality: (isPremium ? quality : "standard") as "standard" | "high",
-          formantPreserve: isPremium && formantPreserve,
-          hybridEnabled: isPremium && hybridEnabled,
-          hybridHz: isPremium && hybridEnabled ? hybridHz : undefined,
-          hybridGainDb,
-        };
-
-        if (targets.length > 1) {
-          const { jobs } = await createBatch.mutateAsync({
-            ...shared,
-            targetPitchAs: targets,
-          });
-          for (const j of jobs) {
-            trackConvertJobCreated({
-              sourceA: effectiveSourceA,
-              targetA: j.targetPitchA,
-              hybrid: isPremium && hybridEnabled,
-              formant: isPremium && formantPreserve,
-              quality: shared.quality,
-            });
-          }
-          setActiveJobId(jobs[0]?.id ?? null);
-          toast.success(
-            `${jobs.length} jobs queued — we'll email when each is ready.`,
-          );
-        } else {
-          const job = await createJob.mutateAsync({
-            ...shared,
-            targetPitchA: targets[0] ?? targetA,
-          });
-          trackConvertJobCreated({
-            sourceA: effectiveSourceA,
-            targetA: targets[0] ?? targetA,
-            hybrid: isPremium && hybridEnabled,
-            formant: isPremium && formantPreserve,
-            quality: shared.quality,
-          });
-          setActiveJobId(job.id);
-          toast.success("Job queued — we'll email you when it's ready.");
-        }
-        void utils.convert.list.invalidate();
+        await createJobsForUpload({ key: uploaded.key, filename: uploaded.filename });
+        setPendingUpload(null);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Convert failed";
-        toast.error(msg);
+        if (uploaded) {
+          // The (possibly huge) file IS uploaded — keep it so the user can
+          // retry job creation without re-uploading.
+          setPendingUpload({
+            key: uploaded.key,
+            filename: uploaded.filename,
+            bytes: uploaded.bytes,
+          });
+          toast.error(`Upload succeeded but creating the job failed: ${msg}. Click “Retry conversion” to try again without re-uploading.`);
+        } else {
+          toast.error(msg);
+        }
       } finally {
         setBusy(false);
         setUploadProgress(null);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       isAuthenticated,
       rightsOk,
       statusQuery.data?.enabled,
-      createJob,
-      createBatch,
       detectPitch,
       sourceA,
-      targetA,
-      batchTargets,
-      quality,
-      formantPreserve,
-      hybridEnabled,
-      hybridHz,
-      hybridGainDb,
-      isPremium,
       localOriginalUrl,
-      utils.convert.list,
+      createJobsForUpload,
     ],
   );
+
+  /** Retry job creation for an already-uploaded source (no re-upload). */
+  const retryPendingUpload = useCallback(async () => {
+    if (!pendingUpload) return;
+    setBusy(true);
+    try {
+      await createJobsForUpload({
+        key: pendingUpload.key,
+        filename: pendingUpload.filename,
+      });
+      setPendingUpload(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Convert failed";
+      toast.error(`Still failing: ${msg}`);
+    } finally {
+      setBusy(false);
+    }
+  }, [pendingUpload, createJobsForUpload]);
 
   const download = async (id: string, format: "mp3" | "wav") => {
     try {
@@ -753,6 +808,45 @@ export default function Convert() {
                   not upload material that infringes copyright.
                 </span>
               </label>
+
+              {pendingUpload && !busy && (
+                <div
+                  className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border px-4 py-3"
+                  style={{
+                    borderColor: "rgba(255,180,80,0.4)",
+                    backgroundColor: "rgba(255,180,80,0.08)",
+                  }}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${c.text}`}>
+                      Your file uploaded, but creating the conversion job failed.
+                    </p>
+                    <p className={`text-xs truncate ${c.muted}`}>
+                      {pendingUpload.filename} ·{" "}
+                      {(pendingUpload.bytes / (1024 * 1024)).toFixed(1)} MB —
+                      already stored, no re-upload needed.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => void retryPendingUpload()}
+                      className="px-3 py-1.5 rounded-lg text-sm font-semibold transition-transform active:scale-[0.97]"
+                      style={{ backgroundColor: c.accent, color: "#0A0B14" }}
+                    >
+                      Retry conversion
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingUpload(null)}
+                      className={`px-3 py-1.5 rounded-lg text-sm border ${c.muted}`}
+                      style={{ borderColor: "rgba(255,255,255,0.15)" }}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <label
                 className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-10 cursor-pointer transition-opacity ${

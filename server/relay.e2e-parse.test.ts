@@ -24,21 +24,18 @@ const RELAY_URL = "https://34-23-137-141.sslip.io";
 const TOKEN_FORMAT = /^\d{9,12}\.[0-9a-f]{64}$/;
 
 /** Mirror of the client parsing (keep in sync with convertUpload.ts) */
-function clientParse(tokenJson: unknown): { token: string; relayUrl?: string } {
+function clientParse(tokenJson: unknown): {
+  token: string;
+  relayUrl?: string;
+  keyPrefix?: string;
+} {
+  type TokenPayload = { token?: string; relayUrl?: string; keyPrefix?: string };
   const arr = tokenJson as [
-    {
-      result: {
-        data: {
-          json?: { token?: string; relayUrl?: string };
-          token?: string;
-          relayUrl?: string;
-        };
-      };
-    },
+    { result: { data: { json?: TokenPayload } & TokenPayload } },
   ];
   const payload = arr?.[0]?.result?.data?.json ?? arr?.[0]?.result?.data ?? {};
   const token = typeof payload.token === "string" ? payload.token : "";
-  return { token, relayUrl: payload.relayUrl };
+  return { token, relayUrl: payload.relayUrl, keyPrefix: payload.keyPrefix };
 }
 
 function makeOwnerCtx() {
@@ -75,10 +72,13 @@ describe("relay token E2E: real procedure output → client parsing → live rel
         JSON.stringify([{ result: { data: superjson.serialize(raw) } }]),
       );
 
-      const { token, relayUrl } = clientParse(wireBody);
+      const { token, relayUrl, keyPrefix } = clientParse(wireBody);
       expect(token).not.toBe("undefined"); // the literal production bug value
       expect(token).toMatch(TOKEN_FORMAT);
       expect(relayUrl).toBe(RELAY_URL);
+      // Per-user destination prefix (2026-07-19 fix): must satisfy the
+      // assertSourceKey contract `convert/{userId}/...` for job creation.
+      expect(keyPrefix).toMatch(/^convert\/1\/[A-Za-z0-9_-]{12}\/$/);
     },
   );
 
@@ -90,22 +90,96 @@ describe("relay token E2E: real procedure output → client parsing → live rel
       const wireBody = JSON.parse(
         JSON.stringify([{ result: { data: superjson.serialize(raw) } }]),
       );
-      const { token, relayUrl } = clientParse(wireBody);
+      const { token, relayUrl, keyPrefix } = clientParse(wireBody);
       expect(token).toMatch(TOKEN_FORMAT);
+      expect(keyPrefix).toBeTruthy();
 
+      // Mirror the client: build the per-user destination key and send it
+      // via x-file-key so the stored key passes assertSourceKey.
+      const fileKey = `${keyPrefix}e2e-parse-test.txt`;
       const res = await fetch(`${relayUrl ?? RELAY_URL}/upload`, {
         method: "POST",
         headers: {
           "x-auth-token": token,
           "x-file-name": "e2e-parse-test.txt",
           "x-content-type": "text/plain",
+          "x-file-key": fileKey,
         },
         body: "e2e wire-parse upload test",
       });
       expect(res.status).toBe(200);
       const body = (await res.json()) as { key?: string; url?: string };
-      expect(body.key).toContain("convert-uploads/");
+      // The relay must store at EXACTLY the requested per-user key —
+      // this is the assertSourceKey contract that job creation enforces.
+      expect(body.key).toBe(fileKey);
+      expect(body.key).toMatch(/^convert\/1\//);
       expect(body.url).toContain("/manus-storage/");
+
+      // The stored key must pass the same validation createJob applies
+      // (`convert/{userId}/` prefix) — the 2026-07-19 "audio disappeared"
+      // incident was caused by the relay storing under convert-uploads/.
+      expect(body.key!.startsWith("convert/1/")).toBe(true);
+    },
+    30_000,
+  );
+
+  it.skipIf(!hasSecret)(
+    "legacy fallback: uploads without x-file-key still store under convert-uploads/",
+    async () => {
+      const caller = appRouter.createCaller(makeOwnerCtx());
+      const raw = await caller.convert.getRelayToken();
+      const wireBody = JSON.parse(
+        JSON.stringify([{ result: { data: superjson.serialize(raw) } }]),
+      );
+      const { token, relayUrl } = clientParse(wireBody);
+
+      const res = await fetch(`${relayUrl ?? RELAY_URL}/upload`, {
+        method: "POST",
+        headers: {
+          "x-auth-token": token,
+          "x-file-name": "e2e-legacy-test.txt",
+          "x-content-type": "text/plain",
+        },
+        body: "legacy path upload test",
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { key?: string };
+      expect(body.key).toContain("convert-uploads/");
+    },
+    30_000,
+  );
+
+  it.skipIf(!hasSecret)(
+    "security: relay rejects traversal and non-convert x-file-key values (falls back to legacy)",
+    async () => {
+      const caller = appRouter.createCaller(makeOwnerCtx());
+      const raw = await caller.convert.getRelayToken();
+      const wireBody = JSON.parse(
+        JSON.stringify([{ result: { data: superjson.serialize(raw) } }]),
+      );
+      const { token, relayUrl } = clientParse(wireBody);
+
+      for (const badKey of [
+        "convert/1/../../etc/passwd",
+        "secrets/steal.txt",
+        "convert//double/slash.txt",
+      ]) {
+        const res = await fetch(`${relayUrl ?? RELAY_URL}/upload`, {
+          method: "POST",
+          headers: {
+            "x-auth-token": token,
+            "x-file-name": "bad.txt",
+            "x-content-type": "text/plain",
+            "x-file-key": badKey,
+          },
+          body: "x",
+        });
+        expect(res.status).toBe(200);
+        const body = (await res.json()) as { key?: string };
+        // Never stored at the malicious key — always the safe legacy scheme.
+        expect(body.key).not.toBe(badKey);
+        expect(body.key).toContain("convert-uploads/");
+      }
     },
     30_000,
   );

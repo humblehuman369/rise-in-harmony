@@ -215,8 +215,9 @@ async function uploadViaRelay(
   // reading the wrong level yields `undefined`, which previously got string-
   // coerced into the literal header value "undefined" and the relay rejected
   // it with 401 (surfaced to users as "Upload token expired").
+  type TokenPayload = { token?: string; relayUrl?: string; keyPrefix?: string };
   const tokenJson = (await tokenRes.json()) as [
-    { result: { data: { json?: { token?: string; relayUrl?: string }; token?: string; relayUrl?: string } } },
+    { result: { data: { json?: TokenPayload } & TokenPayload } },
   ];
   const payload = tokenJson?.[0]?.result?.data?.json ?? tokenJson?.[0]?.result?.data ?? {};
   const token = typeof payload.token === "string" ? payload.token : "";
@@ -227,6 +228,15 @@ async function uploadViaRelay(
   // Never trust the URL blindly: validate it and fall back to the known-good
   // endpoint if it is missing, relative, or non-https.
   const relayUrl = sanitizeRelayUrl(payload.relayUrl);
+  // Per-user destination key (`convert/{userId}/{uploadId}/{filename}`).
+  // The relay stores the file at exactly this key so the job-creation
+  // endpoint's per-user sourceKey check accepts it. Without it the relay's
+  // legacy `convert-uploads/...` key is rejected as an invalid sourceKey.
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 200) || "upload";
+  const fileKey =
+    typeof payload.keyPrefix === "string" && /^convert\/[A-Za-z0-9/_-]+\/$/.test(payload.keyPrefix)
+      ? `${payload.keyPrefix}${safeName}`
+      : "";
 
   emit(4);
 
@@ -251,54 +261,70 @@ async function uploadViaRelay(
   emit(5);
 
   // Step 2: POST the raw file directly to the relay
-  // Use XMLHttpRequest so we can track upload progress.
-  const speedTracker = createSpeedTracker(file.size);
-  const { key, url } = await new Promise<{ key: string; url: string }>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${relayUrl}/upload`, true);
-    xhr.setRequestHeader("x-auth-token", token);
-    xhr.setRequestHeader("x-file-name", file.name);
-    xhr.setRequestHeader("x-content-type", contentTypeForFile(file));
+  // Use XMLHttpRequest so we can track upload progress. Transient network
+  // errors (an aborted HTTP/2 stream right at the start of a POST was
+  // observed in production) are retried once after a short delay before
+  // surfacing an error to the user.
+  const postToRelay = () =>
+    new Promise<{ key: string; url: string }>((resolve, reject) => {
+      const speedTracker = createSpeedTracker(file.size);
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${relayUrl}/upload`, true);
+      xhr.setRequestHeader("x-auth-token", token);
+      xhr.setRequestHeader("x-file-name", file.name);
+      xhr.setRequestHeader("x-content-type", contentTypeForFile(file));
+      if (fileKey) xhr.setRequestHeader("x-file-key", fileKey);
 
-    xhr.upload.addEventListener("progress", (e) => {
-      if (e.lengthComputable) {
-        // Map upload progress to 5%–95% range
-        const pct = 5 + Math.round((e.loaded / e.total) * 90);
-        const { bytesPerSec, etaSec } = speedTracker(e.loaded);
-        emit(pct, e.loaded, { bytesPerSec, etaSec });
-      }
-    });
-
-    xhr.addEventListener("load", () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const data = JSON.parse(xhr.responseText) as { key: string; url: string };
-          resolve(data);
-        } catch {
-          reject(new Error("Invalid relay response"));
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          // Map upload progress to 5%–95% range
+          const pct = 5 + Math.round((e.loaded / e.total) * 90);
+          const { bytesPerSec, etaSec } = speedTracker(e.loaded);
+          emit(pct, e.loaded, { bytesPerSec, etaSec });
         }
-      } else {
-        let msg = `Relay HTTP ${xhr.status}`;
-        try {
-          const data = JSON.parse(xhr.responseText) as { error?: string };
-          if (data.error) msg = data.error;
-        } catch { /* ignore */ }
-        if (xhr.status === 401) reject(new Error("Upload token expired — please try again"));
-        else reject(new Error(msg));
-      }
+      });
+
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText) as { key: string; url: string };
+            resolve(data);
+          } catch {
+            reject(new Error("Invalid relay response"));
+          }
+        } else {
+          let msg = `Relay HTTP ${xhr.status}`;
+          try {
+            const data = JSON.parse(xhr.responseText) as { error?: string };
+            if (data.error) msg = data.error;
+          } catch { /* ignore */ }
+          if (xhr.status === 401) reject(new Error("Upload token expired — please try again"));
+          else reject(new Error(msg));
+        }
+      });
+
+      const netErr = new Error(
+        `Network error while uploading to ${safeHostname(relayUrl)} — check your connection and try again`,
+      );
+      (netErr as Error & { retryable?: boolean }).retryable = true;
+      xhr.addEventListener("error", () => reject(netErr));
+      xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")));
+
+      xhr.send(file);
     });
 
-    xhr.addEventListener("error", () =>
-      reject(
-        new Error(
-          `Network error while uploading to ${safeHostname(relayUrl)} — check your connection and try again`,
-        ),
-      ),
-    );
-    xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")));
-
-    xhr.send(file);
-  });
+  let result: { key: string; url: string };
+  try {
+    result = await postToRelay();
+  } catch (err) {
+    const retryable = Boolean((err as Error & { retryable?: boolean })?.retryable);
+    if (!retryable) throw err;
+    // One automatic retry after a short backoff for transient stream drops.
+    await new Promise(r => setTimeout(r, 1500));
+    emit(5, 0, { bytesPerSec: null, etaSec: null });
+    result = await postToRelay();
+  }
+  const { key, url } = result;
 
   emit(100, file.size, { bytesPerSec: null, etaSec: 0 });
 

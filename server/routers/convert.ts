@@ -597,7 +597,13 @@ export const convertRouter = router({
       .digest("hex");
     const token = `${timestamp}.${sig}`;
     const relayUrl = await resolveRelayUrl();
-    return { token, relayUrl };
+    // Per-user destination prefix: the client passes `${keyPrefix}${filename}`
+    // to the relay via x-file-key so the stored key satisfies assertSourceKey
+    // (`convert/{userId}/...`). Without this the relay used to store files
+    // under `convert-uploads/...`, which createJob rejected as an invalid
+    // sourceKey — uploads succeeded but no job could ever be created.
+    const keyPrefix = `convert/${ctx.user.id}/${nanoid(12)}/`;
+    return { token, relayUrl, keyPrefix };
   }),
 });
 

@@ -112,4 +112,17 @@
 - [x] Run full test suite + tsc + build (133/133 pass, tsc clean, build clean, fix marker present in client bundle)
 - [x] Verify the fixed flow end-to-end: server/relay.e2e-parse.test.ts calls the REAL getRelayToken procedure, serializes its output byte-for-byte as the browser wire format, runs it through the identical client parsing, and completes a REAL upload to the live relay (HTTP 200); also proves the pre-fix parsing yields the literal "undefined" from the same payload
 - [x] Update VM AGENTS.md with new Caddy access log + relay 401-reason logging
+- [x] Checkpoint and deliver (checkpoint 6ad911de — ready to Publish)
+
+## Post-token-fix upload issues (user report 2026-07-19)
+
+- [x] Diagnose attempt 1: Caddy log 04:39:41 — POST /upload status 0 after 0.52s with a VALID token; relay journal "Upload error: aborted" — browser/HTTP2 stream aborted early (transient); client showed generic "Network error"
+- [x] Diagnose attempt 2: upload SUCCEEDED (Chakra-sleep.mp3, 37.5 MB → 200 in 5.67s, stored at convert-uploads/Chakra-sleep_e78fd761.mp3) but convert_jobs table is EMPTY — relay returns key `convert-uploads/<file>` while assertSourceKey requires `convert/{userId}/...` → createJob rejected with "Invalid sourceKey" → UI reset ("audio disappeared")
+- [x] Fix key mismatch: relay accepts validated x-file-key header (^convert/[A-Za-z0-9._/-]{1,400}$, no .. or //), stores at exactly that key; legacy convert-uploads/ fallback kept; deployed + restarted + curl-verified on VM
+- [x] getRelayToken now returns keyPrefix = convert/{userId}/{nanoid12}/ so stored keys satisfy assertSourceKey
+- [x] Client passes x-file-key; on createJob failure keeps upload in pendingUpload state with "Retry conversion" / "Dismiss" banner (no re-upload of huge files)
+- [x] Client auto-retries the relay POST once (1.5s backoff) on transient network error (fixes attempt-1 failure)
+- [x] Relay restricts x-file-key to convert/ prefix; traversal + foreign prefixes fall back to safe legacy key (security-tested)
+- [x] Tests updated: e2e-parse now asserts exact per-user key round-trip, legacy fallback, and traversal rejection (138/138 pass, tsc clean, build clean)
+- [x] VM AGENTS.md updated with x-file-key protocol + incident #2 notes
 - [ ] Checkpoint and deliver
