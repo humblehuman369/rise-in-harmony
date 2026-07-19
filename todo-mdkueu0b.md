@@ -73,4 +73,17 @@
 - [x] Client: pre-flight GET /health on relayUrl before XHR upload; clearer error message with the relay hostname
 - [x] Update RIH_RELAY_URL secret + env.ts fallback to current live tunnel URL
 - [x] Verify: 116 tests pass (relay.url.test.ts validates live discovery chain), build clean, /convert renders
+- [x] Checkpoint and deliver (checkpoint b327c7f1 saved — ready to Publish)
+
+## Definitive Fix: Upload Fails at 95% (browser-identical repro)
+
+- [x] Reproduce the exact browser flow against production from an external vantage (90MB via tunnel was sufficient to reproduce: stalled at 55MB/240s, died at CF edge before reaching the relay; tunnel since removed so larger tunnel repro is moot)
+- [x] Capture the failing hop: browser→tunnel (Cloudflare quick tunnel throttles/drops large bodies)
+- [x] Implement the definitive fix (Caddy + Let's Encrypt direct HTTPS, tunnel removed)
+- [x] Verify with a real large upload through the production path (150MB from sandbox + 400MB from VM → HTTP 200 → S3, relay RSS 83MB)
 - [ ] Checkpoint and deliver
+- [x] Root cause confirmed: Cloudflare quick tunnel throttles/drops large request bodies (90MB test stalled at 55MB after 240s and died at CF edge; relay→S3 leg is 25MB/s). Fix = remove tunnel from upload path.
+- [x] Install Caddy on VM: HTTPS on 443 for 34-23-137-141.sslip.io with Let's Encrypt, reverse_proxy to localhost:4567 (2GB body, 30m timeouts)
+- [x] Open ports 443/80 in ufw; disable rih-tunnel; update AGENTS.md
+- [x] Update app: static relay URL with health-check gate, CSP connect-src → sslip.io + manus-analytics.com, env fallback + RIH_RELAY_URL secret updated, relay.url.test.ts rewritten (118 tests pass)
+- [x] Verify large upload through the new HTTPS endpoint from outside the VM (150MB sandbox + 400MB VM, both HTTP 200)

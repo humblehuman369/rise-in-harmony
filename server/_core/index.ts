@@ -149,8 +149,11 @@ async function startServer() {
                 "https://*.manuscdn.com",
                 "https://*.amazonaws.com",
                 "https://*.r2.cloudflarestorage.com",
-                // EC2 upload relay via Cloudflare Tunnel — bypasses Manus/Cloudflare 3 MB proxy limit
-                "https://*.trycloudflare.com",
+                // EC2 upload relay (Caddy + Let's Encrypt, direct HTTPS) — bypasses Manus proxy body limit
+                "https://34-23-137-141.sslip.io",
+                // Manus analytics beacon (avoids console CSP warnings)
+                "https://manus-analytics.com",
+                "https://*.manus-analytics.com",
                 "blob:",
               ],
               "img-src": ["'self'", "data:", "blob:", "https:"],

@@ -1,32 +1,58 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 /**
- * Verifies the relay's dynamic URL discovery chain:
- * 1. The relay VM's /tunnel-url endpoint reports the current HTTPS tunnel URL
- *    (quick-tunnel URLs rotate on restart, so nothing static can be trusted).
- * 2. The reported tunnel URL actually serves the relay (health returns ok).
+ * Live infrastructure test for the upload relay.
  *
- * Mirrors resolveRelayUrl() in server/routers/convert.ts.
+ * The relay is served directly over HTTPS by Caddy on the VM at the stable
+ * hostname 34-23-137-141.sslip.io (Let's Encrypt cert, reverse proxy to the
+ * Node relay on localhost:4567). This replaced the Cloudflare quick tunnel,
+ * which throttled/dropped large request bodies (uploads died at ~95%).
+ *
+ * These tests hit the real endpoint so CI catches infra drift before users do.
  */
-const RELAY_DIRECT_URL = "http://34.23.137.141:4567";
+const RELAY_STABLE_URL = "https://34-23-137-141.sslip.io";
 
-describe("relay URL reachability", () => {
-  it("relay /tunnel-url reports a live HTTPS tunnel whose health returns ok:true", async () => {
-    const urlResp = await fetch(`${RELAY_DIRECT_URL}/tunnel-url`, {
-      signal: AbortSignal.timeout(10_000),
-    });
-    expect(urlResp.ok).toBe(true);
-    const { url } = (await urlResp.json()) as { url?: string };
-    expect(url).toBeTruthy();
-    expect(url!.startsWith("https://")).toBe(true);
-
-    const healthResp = await fetch(`${url}/health`, {
+describe("upload relay stable HTTPS endpoint", () => {
+  it("responds healthy at /health with a valid TLS certificate", async () => {
+    const resp = await fetch(`${RELAY_STABLE_URL}/health`, {
       signal: AbortSignal.timeout(15_000),
     });
-    expect(healthResp.ok).toBe(true);
-    const body = (await healthResp.json()) as { ok: boolean; v?: number };
+    expect(resp.ok).toBe(true);
+    const body = (await resp.json()) as { ok?: boolean; v?: number };
     expect(body.ok).toBe(true);
-    // v2 = disk-streaming relay (v1 buffered in RAM and OOM-killed on large files)
+    // v2 = disk-streaming relay (flat memory for large files)
     expect(body.v).toBe(2);
+  }, 30_000);
+
+  it("answers CORS preflight for the production origin", async () => {
+    const resp = await fetch(`${RELAY_STABLE_URL}/upload`, {
+      method: "OPTIONS",
+      headers: {
+        Origin: "https://www.riseinharmony.com",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "x-auth-token,x-file-name,x-content-type",
+      },
+      signal: AbortSignal.timeout(15_000),
+    });
+    expect(resp.status).toBe(204);
+    expect(resp.headers.get("access-control-allow-origin")).toBe(
+      "https://www.riseinharmony.com",
+    );
+    expect(resp.headers.get("access-control-allow-methods")).toContain("POST");
+  }, 30_000);
+
+  it("rejects uploads without a valid auth token", async () => {
+    const resp = await fetch(`${RELAY_STABLE_URL}/upload`, {
+      method: "POST",
+      headers: {
+        Origin: "https://www.riseinharmony.com",
+        "x-auth-token": "0.deadbeef",
+        "x-file-name": "test.mp3",
+        "x-content-type": "audio/mpeg",
+      },
+      body: "x",
+      signal: AbortSignal.timeout(15_000),
+    });
+    expect(resp.status).toBe(401);
   }, 30_000);
 });

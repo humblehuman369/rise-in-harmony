@@ -49,7 +49,7 @@ export const ENV = {
    * The relay accepts the file directly from the browser and forwards it to S3
    * via the Forge API. Auth uses HMAC-SHA256 with a 5-minute sliding window.
    */
-  relayUrl: process.env.RIH_RELAY_URL ?? "https://cool-steven-motel-healthcare.trycloudflare.com",
+  relayUrl: process.env.RIH_RELAY_URL ?? "https://34-23-137-141.sslip.io",
   relayAuthSecret: process.env.RIH_RELAY_AUTH_SECRET ?? "",
 };
 
