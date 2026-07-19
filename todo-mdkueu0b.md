@@ -100,4 +100,16 @@
 - [x] Fix server: getRelayToken sets Cache-Control: no-store
 - [x] VM cleanup: removed stale tunnel-url.txt (relay /tunnel-url no longer advertises dead tunnel)
 - [x] New relay.sanitize.test.ts contract tests (8 tests); 126 tests pass; tsc clean; build clean
+- [x] Checkpoint and deliver (checkpoint f72b2a90 saved — ready to Publish)
+
+## "Token has expired" on Upload (relay 401, user report)
+
+- [x] Diagnose with relay-side evidence: relay log shows `401: malformed token (1 parts, len 9)`; Caddy access log shows `X-Auth-Token: undefined` — the browser sent the literal string "undefined" (9 chars)
+- [x] Root cause: server uses superjson transformer so getRelayToken payload is nested under `result.data.json`, but the raw-fetch client parsed `result.data.token` → undefined → header "undefined" → relay 401 → client mapped 401 to "Upload token expired"
+- [x] Fix client: parse `result.data.json` (with fallback to `result.data`), validate token against `^\d{9,12}\.[0-9a-f]{64}$` before sending, clear error if invalid
+- [x] Infra: added verbose 401-reason logging to relay verifyToken; enabled Caddy access log (/var/log/caddy/relay-access.log); updated AGENTS.md
+- [x] Add regression test for superjson response-shape parsing (server/relay.tokenshape.test.ts, 7 tests incl. live wire-contract check against dev server)
+- [x] Run full test suite + tsc + build (133/133 pass, tsc clean, build clean, fix marker present in client bundle)
+- [x] Verify the fixed flow end-to-end: server/relay.e2e-parse.test.ts calls the REAL getRelayToken procedure, serializes its output byte-for-byte as the browser wire format, runs it through the identical client parsing, and completes a REAL upload to the live relay (HTTP 200); also proves the pre-fix parsing yields the literal "undefined" from the same payload
+- [x] Update VM AGENTS.md with new Caddy access log + relay 401-reason logging
 - [ ] Checkpoint and deliver

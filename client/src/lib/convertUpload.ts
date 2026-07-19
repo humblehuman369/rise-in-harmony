@@ -207,14 +207,26 @@ async function uploadViaRelay(
   // serve a stale cached response from an older deployment (which previously
   // caused an invalid relayUrl to be used silently).
   const tokenRes = await apiFetch(
-    `/api/trpc/convert.getRelayToken?batch=1&input=%7B%220%22%3A%7B%7D%7D&_ts=${Date.now()}`,
+    `/api/trpc/convert.getRelayToken?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%7D%7D&_ts=${Date.now()}`,
     { method: "GET", cache: "no-store" }
   );
-  const tokenJson = await tokenRes.json() as [{ result: { data: { token: string; relayUrl: string } } }];
-  const { token } = tokenJson[0].result.data;
+  // The server uses the superjson transformer, so the payload is nested under
+  // `result.data.json` (NOT `result.data`). Handle both shapes defensively —
+  // reading the wrong level yields `undefined`, which previously got string-
+  // coerced into the literal header value "undefined" and the relay rejected
+  // it with 401 (surfaced to users as "Upload token expired").
+  const tokenJson = (await tokenRes.json()) as [
+    { result: { data: { json?: { token?: string; relayUrl?: string }; token?: string; relayUrl?: string } } },
+  ];
+  const payload = tokenJson?.[0]?.result?.data?.json ?? tokenJson?.[0]?.result?.data ?? {};
+  const token = typeof payload.token === "string" ? payload.token : "";
+  // A valid token is "{unix_seconds}.{64-char hex hmac}" — never send garbage.
+  if (!/^\d{9,12}\.[0-9a-f]{64}$/.test(token)) {
+    throw new Error("Could not get an upload token from the server — please refresh the page and try again");
+  }
   // Never trust the URL blindly: validate it and fall back to the known-good
   // endpoint if it is missing, relative, or non-https.
-  const relayUrl = sanitizeRelayUrl(tokenJson[0].result.data.relayUrl);
+  const relayUrl = sanitizeRelayUrl(payload.relayUrl);
 
   emit(4);
 
