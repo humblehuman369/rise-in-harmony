@@ -288,6 +288,8 @@ export const convertJobs = mysqlTable("convert_jobs", {
   outputMp3Key: varchar("outputMp3Key", { length: 512 }),
   errorCode: varchar("errorCode", { length: 64 }),
   errorMessage: text("errorMessage"),
+  /** Times this job was auto-requeued after a stale-processing reap (max 1). */
+  retryCount: int("retryCount").default(0).notNull(),
   algorithmVersion: varchar("algorithmVersion", { length: 64 }),
   processingMs: int("processingMs"),
   expiresAt: timestamp("expiresAt"),

@@ -125,4 +125,18 @@
 - [x] Relay restricts x-file-key to convert/ prefix; traversal + foreign prefixes fall back to safe legacy key (security-tested)
 - [x] Tests updated: e2e-parse now asserts exact per-user key round-trip, legacy fallback, and traversal rejection (138/138 pass, tsc clean, build clean)
 - [x] VM AGENTS.md updated with x-file-key protocol + incident #2 notes
+- [x] Checkpoint and deliver (checkpoint 17b20454 — ready to Publish)
+
+## Conversion TIMEOUT in production (user report 2026-07-19, "Stale processing job reaped after 30m")
+
+- [x] Diagnose: job 30001 claimed at cold start 05:15:11 but progress froze at claim (never reached 'downloading'); Autoscale throttles CPU outside requests → background worker can't run; prod tooling (ffmpeg/ffprobe/rubberband) all present
+- [x] Decide architecture: user switched to Reserved (always-on) hosting — existing worker design now viable
+- [x] Resilience: failStaleConvertJobs now requeues a stale job once (retryCount+1) before hard TIMEOUT fail; retryCount column added via drizzle migration + ALTER TABLE in prod
+- [x] Reset the user's failed job 30001 to queued via SQL
+- [x] Job 30001 (Relaxing-calming-music.mp3, 440→432) requeued and COMPLETED (status=completed, done, 100%, 65.4s, ffmpeg-asetrate-v1+truehz-bed) — NOTE: completion log came from the sandbox dev worker (shares prod DB); user's file is recovered, but this does not by itself prove the Reserved prod worker processes jobs
+- [x] Production shows 'convert worker started' + tooling (ffmpeg/ffprobe/rubberband) after Reserved deploy — startup evidence only
+- [ ] Stop the sandbox dev worker from competing with prod for real user jobs while dev server runs (set RIH_CONVERT_ENABLED gate or document) — decided: leave as-is; dev worker completing jobs is functionally harmless (same DB/S3), but ask user to run a fresh production conversion to verify prod worker end-to-end
+- [x] Add regression test for failStaleConvertJobs requeue-once behavior (server/convert.stale-requeue.test.ts, 3 tests; full suite 141/141, tsc clean)
+- [ ] User verifies a fresh conversion on www.riseinharmony.com (production claim/progress/completion)
+- [x] Tests 141/141 pass, tsc clean
 - [ ] Checkpoint and deliver

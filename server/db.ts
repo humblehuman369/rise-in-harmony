@@ -1303,8 +1303,11 @@ export async function claimNextQueuedConvertJob(): Promise<ConvertJob | null> {
 }
 
 /**
- * Fail jobs stuck in `processing` longer than `staleMinutes` (crashed worker recovery).
- * Returns number of jobs marked failed.
+ * Recover jobs stuck in `processing` longer than `staleMinutes` (crashed worker
+ * / instance shutdown recovery). First occurrence: requeue the job so a live
+ * worker picks it up again (retryCount + 1). Second occurrence: fail with
+ * TIMEOUT so it can never loop forever.
+ * Returns number of jobs requeued + failed.
  */
 export async function failStaleConvertJobs(
   staleMinutes = 30,
@@ -1312,14 +1315,33 @@ export async function failStaleConvertJobs(
   const db = await getDb();
   if (!db) return 0;
   const cutoff = new Date(Date.now() - staleMinutes * 60 * 1000);
-  const result = await db
+  // Pass 1 — requeue stale jobs that have not been retried yet.
+  const requeued = await db
+    .update(convertJobs)
+    .set({
+      status: "queued",
+      stage: "queued",
+      progressPct: 0,
+      errorCode: null,
+      errorMessage: null,
+      retryCount: sql`${convertJobs.retryCount} + 1`,
+    })
+    .where(
+      and(
+        eq(convertJobs.status, "processing"),
+        lt(convertJobs.updatedAt, cutoff),
+        lt(convertJobs.retryCount, 1),
+      ),
+    );
+  // Pass 2 — jobs already retried once get failed permanently.
+  const failed = await db
     .update(convertJobs)
     .set({
       status: "failed",
       stage: "error",
       progressPct: 0,
       errorCode: "TIMEOUT",
-      errorMessage: `Stale processing job reaped after ${staleMinutes}m`,
+      errorMessage: `Stale processing job reaped after ${staleMinutes}m (after retry)`,
     })
     .where(
       and(
@@ -1327,7 +1349,10 @@ export async function failStaleConvertJobs(
         lt(convertJobs.updatedAt, cutoff),
       ),
     );
-  return (result[0] as { affectedRows: number }).affectedRows ?? 0;
+  const nRequeued =
+    (requeued[0] as { affectedRows: number }).affectedRows ?? 0;
+  const nFailed = (failed[0] as { affectedRows: number }).affectedRows ?? 0;
+  return nRequeued + nFailed;
 }
 
 export async function markConvertJobCompleted(
