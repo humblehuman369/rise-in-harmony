@@ -177,3 +177,11 @@
 - [x] CSS: journey-reveal / is-visible classes added to index.css with 600ms ease-out transition
 - [x] TypeScript clean, 141/141 tests pass
 - [x] Checkpoint and deliver
+
+## Journey page improvements (user request 2026-07-20 round 2)
+
+- [x] Add "Take the Tour" secondary link in OnboardingModal welcome step → routes to /journey via finish()
+- [x] Section 4 program cards: add journey-reveal class with staggered transitionDelay (240ms, 320ms, 400ms, 480ms) for cascade effect
+- [x] ScrollDots: convert inner divs to buttons with aria-label, pass scrollToSection as onSelect prop, larger active dot (10px), stronger glow
+- [x] TypeScript clean, 141/141 tests pass
+- [x] Checkpoint and deliver

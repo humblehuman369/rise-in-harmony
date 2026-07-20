@@ -284,6 +284,21 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
               Get Started
               <ChevronRight size={18} />
             </button>
+
+            {/* Secondary: guided journey tour */}
+            <button
+              onClick={() => finish("/journey")}
+              className="w-full mt-3 py-2.5 text-sm font-medium flex items-center justify-center gap-1.5 rounded-full transition-all duration-200 hover:opacity-100"
+              style={{
+                color: "#00D4AA",
+                background: "transparent",
+                opacity: 0.75,
+                fontFamily: "DM Sans, sans-serif",
+              }}
+            >
+              <span style={{ fontSize: "0.85rem" }}>✦</span>
+              Take the Tour
+            </button>
           </div>
         )}
 

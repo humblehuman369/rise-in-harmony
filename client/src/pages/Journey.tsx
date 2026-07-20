@@ -476,21 +476,37 @@ function Section({
 
 // ─── Scroll indicator ──────────────────────────────────────────────────────────
 
-function ScrollDots({ total, current }: { total: number; current: number }) {
+function ScrollDots({
+  total,
+  current,
+  onSelect,
+}: {
+  total: number;
+  current: number;
+  onSelect: (idx: number) => void;
+}) {
   return (
     <div
       className="fixed right-5 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-50"
       style={{ display: "flex" }}
     >
       {Array.from({ length: total }).map((_, i) => (
-        <div
+        <button
           key={i}
-          className="rounded-full transition-all duration-300"
+          aria-label={`Go to section ${i + 1}`}
+          onClick={() => onSelect(i)}
+          className="rounded-full transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
           style={{
-            width: i === current ? "8px" : "6px",
-            height: i === current ? "8px" : "6px",
+            width: i === current ? "10px" : "7px",
+            height: i === current ? "10px" : "7px",
             background: i === current ? "#00D4AA" : "rgba(255,255,255,0.25)",
-            boxShadow: i === current ? "0 0 8px rgba(0,212,170,0.6)" : "none",
+            boxShadow: i === current ? "0 0 10px rgba(0,212,170,0.7)" : "none",
+            padding: 0,
+            border: "none",
+            cursor: "pointer",
+            // Larger hit-target without changing visual size
+            outline: "none",
+            position: "relative",
           }}
         />
       ))}
@@ -810,16 +826,17 @@ export default function Journey() {
               ))}
             </div>
 
-            {/* Program cards */}
+            {/* Program cards — staggered cascade reveal */}
             <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto">
-              {PROGRAMS.map(prog => (
+              {PROGRAMS.map((prog, idx) => (
                 <button
                   key={prog.title}
                   onClick={() => navigate(prog.href)}
-                  className="glow-card text-left p-4 rounded-2xl transition-transform active:scale-97"
+                  className="journey-reveal glow-card text-left p-4 rounded-2xl transition-transform active:scale-97"
                   style={{
                     background: "rgba(255,255,255,0.03)",
                     border: `1px solid ${prog.color}22`,
+                    transitionDelay: `${240 + idx * 80}ms`,
                   }}
                 >
                   <div className="text-2xl mb-2" style={{ color: prog.color }}>{prog.icon}</div>
@@ -963,8 +980,8 @@ export default function Journey() {
         </Section>
       </div>
 
-      {/* Scroll position dots */}
-      <ScrollDots total={TOTAL} current={activeSection} />
+      {/* Scroll position dots — clickable */}
+      <ScrollDots total={TOTAL} current={activeSection} onSelect={scrollToSection} />
     </Layout>
   );
 }
