@@ -8,7 +8,7 @@ import { Link, useLocation } from "wouter";
 import {
   Home, Music2, AlarmClock, BookOpen, BarChart3, Settings,
   Layers, Headphones, ShieldCheck, LogIn, LogOut, User,
-  GraduationCap, Sun, Moon, CalendarRange, Sparkles,
+  GraduationCap, Sun, Moon, CalendarRange, Sparkles, Map,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -18,6 +18,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 // ─── Nav definitions ──────────────────────────────────────────────────────────
 
 const mobileNavItems = [
+  { href: "/journey", icon: Map, label: "Journey" },
   { href: "/alarm", icon: AlarmClock, label: "Alarm" },
   { href: "/player", icon: Music2, label: "Player" },
   { href: "/reiki", icon: Sparkles, label: "Reiki" },
@@ -34,6 +35,7 @@ const mobileNavItems = [
 const adminNavItem = { href: "/admin", icon: ShieldCheck, label: "Admin" };
 
 const baseNavItems = [
+  { href: "/journey", icon: Map, label: "Journey" },
   { href: "/alarm", icon: AlarmClock, label: "Alarm" },
   { href: "/player", icon: Music2, label: "Player" },
   { href: "/reiki", icon: Sparkles, label: "Reiki" },

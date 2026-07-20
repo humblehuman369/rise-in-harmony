@@ -152,4 +152,18 @@
 - [x] Customizable countdown timer: preset buttons (5/10/15/20/30 min) + custom input (1-120 min); timer counts down showing remaining time; session ends at zero with completion toast; progress bar and SVG arc on visualizer both reflect chosen duration; duration locked while playing
 - [x] Enhanced pulsing visualizer: 7 chakra rings breathe out-of-phase (ripple effect) at 432Hz/108 = 4 pulses/sec; 8 orbiting particles; 432Hz waveform arc; violet secondary ring; center glow + dot pulse; SVG progress arc overlay
 - [x] Additional ambient soundscapes: Crystal Bowls (reiki-432 recorded), Gentle Rain (procedural), Ocean Waves (procedural); soundscape selector with icons; live switching while playing via setNatureSound
-- [ ] Checkpoint and deliver
+- [x] Checkpoint and deliver (checkpoint 0858e269)
+
+## /journey page — full-screen scroll-snapping healing journey (user request 2026-07-20)
+
+- [x] Build client/src/pages/Journey.tsx: 6 scroll-snap sections with animated dark-theme visuals
+  - Section 1: The Invitation — animated teal pulse, hero headline + value prop, CTA
+  - Section 2: Your Frequency Body — animated human silhouette SVG with chakra points lighting up, frequency labels
+  - Section 3: The Healing Triangle — animated SVG sacred geometry triangle, Body/Mind/Soul vertices
+  - Section 4: Your Programs — icon cards (Reiki, Sleep, Studio, Convert), one-line benefits, CTA
+  - Section 5: Why It Works — animated waveform, 3 science grounding points
+  - Section 6: Begin — full-screen teal gradient with 432Hz visualizer running, Begin CTA
+- [x] Register /journey route in App.tsx
+- [x] Add nav link to Journey from home page or nav bar (Journey added as first item in sidebar + mobile nav)
+- [x] TypeScript clean, visual verification
+- [x] Checkpoint and deliver
