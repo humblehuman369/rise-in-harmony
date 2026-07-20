@@ -23,6 +23,7 @@ import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import Programs from "./pages/Programs";
 import Convert from "./pages/Convert";
+import ReikiPlayer from "./pages/ReikiPlayer";
 import { useAuth } from "./_core/hooks/useAuth";
 import { useLocalSessionImport } from "./hooks/useLocalSessionImport";
 import { useAnalytics } from "./hooks/useAnalytics";
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/programs" component={Programs} />
       <Route path="/meditation" component={Meditation} />
       <Route path="/convert" component={Convert} />
+      <Route path="/reiki" component={ReikiPlayer} />
       <Route path="/precision">{() => { window.location.replace("/studio"); return null; }}</Route>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
