@@ -5,7 +5,7 @@
  */
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
-import { Play, AlarmClock, Waves, Sparkles, ChevronRight, Star, Shield, Zap } from "lucide-react";
+import { Play, AlarmClock, Waves, Sparkles, ChevronRight, Star, Shield, Zap, Map } from "lucide-react";
 import Layout from "@/components/Layout";
 import PricingSection from "@/components/PricingSection";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
@@ -144,6 +144,33 @@ export default function Home() {
               432Hz, 528Hz, binaural beats, and Chakra tones — that wake your body
               gently and align your energy for the day ahead.
             </p>
+
+            {/* Journey discovery CTA — prominent banner above action buttons */}
+            <button
+              onClick={() => navigate("/journey")}
+              className="flex items-center gap-3 px-5 py-3 rounded-2xl mb-6 text-left transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              style={{
+                background: 'linear-gradient(135deg, rgba(0,212,170,0.12), rgba(139,92,246,0.08))',
+                border: '1px solid rgba(0,212,170,0.3)',
+                maxWidth: '460px',
+              }}
+            >
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(0,212,170,0.18)', border: '1px solid rgba(0,212,170,0.35)' }}
+              >
+                <Map size={16} style={{ color: '#00D4AA' }} />
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+                  Discover Your Healing Journey
+                </div>
+                <div className="text-xs" style={{ color: 'rgba(232,237,245,0.5)', fontFamily: 'DM Sans, sans-serif' }}>
+                  See how sound heals — body, mind &amp; soul
+                </div>
+              </div>
+              <ChevronRight size={16} style={{ color: '#00D4AA', flexShrink: 0 }} />
+            </button>
 
             {/* CTAs */}
             <div className="flex flex-wrap gap-4">

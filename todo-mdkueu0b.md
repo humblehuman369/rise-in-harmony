@@ -167,3 +167,13 @@
 - [x] Add nav link to Journey from home page or nav bar (Journey added as first item in sidebar + mobile nav)
 - [x] TypeScript clean, visual verification
 - [x] Checkpoint and deliver
+
+## Journey page enhancements (user request 2026-07-20)
+
+- [x] Add "Discover Your Healing Journey" CTA banner to Home page hero (above primary CTAs)
+- [x] Keyboard navigation on Journey: ArrowDown/PageDown → next section, ArrowUp/PageUp → prev section (window keydown, skips input/textarea/select)
+- [x] Touch swipe navigation on Journey: ≥40px swipe in ≤400ms triggers section advance/retreat
+- [x] IntersectionObserver entrance animations: .journey-reveal class + .is-visible toggle on all section eyebrows, headlines, body text, CTAs; 80ms stagger per sibling; prefers-reduced-motion safe
+- [x] CSS: journey-reveal / is-visible classes added to index.css with 600ms ease-out transition
+- [x] TypeScript clean, 141/141 tests pass
+- [x] Checkpoint and deliver

@@ -505,9 +505,21 @@ export default function Journey() {
   const { isAuthenticated } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeSection, setActiveSection] = useState(0);
+  const activeSectionRef = useRef(0);
   const TOTAL = 6;
 
-  // Track which section is in view
+  // Keep ref in sync with state so keyboard/touch handlers always have the latest value
+  useEffect(() => { activeSectionRef.current = activeSection; }, [activeSection]);
+
+  // ── Helper: scroll to a specific section index ──────────────────────────
+  const scrollToSection = useCallback((idx: number) => {
+    const container = containerRef.current;
+    if (!container) return;
+    const clamped = Math.max(0, Math.min(idx, TOTAL - 1));
+    container.scrollTo({ top: clamped * container.clientHeight, behavior: "smooth" });
+  }, []);
+
+  // ── Track which section is in view (scroll listener) ────────────────────
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -523,12 +535,99 @@ export default function Journey() {
     return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const scrollToNext = useCallback(() => {
+  // ── Keyboard navigation: ArrowDown / ArrowUp / PageDown / PageUp ─────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only intercept when the journey container (or its children) has focus,
+      // or when no specific input element is focused.
+      const tag = (document.activeElement?.tagName ?? "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+
+      if (e.key === "ArrowDown" || e.key === "PageDown") {
+        e.preventDefault();
+        scrollToSection(activeSectionRef.current + 1);
+      } else if (e.key === "ArrowUp" || e.key === "PageUp") {
+        e.preventDefault();
+        scrollToSection(activeSectionRef.current - 1);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [scrollToSection]);
+
+  // ── Touch / swipe navigation ─────────────────────────────────────────────
+  useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const next = Math.min(activeSection + 1, TOTAL - 1);
-    container.scrollTo({ top: next * container.clientHeight, behavior: "smooth" });
-  }, [activeSection]);
+
+    let touchStartY = 0;
+    let touchStartTime = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = Date.now();
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      const dy = touchStartY - e.changedTouches[0].clientY;
+      const dt = Date.now() - touchStartTime;
+      // Require a meaningful swipe: ≥40px in ≤400ms
+      if (Math.abs(dy) < 40 || dt > 400) return;
+      e.preventDefault();
+      if (dy > 0) {
+        scrollToSection(activeSectionRef.current + 1); // swipe up → next
+      } else {
+        scrollToSection(activeSectionRef.current - 1); // swipe down → prev
+      }
+    };
+
+    container.addEventListener("touchstart", onTouchStart, { passive: true });
+    container.addEventListener("touchend", onTouchEnd, { passive: false });
+    return () => {
+      container.removeEventListener("touchstart", onTouchStart);
+      container.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [scrollToSection]);
+
+  // ── IntersectionObserver: reveal .journey-reveal elements ────────────────
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // Stagger siblings: find position among .journey-reveal siblings
+            const parent = entry.target.parentElement;
+            const siblings = parent
+              ? Array.from(parent.querySelectorAll(".journey-reveal"))
+              : [entry.target];
+            const idx = siblings.indexOf(entry.target as Element);
+            const delay = idx * 80; // 80ms stagger
+            setTimeout(() => {
+              (entry.target as HTMLElement).classList.add("is-visible");
+            }, delay);
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        root: container,
+        threshold: 0.15,
+      }
+    );
+
+    // Observe all reveal targets inside the container
+    const targets = container.querySelectorAll(".journey-reveal");
+    targets.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollToNext = useCallback(() => {
+    scrollToSection(activeSectionRef.current + 1);
+  }, [scrollToSection]);
 
   const handleBegin = useCallback(() => {
     if (isAuthenticated) {
@@ -555,10 +654,10 @@ export default function Journey() {
         <Section id="s1" style={{ background: "radial-gradient(ellipse at 50% 60%, rgba(0,212,170,0.08) 0%, #0A0B14 70%)" }}>
           <PulseRings active={activeSection === 0} />
 
-          <div className="relative z-10 text-center max-w-lg mx-auto animate-fade-up">
+          <div className="relative z-10 text-center max-w-lg mx-auto">
             {/* Badge */}
             <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium mb-8"
+              className="journey-reveal inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium mb-8"
               style={{ background: "rgba(0,212,170,0.1)", border: "1px solid rgba(0,212,170,0.25)", color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}
             >
               <span>✦</span> Healing Frequencies
@@ -566,8 +665,8 @@ export default function Journey() {
 
             {/* Headline */}
             <h1
-              className="text-5xl md:text-6xl font-bold leading-tight mb-6"
-              style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif" }}
+              className="journey-reveal text-5xl md:text-6xl font-bold leading-tight mb-6"
+              style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif", transitionDelay: "80ms" }}
             >
               Rise Into
               <br />
@@ -576,16 +675,16 @@ export default function Journey() {
 
             {/* Value prop */}
             <p
-              className="text-lg leading-relaxed mb-4"
-              style={{ color: "rgba(232,237,245,0.65)", fontFamily: "DM Sans, sans-serif" }}
+              className="journey-reveal text-lg leading-relaxed mb-4"
+              style={{ color: "rgba(232,237,245,0.65)", fontFamily: "DM Sans, sans-serif", transitionDelay: "160ms" }}
             >
               Trusted frequencies that heal your mind, body, and soul.
               <br />
               No medication. No expensive therapy. Just sound.
             </p>
             <p
-              className="text-sm mb-10"
-              style={{ color: "rgba(232,237,245,0.4)", fontFamily: "DM Sans, sans-serif" }}
+              className="journey-reveal text-sm mb-10"
+              style={{ color: "rgba(232,237,245,0.4)", fontFamily: "DM Sans, sans-serif", transitionDelay: "220ms" }}
             >
               Precision-synthesized to 0.01Hz accuracy using DDS technology.
             </p>
@@ -593,8 +692,8 @@ export default function Journey() {
             {/* CTA */}
             <button
               onClick={scrollToNext}
-              className="btn-teal px-8 py-3.5 rounded-full text-base font-semibold transition-transform active:scale-97"
-              style={{ fontFamily: "DM Sans, sans-serif" }}
+              className="journey-reveal btn-teal px-8 py-3.5 rounded-full text-base font-semibold transition-transform active:scale-97"
+              style={{ fontFamily: "DM Sans, sans-serif", transitionDelay: "300ms" }}
             >
               Begin the Journey →
             </button>
@@ -615,13 +714,13 @@ export default function Journey() {
         <Section id="s2" style={{ background: "radial-gradient(ellipse at 50% 40%, rgba(108,92,231,0.07) 0%, #0A0B14 70%)" }}>
           <div className="relative z-10 w-full max-w-2xl mx-auto text-center">
             {/* Eyebrow */}
-            <div className="text-xs font-medium mb-3 tracking-widest uppercase" style={{ color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}>
+            <div className="journey-reveal text-xs font-medium mb-3 tracking-widest uppercase" style={{ color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}>
               Soothe Your Body
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif" }}>
+            <h2 className="journey-reveal text-3xl md:text-4xl font-bold mb-2" style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif", transitionDelay: "80ms" }}>
               Every Cell Remembers
             </h2>
-            <p className="text-sm mb-8 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif" }}>
+            <p className="journey-reveal text-sm mb-8 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif", transitionDelay: "160ms" }}>
               Solfeggio frequencies resonate with specific tissues and energy centres.
               Watch them light up as each tone activates its healing domain.
             </p>
@@ -641,13 +740,13 @@ export default function Journey() {
         {/* ── Section 3: The Healing Triangle ────────────────────────────── */}
         <Section id="s3" style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,211,61,0.05) 0%, #0A0B14 70%)" }}>
           <div className="relative z-10 w-full max-w-2xl mx-auto text-center">
-            <div className="text-xs font-medium mb-3 tracking-widest uppercase" style={{ color: "#FFD93D", fontFamily: "DM Sans, sans-serif" }}>
+            <div className="journey-reveal text-xs font-medium mb-3 tracking-widest uppercase" style={{ color: "#FFD93D", fontFamily: "DM Sans, sans-serif" }}>
               Beyond Sound
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif" }}>
+            <h2 className="journey-reveal text-3xl md:text-4xl font-bold mb-2" style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif", transitionDelay: "80ms" }}>
               A Full-Body Neural Symphony
             </h2>
-            <p className="text-sm mb-8 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif" }}>
+            <p className="journey-reveal text-sm mb-8 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif", transitionDelay: "160ms" }}>
               Rise In Harmony is an integrated system for your entire being —
               body, mind, and soul — built on validated scientific principles.
             </p>
@@ -682,13 +781,13 @@ export default function Journey() {
         {/* ── Section 4: Your Programs ────────────────────────────────────── */}
         <Section id="s4" style={{ background: "radial-gradient(ellipse at 50% 40%, rgba(0,212,170,0.06) 0%, #0A0B14 70%)" }}>
           <div className="relative z-10 w-full max-w-2xl mx-auto text-center">
-            <div className="text-xs font-medium mb-3 tracking-widest uppercase" style={{ color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}>
+            <div className="journey-reveal text-xs font-medium mb-3 tracking-widest uppercase" style={{ color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}>
               Included Programs
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif" }}>
+            <h2 className="journey-reveal text-3xl md:text-4xl font-bold mb-2" style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif", transitionDelay: "80ms" }}>
               Real Support, Real Results
             </h2>
-            <p className="text-sm mb-8 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif" }}>
+            <p className="journey-reveal text-sm mb-8 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif", transitionDelay: "160ms" }}>
               More affordable than supplements. Works even if other methods haven't.
               One subscription covers everything.
             </p>
@@ -750,13 +849,13 @@ export default function Journey() {
         {/* ── Section 5: Why It Works ─────────────────────────────────────── */}
         <Section id="s5" style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(162,155,254,0.07) 0%, #0A0B14 70%)" }}>
           <div className="relative z-10 w-full max-w-2xl mx-auto text-center">
-            <div className="text-xs font-medium mb-3 tracking-widest uppercase" style={{ color: "#A29BFE", fontFamily: "DM Sans, sans-serif" }}>
+            <div className="journey-reveal text-xs font-medium mb-3 tracking-widest uppercase" style={{ color: "#A29BFE", fontFamily: "DM Sans, sans-serif" }}>
               The Science
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif" }}>
+            <h2 className="journey-reveal text-3xl md:text-4xl font-bold mb-2" style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif", transitionDelay: "80ms" }}>
               Why It Works
             </h2>
-            <p className="text-sm mb-8 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif" }}>
+            <p className="journey-reveal text-sm mb-8 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif", transitionDelay: "160ms" }}>
               Three interlocking principles — ancient wisdom validated by modern research.
             </p>
 
@@ -808,20 +907,20 @@ export default function Journey() {
             <BeginVisualizer active={activeSection === 5} />
 
             <div className="mt-4">
-              <div className="text-xs font-medium mb-3 tracking-widest uppercase" style={{ color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}>
+              <div className="journey-reveal text-xs font-medium mb-3 tracking-widest uppercase" style={{ color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}>
                 432Hz · Precision DDS
               </div>
               <h2
-                className="text-4xl md:text-5xl font-bold mb-4"
-                style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif" }}
+                className="journey-reveal text-4xl md:text-5xl font-bold mb-4"
+                style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif", transitionDelay: "80ms" }}
               >
                 Begin Your
                 <br />
                 <span style={{ color: "#00D4AA" }}>Healing Journey</span>
               </h2>
               <p
-                className="text-base mb-8 max-w-sm mx-auto"
-                style={{ color: "rgba(232,237,245,0.55)", fontFamily: "DM Sans, sans-serif" }}
+                className="journey-reveal text-base mb-8 max-w-sm mx-auto"
+                style={{ color: "rgba(232,237,245,0.55)", fontFamily: "DM Sans, sans-serif", transitionDelay: "160ms" }}
               >
                 Your body already knows how to heal.
                 <br />
@@ -830,13 +929,13 @@ export default function Journey() {
 
               <button
                 onClick={handleBegin}
-                className="btn-teal px-10 py-4 rounded-full text-lg font-semibold transition-transform active:scale-97"
-                style={{ fontFamily: "DM Sans, sans-serif", boxShadow: "0 0 40px rgba(0,212,170,0.35)" }}
+                className="journey-reveal btn-teal px-10 py-4 rounded-full text-lg font-semibold transition-transform active:scale-97"
+                style={{ fontFamily: "DM Sans, sans-serif", boxShadow: "0 0 40px rgba(0,212,170,0.35)", transitionDelay: "240ms" }}
               >
                 {isAuthenticated ? "Enter Reiki Healing →" : "Start Free →"}
               </button>
 
-              <div className="mt-4 text-xs" style={{ color: "rgba(232,237,245,0.3)", fontFamily: "DM Sans, sans-serif" }}>
+              <div className="journey-reveal mt-4 text-xs" style={{ color: "rgba(232,237,245,0.3)", fontFamily: "DM Sans, sans-serif", transitionDelay: "300ms" }}>
                 No credit card required to start
               </div>
 
