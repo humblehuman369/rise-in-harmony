@@ -145,4 +145,11 @@
 
 - [x] Root cause: ReikiPlayer.tsx existed but /reiki route was never registered in App.tsx
 - [x] Fix: added import + Route path="/reiki" to App.tsx (one-line fix)
+- [x] Checkpoint and deliver (checkpoint 776aea8a)
+
+## Reiki page enhancements (user request 2026-07-20)
+
+- [x] Customizable countdown timer: preset buttons (5/10/15/20/30 min) + custom input (1-120 min); timer counts down showing remaining time; session ends at zero with completion toast; progress bar and SVG arc on visualizer both reflect chosen duration; duration locked while playing
+- [x] Enhanced pulsing visualizer: 7 chakra rings breathe out-of-phase (ripple effect) at 432Hz/108 = 4 pulses/sec; 8 orbiting particles; 432Hz waveform arc; violet secondary ring; center glow + dot pulse; SVG progress arc overlay
+- [x] Additional ambient soundscapes: Crystal Bowls (reiki-432 recorded), Gentle Rain (procedural), Ocean Waves (procedural); soundscape selector with icons; live switching while playing via setNatureSound
 - [ ] Checkpoint and deliver

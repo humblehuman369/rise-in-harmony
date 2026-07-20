@@ -2,20 +2,20 @@
  * ReikiPlayer — 432Hz Reiki Healing Frequency Player
  *
  * A dedicated healing session page that pairs:
- *   1. The studio-produced 432Hz Reiki ambient soundscape (crystal bowls + Tibetan tones)
+ *   1. A selectable ambient soundscape (Reiki crystal bowls, rain, or ocean waves)
  *   2. A precision DDS 432Hz sine wave synthesized by the AudioWorklet engine
  *
  * Design: Bioluminescent Depth dark theme (#0A0B14 bg, #00D4AA teal accent)
  * Audio:  All frequency synthesis uses the DDS engine (SRS NFR-FREQ-004)
  */
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Play, Pause, Volume2, VolumeX, Radio, Music2,
-  Sparkles, Info, ChevronDown, ChevronUp,
+  Sparkles, Info, ChevronDown, ChevronUp, Timer, CloudRain, Waves,
 } from "lucide-react";
 import Layout from "@/components/Layout";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useSoundStudio } from "@/hooks/useSoundStudio";
+import { useSoundStudio, type NatureSound } from "@/hooks/useSoundStudio";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -24,9 +24,35 @@ import { useAuth } from "@/_core/hooks/useAuth";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const REIKI_HZ = 432;
-const SESSION_MINUTES = 20;
+const DEFAULT_MINUTES = 20;
 const FADE_TC = 0.3; // seconds time-constant for DDS gain transitions
 const WORKLET_URL = "/dds-processor.js";
+
+// Visual pulse rate: 432 Hz / 108 = 4 pulses/sec (perceptible as gentle breathing)
+const VISUAL_PULSE_HZ = REIKI_HZ / 108; // ≈ 4 Hz
+
+const DURATION_PRESETS = [5, 10, 15, 20, 30];
+
+const SOUNDSCAPE_OPTIONS: { id: NatureSound; label: string; icon: React.ReactNode; description: string }[] = [
+  {
+    id: "reiki-432",
+    label: "Crystal Bowls",
+    icon: <Sparkles size={14} />,
+    description: "Tibetan crystal bowl resonance",
+  },
+  {
+    id: "rain",
+    label: "Gentle Rain",
+    icon: <CloudRain size={14} />,
+    description: "Soft rainfall — endless synthesis",
+  },
+  {
+    id: "ocean",
+    label: "Ocean Waves",
+    icon: <Waves size={14} />,
+    description: "Rhythmic ocean shore — endless synthesis",
+  },
+];
 
 const REIKI_BENEFITS = [
   { label: "Cellular Healing", description: "432Hz resonates with the body's natural repair cycles" },
@@ -55,7 +81,17 @@ const GUIDANCE_STEPS = [
 
 // ─── Reiki Visualizer ─────────────────────────────────────────────────────────
 
-function ReikiVisualizer({ isPlaying, freqActive }: { isPlaying: boolean; freqActive: boolean }) {
+function ReikiVisualizer({
+  isPlaying,
+  freqActive,
+  elapsed,
+  totalSeconds,
+}: {
+  isPlaying: boolean;
+  freqActive: boolean;
+  elapsed: number;
+  totalSeconds: number;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
 
@@ -72,17 +108,26 @@ function ReikiVisualizer({ isPlaying, freqActive }: { isPlaying: boolean; freqAc
     const draw = (t: number) => {
       ctx.clearRect(0, 0, size, size);
 
-      const speed = isPlaying ? 1 : 0.15;
-      const pulse = isPlaying ? Math.sin(t * 0.0015 * speed) * 0.08 + 1 : 1;
+      // ── Breathing pulse: synced to 432Hz visual cycle (4 pulses/sec) ─────
+      // t is in ms; VISUAL_PULSE_HZ pulses per second
+      const breathPhase = (t * VISUAL_PULSE_HZ * 0.001 * Math.PI * 2);
+      const breathScale = isPlaying
+        ? 1 + Math.sin(breathPhase) * 0.055   // ±5.5% breathing
+        : 1 + Math.sin(t * 0.001) * 0.015;    // very subtle idle
 
-      // ── Outer sacred geometry rings ──────────────────────────────────────
-      const numRings = 7; // 7 chakras
+      // ── Outer sacred geometry rings (7 chakras) ───────────────────────────
+      const numRings = 7;
       for (let i = numRings; i >= 1; i--) {
-        const radius = (size * 0.065 * i) * pulse;
-        const alpha = isPlaying ? 0.12 - i * 0.012 : 0.04;
+        // Each ring breathes slightly out of phase for a ripple effect
+        const ringPhase = breathPhase - i * 0.22;
+        const ringScale = isPlaying
+          ? 1 + Math.sin(ringPhase) * (0.04 + i * 0.006)
+          : 1;
+        const radius = (size * 0.065 * i) * ringScale;
+        const alpha = isPlaying ? 0.14 - i * 0.013 : 0.04;
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = `#00D4AA${Math.round(alpha * 255).toString(16).padStart(2, '0')}`;
+        ctx.strokeStyle = `#00D4AA${Math.round(alpha * 255).toString(16).padStart(2, "0")}`;
         ctx.lineWidth = isPlaying ? 1.2 : 0.5;
         ctx.stroke();
       }
@@ -94,8 +139,8 @@ function ReikiVisualizer({ isPlaying, freqActive }: { isPlaying: boolean; freqAc
         ctx.beginPath();
         for (let i = 0; i <= wavePoints; i++) {
           const angle = (i / wavePoints) * Math.PI * 2 - Math.PI / 2;
-          // 432Hz waveform: amplitude modulated by slow sine
-          const waveAmp = 10 * Math.sin(i * (REIKI_HZ / 120) * 0.12 + t * 0.0025);
+          // 432Hz waveform: amplitude modulated by slow sine + breathing
+          const waveAmp = 10 * Math.sin(i * (REIKI_HZ / 120) * 0.12 + t * 0.0025) * breathScale;
           const r = waveRadius + waveAmp;
           const x = cx + Math.cos(angle) * r;
           const y = cy + Math.sin(angle) * r;
@@ -108,9 +153,26 @@ function ReikiVisualizer({ isPlaying, freqActive }: { isPlaying: boolean; freqAc
         ctx.stroke();
       }
 
-      // ── Violet secondary ring (spiritual layer) ───────────────────────────
+      // ── Orbiting particles (active only when playing) ─────────────────────
       if (isPlaying) {
-        const vRadius = size * 0.22 * pulse;
+        const numParticles = 8;
+        const orbitRadius = size * 0.28 * breathScale;
+        for (let p = 0; p < numParticles; p++) {
+          // Each particle orbits at a slightly different speed
+          const orbitSpeed = 0.0004 + p * 0.00005;
+          const angle = (p / numParticles) * Math.PI * 2 + t * orbitSpeed;
+          const px = cx + Math.cos(angle) * orbitRadius;
+          const py = cy + Math.sin(angle) * orbitRadius;
+          const pAlpha = 0.4 + Math.sin(breathPhase + p) * 0.3;
+          const pRadius = 2.5 + Math.sin(breathPhase + p * 0.8) * 1;
+          ctx.beginPath();
+          ctx.arc(px, py, pRadius, 0, Math.PI * 2);
+          ctx.fillStyle = `#00D4AA${Math.round(pAlpha * 255).toString(16).padStart(2, "0")}`;
+          ctx.fill();
+        }
+
+        // ── Violet secondary ring (spiritual layer) ─────────────────────────
+        const vRadius = size * 0.22 * breathScale;
         ctx.beginPath();
         ctx.arc(cx, cy, vRadius, 0, Math.PI * 2);
         ctx.strokeStyle = "#8B5CF640";
@@ -119,17 +181,20 @@ function ReikiVisualizer({ isPlaying, freqActive }: { isPlaying: boolean; freqAc
       }
 
       // ── Center radial gradient glow ───────────────────────────────────────
-      const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 0.18);
-      gradient.addColorStop(0, `#00D4AA${isPlaying ? '35' : '12'}`);
-      gradient.addColorStop(0.5, `#8B5CF6${isPlaying ? '18' : '06'}`);
+      const glowR = size * 0.18 * breathScale;
+      const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+      gradient.addColorStop(0, `#00D4AA${isPlaying ? "38" : "12"}`);
+      gradient.addColorStop(0.5, `#8B5CF6${isPlaying ? "1A" : "06"}`);
       gradient.addColorStop(1, "#00D4AA00");
       ctx.beginPath();
-      ctx.arc(cx, cy, size * 0.18, 0, Math.PI * 2);
+      ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
       ctx.fillStyle = gradient;
       ctx.fill();
 
       // ── Center dot with pulse ─────────────────────────────────────────────
-      const dotR = isPlaying ? 7 + Math.sin(t * 0.004) * 2.5 : 4;
+      const dotR = isPlaying
+        ? 7 + Math.sin(breathPhase) * 3
+        : 4;
       ctx.beginPath();
       ctx.arc(cx, cy, dotR, 0, Math.PI * 2);
       ctx.fillStyle = isPlaying ? "#00D4AA" : "#00D4AA60";
@@ -149,20 +214,52 @@ function ReikiVisualizer({ isPlaying, freqActive }: { isPlaying: boolean; freqAc
     return () => cancelAnimationFrame(animRef.current);
   }, [isPlaying, freqActive]);
 
+  // Progress arc overlay
+  const progressFraction = totalSeconds > 0 ? Math.min(elapsed / totalSeconds, 1) : 0;
+
   return (
-    <canvas
-      ref={canvasRef}
-      width={340}
-      height={340}
-      className="w-full max-w-[340px] mx-auto"
-    />
+    <div className="relative w-full max-w-[340px] mx-auto">
+      <canvas
+        ref={canvasRef}
+        width={340}
+        height={340}
+        className="w-full"
+      />
+      {/* SVG progress arc drawn on top */}
+      {isPlaying && progressFraction > 0 && (
+        <svg
+          className="absolute inset-0 w-full h-full"
+          viewBox="0 0 340 340"
+          style={{ pointerEvents: "none" }}
+        >
+          <circle
+            cx="170" cy="170" r="158"
+            fill="none"
+            stroke="rgba(0,212,170,0.08)"
+            strokeWidth="3"
+          />
+          <circle
+            cx="170" cy="170" r="158"
+            fill="none"
+            stroke="#00D4AA"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeDasharray={`${2 * Math.PI * 158}`}
+            strokeDashoffset={`${2 * Math.PI * 158 * (1 - progressFraction)}`}
+            transform="rotate(-90 170 170)"
+            style={{ filter: "drop-shadow(0 0 4px rgba(0,212,170,0.6))" }}
+          />
+        </svg>
+      )}
+    </div>
   );
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTime(s: number) {
-  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  const clamped = Math.max(0, s);
+  return `${String(Math.floor(clamped / 60)).padStart(2, "0")}:${String(clamped % 60).padStart(2, "0")}`;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -171,6 +268,13 @@ export default function ReikiPlayer() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const { isAuthenticated } = useAuth();
+
+  // ── Session duration (customizable) ──────────────────────────────────────
+  const [sessionMinutes, setSessionMinutes] = useState(DEFAULT_MINUTES);
+  const [customMinutesInput, setCustomMinutesInput] = useState("");
+  const [showCustomInput, setShowCustomInput] = useState(false);
+
+  const totalSeconds = useMemo(() => sessionMinutes * 60, [sessionMinutes]);
 
   // ── Playback state ────────────────────────────────────────────────────────
   const [isPlaying, setIsPlaying] = useState(false);
@@ -181,8 +285,9 @@ export default function ReikiPlayer() {
   const [currentStep, setCurrentStep] = useState(0);
   const [showGuidance, setShowGuidance] = useState(true);
   const [audioContextSuspended, setAudioContextSuspended] = useState(false);
+  const [selectedSoundscape, setSelectedSoundscape] = useState<NatureSound>("reiki-432");
 
-  const totalSeconds = SESSION_MINUTES * 60;
+  const remaining = Math.max(0, totalSeconds - elapsed);
   const progress = Math.min((elapsed / totalSeconds) * 100, 100);
   const stepDuration = Math.floor(totalSeconds / GUIDANCE_STEPS.length);
 
@@ -198,6 +303,7 @@ export default function ReikiPlayer() {
     play: studioPlay,
     stop: studioStop,
     setLayerVolume,
+    setNatureSound,
   } = useSoundStudio();
 
   // ── tRPC session logging ──────────────────────────────────────────────────
@@ -282,7 +388,11 @@ export default function ReikiPlayer() {
         sessionIdRef.current = null;
       }
     } else {
-      // Start
+      // Start — reset if session was previously completed
+      if (elapsed >= totalSeconds) {
+        setElapsed(0);
+        setCurrentStep(0);
+      }
       setIsPlaying(true);
       setAudioContextSuspended(false);
 
@@ -298,10 +408,10 @@ export default function ReikiPlayer() {
         } catch { /* non-critical */ }
       }
 
-      // Start Reiki ambient soundscape (recorded loop, no music layer)
+      // Start ambient soundscape
       studioPlay({
         frequencyVolume: 0,
-        natureSound: "reiki-432",
+        natureSound: selectedSoundscape,
         musicMode: "none",
         natureVolume: ambientVolume,
         musicVolume: 0,
@@ -320,7 +430,7 @@ export default function ReikiPlayer() {
         }
       }
 
-      // Timer
+      // Countdown timer
       timerRef.current = setInterval(() => {
         setElapsed(prev => {
           const next = prev + 1;
@@ -342,10 +452,26 @@ export default function ReikiPlayer() {
       }, 1000);
     }
   }, [
-    isPlaying, elapsed, mode, ambientVolume, isAuthenticated,
+    isPlaying, elapsed, mode, ambientVolume, selectedSoundscape, isAuthenticated,
     studioPlay, studioStop, startFrequency, stopFrequency,
     startSession, endSession, stepDuration, totalSeconds,
   ]);
+
+  // ── Handle soundscape change while playing ────────────────────────────────
+  const handleSoundscapeChange = useCallback((sound: NatureSound) => {
+    setSelectedSoundscape(sound);
+    if (isPlaying) {
+      setNatureSound(sound);
+    }
+  }, [isPlaying, setNatureSound]);
+
+  // ── Handle duration change (resets elapsed) ───────────────────────────────
+  const handleDurationChange = useCallback((minutes: number) => {
+    if (isPlaying) return; // don't allow change while playing
+    setSessionMinutes(minutes);
+    setElapsed(0);
+    setCurrentStep(0);
+  }, [isPlaying]);
 
   // ── Live freq volume update ───────────────────────────────────────────────
   useEffect(() => {
@@ -453,6 +579,124 @@ export default function ReikiPlayer() {
             </div>
           </div>
 
+          {/* ── Session Duration Picker ───────────────────────────────────── */}
+          <div
+            className="rounded-2xl p-4"
+            style={{ background: cardBg, border: `1px solid ${cardBorder}` }}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Timer size={14} style={{ color: "#00D4AA" }} />
+              <span
+                className="text-sm font-semibold"
+                style={{ color: textPrimary, fontFamily: "DM Sans, sans-serif" }}
+              >
+                Session Duration
+              </span>
+              {isPlaying && (
+                <span
+                  className="ml-auto text-xs"
+                  style={{ color: textMuted, fontFamily: "DM Sans, sans-serif" }}
+                >
+                  (change when paused)
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {DURATION_PRESETS.map(min => (
+                <button
+                  key={min}
+                  disabled={isPlaying}
+                  onClick={() => {
+                    setShowCustomInput(false);
+                    handleDurationChange(min);
+                  }}
+                  className="px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{
+                    fontFamily: "DM Sans, sans-serif",
+                    background: sessionMinutes === min && !showCustomInput
+                      ? "linear-gradient(135deg, rgba(0,212,170,0.25), rgba(139,92,246,0.15))"
+                      : isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.05)",
+                    color: sessionMinutes === min && !showCustomInput ? "#00D4AA" : textSecondary,
+                    border: sessionMinutes === min && !showCustomInput
+                      ? "1px solid rgba(0,212,170,0.35)"
+                      : `1px solid ${cardBorder}`,
+                  }}
+                >
+                  {min} min
+                </button>
+              ))}
+              {/* Custom duration button */}
+              <button
+                disabled={isPlaying}
+                onClick={() => setShowCustomInput(v => !v)}
+                className="px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{
+                  fontFamily: "DM Sans, sans-serif",
+                  background: showCustomInput
+                    ? "linear-gradient(135deg, rgba(0,212,170,0.25), rgba(139,92,246,0.15))"
+                    : isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.05)",
+                  color: showCustomInput ? "#00D4AA" : textSecondary,
+                  border: showCustomInput
+                    ? "1px solid rgba(0,212,170,0.35)"
+                    : `1px solid ${cardBorder}`,
+                }}
+              >
+                Custom
+              </button>
+            </div>
+
+            {/* Custom input */}
+            {showCustomInput && (
+              <div className="flex items-center gap-2 mt-3">
+                <input
+                  type="number"
+                  min={1}
+                  max={120}
+                  placeholder="Minutes (1–120)"
+                  value={customMinutesInput}
+                  onChange={e => setCustomMinutesInput(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
+                  style={{
+                    background: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.05)",
+                    border: `1px solid ${cardBorder}`,
+                    color: textPrimary,
+                    fontFamily: "DM Sans, sans-serif",
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      const v = parseInt(customMinutesInput, 10);
+                      if (v >= 1 && v <= 120) {
+                        handleDurationChange(v);
+                        setShowCustomInput(false);
+                        setCustomMinutesInput("");
+                      }
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    const v = parseInt(customMinutesInput, 10);
+                    if (v >= 1 && v <= 120) {
+                      handleDurationChange(v);
+                      setShowCustomInput(false);
+                      setCustomMinutesInput("");
+                    } else {
+                      toast.error("Enter a duration between 1 and 120 minutes.");
+                    }
+                  }}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150 active:scale-95"
+                  style={{
+                    background: "linear-gradient(135deg, #00D4AA, #8B5CF6)",
+                    color: "#0A0B14",
+                    fontFamily: "DM Sans, sans-serif",
+                  }}
+                >
+                  Set
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* ── Visualizer + Play button ──────────────────────────────────── */}
           <div
             className="rounded-3xl flex flex-col items-center py-8 px-4"
@@ -465,7 +709,12 @@ export default function ReikiPlayer() {
             }}
           >
             <div className="relative w-full max-w-[340px]">
-              <ReikiVisualizer isPlaying={isPlaying} freqActive={isPlaying && mode === "frequency"} />
+              <ReikiVisualizer
+                isPlaying={isPlaying}
+                freqActive={isPlaying && mode === "frequency"}
+                elapsed={elapsed}
+                totalSeconds={totalSeconds}
+              />
               {/* Centered play button */}
               <button
                 onClick={handlePlay}
@@ -490,14 +739,21 @@ export default function ReikiPlayer() {
               </button>
             </div>
 
-            {/* Progress bar */}
+            {/* Countdown + progress bar */}
             <div className="w-full mt-4 px-2">
               <div
                 className="flex justify-between text-xs mb-2"
                 style={{ color: textMuted, fontFamily: "DM Sans, sans-serif" }}
               >
                 <span>{formatTime(elapsed)}</span>
-                <span>{SESSION_MINUTES} min session</span>
+                <span
+                  className="font-semibold"
+                  style={{ color: isPlaying ? "#00D4AA" : textMuted }}
+                >
+                  {isPlaying
+                    ? `${formatTime(remaining)} remaining`
+                    : `${sessionMinutes} min session`}
+                </span>
                 <span>{formatTime(totalSeconds)}</span>
               </div>
               <div
@@ -589,7 +845,7 @@ export default function ReikiPlayer() {
                     style={{ color: textSecondary, fontFamily: "DM Sans, sans-serif" }}
                   >
                     Precision-synthesized by the DDS AudioWorklet engine — double-precision
-                    phase accumulation ensures zero frequency drift across the full 20-minute session.
+                    phase accumulation ensures zero frequency drift across the entire session.
                     Tuned to the mathematical frequency of nature.
                   </p>
                   {/* Frequency volume slider */}
@@ -614,20 +870,47 @@ export default function ReikiPlayer() {
             </div>
           )}
 
-          {/* ── Ambient volume ────────────────────────────────────────────── */}
+          {/* ── Soundscape Selector ───────────────────────────────────────── */}
           <div
             className="rounded-2xl p-4"
             style={{ background: cardBg, border: `1px solid ${cardBorder}` }}
           >
             <div className="flex items-center gap-2 mb-3">
-              <Music2 size={14} style={{ color: textSecondary }} />
+              <Music2 size={14} style={{ color: "#00D4AA" }} />
               <span
-                className="text-sm font-medium"
-                style={{ color: textSecondary, fontFamily: "DM Sans, sans-serif" }}
+                className="text-sm font-semibold"
+                style={{ color: textPrimary, fontFamily: "DM Sans, sans-serif" }}
               >
-                Reiki Soundscape Volume
+                Ambient Soundscape
               </span>
             </div>
+
+            {/* Soundscape option pills */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {SOUNDSCAPE_OPTIONS.map(opt => (
+                <button
+                  key={opt.id}
+                  onClick={() => handleSoundscapeChange(opt.id)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 active:scale-95"
+                  style={{
+                    fontFamily: "DM Sans, sans-serif",
+                    background: selectedSoundscape === opt.id
+                      ? "linear-gradient(135deg, rgba(0,212,170,0.2), rgba(139,92,246,0.12))"
+                      : isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.05)",
+                    color: selectedSoundscape === opt.id ? "#00D4AA" : textSecondary,
+                    border: selectedSoundscape === opt.id
+                      ? "1px solid rgba(0,212,170,0.3)"
+                      : `1px solid ${cardBorder}`,
+                  }}
+                  title={opt.description}
+                >
+                  {opt.icon}
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Volume slider */}
             <div className="flex items-center gap-3">
               <VolumeX size={12} style={{ color: textMuted }} />
               <Slider
