@@ -185,3 +185,11 @@
 - [x] ScrollDots: convert inner divs to buttons with aria-label, pass scrollToSection as onSelect prop, larger active dot (10px), stronger glow
 - [x] TypeScript clean, 141/141 tests pass
 - [x] Checkpoint and deliver
+
+## Alarm enhancements (user request 2026-07-20 round 3)
+
+- [x] P1: Wire AlarmRinging on-fire — pass onFire callback to scheduleNotification, mount AlarmRinging overlay in Alarm page when alarm fires
+- [x] P2: Live countdown on AlarmCard — use getNextFireTime + 1-min interval to show "Fires in Xh Ym" on each enabled card
+- [x] P4: Snooze limit + gentle re-entry — max 2 snoozes (5 min each), on 3rd fire switch to 174Hz grounding frequency; track snoozeCount in component state
+- [x] TypeScript clean, 141/141 tests pass
+- [x] Checkpoint and deliver

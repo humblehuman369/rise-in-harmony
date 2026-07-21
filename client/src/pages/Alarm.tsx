@@ -20,6 +20,42 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { trackPaywallTriggered } from "@/hooks/useAnalytics";
 import PremiumPaywall from "@/components/PremiumPaywall";
+import AlarmRinging, { type RingingSound } from "@/components/AlarmRinging";
+
+// ─── Grounding frequency for gentle re-entry on 3rd snooze ─────────────────
+const GROUNDING_FREQ_ID = "174hz"; // 174 Hz — Foundation / Pain Relief
+const MAX_SNOOZES = 2;
+const SNOOZE_MINUTES = 5;
+
+/** Build a RingingSound payload from a local Alarm object. */
+function buildRingingSound(alarm: Alarm): RingingSound {
+  if (alarm.soundType === "studio_mix" && alarm.studioMixId) {
+    const mix = loadSavedMixes().find(m => m.id === alarm.studioMixId);
+    if (mix) {
+      return {
+        type: "studio_mix",
+        studioMix: {
+          name: mix.name,
+          frequencyHz: mix.settings.frequencyHz ?? 432,
+          musicMode: mix.settings.musicMode ?? "none",
+          natureSound: mix.settings.natureSound ?? "none",
+          frequencyVolume: 0.7,
+          musicVolume: 0.5,
+          natureVolume: 0.4,
+        },
+      };
+    }
+  }
+  // Frequency (default) — covers ambient fallback too
+  const freq = FREQUENCIES.find(f => f.id === alarm.frequencyId) ?? FREQUENCIES.find(f => f.id === "432hz") ?? FREQUENCIES[0];
+  return { type: "frequency", frequencyId: freq.id };
+}
+
+/** Build a gentle re-entry RingingSound using the 174Hz grounding frequency. */
+function buildGroundingSound(): RingingSound {
+  const freq = FREQUENCIES.find(f => f.id === GROUNDING_FREQ_ID) ?? FREQUENCIES[0];
+  return { type: "frequency", frequencyId: freq.id };
+}
 
 // ─── Mobile platform detection ────────────────────────────────────────────────
 const IOS_APP_LIVE = false;
@@ -200,11 +236,24 @@ function DrumRollPicker({ value, items, onChange, height = 180 }: DrumRollPicker
 }
 
 // ─── iOS-style swipeable AlarmCard ───────────────────────────────────────────
-function AlarmCard({ alarm, onToggle, onDelete, onEdit }: {
+/** Format milliseconds into "Xh Ym" or "Ym" or "< 1 min" */
+function formatCountdown(ms: number): string {
+  if (ms <= 0) return "< 1 min";
+  const totalMin = Math.round(ms / 60000);
+  if (totalMin < 1) return "< 1 min";
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
+function AlarmCard({ alarm, onToggle, onDelete, onEdit, nextFireTime }: {
   alarm: Alarm;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit: (alarm: Alarm) => void;
+  nextFireTime: Date | null;
 }) {
   const freq = FREQUENCIES.find(f => f.id === alarm.frequencyId);
   const seq = WAKE_SEQUENCES.find(s => s.id === alarm.sequenceId);
@@ -212,6 +261,15 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit }: {
   const hour = parseInt(h);
   const ampm = hour >= 12 ? 'PM' : 'AM';
   const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+
+  // Live countdown — refreshes every 60 s
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!alarm.enabled || !nextFireTime) return;
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, [alarm.enabled, nextFireTime]);
+  const msUntil = nextFireTime ? nextFireTime.getTime() - now : null;
 
   const [swipeX, setSwipeX] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -326,6 +384,12 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit }: {
               {seq && (
                 <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: `${seq.color}15`, color: seq.color, fontFamily: 'DM Sans, sans-serif' }}>
                   {seq.isPremium && <Lock size={9} />}{seq.name}
+                </span>
+              )}
+              {/* P2: Countdown badge */}
+              {alarm.enabled && msUntil !== null && msUntil > 0 && (
+                <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: 'rgba(0,212,170,0.1)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+                  ⏰ in {formatCountdown(msUntil)}
                 </span>
               )}
             </div>
@@ -860,11 +924,25 @@ export default function Alarm() {
   const [showCreate, setShowCreate] = useState(false);
   const [editingAlarm, setEditingAlarm] = useState<Alarm | null>(null);
   const [showAlarmPaywall, setShowAlarmPaywall] = useState(false);
-  const { requestPermission, scheduleNotification, cancelNotification, isGranted, isSupported } = useAlarmNotifications();
+  const { requestPermission, scheduleNotification, cancelNotification, getNextFireTime, isGranted, isSupported } = useAlarmNotifications();
   const mobilePlatform = detectMobilePlatform();
   const subStatus = trpc.subscription.status.useQuery(undefined, { enabled: isAuthenticated });
   const isPremium = subStatus.data?.isPremium ?? false;
   const [prefill, setPrefill] = useState<AlarmPrefill | null>(null);
+
+  // ─── Ringing state (P1) ─────────────────────────────────────────────────────────────────────────────
+  const [firingAlarm, setFiringAlarm] = useState<Alarm | null>(null);
+  // snoozeCount tracks how many times the current firing alarm has been snoozed
+  const snoozeCountRef = useRef<Record<string, number>>({});
+  // isGentleReentry: true when we've hit MAX_SNOOZES and switch to grounding freq
+  const [isGentleReentry, setIsGentleReentry] = useState(false);
+
+  // Countdown tick — force re-render every 60 s so countdown badges stay fresh
+  const [, setCountdownTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setCountdownTick(t => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   // tRPC mutations with optimistic updates + rollback
   const createAlarmMutation = trpc.alarms.create.useMutation({
@@ -931,18 +1009,62 @@ export default function Alarm() {
     setShowCreate(true);
   };
 
-  // Schedule notifications
+  // ─── Ringing handlers (P1 + P4) ─────────────────────────────────────────────────────────────────────────────
+  const handleAlarmFire = useCallback((alarmId: string) => {
+    const alarm = alarms.find(a => a.id === alarmId);
+    if (!alarm) return;
+    snoozeCountRef.current[alarmId] = 0;
+    setIsGentleReentry(false);
+    setFiringAlarm(alarm);
+  }, [alarms]);
+
+  const handleStop = useCallback(() => {
+    if (firingAlarm) {
+      delete snoozeCountRef.current[firingAlarm.id];
+    }
+    setFiringAlarm(null);
+    setIsGentleReentry(false);
+  }, [firingAlarm]);
+
+  const handleSnooze = useCallback(() => {
+    if (!firingAlarm) return;
+    const id = firingAlarm.id;
+    const count = (snoozeCountRef.current[id] ?? 0) + 1;
+    snoozeCountRef.current[id] = count;
+
+    if (count >= MAX_SNOOZES) {
+      // 3rd fire — switch to gentle 174Hz grounding frequency
+      setIsGentleReentry(true);
+      // Re-mount the ringing overlay with grounding sound after snooze delay
+      setFiringAlarm(null);
+      setTimeout(() => {
+        setFiringAlarm(firingAlarm);
+      }, SNOOZE_MINUTES * 60 * 1000);
+    } else {
+      // Normal snooze
+      setFiringAlarm(null);
+      setTimeout(() => {
+        setFiringAlarm(firingAlarm);
+      }, SNOOZE_MINUTES * 60 * 1000);
+    }
+  }, [firingAlarm]);
+
+  // Schedule notifications — wire onFire to launch AlarmRinging overlay
   useEffect(() => {
-    if (!isGranted) return;
     alarms.forEach(alarm => {
       const freq = FREQUENCIES.find(f => f.id === alarm.frequencyId);
       if (alarm.enabled) {
-        scheduleNotification({ id: alarm.id, label: alarm.label, time: alarm.time, days: alarm.days, frequencyId: alarm.frequencyId, frequencyHz: freq?.hz || 432, frequencyName: freq?.name || 'Natural Harmony', enabled: alarm.enabled });
+        scheduleNotification({
+          id: alarm.id, label: alarm.label, time: alarm.time, days: alarm.days,
+          frequencyId: alarm.frequencyId, frequencyHz: freq?.hz || 432,
+          frequencyName: freq?.name || 'Natural Harmony', enabled: alarm.enabled,
+          onFire: handleAlarmFire,
+        });
       } else {
         cancelNotification(alarm.id);
       }
     });
-  }, [alarms, isGranted, scheduleNotification, cancelNotification]);
+  }, [alarms, scheduleNotification, cancelNotification, handleAlarmFire]);
 
   const toggleAlarm = (id: string) => {
     const alarm = alarms.find(a => a.id === id);
@@ -1050,7 +1172,14 @@ export default function Alarm() {
             </div>
           ) : (
             alarms.map(alarm => (
-              <AlarmCard key={alarm.id} alarm={alarm} onToggle={toggleAlarm} onDelete={deleteAlarmById} onEdit={setEditingAlarm} />
+              <AlarmCard
+                key={alarm.id}
+                alarm={alarm}
+                onToggle={toggleAlarm}
+                onDelete={deleteAlarmById}
+                onEdit={setEditingAlarm}
+                nextFireTime={alarm.enabled ? getNextFireTime(alarm.id) : null}
+              />
             ))
           )}
         </div>
@@ -1131,6 +1260,29 @@ export default function Alarm() {
       {showAlarmPaywall && (
         <PremiumPaywall triggerFrequencyName="Unlimited alarms are a Premium feature" onClose={() => setShowAlarmPaywall(false)} />
       )}
+
+      {/* ─── Full-screen ringing overlay (P1) ───────────────────────────────────────────────────────────────────── */}
+      {firingAlarm && (() => {
+        const sound = isGentleReentry ? buildGroundingSound() : buildRingingSound(firingAlarm);
+        const freq = FREQUENCIES.find(f => f.id === (isGentleReentry ? GROUNDING_FREQ_ID : firingAlarm.frequencyId));
+        const soundName = isGentleReentry
+          ? `174Hz — Gentle Re-entry`
+          : (firingAlarm.studioMixName ?? freq?.name ?? 'Healing Frequency');
+        const snoozeCount = snoozeCountRef.current[firingAlarm.id] ?? 0;
+        const snoozeLabel = isGentleReentry
+          ? undefined // no more snooze after gentle re-entry
+          : `Snooze ${SNOOZE_MINUTES} min${snoozeCount > 0 ? ` (${MAX_SNOOZES - snoozeCount} left)` : ''}`;
+        return (
+          <AlarmRinging
+            label={firingAlarm.label}
+            soundName={soundName}
+            sound={sound}
+            fadeInMinutes={firingAlarm.fadeInMinutes}
+            onStop={handleStop}
+            onSnooze={isGentleReentry ? handleStop : handleSnooze}
+          />
+        );
+      })()}
     </Layout>
   );
 }
