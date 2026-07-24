@@ -1,283 +1,299 @@
-# Rise In Harmony — Apple App Store Submission Guide
+# Rise In Harmony — Apple App Store Submission (Final Ready)
 
-This document contains all the metadata, copy, and step-by-step instructions needed to submit Rise In Harmony to the Apple App Store.
+**Version:** 1.0.1 · **Build:** 2 · **Bundle ID:** `com.riseinharmony.app`  
+**ASC App ID:** `6786561356` · **Team:** `A2Y6C3NNSY`  
+**Expo project:** `917f33c4-3b87-4f19-82ee-2c54125dae47`
+
+This document is the single source of truth for App Store Connect listing copy,
+privacy answers, IAP setup, and the build/submit sequence.
 
 ---
 
 ## Pre-Submission Checklist
 
-Before submitting, confirm every item below is complete:
+Mark each item before hitting **Submit for Review**:
 
-- [ ] Apple Developer Program membership active ($99/year at developer.apple.com)
-- [ ] EAS project initialized (`eas init` run, project ID in `app.json`)
-- [ ] Audio files added to `assets/sounds/` (see Audio Assets section)
-- [ ] RevenueCat iOS products configured in App Store Connect
-- [ ] Production EAS build created and tested on a physical device
-- [ ] All 5 required screenshot sizes captured
-- [ ] Privacy policy URL live at `https://www.riseinharmony.com/privacy`
-- [ ] Terms of service URL live at `https://www.riseinharmony.com/terms`
-- [ ] App Privacy ("nutrition label") completed in App Store Connect — PostHog collects user id/name/email + usage, which must be declared
-- [ ] Listing describes ONLY features present in the submitted build (Guided Meditations and Sound Studio are NOT yet implemented — do not advertise them until they ship; Guideline 2.3.1)
+### Binary & config
+- [x] Bundle ID `com.riseinharmony.app` matches App Store Connect
+- [x] `app.json` version `1.0.1`, iOS `buildNumber` `2`
+- [x] `ITSAppUsesNonExemptEncryption` = false (no export-compliance questionnaire)
+- [x] iOS deployment target 16.0+; phone-only (`supportsTablet: false`)
+- [x] Background audio mode enabled for continuous playback
+- [x] Notification sounds bundled: `alarm_174.wav` … `alarm_963.wav` (10 tones)
+- [x] Sound Studio loops present (real ~30 s MP3s, not silent stubs)
+- [x] Asset gate passes: `node scripts/check-mobile-assets.mjs`
+- [x] EAS project ID + owner configured
+- [x] ASC submit keys wired in `eas.json` (`AuthKey_LHBH9DWB4P.p8`)
 
-> ⚠️ **Health-claim language:** Avoid unsubstantiated medical claims (e.g. "DNA repair", "tissue regeneration", "pineal activation") in listing copy and screenshots (Guidelines 1.4.1 / 2.3). Prefer experiential phrasing ("associated with", "many people use for") and keep the medical disclaimer prominent.
+### Legal & web
+- [x] Privacy Policy live: https://www.riseinharmony.com/privacy
+- [x] Terms of Service live: https://www.riseinharmony.com/terms
+- [x] Support / Marketing URL: https://www.riseinharmony.com
+
+### Store ops (you complete in ASC / RevenueCat)
+- [ ] RevenueCat products imported + `premium` entitlement + `default` offering
+- [ ] Sandbox tester account created for review
+- [ ] Screenshots uploaded (6.9" required; see below)
+- [ ] App Privacy nutrition label completed (answers below)
+- [ ] Age rating questionnaire completed → **4+**
+- [ ] Production EAS build tested on a physical iPhone
+- [ ] Submit for review
+
+> **Health-claim language:** Do not use unsubstantiated medical claims
+> (“DNA repair”, “cures”, “treats disease”). Prefer experiential phrasing
+> (“associated with”, “many people use for”). Keep the medical disclaimer.
 
 ---
 
-## App Store Connect Metadata
+## App Store Connect Metadata (copy/paste)
 
 ### App Name
 ```
 Rise In Harmony
 ```
 
-### Subtitle (30 chars max)
+### Subtitle (≤30 characters)
 ```
 Healing Frequencies & Alarm
 ```
 
+### Promotional Text (≤170 characters)
+```
+Wake gently with TrueHz™ healing frequencies, Solfeggio tones, binaural beats, guided TrueHz meditations, and a soft healing alarm.
+```
+
 ### Category
-- **Primary:** Health & Fitness
-- **Secondary:** Music
+- **Primary:** Health & Fitness  
+- **Secondary:** Lifestyle  
 
 ### Age Rating
-4+ (no objectionable content)
+**4+** (no unrestricted web, no violence, no mature themes)
 
-### App Store Description (4000 chars max)
+### Description (≤4000 characters)
 
 ```
-Rise In Harmony replaces your jarring alarm clock with healing frequencies that wake your body gently and align your energy for the day ahead.
-
-HEALING FREQUENCIES
-Explore the complete Solfeggio scale — 174Hz through 963Hz — plus binaural beats for Alpha, Theta, and Delta brainwave states. Each frequency is precisely tuned and scientifically referenced, with chakra associations, Sanskrit pronunciations, and personal affirmations.
+Rise In Harmony replaces jarring alarms with precisely tuned healing frequencies — so your morning (and your practice) starts in calm.
 
 TRUEHZ™ PRECISION TUNING
-Most frequency apps play compressed recordings or pitch-shifted music — the tone you hear is an approximation of the number on the label. Rise In Harmony is different: every frequency is generated live on your device with our proprietary TrueHz™ precision-tuning methodology, mathematically exact to 0.01 Hz, with zero compression and true dual-channel binaural separation. When we say 528 Hz, you get 528.00 Hz.
+Every tone is generated live on your device with TrueHz™ methodology — mathematically exact, zero compression artifacts, true dual-channel binaural when you want it. When we say 528 Hz, you hear 528.00 Hz.
+
+HEALING FREQUENCY LIBRARY
+Explore the Solfeggio scale (174–963 Hz), 432 Hz natural harmony, 444 Hz concert pitch, and brainwave companions (Alpha, Theta, Delta). Each tone includes context, chakra associations where relevant, and affirmations.
 
 HEALING ALARM
-Set your wake time and choose a healing frequency. Rise In Harmony delivers a gentle wake-up notification with a soft healing tone instead of a jarring buzzer. Supports repeat schedules. (In-app playback also offers a 1–10 minute fade-in for wind-down and sleep sessions.)
+Schedule a gentle wake time with a solfeggio notification tone instead of a buzzer. Repeat days, frequency pickers, and soft in-app fade options for wind-down.
+
+TRUEHZ MEDITATIONS
+Six studio-produced TrueHz sessions (10–30 minutes): Nature Meditation (174 Hz), Calm Sleep (528 Hz), Third Eye Activation (528 Hz), Reiki Healing Garden (285 Hz), Deep Serenity (444 Hz), and Spiritual Meditation (444 Hz).
+
+SOUND STUDIO
+Layer a healing frequency with ambient nature beds and musical textures (rain, ocean, forest, wind, fire + ambient / drone / crystal). Save your mixes.
 
 7-CHAKRA JOURNEY
-A guided sequence through all seven chakras — Root to Crown — with the corresponding Solfeggio frequency for each energy center. Includes Sanskrit names, pronunciations, and affirmations.
+A guided Root-to-Crown sequence with matching Solfeggio tones, Sanskrit names, and affirmations.
+
+PRECISION PLAYER
+Dial custom Hz, choose waveforms, and explore mono, binaural, or isochronic modes for deep focus or rest.
 
 WELLNESS DASHBOARD
-Track your healing sessions, current streak, and total minutes. See your chakra balance at a glance and understand how your morning ritual is building over time.
+Track sessions, streaks, and minutes. See how your practice builds over time.
 
-OFFLINE FIRST
-All frequencies and meditations are available without an internet connection. Your morning ritual works even in airplane mode.
+OFFLINE-CAPABLE CORE
+Frequencies and core audio engines work without a constant connection — your ritual still works in airplane mode.
 
-PREMIUM FEATURES
-Unlock the full frequency library, all meditation sessions, unlimited alarms, and background audio with a Rise In Harmony Premium subscription.
+PREMIUM
+Unlock the full frequency library, all TrueHz meditations, unlimited alarms, and advanced studio features with Rise In Harmony Premium.
 
 ---
 
-Note: Rise In Harmony is a wellness and relaxation app. It is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Consult a healthcare professional for medical advice.
+Rise In Harmony is a wellness and relaxation app. It is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Consult a healthcare professional for medical advice.
 ```
 
-### Keywords (100 chars max, comma-separated)
+### Keywords (≤100 characters, comma-separated, no spaces after commas preferred)
 ```
-healing frequencies,solfeggio,binaural beats,meditation,sleep,chakra,432hz,528hz,alarm,wellness
+healing frequencies,solfeggio,binaural,meditation,sleep,chakra,432hz,528hz,alarm,wellness
 ```
+*(99 characters)*
 
-### Support URL
-```
-https://www.riseinharmony.com
-```
+### URLs
+| Field | Value |
+|---|---|
+| Support | https://www.riseinharmony.com |
+| Marketing | https://www.riseinharmony.com |
+| Privacy Policy | https://www.riseinharmony.com/privacy |
 
-### Marketing URL
+### What's New (1.0.1)
 ```
-https://www.riseinharmony.com
-```
-
-### Privacy Policy URL
-```
-https://www.riseinharmony.com/privacy
+• Six TrueHz HQ meditation sessions (174 / 285 / 444 / 528 Hz masters)
+• Final production audio bundle for Sound Studio and healing alarms
+• App Store readiness: privacy strings, version 1.0.1, notification tones
+• Stability and polish for launch
 ```
 
 ---
 
 ## Pricing & Availability
 
-- **Base price:** Free
-- **Availability:** All territories
-- **In-App Purchases:** Configure in RevenueCat (see below)
+- **Price:** Free  
+- **Availability:** All territories (or your preferred set)  
+- **In-App Purchases:** See below  
 
 ---
 
-## In-App Purchases (RevenueCat Setup)
+## In-App Purchases (App Store Connect + RevenueCat)
 
-Create the following products in App Store Connect → In-App Purchases, then mirror them in RevenueCat:
+Create in **App Store Connect → Subscriptions / IAPs**, then import in RevenueCat:
 
-| Product ID | Type | Price | Description |
+| Product ID | Type | Price (US) | Display name |
 |---|---|---|---|
-| `com.riseinharmony.premium.monthly` | Auto-Renewable Subscription | $7.99/month | Rise In Harmony Premium (Monthly) |
-| `com.riseinharmony.premium.annual` | Auto-Renewable Subscription | $49.99/year | Rise In Harmony Premium (Annual) |
-| `com.riseinharmony.lifetime` | Non-Consumable | $99.99 | Rise In Harmony Premium (Lifetime) |
+| `com.riseinharmony.premium.monthly` | Auto-renewable | $7.99/mo | Premium Monthly |
+| `com.riseinharmony.premium.annual` | Auto-renewable | $49.99/yr | Premium Annual |
+| `com.riseinharmony.lifetime` | Non-consumable | $99.99 | Premium Lifetime |
 
-**Subscription Group Name:** Rise In Harmony Premium
-
-**RevenueCat Entitlement:** `premium`
-
-**RevenueCat Offering ID:** `default`
-
-After creating products in App Store Connect:
-1. Go to RevenueCat Dashboard → Products → Import from App Store
-2. Create an Offering called `default`
-3. Add all three packages: Monthly, Annual, Lifetime
-4. Set Annual as the default package
+- **Subscription group:** Rise In Harmony Premium  
+- **RevenueCat entitlement:** `premium`  
+- **Offering ID:** `default` (Annual as default package recommended)  
+- **Review note:** App works without login; free features are usable offline. Use Sandbox for IAP testing.
 
 ---
 
-## Audio Assets Required
+## Screenshots
 
-All healing frequencies (solfeggio tones, binaural beats, isochronic pulses) are
-**synthesized live on-device** — no pre-rendered frequency recordings ship in the
-binary (~28 MB smaller). Only the following files must be in
-`apps/mobile/assets/sounds/` before building:
+### Required sizes
+| Device | Size |
+|---|---|
+| iPhone 6.9" (primary) | 1320 × 2868 |
+| iPhone 6.7" (optional but recommended) | 1284 × 2778 |
 
-| Filename | Description | Source |
-|---|---|---|
-| `ambient-rain.mp3` | Gentle rain loop | Record or license |
-| `ambient-ocean.mp3` | Ocean waves loop | Record or license |
-| `ambient-forest.mp3` | Forest birdsong loop | Record or license |
-| `ambient-wind.mp3` | Mountain wind loop | Record or license |
-| `ambient-fire.mp3` | Crackling fire loop | Record or license |
-| `alarm_<hz>.wav` ×10 | Exact-Hz solfeggio alarm tones (29.5 s, generated sine + tremolo, one per solfeggio frequency 174–963) | Generated in-repo via ffmpeg |
+*(iPad screenshots not required — `supportsTablet: false`.)*
 
-**Recommended sources for royalty-free audio:**
-- [Freesound.org](https://freesound.org) — CC0 licensed tones
-- Generate using Audacity or Adobe Audition with a sine wave generator
-- Commission from a sound designer on Fiverr or Upwork
+### Capture order (suggested)
+1. **Player** — 528 Hz playing with visualizer  
+2. **Library** — frequency grid  
+3. **Alarm** — schedule + frequency pick  
+4. **Meditate** — six TrueHz sessions  
+5. **Sound Studio** — layered mix  
+6. **Dashboard** — streak / minutes  
 
-**File specifications:**
-- Format: MP3 (loops), WAV (alarm sound)
-- Bit rate: 128kbps minimum, 320kbps recommended
-- Sample rate: 44.1kHz
-- Channels: Stereo (binaural beats require stereo; mono is acceptable for pure tones)
+Use **dark mode**. Avoid medical claims in overlay captions.
 
----
-
-## Screenshots Required
-
-App Store requires screenshots for the following device sizes:
-
-### Required (mandatory)
-| Device | Size | Notes |
-|---|---|---|
-| iPhone 6.9" (iPhone 16 Pro Max) | 1320 × 2868 px | Primary listing screenshots |
-| iPhone 6.7" (iPhone 14 Plus) | 1284 × 2778 px | Required if supporting iOS 16 |
-| iPad Pro 13" (M4) | 2064 × 2752 px | Required if supporting iPad |
-
-### Recommended Screens to Capture (in order)
-1. **Hero / Player** — Frequency player showing 528Hz with animated rings, playing state
-2. **Frequency Library** — Grid of all frequencies with color-coded cards
-3. **Healing Alarm** — Alarm creation screen with time picker and frequency selector
-4. **Meditation** — Meditation library with ambient soundscape playing
-5. **Dashboard** — Streak stats, weekly bar chart, and chakra balance map
-
-### Screenshot Tips
-- Use a real device or Simulator with the app running
-- Capture in dark mode (the app's default theme)
-- Add marketing text overlay in App Store Connect's screenshot editor or use Figma
-- Suggested overlay text: "Wake up in harmony", "13 healing frequencies", "Set your healing alarm", "Guided meditations", "Track your journey"
+Suggested captions:
+- “Wake up in harmony”
+- “TrueHz™ precision frequencies”
+- “Gentle healing alarm”
+- “Six TrueHz meditations”
+- “Layer your soundscape”
+- “Track your practice”
 
 ---
 
-## App Privacy Questionnaire — Answer Sheet
+## App Privacy Questionnaire (nutrition label)
 
-App Store Connect → App Privacy → Get Started. Apple only allows this via the
-website UI. Answer exactly as follows (mobile app has no login; PostHog and
-RevenueCat run with anonymous IDs):
+**Do you or your third parties collect data?** → **Yes**
 
-**"Do you or your third-party partners collect data from this app?"** → **Yes**
+| Data type | Linked to identity? | Used for tracking? | Purposes |
+|---|---|---|---|
+| Purchases → Purchase History | No | No | App Functionality |
+| Identifiers → User ID | No | No | App Functionality, Analytics |
+| Usage Data → Product Interaction | No | No | Analytics |
 
-Declare these three data types, nothing else:
-
-| Data type | Category | Linked to identity? | Used for tracking? | Purposes |
-|---|---|---|---|---|
-| Purchases → Purchase History | RevenueCat receipt validation | No | No | App Functionality |
-| Identifiers → User ID | RevenueCat anonymous app-user ID + PostHog device ID | No | No | App Functionality, Analytics |
-| Usage Data → Product Interaction | PostHog screen/session events | No | No | Analytics |
-
-Everything else (contact info, health data, location, contacts, photos,
-search history, sensitive info, diagnostics) → **not collected**.
-
-Because nothing is "used to track you" across other companies' apps, no App
-Tracking Transparency prompt is needed and the privacy label shows the mild
-"Data Not Linked to You" card.
+- **Not collected:** contact info, health & fitness data, location, contacts, photos, search history, sensitive info, diagnostics (unless you later add crash tools — update this).  
+- **Tracking:** No → no ATT prompt required.  
+- Partners: RevenueCat (purchases), PostHog (analytics) — both with anonymous / app-user IDs as configured.
 
 ---
 
-## App Review Notes
-
-Include these notes in the App Review Information section:
+## App Review Notes (paste into ASC)
 
 ```
-Rise In Harmony is a wellness app that plays healing frequencies (Solfeggio tones and binaural beats) and sets alarm notifications.
+Rise In Harmony is a wellness app that plays healing frequencies (Solfeggio and
+binaural tones), TrueHz meditation sessions, a layered Sound Studio, and
+scheduled healing alarms.
+
+NO LOGIN REQUIRED for free features. Optional account/sign-in may appear for
+cloud sync; core audio works without it.
 
 TEST ACCOUNT:
-No account is required to use the free features. The app works without login.
-To test premium features, use the Sandbox test account configured in App Store Connect.
+Use any App Store Sandbox tester for Premium / IAP.
+Free path: open app → Player or Meditate → play a free session.
 
-AUDIO PERMISSIONS:
-The app requests audio session permissions to play sounds in the background (when the screen is off). This is required for the healing alarm and sleep timer features.
-
-NOTIFICATION PERMISSIONS:
-The app requests notification permissions to deliver the healing alarm at the scheduled time. The user is prompted before any alarm is created.
+PERMISSIONS:
+• Notifications — healing alarms at user-scheduled times (prompted when user
+  creates an alarm).
+• Microphone usage string — required by the audio engine dependency; the app
+  does not record microphone audio.
+• Background audio — continues frequency / meditation playback when the screen
+  is locked (standard .playback audio session).
 
 IN-APP PURCHASES:
-Three subscription tiers are available (Monthly, Annual, Lifetime). Use the Sandbox environment to test purchases. The paywall is accessible from any locked frequency or from the Library tab.
+Monthly, Annual, Lifetime unlock premium frequencies, all TrueHz meditations,
+unlimited alarms, and advanced studio features. Entitlement id: premium.
 
-BACKGROUND AUDIO:
-The app uses AVAudioSession with the .playback category to continue playing frequencies when the screen is locked. This is the same category used by Spotify, Apple Music, and other audio apps.
+Please use headphones for binaural demos.
 ```
 
 ---
 
-## Build & Submit Steps
+## Build & Submit
 
-### 1. Initialize EAS
+### 0. Asset gate
+```bash
+cd /path/to/rise-in-harmony
+node scripts/check-mobile-assets.mjs
+```
+
+### 1. EAS secrets (once)
 ```bash
 cd apps/mobile
-npx eas-cli init
-# This creates a project on expo.dev and writes the projectId to app.json
-```
-
-### 2. Configure EAS Secrets
-```bash
 eas secret:create --scope project --name EXPO_PUBLIC_API_URL --value "https://www.riseinharmony.com"
-eas secret:create --scope project --name EXPO_PUBLIC_REVENUECAT_IOS_KEY --value "appl_..."
+eas secret:create --scope project --name EXPO_PUBLIC_RC_API_KEY_IOS --value "appl_..."
+eas secret:create --scope project --name EXPO_PUBLIC_RC_API_KEY_ANDROID --value "goog_..."
 eas secret:create --scope project --name EXPO_PUBLIC_POSTHOG_KEY --value "phc_..."
+eas secret:create --scope project --name EXPO_PUBLIC_POSTHOG_HOST --value "https://us.i.posthog.com"
 ```
 
-### 3. Create Production Build
+### 2. Production iOS build
 ```bash
+cd apps/mobile
 eas build --platform ios --profile production
 ```
-This uploads the build to Expo's build servers and produces an `.ipa` file.
 
-### 4. Submit to App Store
+### 3. Submit to App Store Connect
 ```bash
-eas submit --platform ios --latest
+eas submit --platform ios --latest --profile production
 ```
-This submits the latest build to App Store Connect for review.
 
-### 5. Complete App Store Connect Setup
-- Fill in all metadata from this document
-- Upload screenshots
-- Set pricing and availability
-- Configure in-app purchases
-- Submit for review
+### 4. In App Store Connect
+1. Select build 2 (1.0.1)  
+2. Paste metadata from this doc  
+3. Upload screenshots  
+4. Complete App Privacy + age rating  
+5. Attach IAPs to the version  
+6. **Submit for Review**
 
-### 6. App Review Timeline
-Apple's review typically takes 1–3 business days for new apps. Expedited review is available for critical bug fixes.
+Typical review: 1–3 business days for a new app version.
 
 ---
 
 ## Post-Launch
 
-After approval:
-- Monitor crash reports via Expo's error tracking or Sentry
-- Watch RevenueCat dashboard for subscription conversions
-- Check PostHog for user behavior and drop-off points
-- Respond to App Store reviews within 24 hours
-- Plan first update within 2 weeks of launch to signal active maintenance to the App Store algorithm
+- Watch ASC crashes + RevenueCat conversions + PostHog funnels  
+- Reply to reviews within 24 hours  
+- Prefer a small 1.0.2 polish update within ~2 weeks  
+
+---
+
+## Feature set in this binary (for reviewers & marketing)
+
+| Feature | Status |
+|---|---|
+| TrueHz frequency player | Shipped |
+| Frequency library (Solfeggio + more) | Shipped |
+| Healing alarm + solfeggio notification tones | Shipped |
+| 6 TrueHz meditation sessions | Shipped |
+| Sound Studio (freq + nature + music) | Shipped |
+| 7-Chakra Journey | Shipped |
+| Precision Player | Shipped |
+| Dashboard / streaks | Shipped |
+| Premium via RevenueCat | Shipped (configure products in ASC) |
+| TrueHz Convert (web) | Web-only — not advertised as an iOS feature |

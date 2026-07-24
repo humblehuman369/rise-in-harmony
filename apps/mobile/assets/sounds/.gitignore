@@ -1,5 +1,6 @@
-# Large optional audio packs stay local. Required studio loops are tracked
-# (see REQUIRED_ASSETS.md) so CI and EAS builds can verify/bundle them.
+# Large optional audio packs stay local. Required studio loops + alarm
+# notification tones are tracked (see REQUIRED_ASSETS.md) so CI and EAS
+# builds can verify/bundle them.
 *.ogg
 *.m4a
 *.wav
@@ -15,3 +16,14 @@
 !music-ambient.mp3
 !music-drone.mp3
 !music-crystal.mp3
+# Bundled notification alarm tones (solfeggio sine + tremolo, <30s)
+!alarm_174.wav
+!alarm_285.wav
+!alarm_396.wav
+!alarm_417.wav
+!alarm_432.wav
+!alarm_528.wav
+!alarm_639.wav
+!alarm_741.wav
+!alarm_852.wav
+!alarm_963.wav

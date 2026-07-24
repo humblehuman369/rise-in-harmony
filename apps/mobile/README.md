@@ -150,7 +150,7 @@ apps/mobile/
     (tabs)/               ← Bottom tab navigator
       index.tsx           ← Home screen
       player.tsx          ← Frequency player
-      meditation.tsx      ← Guided meditation library (12 sessions)
+      meditation.tsx      ← TrueHz HQ meditation library (6 sessions)
       studio.tsx          ← Sound Studio (layered mixer: frequency + music + nature)
       library.tsx         ← Frequency library (routable via Home; hidden from tab bar)
       alarm.tsx           ← Alarm scheduler

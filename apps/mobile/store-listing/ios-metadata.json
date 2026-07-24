@@ -1,0 +1,20 @@
+{
+  "version": "1.0.1",
+  "buildNumber": "2",
+  "bundleId": "com.riseinharmony.app",
+  "ascAppId": "6786561356",
+  "name": "Rise In Harmony",
+  "subtitle": "Healing Frequencies & Alarm",
+  "promotionalText": "Wake gently with TrueHz™ healing frequencies, Solfeggio tones, binaural beats, guided TrueHz meditations, and a soft healing alarm.",
+  "keywords": "healing frequencies,solfeggio,binaural,meditation,sleep,chakra,432hz,528hz,alarm,wellness",
+  "supportUrl": "https://www.riseinharmony.com",
+  "marketingUrl": "https://www.riseinharmony.com",
+  "privacyPolicyUrl": "https://www.riseinharmony.com/privacy",
+  "primaryCategory": "HEALTH_AND_FITNESS",
+  "secondaryCategory": "LIFESTYLE",
+  "ageRating": "4+",
+  "copyright": "2026 Rise In Harmony",
+  "whatsNew": "• Six TrueHz HQ meditation sessions (174 / 285 / 444 / 528 Hz masters)\n• Final production audio bundle for Sound Studio and healing alarms\n• App Store readiness: privacy strings, version 1.0.1, notification tones\n• Stability and polish for launch",
+  "description": "Rise In Harmony replaces jarring alarms with precisely tuned healing frequencies — so your morning (and your practice) starts in calm.\n\nTRUEHZ™ PRECISION TUNING\nEvery tone is generated live on your device with TrueHz™ methodology — mathematically exact, zero compression artifacts, true dual-channel binaural when you want it. When we say 528 Hz, you hear 528.00 Hz.\n\nHEALING FREQUENCY LIBRARY\nExplore the Solfeggio scale (174–963 Hz), 432 Hz natural harmony, 444 Hz concert pitch, and brainwave companions (Alpha, Theta, Delta). Each tone includes context, chakra associations where relevant, and affirmations.\n\nHEALING ALARM\nSchedule a gentle wake time with a solfeggio notification tone instead of a buzzer. Repeat days, frequency pickers, and soft in-app fade options for wind-down.\n\nTRUEHZ MEDITATIONS\nSix studio-produced TrueHz sessions (10–30 minutes): Nature Meditation (174 Hz), Calm Sleep (528 Hz), Third Eye Activation (528 Hz), Reiki Healing Garden (285 Hz), Deep Serenity (444 Hz), and Spiritual Meditation (444 Hz).\n\nSOUND STUDIO\nLayer a healing frequency with ambient nature beds and musical textures (rain, ocean, forest, wind, fire + ambient / drone / crystal). Save your mixes.\n\n7-CHAKRA JOURNEY\nA guided Root-to-Crown sequence with matching Solfeggio tones, Sanskrit names, and affirmations.\n\nPRECISION PLAYER\nDial custom Hz, choose waveforms, and explore mono, binaural, or isochronic modes for deep focus or rest.\n\nWELLNESS DASHBOARD\nTrack sessions, streaks, and minutes. See how your practice builds over time.\n\nOFFLINE-CAPABLE CORE\nFrequencies and core audio engines work without a constant connection — your ritual still works in airplane mode.\n\nPREMIUM\nUnlock the full frequency library, all TrueHz meditations, unlimited alarms, and advanced studio features with Rise In Harmony Premium.\n\n---\n\nRise In Harmony is a wellness and relaxation app. It is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Consult a healthcare professional for medical advice.",
+  "reviewNotes": "Rise In Harmony is a wellness app that plays healing frequencies (Solfeggio and binaural tones), TrueHz meditation sessions, a layered Sound Studio, and scheduled healing alarms.\n\nNO LOGIN REQUIRED for free features.\n\nTEST ACCOUNT: Use any App Store Sandbox tester for Premium / IAP. Free path: open app → Player or Meditate → play a free session.\n\nPERMISSIONS: Notifications for healing alarms; microphone usage string is required by the audio engine dependency (app does not record); background audio for locked-screen playback.\n\nIN-APP PURCHASES: Monthly, Annual, Lifetime. Entitlement: premium."
+}
