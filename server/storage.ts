@@ -110,3 +110,59 @@ export async function storageGetSignedUrl(relKey: string): Promise<string> {
   const { url } = (await resp.json()) as { url: string };
   return url;
 }
+
+/**
+ * Best-effort object size for plan-limit enforcement after relay/presign upload.
+ * Uses HEAD on a presigned GET URL; falls back to a 1-byte ranged GET.
+ * Returns null when the object is missing or size cannot be determined.
+ */
+export async function storageObjectByteSize(
+  relKey: string,
+): Promise<number | null> {
+  let url: string;
+  try {
+    url = await storageGetSignedUrl(relKey);
+  } catch {
+    return null;
+  }
+
+  try {
+    const head = await fetch(url, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (head.ok) {
+      const cl = head.headers.get("content-length");
+      if (cl) {
+        const n = parseInt(cl, 10);
+        if (Number.isFinite(n) && n >= 0) return n;
+      }
+    }
+  } catch {
+    /* try range GET */
+  }
+
+  try {
+    const ranged = await fetch(url, {
+      method: "GET",
+      headers: { Range: "bytes=0-0" },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (ranged.ok || ranged.status === 206) {
+      const cr = ranged.headers.get("content-range"); // e.g. bytes 0-0/12345
+      const m = cr?.match(/\/(\d+)\s*$/);
+      if (m) {
+        const n = parseInt(m[1]!, 10);
+        if (Number.isFinite(n) && n >= 0) return n;
+      }
+      const cl = ranged.headers.get("content-length");
+      if (cl) {
+        const n = parseInt(cl, 10);
+        if (Number.isFinite(n) && n >= 0) return n;
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}

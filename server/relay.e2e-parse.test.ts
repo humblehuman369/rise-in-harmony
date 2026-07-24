@@ -79,6 +79,10 @@ describe("relay token E2E: real procedure output → client parsing → live rel
       // Per-user destination prefix (2026-07-19 fix): must satisfy the
       // assertSourceKey contract `convert/{userId}/...` for job creation.
       expect(keyPrefix).toMatch(/^convert\/1\/[A-Za-z0-9_-]{12}\/$/);
+      // v2 bound token is also present for upgraded relays
+      expect(raw).toHaveProperty("boundToken");
+      expect(raw).toHaveProperty("maxBytes");
+      expect(typeof raw.maxBytes).toBe("number");
     },
   );
 

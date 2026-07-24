@@ -206,8 +206,12 @@ async function uploadViaRelay(
   // `cache: "no-store"` + a timestamp param guarantee the browser can never
   // serve a stale cached response from an older deployment (which previously
   // caused an invalid relayUrl to be used silently).
+  // Pass byteSize so the server can reject over-plan files before the relay POST.
+  const tokenInput = encodeURIComponent(
+    JSON.stringify({ 0: { json: { byteSize: file.size } } }),
+  );
   const tokenRes = await apiFetch(
-    `/api/trpc/convert.getRelayToken?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%7D%7D&_ts=${Date.now()}`,
+    `/api/trpc/convert.getRelayToken?batch=1&input=${tokenInput}&_ts=${Date.now()}`,
     { method: "GET", cache: "no-store" }
   );
   // The server uses the superjson transformer, so the payload is nested under
@@ -215,15 +219,44 @@ async function uploadViaRelay(
   // reading the wrong level yields `undefined`, which previously got string-
   // coerced into the literal header value "undefined" and the relay rejected
   // it with 401 (surfaced to users as "Upload token expired").
-  type TokenPayload = { token?: string; relayUrl?: string; keyPrefix?: string };
+  type TokenPayload = {
+    token?: string;
+    boundToken?: string;
+    relayUrl?: string;
+    keyPrefix?: string;
+    maxBytes?: number;
+  };
   const tokenJson = (await tokenRes.json()) as [
-    { result: { data: { json?: TokenPayload } & TokenPayload } },
+    {
+      result?: { data: { json?: TokenPayload } & TokenPayload };
+      error?: { json?: { message?: string }; message?: string };
+    },
   ];
+  const trpcErr =
+    tokenJson?.[0]?.error?.json?.message ??
+    tokenJson?.[0]?.error?.message;
+  if (trpcErr) {
+    throw new Error(
+      typeof trpcErr === "string" && trpcErr.includes("TOO_LARGE")
+        ? trpcErr.replace(/^TOO_LARGE:\s*/i, "File too large for your plan: ")
+        : String(trpcErr),
+    );
+  }
   const payload = tokenJson?.[0]?.result?.data?.json ?? tokenJson?.[0]?.result?.data ?? {};
   const token = typeof payload.token === "string" ? payload.token : "";
-  // A valid token is "{unix_seconds}.{64-char hex hmac}" — never send garbage.
+  const boundToken = typeof payload.boundToken === "string" ? payload.boundToken : "";
+  // v1 token: "{unix_seconds}.{64-char hex hmac}" — still required by the live relay.
   if (!/^\d{9,12}\.[0-9a-f]{64}$/.test(token)) {
     throw new Error("Could not get an upload token from the server — please refresh the page and try again");
+  }
+  if (
+    typeof payload.maxBytes === "number" &&
+    payload.maxBytes > 0 &&
+    file.size > payload.maxBytes
+  ) {
+    throw new Error(
+      `File too large for your plan (${(file.size / (1024 * 1024)).toFixed(1)} MB; limit ${(payload.maxBytes / (1024 * 1024)).toFixed(1)} MB)`,
+    );
   }
   // Never trust the URL blindly: validate it and fall back to the known-good
   // endpoint if it is missing, relative, or non-https.
@@ -271,6 +304,10 @@ async function uploadViaRelay(
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${relayUrl}/upload`, true);
       xhr.setRequestHeader("x-auth-token", token);
+      // v2 bound token — preferred by upgraded relays; ignored by older ones.
+      if (boundToken && /^\d{9,12}\.\d+\.\d+\.[0-9a-f]{64}$/.test(boundToken)) {
+        xhr.setRequestHeader("x-auth-bound", boundToken);
+      }
       xhr.setRequestHeader("x-file-name", file.name);
       xhr.setRequestHeader("x-content-type", contentTypeForFile(file));
       if (fileKey) xhr.setRequestHeader("x-file-key", fileKey);

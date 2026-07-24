@@ -63,10 +63,50 @@ function isAudioBuffer(buf: Buffer): { ok: boolean; ext: string } {
     return { ok: true, ext: "wav" };
   if (buf[0] === 0x66 && buf[1] === 0x4c && buf[2] === 0x61 && buf[3] === 0x43)
     return { ok: true, ext: "flac" };
-  if (buf[4] === 0x66 && buf[5] === 0x74 && buf[6] === 0x79 && buf[7] === 0x70)
+  // ISO BMFF (ftyp) — M4A/MP4/MOV share the same brand box
+  if (buf[4] === 0x66 && buf[5] === 0x74 && buf[6] === 0x79 && buf[7] === 0x70) {
+    const brand = buf.slice(8, 12).toString("ascii");
+    if (brand.startsWith("qt") || brand === "moov") return { ok: true, ext: "mov" };
+    if (
+      brand === "isom" ||
+      brand === "iso2" ||
+      brand === "mp41" ||
+      brand === "mp42" ||
+      brand === "avc1" ||
+      brand === "dash"
+    ) {
+      return { ok: true, ext: "mp4" };
+    }
+    // M4A / AAC-in-MP4 brands
     return { ok: true, ext: "m4a" };
+  }
   if (buf[0] === 0x4f && buf[1] === 0x67 && buf[2] === 0x67 && buf[3] === 0x53)
     return { ok: true, ext: "ogg" };
+  // Matroska / WebM EBML header
+  if (
+    buf[0] === 0x1a &&
+    buf[1] === 0x45 &&
+    buf[2] === 0xdf &&
+    buf[3] === 0xa3
+  ) {
+    // Heuristic: "webm" often appears early; default mkv
+    const head = buf.slice(0, Math.min(64, buf.length)).toString("binary");
+    if (head.includes("webm")) return { ok: true, ext: "webm" };
+    return { ok: true, ext: "mkv" };
+  }
+  // RIFF AVI
+  if (
+    buf[0] === 0x52 &&
+    buf[1] === 0x49 &&
+    buf[2] === 0x46 &&
+    buf[3] === 0x46 &&
+    buf[8] === 0x41 &&
+    buf[9] === 0x56 &&
+    buf[10] === 0x49 &&
+    buf[11] === 0x20
+  ) {
+    return { ok: true, ext: "avi" };
+  }
   return { ok: false, ext: "" };
 }
 
@@ -84,6 +124,11 @@ function contentTypeForExt(ext: string): string {
     case "flac": return "audio/flac";
     case "m4a":  return "audio/mp4";
     case "ogg":  return "audio/ogg";
+    case "mp4":  return "video/mp4";
+    case "mkv":  return "video/x-matroska";
+    case "mov":  return "video/quicktime";
+    case "avi":  return "video/x-msvideo";
+    case "webm": return "video/webm";
     default:     return "application/octet-stream";
   }
 }
@@ -96,6 +141,11 @@ function contentTypeForFile(filename: string, mimeHint: string): string {
   if (n.endsWith(".flac")) return "audio/flac";
   if (n.endsWith(".m4a") || n.endsWith(".aac")) return "audio/mp4";
   if (n.endsWith(".ogg")) return "audio/ogg";
+  if (n.endsWith(".mp4")) return "video/mp4";
+  if (n.endsWith(".mkv")) return "video/x-matroska";
+  if (n.endsWith(".mov")) return "video/quicktime";
+  if (n.endsWith(".avi")) return "video/x-msvideo";
+  if (n.endsWith(".webm")) return "video/webm";
   return "application/octet-stream";
 }
 
@@ -117,6 +167,7 @@ export function registerConvertUpload(app: Express) {
     type: [
       "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/wave",
       "audio/flac", "audio/mp4", "audio/x-m4a", "audio/m4a", "audio/ogg",
+      "video/mp4", "video/quicktime", "video/x-matroska", "video/webm", "video/x-msvideo",
       "application/octet-stream",
     ],
     limit: CHUNK_LIMIT,
@@ -182,12 +233,38 @@ export function registerConvertUpload(app: Express) {
     if (!session) { res.status(404).json({ error: "Upload session not found or expired" }); return; }
     if (session.userId !== user.id) { res.status(403).json({ error: "Forbidden" }); return; }
 
+    if (chunkIndex >= session.totalChunks) {
+      res.status(400).json({
+        error: `chunkIndex ${chunkIndex} out of range (0–${session.totalChunks - 1})`,
+      });
+      return;
+    }
+
     const body = req.body;
     if (!Buffer.isBuffer(body) || body.length === 0) {
       res.status(400).json({ error: "Empty chunk body" }); return;
     }
     if (body.length > CHUNK_LIMIT) {
       res.status(413).json({ error: "Chunk too large" }); return;
+    }
+
+    // Reject when adding a *new* index would exceed totalChunks (overwrite of
+    // an existing index is fine and does not grow the map).
+    if (!session.chunks.has(chunkIndex) && session.chunks.size >= session.totalChunks) {
+      res.status(400).json({ error: "Too many chunks for this session" });
+      return;
+    }
+
+    // Cumulative size cap — stop stuffing RAM before finalize.
+    let projected = body.length;
+    for (const [idx, buf] of session.chunks) {
+      if (idx === chunkIndex) continue;
+      projected += buf.length;
+    }
+    if (projected > session.maxFileBytes) {
+      sessions.delete(uploadId);
+      res.status(413).json({ error: CONVERT_ERROR_CODES.TOO_LARGE, maxBytes: session.maxFileBytes });
+      return;
     }
 
     session.chunks.set(chunkIndex, body);
@@ -261,6 +338,7 @@ export function registerConvertUpload(app: Express) {
       type: [
         "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/wave",
         "audio/flac", "audio/mp4", "audio/x-m4a", "audio/m4a", "audio/ogg",
+        "video/mp4", "video/quicktime", "video/x-matroska", "video/webm", "video/x-msvideo",
         "application/octet-stream",
       ],
       limit: CHUNK_LIMIT,

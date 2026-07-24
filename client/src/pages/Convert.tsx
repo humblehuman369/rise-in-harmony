@@ -361,7 +361,7 @@ export default function Convert() {
         return;
       }
       if (!isAcceptedConvertFile(file)) {
-        toast.error("Use MP3, WAV, FLAC, M4A, or OGG");
+        toast.error("Use MP3, WAV, FLAC, M4A, OGG, AAC, or video (MP4, MKV, MOV, AVI, WEBM)");
         return;
       }
       if (!statusQuery.data?.enabled) {

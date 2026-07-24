@@ -151,6 +151,17 @@ async function startServer() {
                 "https://*.r2.cloudflarestorage.com",
                 // EC2 upload relay (Caddy + Let's Encrypt, direct HTTPS) — bypasses Manus proxy body limit
                 "https://34-23-137-141.sslip.io",
+                // Allow env-overridden relay host (same origin form when RIH_RELAY_URL changes)
+                ...(ENV.relayUrl
+                  ? (() => {
+                      try {
+                        const u = new URL(ENV.relayUrl);
+                        return u.protocol === "https:" ? [u.origin] : [];
+                      } catch {
+                        return [] as string[];
+                      }
+                    })()
+                  : []),
                 // Manus analytics beacon (avoids console CSP warnings)
                 "https://manus-analytics.com",
                 "https://*.manus-analytics.com",

@@ -934,6 +934,8 @@ export default function Alarm() {
   const [firingAlarm, setFiringAlarm] = useState<Alarm | null>(null);
   // snoozeCount tracks how many times the current firing alarm has been snoozed
   const snoozeCountRef = useRef<Record<string, number>>({});
+  // Pending snooze re-fire — cleared on stop / unmount so we never setState after leave
+  const snoozeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // isGentleReentry: true when we've hit MAX_SNOOZES and switch to grounding freq
   const [isGentleReentry, setIsGentleReentry] = useState(false);
 
@@ -1018,36 +1020,44 @@ export default function Alarm() {
     setFiringAlarm(alarm);
   }, [alarms]);
 
+  const clearSnoozeTimer = useCallback(() => {
+    if (snoozeTimerRef.current != null) {
+      clearTimeout(snoozeTimerRef.current);
+      snoozeTimerRef.current = null;
+    }
+  }, []);
+
   const handleStop = useCallback(() => {
+    clearSnoozeTimer();
     if (firingAlarm) {
       delete snoozeCountRef.current[firingAlarm.id];
     }
     setFiringAlarm(null);
     setIsGentleReentry(false);
-  }, [firingAlarm]);
+  }, [firingAlarm, clearSnoozeTimer]);
 
   const handleSnooze = useCallback(() => {
     if (!firingAlarm) return;
     const id = firingAlarm.id;
+    const alarm = firingAlarm;
     const count = (snoozeCountRef.current[id] ?? 0) + 1;
     snoozeCountRef.current[id] = count;
 
-    if (count >= MAX_SNOOZES) {
-      // 3rd fire — switch to gentle 174Hz grounding frequency
+    const gentle = count >= MAX_SNOOZES;
+    if (gentle) {
+      // Next re-fire uses 174Hz grounding frequency
       setIsGentleReentry(true);
-      // Re-mount the ringing overlay with grounding sound after snooze delay
-      setFiringAlarm(null);
-      setTimeout(() => {
-        setFiringAlarm(firingAlarm);
-      }, SNOOZE_MINUTES * 60 * 1000);
-    } else {
-      // Normal snooze
-      setFiringAlarm(null);
-      setTimeout(() => {
-        setFiringAlarm(firingAlarm);
-      }, SNOOZE_MINUTES * 60 * 1000);
     }
-  }, [firingAlarm]);
+    setFiringAlarm(null);
+    clearSnoozeTimer();
+    snoozeTimerRef.current = setTimeout(() => {
+      snoozeTimerRef.current = null;
+      setFiringAlarm(alarm);
+    }, SNOOZE_MINUTES * 60 * 1000);
+  }, [firingAlarm, clearSnoozeTimer]);
+
+  // Drop pending snooze re-fires when leaving the Alarm page
+  useEffect(() => () => clearSnoozeTimer(), [clearSnoozeTimer]);
 
   // Schedule notifications — wire onFire to launch AlarmRinging overlay
   useEffect(() => {

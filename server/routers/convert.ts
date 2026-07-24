@@ -25,17 +25,21 @@ import {
 import { isUserPremium } from "../lib/entitlements";
 import {
   CONVERT_ERROR_CODES,
+  CONVERT_LIMITS,
   formatBytesMb,
   isConvertEnabled,
   limitsForPremium,
   type ConvertTierLimits,
 } from "../lib/convert/limits";
+
+/** Absolute max accepted by zod (paid tier); plan-specific cap applied after. */
+const CONVERT_LIMITS_PAID_MAX = CONVERT_LIMITS.paid.maxFileBytes;
 import { detectConcertAFromWavFile } from "../lib/convert/pitchDetect";
 import { which } from "../lib/convert/pipeline";
-import { storageGet, storageGetSignedUrl, storagePresignPut } from "../storage";
+import { storageGet, storageGetSignedUrl, storageObjectByteSize, storagePresignPut } from "../storage";
 import { spawn } from "node:child_process";
-import { createHmac } from "node:crypto";
 import { ENV } from "../_core/env";
+import { mintRelayTokenV1, mintRelayTokenV2 } from "../lib/convert/relayToken";
 
 const pitchASchema = z.number().min(400).max(480);
 const qualitySchema = z.enum(["standard", "high"]);
@@ -117,6 +121,18 @@ async function insertConvertJobForUser(
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: CONVERT_ERROR_CODES.TOO_LONG,
+    });
+  }
+
+  // Enforce plan size on the stored object (relay path never saw maxFileBytes).
+  // Fail closed when size is known and over limit; allow through only if HEAD
+  // is unavailable (Forge misconfig) so we don't brick converts on storage blips —
+  // the worker still has its own duration/tooling guards.
+  const objectBytes = await storageObjectByteSize(input.sourceKey);
+  if (objectBytes != null && objectBytes > limits.maxFileBytes) {
+    throw new TRPCError({
+      code: "PAYLOAD_TOO_LARGE",
+      message: `TOO_LARGE: file is ${formatBytesMb(objectBytes)}; your plan allows ${formatBytesMb(limits.maxFileBytes)}${premium ? "" : " (upgrade to Premium for 500 MB)"}`,
     });
   }
 
@@ -257,7 +273,8 @@ export const convertRouter = router({
       z.object({
         filename: z.string().min(1).max(256),
         contentType: z.string().min(3).max(128).default("application/octet-stream"),
-        byteSize: z.number().int().positive().max(100 * 1024 * 1024),
+        // Cap at paid tier absolute max; plan-specific check is below.
+        byteSize: z.number().int().positive().max(CONVERT_LIMITS_PAID_MAX),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -269,13 +286,14 @@ export const convertRouter = router({
       if (input.byteSize > limits.maxFileBytes) {
         throw new TRPCError({
           code: "PAYLOAD_TOO_LARGE",
-          message: `TOO_LARGE: file is ${formatBytesMb(input.byteSize)}; your plan allows ${formatBytesMb(limits.maxFileBytes)}${premium ? "" : " (upgrade to Premium for 100 MB)"}`,
+          message: `TOO_LARGE: file is ${formatBytesMb(input.byteSize)}; your plan allows ${formatBytesMb(limits.maxFileBytes)}${premium ? "" : " (upgrade to Premium for 500 MB)"}`,
         });
       }
 
       const ext =
-        input.filename.toLowerCase().match(/\.(mp3|wav|flac|m4a|ogg|aac)$/)?.[1] ??
-        "bin";
+        input.filename
+          .toLowerCase()
+          .match(/\.(mp3|wav|flac|m4a|ogg|aac|mp4|mkv|mov|avi|webm)$/)?.[1] ?? "bin";
       const safeBase = input.filename
         .replace(/[^a-zA-Z0-9._-]/g, "_")
         .slice(0, 64);
@@ -567,62 +585,98 @@ export const convertRouter = router({
     }),
 
   /**
-   * Generate a short-lived HMAC token that authorises the browser to POST
+   * Generate short-lived HMAC tokens that authorise the browser to POST
    * directly to the EC2 upload relay (bypassing the Manus/Cloudflare 3 MB
    * body-size limit). The secret never leaves the server.
    *
-   * Token format: `{timestamp}.{hex_hmac_sha256}`
-   * The relay validates the HMAC and rejects tokens older than 5 minutes.
+   * Returns:
+   *   - token (v1): `{ts}.{hmac(ts)}` — accepted by the currently deployed relay
+   *   - boundToken (v2): binds userId + keyPrefix + maxBytes — send as x-auth-bound
+   *   - maxBytes: plan file cap the client must not exceed
+   *   - keyPrefix / relayUrl
    */
-  getRelayToken: protectedProcedure.query(async ({ ctx }) => {
-    // Tokens are short-lived and the relayUrl must always be current —
-    // forbid any browser/proxy caching of this response.
-    try {
-      ctx.res.setHeader("Cache-Control", "no-store");
-    } catch {
-      /* header may already be sent in edge cases; never fail the query */
-    }
-    const secret = ENV.relayAuthSecret;
-    if (!secret) {
-      throw new TRPCError({
-        code: "PRECONDITION_FAILED",
-        message: "Upload relay is not configured on this server.",
+  getRelayToken: protectedProcedure
+    .input(
+      z
+        .object({
+          /** Declared upload size — rejected when over the caller's plan cap. */
+          byteSize: z.number().int().positive().max(CONVERT_LIMITS_PAID_MAX).optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      // Tokens are short-lived and the relayUrl must always be current —
+      // forbid any browser/proxy caching of this response.
+      try {
+        ctx.res.setHeader("Cache-Control", "no-store");
+      } catch {
+        /* header may already be sent in edge cases; never fail the query */
+      }
+
+      assertConvertEnabled();
+
+      const secret = ENV.relayAuthSecret;
+      if (!secret) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Upload relay is not configured on this server.",
+        });
+      }
+
+      const user = await reconcileExpiredSubscription(ctx.user.id);
+      const premium = isUserPremium(user ?? ctx.user);
+      const limits = limitsForPremium(premium);
+
+      if (input?.byteSize != null && input.byteSize > limits.maxFileBytes) {
+        throw new TRPCError({
+          code: "PAYLOAD_TOO_LARGE",
+          message: `TOO_LARGE: file is ${formatBytesMb(input.byteSize)}; your plan allows ${formatBytesMb(limits.maxFileBytes)}${premium ? "" : " (upgrade to Premium for 500 MB)"}`,
+        });
+      }
+
+      // Per-user destination prefix: the client passes `${keyPrefix}${filename}`
+      // to the relay via x-file-key so the stored key satisfies assertSourceKey.
+      const keyPrefix = `convert/${ctx.user.id}/${nanoid(12)}/`;
+      const token = mintRelayTokenV1(secret);
+      const boundToken = mintRelayTokenV2({
+        secret,
+        userId: ctx.user.id,
+        keyPrefix,
+        maxBytes: limits.maxFileBytes,
       });
-    }
-    // Relay verifyToken uses seconds-based Unix timestamp (Math.floor(Date.now()/1000))
-    // and a 5-minute sliding window (|now - ts| <= 300 seconds).
-    const timestamp = Math.floor(Date.now() / 1000).toString();
-    const sig = createHmac("sha256", secret)
-      .update(timestamp)
-      .digest("hex");
-    const token = `${timestamp}.${sig}`;
-    const relayUrl = await resolveRelayUrl();
-    // Per-user destination prefix: the client passes `${keyPrefix}${filename}`
-    // to the relay via x-file-key so the stored key satisfies assertSourceKey
-    // (`convert/{userId}/...`). Without this the relay used to store files
-    // under `convert-uploads/...`, which createJob rejected as an invalid
-    // sourceKey — uploads succeeded but no job could ever be created.
-    const keyPrefix = `convert/${ctx.user.id}/${nanoid(12)}/`;
-    return { token, relayUrl, keyPrefix };
-  }),
+      const relayUrl = await resolveRelayUrl();
+      return {
+        token,
+        boundToken,
+        relayUrl,
+        keyPrefix,
+        maxBytes: limits.maxFileBytes,
+      };
+    }),
 });
 
 /**
  * Resolve the relay HTTPS URL.
  *
- * The relay is served directly over HTTPS by Caddy on the VM at a STABLE
- * hostname (`34-23-137-141.sslip.io` — wildcard DNS that resolves to the VM's
- * IP) with an auto-renewing Let's Encrypt certificate. This replaced the
- * Cloudflare quick tunnel, which throttled/dropped large request bodies
- * (uploads reproducibly died at ~95%) and rotated its URL on every restart.
- *
- * Safety net: the URL is health-checked before being handed to the browser,
- * with a 60s verified cache. If the relay is down we fail fast with a clear
- * message instead of letting the browser hit a dead endpoint mid-upload.
+ * Prefers `ENV.relayUrl` / `RIH_RELAY_URL` (stable default:
+ * `https://34-23-137-141.sslip.io`). Health-checked with a 60s verified cache.
  */
-const RELAY_STABLE_URL = "https://34-23-137-141.sslip.io";
-const RELAY_URL_FRESH_MS = 60_000; // reuse verified URL without re-checking
+const RELAY_URL_FRESH_MS = 60_000;
+let relayVerifiedUrl: string | null = null;
 let relayVerifiedAt = 0;
+
+function candidateRelayUrl(): string {
+  const raw = (ENV.relayUrl || "").trim();
+  if (raw) {
+    try {
+      const u = new URL(raw);
+      if (u.protocol === "https:") return u.origin;
+    } catch {
+      /* fall through */
+    }
+  }
+  return "https://34-23-137-141.sslip.io";
+}
 
 async function relayHealthOk(baseUrl: string): Promise<boolean> {
   try {
@@ -642,18 +696,19 @@ async function relayHealthOk(baseUrl: string): Promise<boolean> {
 }
 
 async function resolveRelayUrl(): Promise<string> {
+  const candidate = candidateRelayUrl();
   const now = Date.now();
-  if (now - relayVerifiedAt < RELAY_URL_FRESH_MS) {
-    return RELAY_STABLE_URL;
+  if (relayVerifiedUrl === candidate && now - relayVerifiedAt < RELAY_URL_FRESH_MS) {
+    return relayVerifiedUrl;
   }
-  // One retry — rides out transient blips without handing out a dead URL
   for (let attempt = 0; attempt < 2; attempt++) {
-    if (await relayHealthOk(RELAY_STABLE_URL)) {
+    if (await relayHealthOk(candidate)) {
+      relayVerifiedUrl = candidate;
       relayVerifiedAt = now;
-      return RELAY_STABLE_URL;
+      return candidate;
     }
   }
-  console.error(`[relay] relay unreachable at ${RELAY_STABLE_URL}`);
+  console.error(`[relay] relay unreachable at ${candidate}`);
   throw new TRPCError({
     code: "PRECONDITION_FAILED",
     message:
