@@ -144,6 +144,13 @@ export type NatureSoundscape =
   | "anxiety-reset"
   | "chakra-dawn"
   | "morning-breath"
+  | "reiki-432"
+  | "calm-sleep-528"
+  | "deep-serenity-444"
+  | "nature-meditation-174"
+  | "reiki-healing-garden-285"
+  | "spiritual-meditation-444"
+  | "third-eye-activation-528"
   | "silence";
 
 export type MusicMode = "ambient" | "drone" | "crystal" | "none";

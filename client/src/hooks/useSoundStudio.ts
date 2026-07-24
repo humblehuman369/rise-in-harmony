@@ -25,14 +25,15 @@ export type NatureSound =
   | "river" | "night" | "cave" | "bowl"
   | "sleep-preparation" | "deep-focus" | "anxiety-reset"
   | "chakra-dawn" | "morning-breath" | "reiki-432"
+  | "calm-sleep-528" | "deep-serenity-444" | "nature-meditation-174"
+  | "reiki-healing-garden-285" | "spiritual-meditation-444"
+  | "third-eye-activation-528"
   | "none";
 
 /**
  * Nature keys backed by a recorded (studio-produced) audio file instead of
  * procedural synthesis. These play via HTMLAudioElement with looping enabled.
- * Files are pre-processed for seamless looping (equal-power crossfaded tail)
- * and tuned to keep the 200 Hz Delta binaural carrier zone clear (-6 dB notch),
- * so the recording never masks the precision DDS frequency layer.
+ * TrueHz meditation sessions are full-length studio masters registered here.
  */
 const RECORDED_NATURE_URLS: Partial<Record<NatureSound, string>> = {
   "sleep-preparation": getLibraryLoopUrl("sleep-preparation"),
@@ -41,6 +42,12 @@ const RECORDED_NATURE_URLS: Partial<Record<NatureSound, string>> = {
   "chakra-dawn": getLibraryLoopUrl("chakra-dawn"),
   "morning-breath": getLibraryLoopUrl("morning-breath"),
   "reiki-432": getLibraryLoopUrl("reiki-432"),
+  "calm-sleep-528": getLibraryLoopUrl("calm-sleep-528"),
+  "deep-serenity-444": getLibraryLoopUrl("deep-serenity-444"),
+  "nature-meditation-174": getLibraryLoopUrl("nature-meditation-174"),
+  "reiki-healing-garden-285": getLibraryLoopUrl("reiki-healing-garden-285"),
+  "spiritual-meditation-444": getLibraryLoopUrl("spiritual-meditation-444"),
+  "third-eye-activation-528": getLibraryLoopUrl("third-eye-activation-528"),
 };
 export type MusicMode = "ambient" | "drone" | "crystal" | "none";
 

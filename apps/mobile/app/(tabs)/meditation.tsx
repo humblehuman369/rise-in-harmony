@@ -1,6 +1,6 @@
 /**
  * Meditation Tab Screen
- * Guided meditation library — 12 meditations across 6 categories.
+ * Guided meditation library — TrueHz HQ sessions.
  * Tap a meditation to open the session player at /meditation/[id].
  */
 import {
@@ -64,7 +64,7 @@ export default function MeditationScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Meditations</Text>
         <Text style={styles.subtitle}>
-          {MEDITATIONS.length} guided sessions · frequency-paired
+          {MEDITATIONS.length} TrueHz sessions · frequency-paired
         </Text>
       </View>
 

@@ -126,3 +126,7 @@ references/audio/processed/
 # Optional large audio dumps under mobile sounds (required set is force-tracked
 # via apps/mobile/assets/sounds/.gitignore negation rules).
 apps/mobile/assets/sounds/*.wav
+
+# TrueHz meditation masters (large MP3s; deploy separately or via CDN)
+client/public/meditations/*.mp3
+references/audio/processed/meditations/

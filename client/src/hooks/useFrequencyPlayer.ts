@@ -96,6 +96,16 @@ export const FREQUENCIES: Frequency[] = [
     isPremium: false,
   },
   {
+    id: "444",
+    name: "Concert Pitch",
+    hz: 444,
+    category: "solfeggio",
+    description: "444Hz — Bright Concert Pitch",
+    benefit: "Clear, uplifting concert pitch used in many healing music traditions",
+    color: "#38BDF8",
+    isPremium: true,
+  },
+  {
     id: "528",
     name: "Miracle Tone",
     hz: 528,

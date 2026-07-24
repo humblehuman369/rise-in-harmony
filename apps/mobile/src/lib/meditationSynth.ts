@@ -839,6 +839,13 @@ export function startNatureSynth(
     "anxiety-reset": "ocean",
     "chakra-dawn": "forest",
     "morning-breath": "forest",
+    "reiki-432": "bowl",
+    "calm-sleep-528": "night",
+    "deep-serenity-444": "ocean",
+    "nature-meditation-174": "forest",
+    "reiki-healing-garden-285": "forest",
+    "spiritual-meditation-444": "cave",
+    "third-eye-activation-528": "cave",
   };
   const resolved = RECORDED_FALLBACKS[sound] ?? sound;
   const factory = NATURE_SYNTHS[resolved as ProceduralNatureSound];

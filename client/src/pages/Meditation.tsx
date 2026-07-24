@@ -1,6 +1,6 @@
 /**
- * Meditation — Guided Meditation Library
- * 12 popular meditations across 6 categories
+ * Meditation — TrueHz HQ Meditation Library
+ * 6 studio-produced TrueHz sessions
  * Dual-mode player: Sound Only vs Sound + Healing Frequency
  * Bioluminescent Depth theme
  */
@@ -593,7 +593,7 @@ export default function Meditation() {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-4"
             style={{ background: 'rgba(0,212,170,0.1)', border: '1px solid rgba(0,212,170,0.25)', color: '#009E80', fontFamily: 'DM Sans, sans-serif' }}>
             <Sparkles size={12} />
-            {MEDITATIONS.length} Guided Meditations
+            {MEDITATIONS.length} TrueHz Meditations
           </div>
           <h1 className="mb-2" style={{
             fontFamily: 'Cormorant Garamond, serif',

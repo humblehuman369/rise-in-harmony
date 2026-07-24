@@ -9,7 +9,8 @@ import {
   FREQUENCIES,
 } from "../../../packages/shared-utils/src";
 
-const MOBILE_NATURE_SOUNDSCAPES = [
+/** Procedural nature keys the mobile synth can render natively. */
+const MOBILE_PROCEDURAL_SOUNDSCAPES = [
   "rain",
   "ocean",
   "forest",
@@ -21,9 +22,25 @@ const MOBILE_NATURE_SOUNDSCAPES = [
   "bowl",
 ];
 
+/** Recorded web keys that fall back to a procedural texture on mobile. */
+const RECORDED_FALLBACKS: Record<string, string> = {
+  "sleep-preparation": "night",
+  "deep-focus": "river",
+  "anxiety-reset": "ocean",
+  "chakra-dawn": "forest",
+  "morning-breath": "forest",
+  "reiki-432": "bowl",
+  "calm-sleep-528": "night",
+  "deep-serenity-444": "ocean",
+  "nature-meditation-174": "forest",
+  "reiki-healing-garden-285": "forest",
+  "spiritual-meditation-444": "cave",
+  "third-eye-activation-528": "cave",
+};
+
 describe("meditation catalog", () => {
-  it("has 12 meditations", () => {
-    expect(MEDITATIONS).toHaveLength(12);
+  it("has 6 TrueHz meditations", () => {
+    expect(MEDITATIONS).toHaveLength(6);
   });
 
   it("has unique ids", () => {
@@ -38,11 +55,12 @@ describe("meditation catalog", () => {
     }
   });
 
-  it("every soundscape has a bundled mobile audio asset", () => {
+  it("every soundscape is playable on mobile (procedural or recorded fallback)", () => {
     for (const m of MEDITATIONS) {
-      // "silence" is allowed by the type but intentionally has no asset;
-      // every other soundscape must map to a bundled loop.
-      expect(MOBILE_NATURE_SOUNDSCAPES).toContain(m.soundscape);
+      if (m.soundscape === "silence") continue;
+      const resolved =
+        RECORDED_FALLBACKS[m.soundscape] ?? m.soundscape;
+      expect(MOBILE_PROCEDURAL_SOUNDSCAPES).toContain(resolved);
     }
   });
 
@@ -57,6 +75,12 @@ describe("meditation catalog", () => {
     for (const m of MEDITATIONS) {
       expect(m.guidance.length).toBeGreaterThan(0);
       expect(m.durationMinutes).toBeGreaterThan(0);
+    }
+  });
+
+  it("TrueHz sessions use musicMode none (self-contained masters)", () => {
+    for (const m of MEDITATIONS) {
+      expect(m.musicMode).toBe("none");
     }
   });
 });

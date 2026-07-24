@@ -108,6 +108,15 @@ export const FREQUENCIES: Frequency[] = [
     category: "solfeggio",
   },
   {
+    id: "444",
+    hz: 444,
+    name: "Concert Pitch",
+    benefit: "Bright, clear concert pitch",
+    color: "#38BDF8",
+    isPremium: true,
+    category: "solfeggio",
+  },
+  {
     id: "528",
     hz: 528,
     name: "Miracle Tone",
