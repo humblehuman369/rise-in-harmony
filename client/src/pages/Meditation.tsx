@@ -441,8 +441,10 @@ function MeditationPlayer({
                 key={opt.id}
                 onClick={() => {
                   if (isPlaying) {
-                    // Switch mode live
-                    if (opt.id === "frequency" && mode === "sound") {
+                    // Switch mode live — skip DDS underlay for TrueHz masters
+                    // (recording already includes the target pitch).
+                    const isTrueHzMaster = meditation.musicMode === "none";
+                    if (opt.id === "frequency" && mode === "sound" && !isTrueHzMaster) {
                       startFrequency();
                     } else if (opt.id === "sound" && mode === "frequency") {
                       stopFrequency();
