@@ -163,12 +163,14 @@ function MeditationPlayer({
   onClose: () => void;
 }) {
   const { isAuthenticated } = useAuth();
-  const [mode, setMode] = useState<"sound" | "frequency">("frequency");
+  // TrueHz HQ masters are self-contained — default to Sound Only so we do not
+  // layer a second DDS sine on top of the already-tuned recording.
+  const [mode, setMode] = useState<"sound" | "frequency">("sound");
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  // Default mix: 25% frequency / 75% music (ambient) per product spec
-  const [volume, setVolume] = useState(0.75);
-  const [freqVolume, setFreqVolume] = useState(0.25);
+  // Ambient master bed loud; optional frequency underlay quieter when enabled
+  const [volume, setVolume] = useState(0.85);
+  const [freqVolume, setFreqVolume] = useState(0.2);
   const [currentStep, setCurrentStep] = useState(0);
   const [showGuidance, setShowGuidance] = useState(true);
 
@@ -292,10 +294,9 @@ function MeditationPlayer({
       // Start ambient sound
       // Always mute the studio's built-in frequency layer — the Meditation page
       // manages its own DDS overlay via startFrequency() in "Sound + Frequency" mode.
-      // This prevents an unwanted 432Hz sine tone from playing in "Sound Only" mode.
-      // Pass all settings directly into play() — setters + play() race React's
-      // batched updates, which made the layers start with stale state (e.g. the
-      // recorded "sleep-preparation" soundscape never loaded on first play).
+      // TrueHz HQ masters (musicMode "none" + recorded soundscape) already include
+      // the target pitch — never stack a second sine on those (sounds distorted).
+      const isTrueHzMaster = meditation.musicMode === "none";
       studioPlay({
         frequencyVolume: 0,
         natureSound: meditation.soundscape === "silence" ? "none" : meditation.soundscape,
@@ -304,8 +305,8 @@ function MeditationPlayer({
         musicVolume: volume,
       });
 
-      // Start frequency if in frequency mode
-      if (mode === "frequency") startFrequency();
+      // Optional frequency underlay only for non-master (procedural) beds
+      if (mode === "frequency" && !isTrueHzMaster) startFrequency();
 
       // Timer
       timerRef.current = setInterval(() => {

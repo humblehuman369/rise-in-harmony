@@ -1,23 +1,17 @@
 /**
- * useMeditationPlayer — layered meditation audio engine (procedural synthesis)
+ * useMeditationPlayer — layered meditation audio engine
  *
- * Up to three concurrent layers, all using the DDS engine (react-native-audio-api):
- *   1. Nature soundscape — procedural synthesis via meditationSynth (never loops)
- *   2. Music bed — procedural synthesis via meditationSynth (never loops)
- *   3. Optional healing-frequency underlay — live oscillator synthesis (exact Hz)
+ * TrueHz HQ masters (self-contained MP3s on the web host) stream via expo-audio.
+ * Legacy/procedural soundscapes still use meditationSynth when no master URL exists.
  *
- * This replaces the previous expo-audio approach that looped short MP3 files,
- * which caused an audible seam at the loop point. The procedural engine generates
- * endless, evolving textures with no repetition.
- *
- * Plus a 1-second session timer that:
- *   - advances the guidance script (equal time slices across the duration)
- *   - auto-stops the session when the meditation duration is reached
+ * Optional "Sound + Frequency" mode can add a live DDS underlay for procedural
+ * beds only — TrueHz masters already contain their frequency and never get a
+ * second sine layer (that double-stack sounded distorted/corrupt).
  */
 import { useEffect, useRef, useState, useCallback } from "react";
-import { setAudioModeAsync } from "expo-audio";
+import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from "expo-audio";
 import * as KeepAwake from "expo-keep-awake";
-import type { Meditation, MusicMode } from "@rih/shared-types";
+import type { Meditation } from "@rih/shared-types";
 import { FREQUENCIES } from "@rih/shared-utils";
 import {
   createCatalogVoice,
@@ -32,11 +26,27 @@ import {
 } from "@/lib/meditationSynth";
 import type { GainNode } from "react-native-audio-api";
 
-const DEFAULT_NATURE_VOLUME = 0.6;
+const DEFAULT_NATURE_VOLUME = 0.75;
 const DEFAULT_MUSIC_VOLUME = 0.45;
 const DEFAULT_FREQUENCY_VOLUME = 0.35;
 
+/** Production CDN for TrueHz HQ meditation masters (same files as web). */
+const TRUEHZ_MASTER_BASE = "https://www.riseinharmony.com/meditations";
+
+const TRUEHZ_MASTER_URLS: Record<string, string> = {
+  "calm-sleep-528": `${TRUEHZ_MASTER_BASE}/calm-sleep-528.mp3`,
+  "deep-serenity-444": `${TRUEHZ_MASTER_BASE}/deep-serenity-444.mp3`,
+  "nature-meditation-174": `${TRUEHZ_MASTER_BASE}/nature-meditation-174.mp3`,
+  "reiki-healing-garden-285": `${TRUEHZ_MASTER_BASE}/reiki-healing-garden-285.mp3`,
+  "spiritual-meditation-444": `${TRUEHZ_MASTER_BASE}/spiritual-meditation-444.mp3`,
+  "third-eye-activation-528": `${TRUEHZ_MASTER_BASE}/third-eye-activation-528.mp3`,
+};
+
 export type MeditationMode = "sound" | "frequency";
+
+function masterUrlFor(med: Meditation): string | null {
+  return TRUEHZ_MASTER_URLS[med.soundscape] ?? TRUEHZ_MASTER_URLS[med.id] ?? null;
+}
 
 interface MeditationPlayerState {
   isPlaying: boolean;
@@ -55,13 +65,12 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
   const natureGainRef = useRef<GainNode | null>(null);
   const musicSynthRef = useRef<ProceduralSynthHandle | null>(null);
   const musicGainRef = useRef<GainNode | null>(null);
+  const masterPlayerRef = useRef<AudioPlayer | null>(null);
   const freqVoiceRef = useRef<SynthVoice | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const natureVolRef = useRef(DEFAULT_NATURE_VOLUME);
   const musicVolRef = useRef(DEFAULT_MUSIC_VOLUME);
   const freqVolRef = useRef(DEFAULT_FREQUENCY_VOLUME);
-
-  // Track pause state for synth layers (they can't truly pause — must stop/restart)
   const isPausedRef = useRef(false);
 
   const [state, setState] = useState<MeditationPlayerState>({
@@ -84,25 +93,42 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
     }
   }, []);
 
-  // ─── Nature Layer (Procedural) ─────────────────────────────────────────────
+  // ─── TrueHz master (remote MP3) ────────────────────────────────────────────
 
-  const startNatureLayer = useCallback((med: Meditation) => {
-    stopNatureLayer();
-    const ctx = getContext();
-    const masterOutput = getMasterOutput(ctx);
-
-    const synth = startNatureSynth(ctx, med.soundscape);
-    if (!synth) return;
-
-    // Create a volume control gain node between the synth output and master
-    const volumeGain = ctx.createGain();
-    volumeGain.gain.value = natureVolRef.current;
-    synth.output.connect(volumeGain);
-    volumeGain.connect(masterOutput);
-
-    natureSynthRef.current = synth;
-    natureGainRef.current = volumeGain;
+  const stopMasterPlayer = useCallback(() => {
+    if (masterPlayerRef.current) {
+      try {
+        masterPlayerRef.current.pause();
+        masterPlayerRef.current.remove();
+      } catch {
+        /* ignore */
+      }
+      masterPlayerRef.current = null;
+    }
   }, []);
+
+  const startMasterPlayer = useCallback(
+    (med: Meditation) => {
+      stopMasterPlayer();
+      const uri = masterUrlFor(med);
+      if (!uri) return false;
+      try {
+        const p = createAudioPlayer({ uri });
+        // Full-length session masters — do not loop (avoids seam/jump at end)
+        p.loop = false;
+        p.volume = Math.max(0, Math.min(1, natureVolRef.current));
+        p.play();
+        masterPlayerRef.current = p;
+        return true;
+      } catch {
+        stopMasterPlayer();
+        return false;
+      }
+    },
+    [stopMasterPlayer],
+  );
+
+  // ─── Nature Layer (Procedural fallback) ────────────────────────────────────
 
   const stopNatureLayer = useCallback(() => {
     if (natureSynthRef.current) {
@@ -110,32 +136,38 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
       natureSynthRef.current = null;
     }
     if (natureGainRef.current) {
-      try { natureGainRef.current.disconnect(); } catch {}
+      try {
+        natureGainRef.current.disconnect();
+      } catch {
+        /* ignore */
+      }
       natureGainRef.current = null;
     }
   }, []);
 
+  const startNatureLayer = useCallback(
+    (med: Meditation) => {
+      stopNatureLayer();
+      // Prefer TrueHz master stream when available
+      if (masterUrlFor(med)) {
+        return startMasterPlayer(med);
+      }
+      const ctx = getContext();
+      const masterOutput = getMasterOutput(ctx);
+      const synth = startNatureSynth(ctx, med.soundscape);
+      if (!synth) return false;
+      const volumeGain = ctx.createGain();
+      volumeGain.gain.value = natureVolRef.current;
+      synth.output.connect(volumeGain);
+      volumeGain.connect(masterOutput);
+      natureSynthRef.current = synth;
+      natureGainRef.current = volumeGain;
+      return true;
+    },
+    [stopNatureLayer, startMasterPlayer],
+  );
+
   // ─── Music Layer (Procedural) ──────────────────────────────────────────────
-
-  const startMusicLayer = useCallback((med: Meditation) => {
-    stopMusicLayer();
-    if (med.musicMode === "none") return;
-
-    const ctx = getContext();
-    const masterOutput = getMasterOutput(ctx);
-
-    const synth = startMusicSynth(ctx, med.musicMode);
-    if (!synth) return;
-
-    // Create a volume control gain node between the synth output and master
-    const volumeGain = ctx.createGain();
-    volumeGain.gain.value = musicVolRef.current;
-    synth.output.connect(volumeGain);
-    volumeGain.connect(masterOutput);
-
-    musicSynthRef.current = synth;
-    musicGainRef.current = volumeGain;
-  }, []);
 
   const stopMusicLayer = useCallback(() => {
     if (musicSynthRef.current) {
@@ -143,14 +175,39 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
       musicSynthRef.current = null;
     }
     if (musicGainRef.current) {
-      try { musicGainRef.current.disconnect(); } catch {}
+      try {
+        musicGainRef.current.disconnect();
+      } catch {
+        /* ignore */
+      }
       musicGainRef.current = null;
     }
   }, []);
 
-  // ─── Frequency Layer (DDS Oscillator) ──────────────────────────────────────
+  const startMusicLayer = useCallback(
+    (med: Meditation) => {
+      stopMusicLayer();
+      // TrueHz masters and musicMode "none" need no extra music bed
+      if (masterUrlFor(med) || med.musicMode === "none") return;
+      const ctx = getContext();
+      const masterOutput = getMasterOutput(ctx);
+      const synth = startMusicSynth(ctx, med.musicMode);
+      if (!synth) return;
+      const volumeGain = ctx.createGain();
+      volumeGain.gain.value = musicVolRef.current;
+      synth.output.connect(volumeGain);
+      volumeGain.connect(masterOutput);
+      musicSynthRef.current = synth;
+      musicGainRef.current = volumeGain;
+    },
+    [stopMusicLayer],
+  );
+
+  // ─── Frequency Layer (DDS) — not used on TrueHz masters ────────────────────
 
   const startFreqVoice = useCallback((med: Meditation) => {
+    // Masters already include the target pitch; a second sine causes beating/distortion
+    if (masterUrlFor(med)) return;
     const freq = FREQUENCIES.find((f) => f.id === med.recommendedFrequencyId);
     if (!freq) return;
     const voice = createCatalogVoice(freq, freqVolRef.current);
@@ -165,13 +222,12 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
     }
   }, []);
 
-  // ─── Teardown ──────────────────────────────────────────────────────────────
-
   const teardownAll = useCallback(() => {
+    stopMasterPlayer();
     stopNatureLayer();
     stopMusicLayer();
     stopFreqVoice();
-  }, [stopNatureLayer, stopMusicLayer, stopFreqVoice]);
+  }, [stopMasterPlayer, stopNatureLayer, stopMusicLayer, stopFreqVoice]);
 
   const stop = useCallback(
     (markComplete = false) => {
@@ -185,19 +241,25 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
         isComplete: markComplete ? true : prev.isComplete,
       }));
     },
-    [clearTick, teardownAll]
+    [clearTick, teardownAll],
   );
 
   const pause = useCallback(() => {
     clearTick();
-    // Procedural synths can't pause — stop them (they'll be recreated on resume)
-    teardownAll();
+    if (masterPlayerRef.current) {
+      try {
+        masterPlayerRef.current.pause();
+      } catch {
+        /* ignore */
+      }
+    } else {
+      // Procedural layers can't pause — tear down (recreated on resume)
+      teardownAll();
+    }
     isPausedRef.current = true;
     KeepAwake.deactivateKeepAwake().catch(() => {});
     setState((prev) => ({ ...prev, isPlaying: false }));
   }, [clearTick, teardownAll]);
-
-  // ─── Timer ─────────────────────────────────────────────────────────────────
 
   const startTick = useCallback(() => {
     clearTick();
@@ -205,7 +267,6 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
       setState((prev) => {
         const next = prev.elapsedSec + 1;
         if (next >= totalSec) {
-          // Session complete — stop outside the state updater
           setTimeout(() => stop(true), 0);
           return { ...prev, elapsedSec: totalSec, stepIndex: stepCount - 1 };
         }
@@ -218,8 +279,6 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
     }, 1000);
   }, [clearTick, totalSec, stepCount, stepDurationSec, stop]);
 
-  // ─── Play ──────────────────────────────────────────────────────────────────
-
   const play = useCallback(async () => {
     if (!meditation) return;
 
@@ -230,17 +289,21 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
       interruptionModeAndroid: "doNotMix",
     }).catch(() => {});
 
-    // Start (or restart after pause) the procedural nature layer
-    if (!natureSynthRef.current) {
+    // Resume paused TrueHz master without reloading the stream
+    if (isPausedRef.current && masterPlayerRef.current) {
+      try {
+        masterPlayerRef.current.play();
+      } catch {
+        startMasterPlayer(meditation);
+      }
+    } else if (!masterPlayerRef.current && !natureSynthRef.current) {
       startNatureLayer(meditation);
     }
 
-    // Start (or restart after pause) the procedural music layer
     if (!musicSynthRef.current) {
       startMusicLayer(meditation);
     }
 
-    // Frequency underlay (synth voice) — always (re)created on play
     if (mode === "frequency" && !freqVoiceRef.current) {
       startFreqVoice(meditation);
     }
@@ -249,18 +312,27 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
     KeepAwake.activateKeepAwakeAsync().catch(() => {});
     startTick();
     setState((prev) => ({ ...prev, isPlaying: true, isComplete: false }));
-  }, [meditation, mode, startTick, startFreqVoice, startNatureLayer, startMusicLayer]);
-
-  // ─── Volume Controls ───────────────────────────────────────────────────────
+  }, [
+    meditation,
+    mode,
+    startTick,
+    startFreqVoice,
+    startNatureLayer,
+    startMusicLayer,
+    startMasterPlayer,
+  ]);
 
   const setNatureVolume = useCallback((vol: number) => {
     const clamped = Math.max(0, Math.min(1, vol));
     natureVolRef.current = clamped;
+    if (masterPlayerRef.current) {
+      masterPlayerRef.current.volume = clamped;
+    }
     if (natureGainRef.current) {
       const ctx = getContext();
       natureGainRef.current.gain.linearRampToValueAtTime(
         clamped,
-        ctx.currentTime + 0.05
+        ctx.currentTime + 0.05,
       );
     }
     setState((prev) => ({ ...prev, natureVolume: clamped }));
@@ -273,9 +345,6 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
     setState((prev) => ({ ...prev, frequencyVolume: clamped }));
   }, []);
 
-  // ─── Mode Change ───────────────────────────────────────────────────────────
-
-  // When the mode changes mid-session, add/remove the frequency layer
   useEffect(() => {
     if (!state.isPlaying || !meditation) return;
     if (mode === "frequency" && !freqVoiceRef.current) {
@@ -286,9 +355,6 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
-  // ─── Cleanup ───────────────────────────────────────────────────────────────
-
-  // Full teardown on unmount or meditation change
   useEffect(() => {
     return () => {
       clearTick();

@@ -45,6 +45,12 @@ const SOUNDSCAPE_LABEL: Record<string, string> = {
   cave: "Cave water",
   bowl: "Singing bowl",
   silence: "Silence",
+  "calm-sleep-528": "TrueHz Calm Sleep",
+  "deep-serenity-444": "TrueHz Deep Serenity",
+  "nature-meditation-174": "TrueHz Nature Meditation",
+  "reiki-healing-garden-285": "TrueHz Reiki Garden",
+  "spiritual-meditation-444": "TrueHz Spiritual Meditation",
+  "third-eye-activation-528": "TrueHz Third Eye",
 };
 
 export default function MeditationSessionScreen() {
@@ -53,7 +59,8 @@ export default function MeditationSessionScreen() {
   const { isPremium } = usePremiumStatus();
 
   const meditation = MEDITATIONS.find((m) => m.id === id) ?? null;
-  const [mode, setMode] = useState<MeditationMode>("frequency");
+  // TrueHz HQ masters are self-contained — open in Sound Only by default
+  const [mode, setMode] = useState<MeditationMode>("sound");
   const [journalMinutes, setJournalMinutes] = useState<number | null>(null);
   const closeAfterJournalRef = useRef(false);
 
