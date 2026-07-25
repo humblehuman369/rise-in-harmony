@@ -1,11 +1,17 @@
 # Rise In Harmony — Apple App Store Submission (Final Ready)
 
-**Version:** 1.0.1 · **Build:** 2 · **Bundle ID:** `com.riseinharmony.app`  
+**Version:** 1.0.1 · **Next buildNumber:** 49 · **Bundle ID:** `com.riseinharmony.app`  
 **ASC App ID:** `6786561356` · **Team:** `A2Y6C3NNSY`  
 **Expo project:** `917f33c4-3b87-4f19-82ee-2c54125dae47`
 
 This document is the single source of truth for App Store Connect listing copy,
 privacy answers, IAP setup, and the build/submit sequence.
+
+### ASC status (updated 2026-07-25)
+- Version **1.0.1** in **PREPARE_FOR_SUBMISSION**
+- Listing, screenshots (6× iPhone 6.7"), IAPs, categories, copyright, review notes: set via API
+- Build currently attached: **#48** (uploaded 2026-07-12) — **older than TrueHz final assets**
+- **Required before Submit:** new EAS production build from current `main` (buildNumber ≥ 49), then select that build in ASC and Submit for Review
 
 ---
 
@@ -15,7 +21,7 @@ Mark each item before hitting **Submit for Review**:
 
 ### Binary & config
 - [x] Bundle ID `com.riseinharmony.app` matches App Store Connect
-- [x] `app.json` version `1.0.1`, iOS `buildNumber` `2`
+- [x] `app.json` version `1.0.1`, iOS `buildNumber` `49` (next upload)
 - [x] `ITSAppUsesNonExemptEncryption` = false (no export-compliance questionnaire)
 - [x] iOS deployment target 16.0+; phone-only (`supportsTablet: false`)
 - [x] Background audio mode enabled for continuous playback
@@ -24,18 +30,24 @@ Mark each item before hitting **Submit for Review**:
 - [x] Asset gate passes: `node scripts/check-mobile-assets.mjs`
 - [x] EAS project ID + owner configured
 - [x] ASC submit keys wired in `eas.json` (`AuthKey_LHBH9DWB4P.p8`)
+- [ ] **New production binary** built from current main (includes TrueHz catalog + final audio)
+- [ ] New binary selected on ASC version 1.0.1 (replace build 48)
 
 ### Legal & web
 - [x] Privacy Policy live: https://www.riseinharmony.com/privacy
 - [x] Terms of Service live: https://www.riseinharmony.com/terms
 - [x] Support / Marketing URL: https://www.riseinharmony.com
+- [x] Web production updated with TrueHz meditations (www.riseinharmony.com)
 
 ### Store ops (you complete in ASC / RevenueCat)
+- [x] Screenshots uploaded (6 on APP_IPHONE_67)
+- [x] IAP products created + localizations (monthly / annual / lifetime READY_TO_SUBMIT)
+- [x] Categories: Health & Fitness + Lifestyle
+- [x] Copyright + content rights + usesIdfa=false
 - [ ] RevenueCat products imported + `premium` entitlement + `default` offering
 - [ ] Sandbox tester account created for review
-- [ ] Screenshots uploaded (6.9" required; see below)
 - [ ] App Privacy nutrition label completed (answers below)
-- [ ] Age rating questionnaire completed → **4+**
+- [ ] Age rating questionnaire confirmed → **4+** (declaration present via API)
 - [ ] Production EAS build tested on a physical iPhone
 - [ ] Submit for review
 

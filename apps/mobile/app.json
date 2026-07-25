@@ -19,7 +19,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.riseinharmony.app",
-      "buildNumber": "2",
+      "buildNumber": "49",
       "infoPlist": {
         "CFBundleDisplayName": "Rise In Harmony",
         "UIBackgroundModes": [
