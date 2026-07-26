@@ -96,10 +96,8 @@ describe("recorded Schumann sessions are exact and streamable", () => {
       expect(f).toBeDefined();
       expect(f!.hz).toBe(hz);
       expect(f!.category).toBe("recorded");
-      // Served from Manus storage: /manus-storage/binaural-<hz>_<hash>.mp3
-      expect(f!.audioUrl).toMatch(
-        new RegExp(`^/manus-storage/binaural-${hz}_[0-9a-f]{8}\\.mp3$`)
-      );
+      // Served from static public audio: /audio/binaural-<hz>.mp3
+      expect(f!.audioUrl).toBe(`/audio/binaural-${hz}.mp3`);
     });
   }
 
