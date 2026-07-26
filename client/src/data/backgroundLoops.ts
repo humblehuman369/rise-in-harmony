@@ -37,46 +37,50 @@ const LOOP_LABELS = Object.fromEntries(
   BACKGROUND_LOOPS.map(loop => [loop.id, loop.label]),
 ) as Record<string, string>;
 
+/**
+ * Static public URLs under client/public/audio/ (bundled for deploy).
+ * Prefer these over /manus-storage/* signed S3 paths — those 403 on new Manus projects.
+ */
 const LIBRARY_LOOP_URLS: Record<string, string> = {
-  "ambient-bowl": "/manus-storage/ambient-bowl_00102738.mp3",
-  "ambient-cave": "/manus-storage/ambient-cave_0324704a.mp3",
-  "ambient-fire": "/manus-storage/ambient-fire_6df359cd.mp3",
-  "ambient-forest": "/manus-storage/ambient-forest_53a00773.mp3",
-  "ambient-night": "/manus-storage/ambient-night_9b821166.mp3",
-  "ambient-ocean": "/manus-storage/ambient-ocean_b2f980a6.mp3",
-  "ambient-rain": "/manus-storage/ambient-rain_8f17a71c.mp3",
-  "ambient-river": "/manus-storage/ambient-river_ae7c454f.mp3",
-  "ambient-wind": "/manus-storage/ambient-wind_04459c9b.mp3",
-  "sleep-preparation": "/manus-storage/sleep-preparation_921174c5.mp3",
-  "deep-focus": "/manus-storage/deep-focus_9f8756cf.mp3",
-  "anxiety-reset": "/manus-storage/anxiety-reset_6165a0b8.mp3",
-  "chakra-dawn": "/manus-storage/chakra-dawn_cf9a096f.mp3",
-  "morning-breath": "/manus-storage/morning-breath_5bdace90.mp3",
+  "ambient-bowl": "/audio/ambient-bowl.mp3",
+  "ambient-cave": "/audio/ambient-cave.mp3",
+  "ambient-fire": "/audio/ambient-fire.mp3",
+  "ambient-forest": "/audio/ambient-forest.mp3",
+  "ambient-night": "/audio/ambient-night.mp3",
+  "ambient-ocean": "/audio/ambient-ocean.mp3",
+  "ambient-rain": "/audio/ambient-rain.mp3",
+  "ambient-river": "/audio/ambient-river.mp3",
+  "ambient-wind": "/audio/ambient-wind.mp3",
+  "sleep-preparation": "/audio/sleep-preparation.mp3",
+  "deep-focus": "/audio/deep-focus.mp3",
+  "anxiety-reset": "/audio/anxiety-reset.mp3",
+  "chakra-dawn": "/audio/chakra-dawn.mp3",
+  "morning-breath": "/audio/morning-breath.mp3",
   "reiki-432": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/EyknnrbApNwsjQOZ.mp3",
-  // TrueHz HQ meditation masters (full-length, served from app public/)
+  // TrueHz HQ meditation masters (full-length)
   "calm-sleep-528": "/meditations/calm-sleep-528.mp3",
   "deep-serenity-444": "/meditations/deep-serenity-444.mp3",
   "nature-meditation-174": "/meditations/nature-meditation-174.mp3",
   "reiki-healing-garden-285": "/meditations/reiki-healing-garden-285.mp3",
   "spiritual-meditation-444": "/meditations/spiritual-meditation-444.mp3",
   "third-eye-activation-528": "/meditations/third-eye-activation-528.mp3",
-  "binaural-174": "/manus-storage/binaural-174_7724fc00.mp3",
-  "binaural-285": "/manus-storage/binaural-285_6609f8ba.mp3",
-  "binaural-396": "/manus-storage/binaural-396_e0297d89.mp3",
-  "binaural-417": "/manus-storage/binaural-417_8c90d437.mp3",
-  "binaural-432": "/manus-storage/binaural-432_f5a497d0.mp3",
-  "binaural-528": "/manus-storage/binaural-528_e2b21090.mp3",
-  "binaural-639": "/manus-storage/binaural-639_22da3d79.mp3",
-  "binaural-741": "/manus-storage/binaural-741_8aa6ae82.mp3",
-  "binaural-852": "/manus-storage/binaural-852_2d0302ae.mp3",
-  "binaural-963": "/manus-storage/binaural-963_6aeda3b9.mp3",
-  "music-ambient": "/manus-storage/music-ambient_72199388.mp3",
-  "music-crystal": "/manus-storage/music-crystal_d7d02c7b.mp3",
-  "music-drone": "/manus-storage/music-drone_23e62b00.mp3",
+  "binaural-174": "/audio/binaural-174.mp3",
+  "binaural-285": "/audio/binaural-285.mp3",
+  "binaural-396": "/audio/binaural-396.mp3",
+  "binaural-417": "/audio/binaural-417.mp3",
+  "binaural-432": "/audio/binaural-432.mp3",
+  "binaural-528": "/audio/binaural-528.mp3",
+  "binaural-639": "/audio/binaural-639.mp3",
+  "binaural-741": "/audio/binaural-741.mp3",
+  "binaural-852": "/audio/binaural-852.mp3",
+  "binaural-963": "/audio/binaural-963.mp3",
+  "music-ambient": "/audio/music-ambient.mp3",
+  "music-crystal": "/audio/music-crystal.mp3",
+  "music-drone": "/audio/music-drone.mp3",
 };
 
 export function getLibraryLoopUrl(loopId: string): string {
-  return LIBRARY_LOOP_URLS[loopId] ?? `/manus-storage/${loopId}.mp3`;
+  return LIBRARY_LOOP_URLS[loopId] ?? `/audio/${loopId}.mp3`;
 }
 
 export function getUploadLoopUrl(storageKey: string): string {

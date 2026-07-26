@@ -15,9 +15,9 @@ describe("sleep-preparation recorded soundscape (legacy registry)", () => {
     expect(entry?.label).toBe("Sleep Preparation");
   });
 
-  it("resolves to a manus-storage MP3 URL", () => {
+  it("resolves to a static public audio URL", () => {
     const url = getLibraryLoopUrl("sleep-preparation");
-    expect(url).toMatch(/^\/manus-storage\/sleep-preparation_[0-9a-f]+\.mp3$/);
+    expect(url).toBe("/audio/sleep-preparation.mp3");
   });
 
   it("is not used by the current TrueHz meditation catalog", () => {
