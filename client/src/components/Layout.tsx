@@ -2,13 +2,14 @@
  * Layout — Bioluminescent Depth (Dark) / Morning Mist (Light) Theme
  * Persistent sidebar on desktop, horizontally scrollable bottom tab bar on mobile
  * Theme toggle (sun/moon) in sidebar bottom and mobile nav
+ * Top navigation bar with login/user button at top right
  */
 import { useRef, useCallback, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Home, Music2, AlarmClock, BookOpen, BarChart3, Settings,
   Layers, Headphones, ShieldCheck, LogIn, LogOut, User,
-  GraduationCap, Sun, Moon, CalendarRange, Sparkles, Map,
+  GraduationCap, Sun, Moon, CalendarRange, Sparkles, Map, ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -129,11 +130,214 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     mobileLabelActive: '#00D4AA',
   };
 
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
   return (
     <div className="flex min-h-screen" style={{ background: c.mainBg }}>
-      {/* ── Desktop Sidebar ──────────────────────────────────────────────── */}
-      <aside className="hidden lg:flex flex-col w-64 fixed inset-y-0 left-0 z-40"
+
+      {/* ── Top Navigation Bar ──────────────────────────────────────────── */}
+      <header
+        className="fixed top-0 inset-x-0 z-50 flex items-center justify-between px-4 md:px-6"
         style={{
+          height: '60px',
+          background: isLight
+            ? 'rgba(237,240,247,0.92)'
+            : 'rgba(10,11,20,0.88)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: `1px solid ${c.sidebarBorder}`,
+        }}
+      >
+        {/* Logo — left side */}
+        <Link href="/">
+          <div className="flex items-center gap-2.5 cursor-pointer select-none">
+            <img
+              src="/manus-storage/rih-logo-icon_0fedc44f.png"
+              alt="Rise In Harmony"
+              className="w-7 h-7 object-contain"
+            />
+            <span
+              className="hidden sm:block text-sm font-semibold"
+              style={{ color: c.logoTitle, fontFamily: 'Cormorant Garamond, serif', letterSpacing: '0.01em' }}
+            >
+              Rise In Harmony
+            </span>
+          </div>
+        </Link>
+
+        {/* Right side — auth controls */}
+        <div className="flex items-center gap-2">
+          {/* Theme toggle */}
+          {toggleTheme && (
+            <button
+              onClick={toggleTheme}
+              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200"
+              style={{ color: c.navInactive, background: 'transparent' }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.background = c.navHoverBg;
+                (e.currentTarget as HTMLElement).style.color = c.navInactiveHover;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.background = 'transparent';
+                (e.currentTarget as HTMLElement).style.color = c.navInactive;
+              }}
+              title={isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+            >
+              {isLight ? <Moon size={17} strokeWidth={1.8} /> : <Sun size={17} strokeWidth={1.8} />}
+            </button>
+          )}
+
+          {/* Auth button */}
+          {isAuthenticated && user ? (
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(v => !v)}
+                className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl transition-all duration-200"
+                style={{
+                  background: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${c.userCardBorder}`,
+                  fontFamily: 'DM Sans, sans-serif',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.background = isLight ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.10)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.background = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)';
+                }}
+              >
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #00D4AA, #8B5CF6)' }}
+                >
+                  <User size={12} style={{ color: '#0A0B14' }} />
+                </div>
+                <span className="text-xs font-semibold max-w-[100px] truncate hidden sm:block" style={{ color: c.userName }}>
+                  {user.name || 'Member'}
+                </span>
+                <ChevronDown size={13} style={{ color: c.navInactive, flexShrink: 0 }} />
+              </button>
+
+              {/* Dropdown */}
+              {userMenuOpen && (
+                <>
+                  {/* Backdrop */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setUserMenuOpen(false)}
+                  />
+                  <div
+                    className="absolute right-0 top-full mt-2 w-52 rounded-2xl z-50 overflow-hidden"
+                    style={{
+                      background: isLight ? '#FFFFFF' : '#12152A',
+                      border: `1px solid ${c.userCardBorder}`,
+                      boxShadow: isLight
+                        ? '0 8px 32px rgba(0,0,0,0.12)'
+                        : '0 8px 32px rgba(0,0,0,0.5)',
+                      animation: 'scale-in 150ms cubic-bezier(0.23,1,0.32,1) forwards',
+                      transformOrigin: 'top right',
+                    }}
+                  >
+                    {/* User info */}
+                    <div className="px-4 py-3 border-b" style={{ borderColor: c.divider }}>
+                      <div className="text-xs font-semibold truncate" style={{ color: c.userName, fontFamily: 'DM Sans, sans-serif' }}>
+                        {user.name || 'Member'}
+                      </div>
+                      {user.email && (
+                        <div className="text-[11px] truncate mt-0.5" style={{ color: c.userEmail, fontFamily: 'DM Sans, sans-serif' }}>
+                          {user.email}
+                        </div>
+                      )}
+                    </div>
+                    {/* Actions */}
+                    <div className="p-1.5">
+                      <Link href="/dashboard">
+                        <div
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all duration-150"
+                          style={{ color: c.navInactive, fontFamily: 'DM Sans, sans-serif' }}
+                          onMouseEnter={e => {
+                            (e.currentTarget as HTMLElement).style.background = c.navHoverBg;
+                            (e.currentTarget as HTMLElement).style.color = c.navInactiveHover;
+                          }}
+                          onMouseLeave={e => {
+                            (e.currentTarget as HTMLElement).style.background = 'transparent';
+                            (e.currentTarget as HTMLElement).style.color = c.navInactive;
+                          }}
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <BarChart3 size={14} />
+                          Dashboard
+                        </div>
+                      </Link>
+                      <Link href="/settings">
+                        <div
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium cursor-pointer transition-all duration-150"
+                          style={{ color: c.navInactive, fontFamily: 'DM Sans, sans-serif' }}
+                          onMouseEnter={e => {
+                            (e.currentTarget as HTMLElement).style.background = c.navHoverBg;
+                            (e.currentTarget as HTMLElement).style.color = c.navInactiveHover;
+                          }}
+                          onMouseLeave={e => {
+                            (e.currentTarget as HTMLElement).style.background = 'transparent';
+                            (e.currentTarget as HTMLElement).style.color = c.navInactive;
+                          }}
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <Settings size={14} />
+                          Settings
+                        </div>
+                      </Link>
+                      <div className="my-1" style={{ height: '1px', background: c.divider, margin: '4px 12px' }} />
+                      <button
+                        onClick={() => { logout(); setUserMenuOpen(false); }}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium w-full transition-all duration-150"
+                        style={{ color: '#EF4444', fontFamily: 'DM Sans, sans-serif', background: 'transparent' }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.08)';
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLElement).style.background = 'transparent';
+                        }}
+                      >
+                        <LogOut size={14} />
+                        Sign out
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <a
+              href={getLoginUrl()}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200"
+              style={{
+                background: 'linear-gradient(135deg, rgba(0,212,170,0.18), rgba(0,212,170,0.08))',
+                border: '1px solid rgba(0,212,170,0.3)',
+                color: '#00D4AA',
+                fontFamily: 'DM Sans, sans-serif',
+                boxShadow: '0 0 16px rgba(0,212,170,0.12)',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(0,212,170,0.28), rgba(0,212,170,0.16))';
+                (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(0,212,170,0.22)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(0,212,170,0.18), rgba(0,212,170,0.08))';
+                (e.currentTarget as HTMLElement).style.boxShadow = '0 0 16px rgba(0,212,170,0.12)';
+              }}
+            >
+              <LogIn size={14} />
+              Sign In
+            </a>
+          )}
+        </div>
+      </header>
+
+      {/* ── Desktop Sidebar ──────────────────────────────────────────────── */}
+      <aside className="hidden lg:flex flex-col w-64 fixed left-0 z-40"
+        style={{
+          top: '60px',
+          bottom: 0,
           background: c.sidebarBg,
           borderRight: `1px solid ${c.sidebarBorder}`,
         }}>
@@ -329,7 +533,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* ── Main content ─────────────────────────────────────────────────── */}
-      <main className="flex-1 lg:ml-64 pb-24 lg:pb-0">
+      <main className="flex-1 lg:ml-64 pb-24 lg:pb-0" style={{ paddingTop: '60px' }}>
         {children}
       </main>
 
