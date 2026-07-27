@@ -41,7 +41,20 @@ const WAVEFORM_LABELS: Record<Waveform, string> = {
   sine: "Sine", square: "Square", triangle: "Triangle", sawtooth: "Saw", bowl: "Bowl",
 };
 
-const SLEEP_OPTIONS = [5, 10, 15, 20, 30, 45, 60, 90, 120];
+const SLEEP_OPTIONS = [15, 30, 45, 60];
+
+// ─── Brainwave band helper ──────────────────────────────────────────────────
+type BrainwaveBand = "Delta" | "Theta" | "Alpha" | "Beta" | "Gamma";
+function brainwaveBand(hz: number): BrainwaveBand {
+  if (hz < 4) return "Delta";
+  if (hz < 8) return "Theta";
+  if (hz < 13) return "Alpha";
+  if (hz < 30) return "Beta";
+  return "Gamma";
+}
+const BAND_COLORS: Record<BrainwaveBand, string> = {
+  Delta: "#6366F1", Theta: "#EC4899", Alpha: "#00D4AA", Beta: "#F59E0B", Gamma: "#EF4444",
+};
 
 const NATURE_SOUNDS = [
   { id: "rain", label: "Rain", Icon: CloudRain, color: "#3B82F6" },
@@ -76,6 +89,8 @@ const PRECISION_PRESETS: Array<{ label: string; session: PrecisionSession; color
   { label: "Theta 6 Hz beat", color: "#8B5CF6", session: { freqL: 200, beatHz: 6, waveform: "sine", mode: "binaural", name: "Theta 6 Hz" } },
   { label: "Delta 2 Hz beat", color: "#6366F1", session: { freqL: 200, beatHz: 2, waveform: "sine", mode: "binaural", name: "Delta 2 Hz" } },
   { label: "Gamma 40 Hz beat", color: "#F59E0B", session: { freqL: 200, beatHz: 40, waveform: "sine", mode: "binaural", name: "Gamma 40 Hz" } },
+  { label: "Schumann 7.83 Hz", color: "#84CC16", session: { freqL: 200, beatHz: 7.83, waveform: "sine", mode: "binaural", name: "Schumann 7.83 Hz" } },
+  { label: "Focus 40 Hz", color: "#F97316", session: { freqL: 200, beatHz: 40, waveform: "sine", mode: "isochronic", name: "Focus 40 Hz" } },
 ];
 
 // ─── Favorites persistence ──────────────────────────────────────────────────
@@ -293,10 +308,16 @@ export default function FrequencyStudio() {
   const [waveform, setWaveformState] = useState<Waveform>("sine");
   const [playMode, setPlayMode] = useState<PlayMode>("mono");
   const [sleepMinutes, setSleepMinutes] = useState<number | null>(null);
+  const [sleepRemainSec, setSleepRemainSec] = useState(0);
+  const [sleepTotalSec, setSleepTotalSec] = useState(0);
+  const sleepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sleepTimerActive = sleepTotalSec > 0 && sleepRemainSec > 0;
   const [vizMode, setVizMode] = useState<"oscilloscope" | "spectrum" | "both">("both");
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [browserOpen, setBrowserOpen] = useState(false);
   const [showBreathing, setShowBreathing] = useState(false);
+  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
+  const [serverFavsLoaded, setServerFavsLoaded] = useState(false);
   const [showJournal, setShowJournal] = useState(false);
   const sessionStartRef = useRef<number | null>(null);
 
@@ -494,11 +515,52 @@ export default function FrequencyStudio() {
   }, [player]);
 
   // ── Sleep timer ───────────────────────────────────────────────────────────
+  const clearSleepTimer = useCallback(() => {
+    if (sleepTimerRef.current) { clearInterval(sleepTimerRef.current); sleepTimerRef.current = null; }
+  }, []);
+
+  const cancelSleepTimer = useCallback(() => {
+    clearSleepTimer();
+    setSleepTotalSec(0);
+    setSleepRemainSec(0);
+    setSleepMinutes(null);
+  }, [clearSleepTimer]);
+
   const handleSleepTimer = useCallback((min: number) => {
+    clearSleepTimer();
+    const totalSec = min * 60;
     setSleepMinutes(min);
+    setSleepTotalSec(totalSec);
+    setSleepRemainSec(totalSec);
     player.setSleepTimer(min);
     toast(`Sleep timer set for ${min} minutes`);
-  }, [player]);
+    sleepTimerRef.current = setInterval(() => {
+      setSleepRemainSec(prev => {
+        const next = prev - 1;
+        if (next <= 0) { clearSleepTimer(); setSleepTotalSec(0); setSleepMinutes(null); return 0; }
+        return next;
+      });
+    }, 1000);
+  }, [player, clearSleepTimer]);
+
+  useEffect(() => clearSleepTimer, [clearSleepTimer]);
+
+  // ── Server-sync favorites on login ──────────────────────────────────────
+  const serverSoundsQuery = trpc.sounds.list.useQuery(undefined, { enabled: !!user && !serverFavsLoaded });
+  useEffect(() => {
+    if (!serverSoundsQuery.data || serverFavsLoaded) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mapped: Favorite[] = (serverSoundsQuery.data as any[]).map((s: any) => ({
+      id: String(s.id),
+      name: s.name,
+      session: { freqL: s.freqL, waveform: s.waveform as Waveform, mode: s.mode as PlayMode, beatHz: s.beatHz ?? undefined, name: s.name },
+    }));
+    if (mapped.length > 0) {
+      setFavorites(mapped);
+      saveFavorites(mapped);
+      setServerFavsLoaded(true);
+    }
+  }, [serverSoundsQuery.data, serverFavsLoaded]);
 
   // ── Favorites ─────────────────────────────────────────────────────────────
   const addFavorite = useCallback(() => {
@@ -675,9 +737,13 @@ export default function FrequencyStudio() {
           <h1 className="text-2xl font-semibold mb-0.5" style={{ fontFamily: "Cormorant Garamond, serif", color: "#E8EDF5" }}>
             Precision Frequency Studio
           </h1>
-          <p className="text-xs" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
-            Double-precision synthesis · Layered ambient mixing · ±0.05 Hz accuracy
-          </p>
+              <p className="text-xs" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+                Double-precision synthesis · Layered ambient mixing · ±0.05 Hz accuracy
+              </p>
+              <a href="/technology" className="text-xs mt-1 inline-block transition-opacity hover:opacity-80"
+                style={{ color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}>
+                Powered by TrueHz™ Precision Tuning →
+              </a>
         </div>
 
         {/* 2-column grid */}
@@ -792,15 +858,31 @@ export default function FrequencyStudio() {
               </div>
               {/* Binaural beat Hz */}
               {playMode === "binaural" && (
-                <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.15)" }}>
-                  <span className="text-xs" style={{ color: "#8FA3BF", minWidth: 60 }}>Beat: {beatHz} Hz</span>
-                  <Slider min={0.5} max={50} step={0.5} value={[beatHz]}
-                    onValueChange={([v]) => {
-                      setBeatHz(v);
-                      if (player.isPlaying) player.setFrequency(customFreq, customFreq + v);
-                    }}
-                    className="flex-1"
-                  />
+                <div className="p-3 rounded-xl" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.15)" }}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xs" style={{ color: "#8FA3BF", minWidth: 60 }}>Beat: {beatHz} Hz</span>
+                    <Slider min={0.5} max={40} step={0.5} value={[beatHz]}
+                      onValueChange={([v]) => {
+                        setBeatHz(v);
+                        if (player.isPlaying) player.setFrequency(customFreq, customFreq + v);
+                      }}
+                      className="flex-1"
+                    />
+                  </div>
+                  {/* Brainwave band indicator */}
+                  <div className="flex justify-between">
+                    {(["Delta", "Theta", "Alpha", "Beta", "Gamma"] as BrainwaveBand[]).map(band => (
+                      <span key={band} className="text-[10px] font-medium px-1.5 py-0.5 rounded transition-all"
+                        style={brainwaveBand(beatHz) === band ? {
+                          background: `${BAND_COLORS[band]}20`, color: BAND_COLORS[band], border: `1px solid ${BAND_COLORS[band]}40`,
+                        } : { color: "#3A4A6B" }}>
+                        {band}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-[10px] mt-1.5" style={{ color: "#4A5568" }}>
+                    Left ear {customFreq} Hz · right ear {(customFreq + beatHz).toFixed(2)} Hz
+                  </p>
                 </div>
               )}
               {/* Isochronic params */}
@@ -1011,25 +1093,43 @@ export default function FrequencyStudio() {
 
               {/* Sleep timer */}
               <div className="mb-3">
-                <div className="flex items-center gap-1 mb-1.5">
-                  <Clock size={11} style={{ color: "#6B7A99" }} />
-                  <span className="text-[10px]" style={{ color: "#6B7A99" }}>
-                    Sleep timer {sleepMinutes ? `— ${sleepMinutes} min` : ""}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {SLEEP_OPTIONS.map(m => (
-                    <button key={m} onClick={() => handleSleepTimer(m)}
-                      className="px-2 py-1 rounded-lg text-[10px] transition-all"
-                      style={sleepMinutes === m ? {
-                        background: "rgba(139,92,246,0.2)", color: "#8B5CF6", border: "1px solid rgba(139,92,246,0.3)",
-                      } : {
-                        background: "rgba(255,255,255,0.04)", color: "#6B7A99", border: "1px solid rgba(255,255,255,0.06)",
-                      }}>
-                      {m}m
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-1">
+                    <Clock size={11} style={{ color: "#6B7A99" }} />
+                    <span className="text-[10px]" style={{ color: "#6B7A99" }}>Sleep Timer</span>
+                  </div>
+                  {sleepTimerActive && (
+                    <button onClick={cancelSleepTimer} className="text-[10px] px-2 py-0.5 rounded-lg transition-all"
+                      style={{ background: "rgba(239,68,68,0.1)", color: "#EF4444", border: "1px solid rgba(239,68,68,0.2)" }}>
+                      ✕ Cancel
                     </button>
-                  ))}
+                  )}
                 </div>
+                {sleepTimerActive ? (
+                  <div className="p-3 rounded-xl" style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.25)" }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px]" style={{ color: "#8B5CF6" }}>Fading out in</span>
+                      <span className="text-sm font-mono font-bold" style={{ color: "#E8EDF5" }}>{formatTime(sleepRemainSec)}</span>
+                    </div>
+                    <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                      <div className="h-full rounded-full transition-all" style={{
+                        width: `${((sleepTotalSec - sleepRemainSec) / sleepTotalSec) * 100}%`,
+                        background: "linear-gradient(90deg, #8B5CF6, #6366F1)",
+                      }} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {SLEEP_OPTIONS.map(m => (
+                      <button key={m} onClick={() => handleSleepTimer(m)}
+                        className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
+                        style={{ background: "rgba(255,255,255,0.04)", color: "#6B7A99", border: "1px solid rgba(255,255,255,0.06)" }}>
+                        <span className="block text-sm font-bold" style={{ color: "#E8EDF5" }}>{m}</span>
+                        <span>min</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Quick actions */}
@@ -1221,14 +1321,26 @@ export default function FrequencyStudio() {
               )}
             </div>
 
-            {/* ── Headphone disclaimer ─────────────────────────────── */}
-            <div className="p-3 rounded-xl" style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)" }}>
-              <div className="flex items-start gap-2">
-                <Headphones size={14} style={{ color: "#F59E0B", marginTop: 2 }} />
-                <p className="text-[10px] leading-relaxed" style={{ color: "#8FA3BF" }}>
-                  Use quality headphones for binaural beats. This is not a medical device. Consult a physician if you have epilepsy or seizure disorders.
-                </p>
-              </div>
+            {/* ── Headphone disclaimer (collapsible) ───────────────── */}
+            <div className="rounded-xl overflow-hidden" style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)" }}>
+              <button onClick={() => setDisclaimerOpen(v => !v)}
+                className="w-full flex items-center gap-2 p-3 text-left transition-all"
+                style={{ color: "#F59E0B" }}>
+                <Headphones size={14} />
+                <span className="text-[10px] font-medium flex-1">Headphones recommended for best results</span>
+                <span className="text-[10px]">{disclaimerOpen ? "▲" : "▼"}</span>
+              </button>
+              {disclaimerOpen && (
+                <div className="px-3 pb-3">
+                  <p className="text-[10px] leading-relaxed" style={{ color: "#8FA3BF" }}>
+                    Built-in speakers roll off significantly below ~150 Hz — frequencies such as 174 Hz may be inaudible without headphones.
+                    For binaural beats, stereo headphones are required — the effect only works when each ear receives a different tone.
+                  </p>
+                  <p className="text-[10px] mt-2 leading-relaxed" style={{ color: "#6B7A99" }}>
+                    Sound healing claims are not validated by mainstream medicine. This app is for wellness and entertainment purposes only. Consult a physician if you have epilepsy or seizure disorders.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
