@@ -22,6 +22,9 @@ export type MeditationSoundscape =
   | "reiki-healing-garden-285"
   | "spiritual-meditation-444"
   | "third-eye-activation-528"
+  | "deep-into-nature-60"
+  | "inner-calling-60"
+  | "peaceful-ocean-60"
   | "silence";
 
 export interface MeditationTrack {
@@ -223,6 +226,93 @@ export const MEDITATIONS: MeditationTrack[] = [
       "Remain open until the session completes. No goal but being.",
     ],
     isPremium: true,
+  },
+  {
+    id: "deep-into-nature-60",
+    title: "Deep Into Nature",
+    subtitle: "60-minute forest immersion",
+    category: "healing",
+    durationMinutes: 60,
+    description:
+      "A full-hour journey into living forest textures — birdsong, rustling leaves, gentle streams, and earth resonance. Let nature's own frequency field restore your nervous system.",
+    benefit: "Deep nervous system reset, stress dissolution, primal reconnection with the natural world",
+    icon: "Wind",
+    color: "#22C55E",
+    colorSecondary: "#16A34A",
+    soundscape: "deep-into-nature-60",
+    musicMode: "none",
+    recommendedFrequencyId: "174",
+    recommendedFrequencyLabel: "174Hz Foundation",
+    frequencyRationale:
+      "174 Hz is the grounding foundation tone — the same frequency the earth's own resonance field anchors to. Pairing it with nature soundscapes deepens the sense of safety and belonging.",
+    affirmation: "I belong to the earth. The earth belongs to me.",
+    guidance: [
+      "Find a comfortable position. Allow your body to be fully supported.",
+      "Close your eyes and let the forest sounds surround you completely.",
+      "Breathe slowly and naturally. There is nothing to do but receive.",
+      "Notice the layers — near sounds and distant ones, movement and stillness.",
+      "Let your thoughts dissolve into the soundscape. You are part of this.",
+      "Rest here as long as you need. The forest holds you.",
+    ],
+    isPremium: false,
+  },
+  {
+    id: "inner-calling-60",
+    title: "Inner Calling",
+    subtitle: "60-minute deep inner journey",
+    category: "spiritual",
+    durationMinutes: 60,
+    description:
+      "A full-hour contemplative soundscape designed for deep inner listening. Subtle tonal layers guide awareness inward, creating space for insight, clarity, and authentic self-connection.",
+    benefit: "Clarity of purpose, deep self-connection, access to inner wisdom and intuition",
+    icon: "Eye",
+    color: "#8B5CF6",
+    colorSecondary: "#6D28D9",
+    soundscape: "inner-calling-60",
+    musicMode: "none",
+    recommendedFrequencyId: "963",
+    recommendedFrequencyLabel: "963Hz Divine",
+    frequencyRationale:
+      "963 Hz is associated with the crown chakra and higher states of awareness. This session creates the inner stillness needed to hear what has always been calling.",
+    affirmation: "I listen deeply. My inner voice is clear and true.",
+    guidance: [
+      "Sit or lie in a position you can hold comfortably for an hour.",
+      "Set a gentle intention — not a goal, but a direction of attention.",
+      "Let the music carry you inward. Follow what draws your awareness.",
+      "When insights arise, simply notice them without grasping.",
+      "If emotions surface, breathe through them with openness.",
+      "Trust the process. What needs to be heard will be heard.",
+    ],
+    isPremium: true,
+  },
+  {
+    id: "peaceful-ocean-60",
+    title: "Peaceful Ocean",
+    subtitle: "60-minute ocean meditation",
+    category: "stress",
+    durationMinutes: 60,
+    description:
+      "A full-hour ocean immersion — waves arriving and receding in their own perfect rhythm. The most ancient of all healing sounds, tuned to wash away tension and restore the natural flow of breath.",
+    benefit: "Stress release, emotional cleansing, deep relaxation, improved sleep onset",
+    icon: "Droplets",
+    color: "#3B82F6",
+    colorSecondary: "#1D4ED8",
+    soundscape: "peaceful-ocean-60",
+    musicMode: "none",
+    recommendedFrequencyId: "528",
+    recommendedFrequencyLabel: "528Hz Miracle Tone",
+    frequencyRationale:
+      "528 Hz is known as the miracle tone — associated with cellular repair and emotional healing. Layered beneath ocean waves, it amplifies the cleansing quality of the session.",
+    affirmation: "Like the ocean, I am vast, fluid, and at peace.",
+    guidance: [
+      "Lie down if possible. Let your body become heavy and still.",
+      "Focus on the rhythm of the waves — each one complete in itself.",
+      "Match your breath to the ocean's rhythm. Inhale as waves arrive, exhale as they recede.",
+      "Feel any tension in your body being drawn out with each receding wave.",
+      "You are the ocean as much as you are the shore. Both are you.",
+      "Rest in this vastness. Let the water carry everything away.",
+    ],
+    isPremium: false,
   },
 ];
 

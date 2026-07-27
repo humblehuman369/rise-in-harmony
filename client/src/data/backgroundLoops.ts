@@ -58,6 +58,9 @@ const LIBRARY_LOOP_URLS: Record<string, string> = {
   "morning-breath": "/audio/morning-breath.mp3",
   "reiki-432": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/EyknnrbApNwsjQOZ.mp3",
   // TrueHz HQ meditation masters (full-length) — hosted on Manus CDN (permanent)
+  "deep-into-nature-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/WKmRGyioQaoQKeeJ.mp3",
+  "inner-calling-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ktyVgoowVIAMSvwT.mp3",
+  "peaceful-ocean-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/gjiHzXouliJdAAeH.mp3",
   "calm-sleep-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/IYQghxoiyPtmxTWZ.mp3",
   "deep-serenity-444": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/XrswIdGeuQpsHQZo.mp3",
   "nature-meditation-174": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ySLrOnBvjVJpOcpp.mp3",

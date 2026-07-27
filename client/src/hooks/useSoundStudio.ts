@@ -28,6 +28,9 @@ export type NatureSound =
   | "calm-sleep-528" | "deep-serenity-444" | "nature-meditation-174"
   | "reiki-healing-garden-285" | "spiritual-meditation-444"
   | "third-eye-activation-528"
+  | "deep-into-nature-60"
+  | "inner-calling-60"
+  | "peaceful-ocean-60"
   | "none";
 
 /**
@@ -48,6 +51,9 @@ const RECORDED_NATURE_URLS: Partial<Record<NatureSound, string>> = {
   "reiki-healing-garden-285": getLibraryLoopUrl("reiki-healing-garden-285"),
   "spiritual-meditation-444": getLibraryLoopUrl("spiritual-meditation-444"),
   "third-eye-activation-528": getLibraryLoopUrl("third-eye-activation-528"),
+  "deep-into-nature-60": getLibraryLoopUrl("deep-into-nature-60"),
+  "inner-calling-60": getLibraryLoopUrl("inner-calling-60"),
+  "peaceful-ocean-60": getLibraryLoopUrl("peaceful-ocean-60"),
 };
 export type MusicMode = "ambient" | "drone" | "crystal" | "none";
 
