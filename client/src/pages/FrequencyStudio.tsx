@@ -722,628 +722,512 @@ export default function FrequencyStudio() {
     : 5;
 
   // ─────────────────────────────────────────────────────────────────────────
-  // RENDER
+  // RENDER — Mobile-matching single-column layout
   // ─────────────────────────────────────────────────────────────────────────
+  const WAVEFORM_SYMBOLS: Record<Waveform, string> = { sine: "∿", square: "⊓", triangle: "△", sawtooth: "⊿", bowl: "⌣" };
+  const PLAY_MODE_LABELS: Record<PlayMode, string> = { mono: "Pure Tone", binaural: "Binaural", isochronic: "Isochronic" };
+
   return (
     <Layout>
-      <div className="container py-6 max-w-6xl">
-        {/* Header */}
-        <div className="mb-5">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-2"
-            style={{ background: "rgba(0,212,170,0.1)", border: "1px solid rgba(0,212,170,0.2)", color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}>
-            <Activity size={12} />
-            Precision Frequency Studio — DDS Precision Engine
-          </div>
-          <h1 className="text-2xl font-semibold mb-0.5" style={{ fontFamily: "Cormorant Garamond, serif", color: "#E8EDF5" }}>
-            Precision Frequency Studio
-          </h1>
-              <p className="text-xs" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
-                Double-precision synthesis · Layered ambient mixing · ±0.05 Hz accuracy
+      <div className="max-w-xl mx-auto px-4 pb-32 pt-4">
+
+        {/* ── Header ─────────────────────────────────────────────── */}
+        <div className="mb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: "#6B7A99" }}>PRECISION FREQUENCY STUDIO</p>
+          <h1 className="text-3xl font-bold mb-1" style={{ fontFamily: "DM Sans, sans-serif", color: "#E8EDF5" }}>Frequency Studio</h1>
+          <p className="text-xs" style={{ color: "#6B7A99" }}>DDS precision synthesis · Layered ambient mixing · ±0.05 Hz accuracy</p>
+        </div>
+
+        {/* ── Headphones disclaimer (top, like mobile) ────────────── */}
+        <div className="rounded-2xl overflow-hidden mb-4" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>
+          <button onClick={() => setDisclaimerOpen(v => !v)}
+            className="w-full flex items-center gap-3 px-4 py-3 text-left"
+            style={{ color: "#F59E0B" }}>
+            <span className="text-base">⚠</span>
+            <span className="text-sm font-semibold flex-1">Headphones recommended for best results</span>
+            <span className="text-xs">{disclaimerOpen ? "▲" : "▼"}</span>
+          </button>
+          {disclaimerOpen && (
+            <div className="px-4 pb-4 space-y-2">
+              <p className="text-xs leading-relaxed" style={{ color: "#8FA3BF" }}>
+                Built-in speakers roll off below ~150 Hz — frequencies like 174 Hz may be inaudible without headphones.
+                Binaural beats require stereo headphones — the effect only works when each ear receives a different tone.
               </p>
-              <a href="/technology" className="text-xs mt-1 inline-block transition-opacity hover:opacity-80"
-                style={{ color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}>
-                Powered by TrueHz™ Precision Tuning →
-              </a>
+              <p className="text-xs leading-relaxed" style={{ color: "#6B7A99" }}>
+                Sound healing claims are not validated by mainstream medicine. For wellness purposes only. Consult a physician if you have epilepsy or seizure disorders.
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* 2-column grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
-          {/* ═══ LEFT COLUMN — Primary Controls ═══ */}
-          <div className="space-y-4">
-            {/* ── Frequency Input ─────────────────────────────────── */}
-            <div className="p-4 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
-                  Frequency
-                </span>
-                <button onClick={() => setBrowserOpen(true)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all"
-                  style={{ background: "rgba(0,212,170,0.1)", color: "#00D4AA", border: "1px solid rgba(0,212,170,0.2)" }}>
-                  <Library size={11} /> More Frequencies
-                </button>
-              </div>
-              {/* Quick-select frequency chips */}
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {[174, 285, 396, 417, 432, 528, 639, 741, 852, 963].map(hz => (
-                  <button key={hz} onClick={() => {
-                    setCustomFreq(hz);
-                    setCustomFreqInput(hz.toFixed(2));
-                    if (player.isPlaying) {
-                      const freqR = playMode === "binaural" ? hz + beatHz : undefined;
-                      player.setFrequency(hz, freqR);
-                    }
-                  }}
-                    className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all"
-                    style={customFreq === hz ? {
-                      background: "rgba(0,212,170,0.18)", color: "#00D4AA", border: "1px solid rgba(0,212,170,0.4)",
-                    } : {
-                      background: "rgba(255,255,255,0.04)", color: "#8FA3BF", border: "1px solid rgba(255,255,255,0.08)",
-                    }}>
-                    {hz} Hz
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-2 mb-3">
-                <button onClick={() => nudgeFreq(-1)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-                  style={{ background: "rgba(255,255,255,0.06)", color: "#8FA3BF", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <Minus size={14} />
-                </button>
-                <input
-                  type="text"
-                  value={customFreqInput}
-                  onChange={e => setCustomFreqInput(e.target.value)}
-                  onBlur={commitFreq}
-                  onKeyDown={e => e.key === "Enter" && commitFreq()}
-                  className="flex-1 text-center text-xl font-mono-brand px-3 py-2 rounded-xl outline-none"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#E8EDF5" }}
-                />
-                <span className="text-sm font-medium" style={{ color: "#6B7A99" }}>Hz</span>
-                <button onClick={() => nudgeFreq(1)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-                  style={{ background: "rgba(255,255,255,0.06)", color: "#8FA3BF", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <Plus size={14} />
-                </button>
-              </div>
-              {/* Fine-tune slider */}
-              <Slider
-                min={1} max={2000} step={0.01}
-                value={[Math.min(2000, customFreq)]}
-                onValueChange={([v]) => {
-                  setCustomFreq(v);
-                  setCustomFreqInput(v.toFixed(2));
-                  if (player.isPlaying) {
-                    const freqR = playMode === "binaural" ? v + beatHz : undefined;
-                    player.setFrequency(v, freqR);
-                  }
-                }}
+        {/* ── Frequency Display ───────────────────────────────────── */}
+        <div className="p-5 rounded-2xl mb-4" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+          {/* Giant Hz display */}
+          <div className="text-center mb-4">
+            <div className="flex items-end justify-center gap-2">
+              <input
+                type="text" value={customFreqInput}
+                onChange={e => setCustomFreqInput(e.target.value)}
+                onBlur={commitFreq}
+                onKeyDown={e => e.key === "Enter" && commitFreq()}
+                className="text-6xl font-bold text-center bg-transparent outline-none w-48"
+                style={{ color: "#00D4AA", fontFamily: "DM Sans, sans-serif", caretColor: "#00D4AA" }}
               />
-              <div className="flex justify-between text-[10px] mt-1" style={{ color: "#3A4A6B" }}>
-                <span>1 Hz</span><span>2000 Hz</span>
-              </div>
+              <span className="text-2xl font-medium mb-2" style={{ color: "#6B7A99" }}>Hz</span>
             </div>
-
-            {/* ── Sound Engine (Waveform + Play Mode) ────────────── */}
-            <div className="p-4 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <span className="text-xs font-semibold uppercase tracking-widest block mb-3" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
-                Sound Engine
-              </span>
-              {/* Waveform */}
-              <span className="text-[10px] font-medium uppercase tracking-wider block mb-1.5" style={{ color: "#4A5568" }}>Waveform</span>
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {WAVEFORMS.map(w => (
-                  <button key={w} onClick={() => handleWaveform(w)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                    style={waveform === w ? {
-                      background: "rgba(0,212,170,0.15)", color: "#00D4AA", border: "1px solid rgba(0,212,170,0.3)",
-                    } : {
-                      background: "rgba(255,255,255,0.04)", color: "#6B7A99", border: "1px solid rgba(255,255,255,0.06)",
-                    }}>
-                    {WAVEFORM_LABELS[w]}
-                  </button>
-                ))}
-              </div>
-              {/* Play Mode */}
-              <span className="text-[10px] font-medium uppercase tracking-wider block mb-1.5" style={{ color: "#4A5568" }}>Play Mode</span>
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {(["mono", "binaural", "isochronic"] as PlayMode[]).map(m => (
-                  <button key={m} onClick={() => handlePlayMode(m)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize"
-                    style={playMode === m ? {
-                      background: "rgba(139,92,246,0.15)", color: "#8B5CF6", border: "1px solid rgba(139,92,246,0.3)",
-                    } : {
-                      background: "rgba(255,255,255,0.04)", color: "#6B7A99", border: "1px solid rgba(255,255,255,0.06)",
-                    }}>
-                    {m}
-                  </button>
-                ))}
-              </div>
-              {/* Binaural beat Hz */}
-              {playMode === "binaural" && (
-                <div className="p-3 rounded-xl" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.15)" }}>
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-xs" style={{ color: "#8FA3BF", minWidth: 60 }}>Beat: {beatHz} Hz</span>
-                    <Slider min={0.5} max={40} step={0.5} value={[beatHz]}
-                      onValueChange={([v]) => {
-                        setBeatHz(v);
-                        if (player.isPlaying) player.setFrequency(customFreq, customFreq + v);
-                      }}
-                      className="flex-1"
-                    />
-                  </div>
-                  {/* Brainwave band indicator */}
-                  <div className="flex justify-between">
-                    {(["Delta", "Theta", "Alpha", "Beta", "Gamma"] as BrainwaveBand[]).map(band => (
-                      <span key={band} className="text-[10px] font-medium px-1.5 py-0.5 rounded transition-all"
-                        style={brainwaveBand(beatHz) === band ? {
-                          background: `${BAND_COLORS[band]}20`, color: BAND_COLORS[band], border: `1px solid ${BAND_COLORS[band]}40`,
-                        } : { color: "#3A4A6B" }}>
-                        {band}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="text-[10px] mt-1.5" style={{ color: "#4A5568" }}>
-                    Left ear {customFreq} Hz · right ear {(customFreq + beatHz).toFixed(2)} Hz
-                  </p>
-                </div>
-              )}
-              {/* Isochronic params */}
-              {playMode === "isochronic" && (
-                <div className="space-y-2 p-3 rounded-xl" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.15)" }}>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs" style={{ color: "#8FA3BF", minWidth: 80 }}>Rate: {isoRate} Hz</span>
-                    <Slider min={1} max={40} step={0.5} value={[isoRate]}
-                      onValueChange={([v]) => { setIsoRate(v); if (player.isPlaying) player.setIsochronic(v, isoDuty); }}
-                      className="flex-1"
-                    />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs" style={{ color: "#8FA3BF", minWidth: 80 }}>Duty: {Math.round(isoDuty * 100)}%</span>
-                    <Slider min={0.1} max={0.9} step={0.05} value={[isoDuty]}
-                      onValueChange={([v]) => { setIsoDuty(v); if (player.isPlaying) player.setIsochronic(isoRate, v); }}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ── Ambient Layers (Nature / Music / Uploads) ──────── */}
-            <div className="p-4 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
-                  Ambient Layers
-                </span>
-              </div>
-              {/* Tabs */}
-              <div className="flex gap-1 mb-3">
-                {(["nature", "music", "uploads"] as const).map(tab => (
-                  <button key={tab} onClick={() => setAmbientTab(tab)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize"
-                    style={ambientTab === tab ? {
-                      background: "rgba(0,212,170,0.12)", color: "#00D4AA", border: "1px solid rgba(0,212,170,0.25)",
-                    } : {
-                      background: "rgba(255,255,255,0.03)", color: "#6B7A99", border: "1px solid rgba(255,255,255,0.06)",
-                    }}>
-                    {tab}
-                  </button>
-                ))}
-              </div>
-
-              {/* Nature tab — procedural synth */}
-              {ambientTab === "nature" && (
-                <div>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 mb-3">
-                    {NATURE_SOUNDS.map(ns => (
-                      <button key={ns.id} onClick={() => nature.selectNature(
-                        nature.activeNature === ns.id ? null : ns.id,
-                        player.isPlaying,
-                      )}
-                        className="flex flex-col items-center gap-1 p-2 rounded-xl text-[10px] transition-all"
-                        style={nature.activeNature === ns.id ? {
-                          background: `${ns.color}15`, border: `1px solid ${ns.color}40`, color: ns.color,
-                        } : {
-                          background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
-                        }}>
-                        <ns.Icon size={14} />
-                        {ns.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Volume2 size={12} style={{ color: "#6B7A99" }} />
-                    <Slider min={0} max={1} step={0.01} value={[nature.natureVolume]}
-                      onValueChange={([v]) => nature.setNatureVolume(v)} className="flex-1" />
-                    <span className="text-[10px] font-mono-brand" style={{ color: "#6B7A99" }}>{Math.round(nature.natureVolume * 100)}%</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Music tab — library loops */}
-              {ambientTab === "music" && (
-                <div>
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {MUSIC_MODES.map(mm => (
-                      <button key={mm.id} onClick={() => music.selectMusic(
-                        music.activeMusic === mm.id ? null : mm.id,
-                        player.isPlaying,
-                      )}
-                        className="px-3 py-2 rounded-xl text-xs font-medium transition-all"
-                        style={music.activeMusic === mm.id ? {
-                          background: `${mm.color}15`, border: `1px solid ${mm.color}40`, color: mm.color,
-                        } : {
-                          background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
-                        }}>
-                        {mm.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Music2 size={12} style={{ color: "#6B7A99" }} />
-                    <Slider min={0} max={1} step={0.01} value={[music.musicVolume]}
-                      onValueChange={([v]) => music.setMusicVolume(v)} className="flex-1" />
-                    <span className="text-[10px] font-mono-brand" style={{ color: "#6B7A99" }}>{Math.round(music.musicVolume * 100)}%</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Uploads tab */}
-              {ambientTab === "uploads" && (
-                <div>
-                  <input type="file" ref={fileInputRef} accept=".mp3,audio/mpeg" className="hidden"
-                    onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f); }} />
-                  <button onClick={() => fileInputRef.current?.click()}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all mb-3"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(255,255,255,0.15)", color: "#8FA3BF" }}>
-                    {uploadProgress !== null ? <><Loader2 size={12} className="animate-spin" /> Uploading {Math.round(uploadProgress * 100)}%</> : <><Upload size={12} /> Upload MP3</>}
-                  </button>
-                  {uploadOptions.length > 0 && (
-                    <div className="space-y-1 max-h-32 overflow-y-auto">
-                      {uploadOptions.map(u => (
-                        <button key={u.key} onClick={() => background.selectBackground("upload", u.key, player.isPlaying)}
-                          className="w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all"
-                          style={background.layer.key === u.key ? {
-                            background: "rgba(0,212,170,0.1)", color: "#00D4AA",
-                          } : { color: "#8FA3BF" }}>
-                          {u.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {uploadOptions.length === 0 && !uploadProgress && (
-                    <p className="text-[10px]" style={{ color: "#3A4A6B" }}>Upload an MP3 to use as a background layer.</p>
-                  )}
-                  {background.layer.type === "upload" && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <Volume2 size={12} style={{ color: "#6B7A99" }} />
-                      <Slider min={0} max={1} step={0.01} value={[background.layer.volume]}
-                        onValueChange={([v]) => background.setBackgroundVolume(v)} className="flex-1" />
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* ── Signal Analysis (collapsible) ──────────────────── */}
-            <div className="rounded-2xl overflow-hidden" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <button onClick={() => setShowAnalysis(v => !v)}
-                className="w-full flex items-center justify-between p-4 text-xs font-semibold uppercase tracking-widest"
-                style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
-                Signal Analysis
-                {showAnalysis ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </button>
-              {showAnalysis && (
-                <div className="px-4 pb-4">
-                  <div className="flex gap-1 mb-3">
-                    {(["oscilloscope", "spectrum", "both"] as const).map(m => (
-                      <button key={m} onClick={() => setVizMode(m)}
-                        className="px-2.5 py-1 rounded-lg text-[10px] font-medium capitalize transition-all"
-                        style={vizMode === m ? {
-                          background: "rgba(0,212,170,0.12)", color: "#00D4AA",
-                        } : { color: "#6B7A99" }}>
-                        {m}
-                      </button>
-                    ))}
-                  </div>
-                  <PrecisionVisualizer
-                    analyserNode={analyserNode}
-                    isPlaying={player.isPlaying}
-                    targetHz={targetHz}
-                    mode={vizMode}
-                    color="#00D4AA"
-                  />
-                </div>
-              )}
-            </div>
+            <p className="text-xs mt-1" style={{ color: "#4A5568" }}>1 – 22,000 Hz · 0.01 resolution</p>
+            <a href="/technology" className="text-xs font-semibold transition-opacity hover:opacity-80"
+              style={{ color: "#00D4AA" }}>Powered by TrueHz™ Precision Tuning →</a>
           </div>
-
-          {/* ═══ RIGHT COLUMN — Playback & Library ═══ */}
-          <div className="space-y-4">
-            {/* ── Playback controls ──────────────────────────────── */}
-            <div className="p-4 rounded-2xl lg:sticky lg:top-4" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
-              {/* Play button + timer */}
-              <div className="flex items-center gap-3 mb-4">
-                <button onClick={handlePlay}
-                  className="w-14 h-14 rounded-full flex items-center justify-center transition-all active:scale-95"
-                  style={player.isPlaying ? {
-                    background: "rgba(239,68,68,0.15)", border: "2px solid rgba(239,68,68,0.4)", color: "#EF4444",
-                  } : {
-                    background: "rgba(0,212,170,0.15)", border: "2px solid rgba(0,212,170,0.4)", color: "#00D4AA",
-                  }}>
-                  {player.isPlaying ? <Square size={20} fill="currentColor" /> : <Play size={22} fill="currentColor" />}
-                </button>
-                <div className="flex-1">
-                  <div className="text-sm font-medium" style={{ color: "#E8EDF5", fontFamily: "DM Sans, sans-serif" }}>
-                    {player.isPlaying ? `Playing — ${customFreq.toFixed(customFreq % 1 === 0 ? 0 : 2)} Hz` : "Ready"}
-                  </div>
-                  <div className="text-xs" style={{ color: "#6B7A99" }}>
-                    {player.isPlaying && formatTime(player.playTime)}
-                    {!player.isPlaying && `${WAVEFORM_LABELS[waveform]} · ${playMode}`}
-                  </div>
-                </div>
-              </div>
-
-              {/* Tone volume */}
-              <div className="mb-3">
-                <div className="flex items-center gap-1 mb-1.5">
-                  <Volume2 size={11} style={{ color: "#6B7A99" }} />
-                  <span className="text-[10px]" style={{ color: "#6B7A99" }}>Tone — {Math.round(player.volume * 100)}%</span>
-                </div>
-                <Slider min={0} max={1} step={0.01} value={[player.volume]}
-                  onValueChange={([v]) => player.setVolume(v)} />
-              </div>
-
-              {/* Sleep timer */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1">
-                    <Clock size={11} style={{ color: "#6B7A99" }} />
-                    <span className="text-[10px]" style={{ color: "#6B7A99" }}>Sleep Timer</span>
-                  </div>
-                  {sleepTimerActive && (
-                    <button onClick={cancelSleepTimer} className="text-[10px] px-2 py-0.5 rounded-lg transition-all"
-                      style={{ background: "rgba(239,68,68,0.1)", color: "#EF4444", border: "1px solid rgba(239,68,68,0.2)" }}>
-                      ✕ Cancel
-                    </button>
-                  )}
-                </div>
-                {sleepTimerActive ? (
-                  <div className="p-3 rounded-xl" style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.25)" }}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px]" style={{ color: "#8B5CF6" }}>Fading out in</span>
-                      <span className="text-sm font-mono font-bold" style={{ color: "#E8EDF5" }}>{formatTime(sleepRemainSec)}</span>
-                    </div>
-                    <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-                      <div className="h-full rounded-full transition-all" style={{
-                        width: `${((sleepTotalSec - sleepRemainSec) / sleepTotalSec) * 100}%`,
-                        background: "linear-gradient(90deg, #8B5CF6, #6366F1)",
-                      }} />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-1">
-                    {SLEEP_OPTIONS.map(m => (
-                      <button key={m} onClick={() => handleSleepTimer(m)}
-                        className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
-                        style={{ background: "rgba(255,255,255,0.04)", color: "#6B7A99", border: "1px solid rgba(255,255,255,0.06)" }}>
-                        <span className="block text-sm font-bold" style={{ color: "#E8EDF5" }}>{m}</span>
-                        <span>min</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Quick actions */}
-              <div className="flex flex-wrap gap-1.5">
-                <button onClick={() => setShowBreathing(true)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
-                  style={{ background: "rgba(0,212,170,0.08)", color: "#00D4AA", border: "1px solid rgba(0,212,170,0.2)" }}>
-                  <Wind size={10} /> Breathe
-                </button>
-                <button onClick={() => { setShowFavInput(v => !v); }}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
-                  style={{ background: "rgba(245,158,11,0.08)", color: "#F59E0B", border: "1px solid rgba(245,158,11,0.2)" }}>
-                  <Star size={10} /> Favorite
-                </button>
-                <button onClick={() => setShowSaveInput(v => !v)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
-                  style={{ background: "rgba(59,130,246,0.08)", color: "#3B82F6", border: "1px solid rgba(59,130,246,0.2)" }}>
-                  <Save size={10} /> Save
-                </button>
-                <button onClick={() => setShowMixSave(v => !v)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all"
-                  style={{ background: "rgba(139,92,246,0.08)", color: "#8B5CF6", border: "1px solid rgba(139,92,246,0.2)" }}>
-                  <Sliders size={10} /> Mix
-                </button>
-              </div>
-
-              {/* Inline save inputs */}
-              {showFavInput && (
-                <div className="flex gap-2 mt-3">
-                  <input type="text" placeholder={`${customFreq.toFixed(2)} Hz`} value={favNameInput}
-                    onChange={e => setFavNameInput(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && addFavorite()}
-                    className="flex-1 px-3 py-1.5 rounded-lg text-xs outline-none"
-                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#E8EDF5" }} />
-                  <button onClick={addFavorite} className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                    style={{ background: "rgba(245,158,11,0.15)", color: "#F59E0B" }}>Add</button>
-                </div>
-              )}
-              {showSaveInput && (
-                <div className="flex gap-2 mt-3">
-                  <input type="text" placeholder="Name this sound" value={saveNameInput}
-                    onChange={e => setSaveNameInput(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && saveSound()}
-                    className="flex-1 px-3 py-1.5 rounded-lg text-xs outline-none"
-                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#E8EDF5" }} />
-                  <button onClick={() => void saveSound()} className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                    style={{ background: "rgba(59,130,246,0.15)", color: "#3B82F6" }}>
-                    {createSound.isPending ? <Loader2 size={12} className="animate-spin" /> : "Save"}
-                  </button>
-                </div>
-              )}
-              {showMixSave && (
-                <div className="flex gap-2 mt-3">
-                  <input type="text" placeholder="Mix name" value={mixNameInput}
-                    onChange={e => setMixNameInput(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && saveCurrentMix()}
-                    className="flex-1 px-3 py-1.5 rounded-lg text-xs outline-none"
-                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#E8EDF5" }} />
-                  <button onClick={saveCurrentMix} className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                    style={{ background: "rgba(139,92,246,0.15)", color: "#8B5CF6" }}>Save</button>
-                </div>
-              )}
-            </div>
-
-            {/* ── Presets & Favorites ─────────────────────────────── */}
-            <div className="p-4 rounded-2xl" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
-              {/* Tabs */}
-              <div className="flex gap-1 mb-3 overflow-x-auto">
-                {([
-                  { id: "solfeggio", label: "Presets" },
-                  { id: "lifestyle", label: "Lifestyle" },
-                  { id: "mixes", label: `Mixes (${customMixes.length})` },
-                  { id: "favorites", label: `Favs (${favorites.length})` },
-                ] as const).map(t => (
-                  <button key={t.id} onClick={() => setPresetTab(t.id)}
-                    className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all"
-                    style={presetTab === t.id ? {
-                      background: "rgba(0,212,170,0.12)", color: "#00D4AA",
-                    } : { color: "#6B7A99" }}>
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Solfeggio + Binaural presets */}
-              {presetTab === "solfeggio" && (
-                <div className="space-y-1 max-h-72 overflow-y-auto">
-                  {PRECISION_PRESETS.map((p, i) => (
-                    <button key={i} onClick={() => void handlePrecisionPreset(p)}
-                      className="w-full text-left px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-2"
-                      style={{
-                        background: player.session?.name === p.session.name && player.isPlaying
-                          ? `${p.color}18` : "transparent",
-                        color: "#8FA3BF", fontFamily: "DM Sans, sans-serif",
-                      }}>
-                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Lifestyle presets (from old Studio) */}
-              {presetTab === "lifestyle" && (
-                <div className="space-y-1.5 max-h-72 overflow-y-auto">
-                  {STUDIO_PRESETS.map(p => (
-                    <button key={p.id} onClick={() => void handleLifestylePreset(p)}
-                      className="w-full text-left px-3 py-2.5 rounded-xl transition-all"
-                      style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">{p.icon}</span>
-                        <div>
-                          <div className="text-xs font-medium" style={{ color: p.color }}>{p.name}</div>
-                          <div className="text-[10px]" style={{ color: "#6B7A99" }}>{p.description}</div>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Custom mixes */}
-              {presetTab === "mixes" && (
-                <div>
-                  {customMixes.length === 0 ? (
-                    <p className="text-xs py-4 text-center" style={{ color: "#3A4A6B" }}>
-                      No custom mixes yet. Use the "Mix" button above to save your current setup.
-                    </p>
-                  ) : (
-                    <div className="space-y-1 max-h-72 overflow-y-auto">
-                      {customMixes.map(mix => (
-                        <div key={mix.id} className="flex items-center gap-2 group">
-                          <button onClick={() => void applyCustomMix(mix)}
-                            className="flex-1 text-left px-3 py-2 rounded-xl text-xs transition-all"
-                            style={{ color: "#8FA3BF" }}>
-                            <span className="font-medium" style={{ color: "#E8EDF5" }}>{mix.name}</span>
-                            <span className="ml-2 text-[10px]" style={{ color: "#4A5568" }}>
-                              {mix.freq} Hz · {mix.waveform}
-                              {mix.natureSound ? ` + ${mix.natureSound}` : ""}
-                              {mix.musicMode ? ` + ${mix.musicMode}` : ""}
-                            </span>
-                          </button>
-                          <button onClick={() => deleteCustomMix(mix.id)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1">
-                            <Trash2 size={12} style={{ color: "#EF4444" }} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Favorites */}
-              {presetTab === "favorites" && (
-                <div>
-                  {favorites.length === 0 ? (
-                    <p className="text-xs py-4 text-center" style={{ color: "#3A4A6B" }}>
-                      No favorites yet — use the star button to save a frequency.
-                    </p>
-                  ) : (
-                    <div className="space-y-1 max-h-72 overflow-y-auto">
-                      {favorites.map(fav => (
-                        <div key={fav.id} className="flex items-center gap-2 group">
-                          <button onClick={() => void (async () => {
-                            setCustomFreq(fav.session.freqL);
-                            setCustomFreqInput(fav.session.freqL.toFixed(2));
-                            setWaveformState(fav.session.waveform);
-                            setPlayMode(fav.session.mode);
-                            if (fav.session.beatHz) setBeatHz(fav.session.beatHz);
-                            sessionStartRef.current = Date.now();
-                            await player.play(fav.session);
-                            if (nature.activeNature) nature.startNature(nature.activeNature, nature.natureVolume);
-                            if (music.activeMusic) music.startMusic(music.activeMusic, music.musicVolume);
-                          })()}
-                            className="flex-1 text-left px-3 py-1.5 rounded-lg text-xs transition-all"
-                            style={{ color: "#8FA3BF" }}>
-                            ★ {fav.name}
-                          </button>
-                          <button onClick={() => removeFavorite(fav.id)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1">
-                            <StarOff size={12} style={{ color: "#EF4444" }} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* ── Headphone disclaimer (collapsible) ───────────────── */}
-            <div className="rounded-xl overflow-hidden" style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)" }}>
-              <button onClick={() => setDisclaimerOpen(v => !v)}
-                className="w-full flex items-center gap-2 p-3 text-left transition-all"
-                style={{ color: "#F59E0B" }}>
-                <Headphones size={14} />
-                <span className="text-[10px] font-medium flex-1">Headphones recommended for best results</span>
-                <span className="text-[10px]">{disclaimerOpen ? "▲" : "▼"}</span>
+          {/* 6 nudge buttons */}
+          <div className="grid grid-cols-6 gap-2 mb-4">
+            {([-10, -1, -0.1, 0.1, 1, 10] as const).map(d => (
+              <button key={d} onClick={() => nudgeFreq(d)}
+                className="py-3 rounded-xl text-sm font-semibold transition-all active:scale-95"
+                style={{ background: "rgba(255,255,255,0.06)", color: d < 0 ? "#8FA3BF" : "#00D4AA", border: "1px solid rgba(255,255,255,0.08)" }}>
+                {d > 0 ? `+${d}` : d}
               </button>
-              {disclaimerOpen && (
-                <div className="px-3 pb-3">
-                  <p className="text-[10px] leading-relaxed" style={{ color: "#8FA3BF" }}>
-                    Built-in speakers roll off significantly below ~150 Hz — frequencies such as 174 Hz may be inaudible without headphones.
-                    For binaural beats, stereo headphones are required — the effect only works when each ear receives a different tone.
-                  </p>
-                  <p className="text-[10px] mt-2 leading-relaxed" style={{ color: "#6B7A99" }}>
-                    Sound healing claims are not validated by mainstream medicine. This app is for wellness and entertainment purposes only. Consult a physician if you have epilepsy or seizure disorders.
-                  </p>
-                </div>
-              )}
-            </div>
+            ))}
+          </div>
+          {/* Fine-tune slider */}
+          <Slider min={1} max={2000} step={0.01} value={[Math.min(2000, customFreq)]}
+            onValueChange={([v]) => {
+              setCustomFreq(v); setCustomFreqInput(v.toFixed(2));
+              if (player.isPlaying) { const freqR = playMode === "binaural" ? v + beatHz : undefined; player.setFrequency(v, freqR); }
+            }} />
+          <div className="flex justify-between text-[10px] mt-1" style={{ color: "#3A4A6B" }}><span>1 Hz</span><span>2000 Hz</span></div>
+        </div>
+
+        {/* ── Waveform ────────────────────────────────────────────── */}
+        <div className="mb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>WAVEFORM</p>
+          <div className="grid grid-cols-5 gap-2">
+            {WAVEFORMS.map(w => (
+              <button key={w} onClick={() => handleWaveform(w)}
+                className="flex flex-col items-center gap-1.5 py-4 rounded-2xl transition-all active:scale-95"
+                style={waveform === w ? {
+                  background: "rgba(0,212,170,0.15)", border: "2px solid rgba(0,212,170,0.4)", color: "#00D4AA",
+                } : {
+                  background: "#11142A", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
+                }}>
+                <span className="text-xl">{WAVEFORM_SYMBOLS[w]}</span>
+                <span className="text-xs font-medium">{WAVEFORM_LABELS[w]}</span>
+              </button>
+            ))}
           </div>
         </div>
+
+        {/* ── Play Mode ───────────────────────────────────────────── */}
+        <div className="mb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>PLAY MODE</p>
+          <div className="grid grid-cols-3 gap-2">
+            {(["mono", "binaural", "isochronic"] as PlayMode[]).map(m => (
+              <button key={m} onClick={() => handlePlayMode(m)}
+                className="py-4 rounded-2xl text-sm font-semibold transition-all active:scale-95"
+                style={playMode === m ? {
+                  background: "rgba(0,212,170,0.15)", border: "2px solid rgba(0,212,170,0.4)", color: "#00D4AA",
+                } : {
+                  background: "#11142A", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
+                }}>
+                {PLAY_MODE_LABELS[m]}
+              </button>
+            ))}
+          </div>
+          {/* Binaural beat controls */}
+          {playMode === "binaural" && (
+            <div className="mt-3 p-4 rounded-2xl" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.2)" }}>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-sm font-semibold" style={{ color: "#8B5CF6", minWidth: 80 }}>Beat: {beatHz} Hz</span>
+                <Slider min={0.5} max={40} step={0.5} value={[beatHz]}
+                  onValueChange={([v]) => { setBeatHz(v); if (player.isPlaying) player.setFrequency(customFreq, customFreq + v); }}
+                  className="flex-1" />
+              </div>
+              <div className="flex justify-between mb-2">
+                {(["Delta", "Theta", "Alpha", "Beta", "Gamma"] as BrainwaveBand[]).map(band => (
+                  <span key={band} className="text-xs font-semibold px-2 py-1 rounded-lg transition-all"
+                    style={brainwaveBand(beatHz) === band ? {
+                      background: `${BAND_COLORS[band]}20`, color: BAND_COLORS[band], border: `1px solid ${BAND_COLORS[band]}40`,
+                    } : { color: "#3A4A6B" }}>
+                    {band}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs" style={{ color: "#4A5568" }}>L: {customFreq} Hz · R: {(customFreq + beatHz).toFixed(2)} Hz</p>
+            </div>
+          )}
+          {/* Isochronic controls */}
+          {playMode === "isochronic" && (
+            <div className="mt-3 p-4 rounded-2xl space-y-3" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.2)" }}>
+              <div className="flex items-center gap-3">
+                <span className="text-sm" style={{ color: "#8B5CF6", minWidth: 90 }}>Rate: {isoRate} Hz</span>
+                <Slider min={1} max={40} step={0.5} value={[isoRate]}
+                  onValueChange={([v]) => { setIsoRate(v); if (player.isPlaying) player.setIsochronic(v, isoDuty); }} className="flex-1" />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm" style={{ color: "#8B5CF6", minWidth: 90 }}>Duty: {Math.round(isoDuty * 100)}%</span>
+                <Slider min={0.1} max={0.9} step={0.05} value={[isoDuty]}
+                  onValueChange={([v]) => { setIsoDuty(v); if (player.isPlaying) player.setIsochronic(isoRate, v); }} className="flex-1" />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Play Button (centered, prominent) ───────────────────── */}
+        <div className="flex flex-col items-center mb-4">
+          <button onClick={handlePlay}
+            className="w-20 h-20 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-2xl mb-3"
+            style={player.isPlaying ? {
+              background: "rgba(239,68,68,0.2)", border: "3px solid rgba(239,68,68,0.5)", color: "#EF4444",
+              boxShadow: "0 0 40px rgba(239,68,68,0.3)",
+            } : {
+              background: "#00D4AA", border: "3px solid rgba(0,212,170,0.6)", color: "#0A0B14",
+              boxShadow: "0 0 40px rgba(0,212,170,0.4)",
+            }}>
+            {player.isPlaying ? <Square size={28} fill="currentColor" /> : <Play size={30} fill="currentColor" />}
+          </button>
+          {player.isPlaying && (
+            <p className="text-sm font-mono" style={{ color: "#6B7A99" }}>{formatTime(player.playTime)}</p>
+          )}
+        </div>
+
+        {/* ── Visualizer (always visible, like mobile) ─────────────── */}
+        <div className="mb-4 rounded-2xl overflow-hidden" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <PrecisionVisualizer
+            analyserNode={analyserNode}
+            isPlaying={player.isPlaying}
+            targetHz={targetHz}
+            mode="oscilloscope"
+            color="#00D4AA"
+          />
+          <div className="flex justify-center gap-2 pb-3">
+            {(["oscilloscope", "spectrum", "both"] as const).map(m => (
+              <button key={m} onClick={() => setVizMode(m)}
+                className="px-3 py-1 rounded-lg text-xs font-medium capitalize transition-all"
+                style={vizMode === m ? {
+                  background: "rgba(0,212,170,0.15)", color: "#00D4AA", border: "1px solid rgba(0,212,170,0.3)",
+                } : { color: "#4A5568" }}>
+                {m === "oscilloscope" ? "Waveform" : m === "spectrum" ? "Spectrum" : "Both"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Tone Volume ─────────────────────────────────────────── */}
+        <div className="p-4 rounded-2xl mb-4" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#6B7A99" }}>TONE VOLUME</p>
+            <span className="text-sm font-semibold" style={{ color: "#00D4AA" }}>{Math.round(player.volume * 100)}% ({Math.round(20 * Math.log10(player.volume))} dB)</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Volume2 size={16} style={{ color: "#6B7A99" }} />
+            <Slider min={0.01} max={1} step={0.01} value={[player.volume]} onValueChange={([v]) => player.setVolume(v)} className="flex-1" />
+          </div>
+        </div>
+
+        {/* ── Quick Presets ───────────────────────────────────────── */}
+        <div className="mb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>QUICK PRESETS</p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {PRECISION_PRESETS.slice(0, 8).map((p, i) => (
+              <button key={i} onClick={() => void handlePrecisionPreset(p)}
+                className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all active:scale-95"
+                style={player.session?.name === p.session.name && player.isPlaying ? {
+                  background: p.color, color: "#0A0B14", border: `2px solid ${p.color}`,
+                } : {
+                  background: `${p.color}15`, color: p.color, border: `1px solid ${p.color}40`,
+                }}>
+                {p.label.replace(" Hz — ", " ").replace(" Hz beat", "").replace(" Hz", " Hz")}
+              </button>
+            ))}
+            <button onClick={() => setBrowserOpen(true)}
+              className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all"
+              style={{ background: "rgba(0,212,170,0.08)", color: "#00D4AA", border: "1px solid rgba(0,212,170,0.2)" }}>
+              + More
+            </button>
+          </div>
+        </div>
+
+        {/* ── Healing Frequency Grid ──────────────────────────────── */}
+        <div className="mb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>HEALING FREQUENCY</p>
+          <div className="grid grid-cols-5 gap-2">
+            {[{hz:174,name:"Foundation",color:"#EF4444"},{hz:285,name:"Quantum",color:"#F97316"},{hz:396,name:"Liberation",color:"#EAB308"},{hz:417,name:"Transmutation",color:"#84CC16"},{hz:432,name:"Natural",color:"#00D4AA"},{hz:528,name:"Miracle",color:"#3B82F6"},{hz:639,name:"Connection",color:"#8B5CF6"},{hz:741,name:"Awakening",color:"#A855F7"},{hz:852,name:"Spiritual",color:"#EC4899"},{hz:963,name:"Divine",color:"#F472B6"}].map(f => (
+              <button key={f.hz} onClick={() => {
+                setCustomFreq(f.hz); setCustomFreqInput(f.hz.toFixed(2));
+                if (player.isPlaying) { const freqR = playMode === "binaural" ? f.hz + beatHz : undefined; player.setFrequency(f.hz, freqR); }
+              }}
+                className="flex flex-col items-center gap-1 py-3 rounded-2xl transition-all active:scale-95"
+                style={customFreq === f.hz ? {
+                  background: `${f.color}20`, border: `2px solid ${f.color}60`, color: f.color,
+                } : {
+                  background: "#11142A", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
+                }}>
+                <span className="text-lg font-bold" style={{ color: customFreq === f.hz ? f.color : "#E8EDF5" }}>{f.hz}</span>
+                <span className="text-[10px]">{f.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Music Layer ─────────────────────────────────────────── */}
+        <div className="mb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>MUSIC LAYER</p>
+          <div className="grid grid-cols-4 gap-2">
+            {[{id:null,label:"Off",icon:"—",color:"#4A5568"},{id:"ambient",label:"Ambient",icon:"♪",color:"#00D4AA"},{id:"drone",label:"Drone",icon:"〰",color:"#8B5CF6"},{id:"crystal",label:"Crystal",icon:"◇",color:"#EC4899"}].map(mm => (
+              <button key={mm.label} onClick={() => music.selectMusic(mm.id, player.isPlaying)}
+                className="flex flex-col items-center gap-2 py-4 rounded-2xl transition-all active:scale-95"
+                style={music.activeMusic === mm.id ? {
+                  background: `${mm.color}20`, border: `2px solid ${mm.color}60`, color: mm.color,
+                } : {
+                  background: "#11142A", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
+                }}>
+                <span className="text-xl">{mm.icon}</span>
+                <span className="text-xs font-semibold">{mm.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Nature Layer ────────────────────────────────────────── */}
+        <div className="mb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>NATURE LAYER</p>
+          <div className="grid grid-cols-6 gap-2">
+            {[{id:null,label:"Off",emoji:"—",color:"#4A5568"},{id:"rain",label:"Rain",emoji:"🌧️",color:"#3B82F6"},{id:"ocean",label:"Ocean",emoji:"🌊",color:"#00D4AA"},{id:"forest",label:"Forest",emoji:"🌲",color:"#22C55E"},{id:"wind",label:"Wind",emoji:"🌬️",color:"#94A3B8"},{id:"fire",label:"Fire",emoji:"🔥",color:"#F97316"}].map(ns => (
+              <button key={ns.label} onClick={() => nature.selectNature(ns.id, player.isPlaying)}
+                className="flex flex-col items-center gap-1.5 py-3 rounded-2xl transition-all active:scale-95"
+                style={nature.activeNature === ns.id ? {
+                  background: `${ns.color}20`, border: `2px solid ${ns.color}60`, color: ns.color,
+                } : {
+                  background: "#11142A", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
+                }}>
+                <span className="text-lg">{ns.emoji}</span>
+                <span className="text-[10px] font-medium">{ns.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Layer Mix ───────────────────────────────────────────── */}
+        <div className="p-4 rounded-2xl mb-4" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: "#6B7A99" }}>LAYER MIX</p>
+          <div className="space-y-4">
+            {[
+              { label: "Frequency", value: player.volume, onChange: (v: number) => player.setVolume(v), color: "#00D4AA" },
+              { label: "Music", value: music.musicVolume, onChange: (v: number) => music.setMusicVolume(v), color: "#00D4AA" },
+              { label: "Nature", value: nature.natureVolume, onChange: (v: number) => nature.setNatureVolume(v), color: "#6366F1" },
+            ].map(layer => (
+              <div key={layer.label} className="flex items-center gap-3">
+                <span className="text-sm font-medium w-20" style={{ color: "#8FA3BF" }}>{layer.label}</span>
+                <Slider min={0} max={1} step={0.01} value={[layer.value]}
+                  onValueChange={([v]) => layer.onChange(v)} className="flex-1" />
+                <span className="text-sm font-semibold w-10 text-right" style={{ color: layer.color }}>{Math.round(layer.value * 100)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Presets ─────────────────────────────────────────────── */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#6B7A99" }}>PRESETS</p>
+            <div className="flex gap-2">
+              <button onClick={() => setShowBreathing(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+                style={{ background: "rgba(0,212,170,0.12)", color: "#00D4AA", border: "1px solid rgba(0,212,170,0.3)" }}>
+                <Wind size={11} /> Breathe
+              </button>
+              <button onClick={() => setShowMixSave(v => !v)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+                style={{ background: "rgba(139,92,246,0.12)", color: "#8B5CF6", border: "1px solid rgba(139,92,246,0.3)" }}>
+                + Save Mix
+              </button>
+            </div>
+          </div>
+          {showMixSave && (
+            <div className="flex gap-2 mb-3">
+              <input type="text" placeholder="Mix name" value={mixNameInput}
+                onChange={e => setMixNameInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && saveCurrentMix()}
+                className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#E8EDF5" }} />
+              <button onClick={saveCurrentMix} className="px-4 py-2 rounded-xl text-sm font-semibold"
+                style={{ background: "rgba(139,92,246,0.2)", color: "#8B5CF6" }}>Save</button>
+            </div>
+          )}
+          {/* Lifestyle preset cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+            {STUDIO_PRESETS.map(p => (
+              <button key={p.id} onClick={() => void handleLifestylePreset(p)}
+                className="text-left p-4 rounded-2xl transition-all active:scale-95"
+                style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+                <span className="text-2xl block mb-2">{p.icon}</span>
+                <div className="text-sm font-bold mb-0.5" style={{ color: p.color }}>{p.name}</div>
+                <div className="text-[10px] leading-tight" style={{ color: "#6B7A99" }}>{p.description}</div>
+              </button>
+            ))}
+          </div>
+          {/* Custom mixes */}
+          {customMixes.length > 0 && (
+            <div className="space-y-1">
+              {customMixes.map(mix => (
+                <div key={mix.id} className="flex items-center gap-2 group">
+                  <button onClick={() => void applyCustomMix(mix)}
+                    className="flex-1 text-left px-4 py-3 rounded-xl transition-all"
+                    style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <span className="text-sm font-semibold" style={{ color: "#E8EDF5" }}>{mix.name}</span>
+                    <span className="block text-xs mt-0.5" style={{ color: "#4A5568" }}>
+                      {mix.freq} Hz · {mix.waveform}{mix.natureSound ? ` + ${mix.natureSound}` : ""}{mix.musicMode ? ` + ${mix.musicMode}` : ""}
+                    </span>
+                  </button>
+                  <button onClick={() => deleteCustomMix(mix.id)} className="p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Trash2 size={14} style={{ color: "#EF4444" }} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Sleep Timer ─────────────────────────────────────────── */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#6B7A99" }}>SLEEP TIMER</p>
+            {sleepTimerActive && (
+              <button onClick={cancelSleepTimer} className="text-xs px-3 py-1 rounded-full"
+                style={{ background: "rgba(239,68,68,0.1)", color: "#EF4444", border: "1px solid rgba(239,68,68,0.2)" }}>
+                ✕ Cancel
+              </button>
+            )}
+          </div>
+          {sleepTimerActive ? (
+            <div className="p-4 rounded-2xl" style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.25)" }}>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm" style={{ color: "#8B5CF6" }}>Fading out in</span>
+                <span className="text-2xl font-bold font-mono" style={{ color: "#E8EDF5" }}>{formatTime(sleepRemainSec)}</span>
+              </div>
+              <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                <div className="h-full rounded-full transition-all" style={{
+                  width: `${((sleepTotalSec - sleepRemainSec) / sleepTotalSec) * 100}%`,
+                  background: "linear-gradient(90deg, #8B5CF6, #6366F1)",
+                }} />
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 gap-3">
+              {SLEEP_OPTIONS.map(m => (
+                <button key={m} onClick={() => handleSleepTimer(m)}
+                  className="flex flex-col items-center py-4 rounded-2xl transition-all active:scale-95"
+                  style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <span className="text-2xl font-bold" style={{ color: "#E8EDF5" }}>{m}</span>
+                  <span className="text-xs" style={{ color: "#6B7A99" }}>min</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Favorites ───────────────────────────────────────────── */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#6B7A99" }}>FAVORITES</p>
+            <button onClick={() => setShowFavInput(v => !v)}
+              className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
+              style={{ background: "rgba(245,158,11,0.1)", color: "#F59E0B", border: "1px solid rgba(245,158,11,0.2)" }}>
+              + Save current
+            </button>
+          </div>
+          {showFavInput && (
+            <div className="flex gap-2 mb-3">
+              <input type="text" placeholder={`${customFreq.toFixed(2)} Hz`} value={favNameInput}
+                onChange={e => setFavNameInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && addFavorite()}
+                className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#E8EDF5" }} />
+              <button onClick={addFavorite} className="px-4 py-2 rounded-xl text-sm font-semibold"
+                style={{ background: "rgba(245,158,11,0.2)", color: "#F59E0B" }}>Save</button>
+            </div>
+          )}
+          {favorites.length === 0 ? (
+            <p className="text-sm py-4 text-center" style={{ color: "#3A4A6B" }}>No favorites yet — dial in a frequency and save it.</p>
+          ) : (
+            <div className="space-y-1">
+              {favorites.map(fav => (
+                <div key={fav.id} className="flex items-center gap-2 group">
+                  <button onClick={() => void (async () => {
+                    setCustomFreq(fav.session.freqL); setCustomFreqInput(fav.session.freqL.toFixed(2));
+                    setWaveformState(fav.session.waveform); setPlayMode(fav.session.mode);
+                    if (fav.session.beatHz) setBeatHz(fav.session.beatHz);
+                    sessionStartRef.current = Date.now();
+                    await player.play(fav.session);
+                    if (nature.activeNature) nature.startNature(nature.activeNature, nature.natureVolume);
+                    if (music.activeMusic) music.startMusic(music.activeMusic, music.musicVolume);
+                  })()}
+                    className="flex-1 text-left px-4 py-3 rounded-xl transition-all"
+                    style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <span className="text-sm font-semibold" style={{ color: "#E8EDF5" }}>★ {fav.name}</span>
+                    <span className="block text-xs mt-0.5" style={{ color: "#4A5568" }}>
+                      {fav.session.freqL} Hz · {fav.session.waveform}{fav.session.mode !== "mono" ? ` · ${fav.session.mode}` : ""}
+                    </span>
+                  </button>
+                  <button onClick={() => removeFavorite(fav.id)} className="p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <StarOff size={14} style={{ color: "#EF4444" }} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Save to account ─────────────────────────────────────── */}
+        {user && (
+          <div className="mb-4">
+            {!showSaveInput ? (
+              <button onClick={() => setShowSaveInput(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all"
+                style={{ background: "rgba(59,130,246,0.08)", color: "#3B82F6", border: "1px solid rgba(59,130,246,0.2)" }}>
+                <Save size={14} /> Save to Account
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <input type="text" placeholder="Name this sound" value={saveNameInput}
+                  onChange={e => setSaveNameInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && saveSound()}
+                  className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#E8EDF5" }} />
+                <button onClick={() => void saveSound()} className="px-4 py-2 rounded-xl text-sm font-semibold"
+                  style={{ background: "rgba(59,130,246,0.2)", color: "#3B82F6" }}>
+                  {createSound.isPending ? <Loader2 size={14} className="animate-spin" /> : "Save"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── MP3 Upload (premium) ─────────────────────────────────── */}
+        <div className="mb-6">
+          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>CUSTOM BACKGROUND</p>
+          <input type="file" ref={fileInputRef} accept=".mp3,audio/mpeg" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f); }} />
+          <button onClick={() => fileInputRef.current?.click()}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(255,255,255,0.15)", color: "#8FA3BF" }}>
+            {uploadProgress !== null ? <><Loader2 size={14} className="animate-spin" /> Uploading {Math.round(uploadProgress * 100)}%</> : <><Upload size={14} /> Upload MP3 Background</>}
+          </button>
+          {uploadOptions.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {uploadOptions.map(u => (
+                <button key={u.key} onClick={() => background.selectBackground("upload", u.key, player.isPlaying)}
+                  className="w-full text-left px-4 py-2 rounded-xl text-sm transition-all"
+                  style={background.layer.key === u.key ? {
+                    background: "rgba(0,212,170,0.1)", color: "#00D4AA",
+                  } : { background: "#11142A", color: "#8FA3BF", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  {u.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* ── Floating Play Bar (always visible) ──────────────────── */}
