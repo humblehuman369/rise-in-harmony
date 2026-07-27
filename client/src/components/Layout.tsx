@@ -341,27 +341,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           background: c.sidebarBg,
           borderRight: `1px solid ${c.sidebarBorder}`,
         }}>
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-6">
-          <div className="relative w-9 h-9 flex-shrink-0">
-            <img
-              src="/manus-storage/rih-logo-icon_0fedc44f.png"
-              alt="Rise In Harmony"
-              className="w-9 h-9 object-contain"
-            />
-          </div>
-          <div>
-            <div className="font-display text-base font-semibold leading-tight" style={{ color: c.logoTitle, fontFamily: 'Cormorant Garamond, serif' }}>
-              Rise In Harmony
-            </div>
-            <div className="text-xs" style={{ color: c.logoSub, fontFamily: 'DM Sans, sans-serif' }}>
-              Healing Frequencies
-            </div>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="mx-6 mb-4" style={{ height: '1px', background: c.divider }} />
+        {/* Divider — top spacing now provided by top nav bar */}
+        <div className="mx-6 mt-4 mb-4" style={{ height: '1px', background: c.divider }} />
 
         {/* Nav */}
         <nav className="flex-1 px-3 space-y-1">

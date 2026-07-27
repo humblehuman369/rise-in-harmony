@@ -795,7 +795,7 @@ export default function FrequencyStudio() {
               setCustomFreq(v); setCustomFreqInput(v.toFixed(2));
               if (player.isPlaying) { const freqR = playMode === "binaural" ? v + beatHz : undefined; player.setFrequency(v, freqR); }
             }} />
-          <div className="flex justify-between text-[10px] mt-1" style={{ color: "#3A4A6B" }}><span>1 Hz</span><span>2000 Hz</span></div>
+          <div className="flex justify-between text-xs mt-1.5 font-medium" style={{ color: "#6B7A99" }}><span>1 Hz</span><span>2000 Hz</span></div>
         </div>
 
         {/* ── Waveform ────────────────────────────────────────────── */}
