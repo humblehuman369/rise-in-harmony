@@ -23,6 +23,14 @@ RUN corepack pnpm install --frozen-lockfile
 COPY . .
 
 ENV NODE_ENV=production
+
+# VITE_* vars must be present at build time so Vite bakes them into the JS bundle.
+# Railway automatically passes service variables as build args when using Dockerfile builder.
+ARG VITE_APP_ID
+ARG VITE_OAUTH_PORTAL_URL
+ENV VITE_APP_ID=$VITE_APP_ID
+ENV VITE_OAUTH_PORTAL_URL=$VITE_OAUTH_PORTAL_URL
+
 RUN corepack pnpm build
 
 # Drop source maps noise if present; keep dist
