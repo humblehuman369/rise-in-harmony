@@ -912,17 +912,7 @@ export default function FrequencyStudio() {
           </div>
         </div>
 
-        {/* ── Tone Volume ─────────────────────────────────────────── */}
-        <div className="p-4 rounded-2xl mb-4" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#6B7A99" }}>TONE VOLUME</p>
-            <span className="text-sm font-semibold" style={{ color: "#00D4AA" }}>{Math.round(player.volume * 100)}% ({Math.round(20 * Math.log10(player.volume))} dB)</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Volume2 size={16} style={{ color: "#6B7A99" }} />
-            <Slider min={0.01} max={1} step={0.01} value={[player.volume]} onValueChange={([v]) => player.setVolume(v)} className="flex-1" />
-          </div>
-        </div>
+
 
         {/* ── Quick Presets ───────────────────────────────────────── */}
         <div className="mb-4">
@@ -1007,20 +997,24 @@ export default function FrequencyStudio() {
           </div>
         </div>
 
-        {/* ── Layer Mix ───────────────────────────────────────────── */}
+        {/* ── Layer Mix (all volumes together) ────────────────────── */}
         <div className="p-4 rounded-2xl mb-4" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
           <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: "#6B7A99" }}>LAYER MIX</p>
           <div className="space-y-4">
             {[
-              { label: "Frequency", value: player.volume, onChange: (v: number) => player.setVolume(v), color: "#00D4AA" },
-              { label: "Music", value: music.musicVolume, onChange: (v: number) => music.setMusicVolume(v), color: "#00D4AA" },
-              { label: "Nature", value: nature.natureVolume, onChange: (v: number) => nature.setNatureVolume(v), color: "#6366F1" },
+              { label: "Frequency", value: player.volume, onChange: (v: number) => player.setVolume(v), color: "#00D4AA", dbLabel: `${Math.round(20 * Math.log10(Math.max(0.01, player.volume)))} dB` },
+              { label: "Music", value: music.musicVolume, onChange: (v: number) => music.setMusicVolume(v), color: "#8B5CF6", dbLabel: null },
+              { label: "Nature", value: nature.natureVolume, onChange: (v: number) => nature.setNatureVolume(v), color: "#6366F1", dbLabel: null },
             ].map(layer => (
-              <div key={layer.label} className="flex items-center gap-3">
-                <span className="text-sm font-medium w-20" style={{ color: "#8FA3BF" }}>{layer.label}</span>
+              <div key={layer.label}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#8FA3BF" }}>{layer.label}</span>
+                  <span className="text-sm font-bold" style={{ color: layer.color }}>
+                    {Math.round(layer.value * 100)}%{layer.dbLabel ? ` (${layer.dbLabel})` : ""}
+                  </span>
+                </div>
                 <Slider min={0} max={1} step={0.01} value={[layer.value]}
-                  onValueChange={([v]) => layer.onChange(v)} className="flex-1" />
-                <span className="text-sm font-semibold w-10 text-right" style={{ color: layer.color }}>{Math.round(layer.value * 100)}%</span>
+                  onValueChange={([v]) => layer.onChange(v)} />
               </div>
             ))}
           </div>
