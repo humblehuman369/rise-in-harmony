@@ -349,6 +349,11 @@ export default function FrequencyStudio() {
   // Presets tab
   const [presetTab, setPresetTab] = useState<"solfeggio" | "lifestyle" | "mixes" | "favorites">("solfeggio");
 
+  // Accordion open/close state (all start closed)
+  const [freqOpen, setFreqOpen] = useState(false);
+  const [musicOpen, setMusicOpen] = useState(false);
+  const [natureOpen, setNatureOpen] = useState(false);
+
   // ── Deep link load ────────────────────────────────────────────────────────
   const applySavedSound = useCallback((sound: {
     freqL: number; beatHz: number | null; isoRate: number | null; isoDuty: number | null;
@@ -798,75 +803,184 @@ export default function FrequencyStudio() {
           <div className="flex justify-between text-xs mt-1.5 font-medium" style={{ color: "#6B7A99" }}><span>1 Hz</span><span>2000 Hz</span></div>
         </div>
 
-        {/* ── Waveform ────────────────────────────────────────────── */}
-        <div className="mb-4">
-          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>WAVEFORM</p>
-          <div className="grid grid-cols-5 gap-2">
-            {WAVEFORMS.map(w => (
-              <button key={w} onClick={() => handleWaveform(w)}
-                className="flex flex-col items-center gap-1.5 py-4 rounded-2xl transition-all active:scale-95"
-                style={waveform === w ? {
-                  background: "rgba(0,212,170,0.15)", border: "2px solid rgba(0,212,170,0.4)", color: "#00D4AA",
-                } : {
-                  background: "#11142A", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
-                }}>
-                <span className="text-xl">{WAVEFORM_SYMBOLS[w]}</span>
-                <span className="text-xs font-medium">{WAVEFORM_LABELS[w]}</span>
-              </button>
-            ))}
+        {/* ── Accordion Layer Mix ─────────────────────────────────── */}
+        {/* Frequency accordion */}
+        <div className="mb-2 rounded-2xl overflow-hidden" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
+          {/* Header row: always visible */}
+          <div className="px-4 pt-4">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#8FA3BF" }}>FREQUENCY</span>
+              <span className="text-sm font-bold" style={{ color: "#00D4AA" }}>
+                {Math.round(player.volume * 100)}% ({Math.round(20 * Math.log10(Math.max(0.01, player.volume)))} dB)
+              </span>
+            </div>
+            <Slider min={0} max={1} step={0.01} value={[player.volume]} onValueChange={([v]) => player.setVolume(v)} />
+            <button onClick={() => setFreqOpen(v => !v)}
+              className="w-full flex items-center justify-center gap-1 mt-2 mb-1 py-1 text-xs font-medium transition-all"
+              style={{ color: freqOpen ? "#00D4AA" : "#4A5568" }}>
+              {freqOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              {freqOpen ? "Hide controls" : "Show controls"}
+            </button>
           </div>
-        </div>
-
-        {/* ── Play Mode ───────────────────────────────────────────── */}
-        <div className="mb-4">
-          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>PLAY MODE</p>
-          <div className="grid grid-cols-3 gap-2">
-            {(["mono", "binaural", "isochronic"] as PlayMode[]).map(m => (
-              <button key={m} onClick={() => handlePlayMode(m)}
-                className="py-4 rounded-2xl text-sm font-semibold transition-all active:scale-95"
-                style={playMode === m ? {
-                  background: "rgba(0,212,170,0.15)", border: "2px solid rgba(0,212,170,0.4)", color: "#00D4AA",
-                } : {
-                  background: "#11142A", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
-                }}>
-                {PLAY_MODE_LABELS[m]}
-              </button>
-            ))}
-          </div>
-          {/* Binaural beat controls */}
-          {playMode === "binaural" && (
-            <div className="mt-3 p-4 rounded-2xl" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.2)" }}>
-              <div className="flex items-center gap-3 mb-3">
-                <span className="text-sm font-semibold" style={{ color: "#8B5CF6", minWidth: 80 }}>Beat: {beatHz} Hz</span>
-                <Slider min={0.5} max={40} step={0.5} value={[beatHz]}
-                  onValueChange={([v]) => { setBeatHz(v); if (player.isPlaying) player.setFrequency(customFreq, customFreq + v); }}
-                  className="flex-1" />
-              </div>
-              <div className="flex justify-between mb-2">
-                {(["Delta", "Theta", "Alpha", "Beta", "Gamma"] as BrainwaveBand[]).map(band => (
-                  <span key={band} className="text-xs font-semibold px-2 py-1 rounded-lg transition-all"
-                    style={brainwaveBand(beatHz) === band ? {
-                      background: `${BAND_COLORS[band]}20`, color: BAND_COLORS[band], border: `1px solid ${BAND_COLORS[band]}40`,
-                    } : { color: "#3A4A6B" }}>
-                    {band}
-                  </span>
+          {/* Collapsible body */}
+          {freqOpen && (
+            <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+              <p className="text-[10px] font-semibold uppercase tracking-widest mb-2 mt-2" style={{ color: "#4A5568" }}>WAVEFORM</p>
+              <div className="grid grid-cols-5 gap-2 mb-3">
+                {WAVEFORMS.map(w => (
+                  <button key={w} onClick={() => handleWaveform(w)}
+                    className="flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all active:scale-95"
+                    style={waveform === w ? {
+                      background: "rgba(0,212,170,0.15)", border: "2px solid rgba(0,212,170,0.4)", color: "#00D4AA",
+                    } : {
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
+                    }}>
+                    <span className="text-lg">{WAVEFORM_SYMBOLS[w]}</span>
+                    <span className="text-[10px] font-medium">{WAVEFORM_LABELS[w]}</span>
+                  </button>
                 ))}
               </div>
-              <p className="text-xs" style={{ color: "#4A5568" }}>L: {customFreq} Hz · R: {(customFreq + beatHz).toFixed(2)} Hz</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "#4A5568" }}>PLAY MODE</p>
+              <div className="grid grid-cols-3 gap-2">
+                {(["mono", "binaural", "isochronic"] as PlayMode[]).map(m => (
+                  <button key={m} onClick={() => handlePlayMode(m)}
+                    className="py-3 rounded-xl text-xs font-semibold transition-all active:scale-95"
+                    style={playMode === m ? {
+                      background: "rgba(0,212,170,0.15)", border: "2px solid rgba(0,212,170,0.4)", color: "#00D4AA",
+                    } : {
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
+                    }}>
+                    {PLAY_MODE_LABELS[m]}
+                  </button>
+                ))}
+              </div>
+              {playMode === "binaural" && (
+                <div className="mt-3 p-3 rounded-xl" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.2)" }}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xs font-semibold" style={{ color: "#8B5CF6", minWidth: 80 }}>Beat: {beatHz} Hz</span>
+                    <Slider min={0.5} max={40} step={0.5} value={[beatHz]}
+                      onValueChange={([v]) => { setBeatHz(v); if (player.isPlaying) player.setFrequency(customFreq, customFreq + v); }}
+                      className="flex-1" />
+                  </div>
+                  <div className="flex justify-between mb-1">
+                    {(["Delta", "Theta", "Alpha", "Beta", "Gamma"] as BrainwaveBand[]).map(band => (
+                      <span key={band} className="text-[10px] font-semibold px-1.5 py-0.5 rounded transition-all"
+                        style={brainwaveBand(beatHz) === band ? {
+                          background: `${BAND_COLORS[band]}20`, color: BAND_COLORS[band], border: `1px solid ${BAND_COLORS[band]}40`,
+                        } : { color: "#3A4A6B" }}>
+                        {band}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-[10px]" style={{ color: "#4A5568" }}>L: {customFreq} Hz · R: {(customFreq + beatHz).toFixed(2)} Hz</p>
+                </div>
+              )}
+              {playMode === "isochronic" && (
+                <div className="mt-3 p-3 rounded-xl space-y-2" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.2)" }}>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs" style={{ color: "#8B5CF6", minWidth: 90 }}>Rate: {isoRate} Hz</span>
+                    <Slider min={1} max={40} step={0.5} value={[isoRate]}
+                      onValueChange={([v]) => { setIsoRate(v); if (player.isPlaying) player.setIsochronic(v, isoDuty); }} className="flex-1" />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs" style={{ color: "#8B5CF6", minWidth: 90 }}>Duty: {Math.round(isoDuty * 100)}%</span>
+                    <Slider min={0.1} max={0.9} step={0.05} value={[isoDuty]}
+                      onValueChange={([v]) => { setIsoDuty(v); if (player.isPlaying) player.setIsochronic(isoRate, v); }} className="flex-1" />
+                  </div>
+                </div>
+              )}
             </div>
           )}
-          {/* Isochronic controls */}
-          {playMode === "isochronic" && (
-            <div className="mt-3 p-4 rounded-2xl space-y-3" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.2)" }}>
-              <div className="flex items-center gap-3">
-                <span className="text-sm" style={{ color: "#8B5CF6", minWidth: 90 }}>Rate: {isoRate} Hz</span>
-                <Slider min={1} max={40} step={0.5} value={[isoRate]}
-                  onValueChange={([v]) => { setIsoRate(v); if (player.isPlaying) player.setIsochronic(v, isoDuty); }} className="flex-1" />
+        </div>
+
+        {/* Music accordion */}
+        <div className="mb-2 rounded-2xl overflow-hidden" style={{
+          background: "#11142A",
+          border: music.activeMusic ? "1px solid rgba(139,92,246,0.3)" : "1px solid rgba(255,255,255,0.06)",
+          opacity: 1,
+        }}>
+          <div className="px-4 pt-4">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: music.activeMusic ? "#8B5CF6" : "#8FA3BF" }}>MUSIC</span>
+              {music.activeMusic ? (
+                <span className="text-sm font-bold" style={{ color: "#8B5CF6" }}>{Math.round(music.musicVolume * 100)}%</span>
+              ) : (
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: "#4A5568", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>Off</span>
+              )}
+            </div>
+            <div style={{ opacity: music.activeMusic ? 1 : 0.35 }}>
+              <Slider min={0} max={1} step={0.01} value={[music.musicVolume]}
+                onValueChange={([v]) => music.activeMusic && music.setMusicVolume(v)}
+                disabled={!music.activeMusic} />
+            </div>
+            <button onClick={() => setMusicOpen(v => !v)}
+              className="w-full flex items-center justify-center gap-1 mt-2 mb-1 py-1 text-xs font-medium transition-all"
+              style={{ color: musicOpen ? "#8B5CF6" : "#4A5568" }}>
+              {musicOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              {musicOpen ? "Hide" : "Choose music"}
+            </button>
+          </div>
+          {musicOpen && (
+            <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+              <div className="grid grid-cols-4 gap-2 mt-2">
+                {[{id:null,label:"Off",icon:"—",color:"#4A5568"},{id:"ambient",label:"Ambient",icon:"♪",color:"#00D4AA"},{id:"drone",label:"Drone",icon:"〰",color:"#8B5CF6"},{id:"crystal",label:"Crystal",icon:"◇",color:"#EC4899"}].map(mm => (
+                  <button key={mm.label} onClick={() => music.selectMusic(mm.id, player.isPlaying)}
+                    className="flex flex-col items-center gap-2 py-3 rounded-xl transition-all active:scale-95"
+                    style={music.activeMusic === mm.id ? {
+                      background: `${mm.color}20`, border: `2px solid ${mm.color}60`, color: mm.color,
+                    } : {
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
+                    }}>
+                    <span className="text-lg">{mm.icon}</span>
+                    <span className="text-[10px] font-semibold">{mm.label}</span>
+                  </button>
+                ))}
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm" style={{ color: "#8B5CF6", minWidth: 90 }}>Duty: {Math.round(isoDuty * 100)}%</span>
-                <Slider min={0.1} max={0.9} step={0.05} value={[isoDuty]}
-                  onValueChange={([v]) => { setIsoDuty(v); if (player.isPlaying) player.setIsochronic(isoRate, v); }} className="flex-1" />
+            </div>
+          )}
+        </div>
+
+        {/* Nature accordion */}
+        <div className="mb-4 rounded-2xl overflow-hidden" style={{
+          background: "#11142A",
+          border: nature.activeNature ? "1px solid rgba(99,102,241,0.3)" : "1px solid rgba(255,255,255,0.06)",
+        }}>
+          <div className="px-4 pt-4">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: nature.activeNature ? "#6366F1" : "#8FA3BF" }}>NATURE</span>
+              {nature.activeNature ? (
+                <span className="text-sm font-bold" style={{ color: "#6366F1" }}>{Math.round(nature.natureVolume * 100)}%</span>
+              ) : (
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: "#4A5568", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>Off</span>
+              )}
+            </div>
+            <div style={{ opacity: nature.activeNature ? 1 : 0.35 }}>
+              <Slider min={0} max={1} step={0.01} value={[nature.natureVolume]}
+                onValueChange={([v]) => nature.activeNature && nature.setNatureVolume(v)}
+                disabled={!nature.activeNature} />
+            </div>
+            <button onClick={() => setNatureOpen(v => !v)}
+              className="w-full flex items-center justify-center gap-1 mt-2 mb-1 py-1 text-xs font-medium transition-all"
+              style={{ color: natureOpen ? "#6366F1" : "#4A5568" }}>
+              {natureOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              {natureOpen ? "Hide" : "Choose nature sound"}
+            </button>
+          </div>
+          {natureOpen && (
+            <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+              <div className="grid grid-cols-6 gap-2 mt-2">
+                {[{id:null,label:"Off",emoji:"—",color:"#4A5568"},{id:"rain",label:"Rain",emoji:"🌧️",color:"#3B82F6"},{id:"ocean",label:"Ocean",emoji:"🌊",color:"#00D4AA"},{id:"forest",label:"Forest",emoji:"🌲",color:"#22C55E"},{id:"wind",label:"Wind",emoji:"🌬️",color:"#94A3B8"},{id:"fire",label:"Fire",emoji:"🔥",color:"#F97316"}].map(ns => (
+                  <button key={ns.label} onClick={() => nature.selectNature(ns.id, player.isPlaying)}
+                    className="flex flex-col items-center gap-1 py-3 rounded-xl transition-all active:scale-95"
+                    style={nature.activeNature === ns.id ? {
+                      background: `${ns.color}20`, border: `2px solid ${ns.color}60`, color: ns.color,
+                    } : {
+                      background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
+                    }}>
+                    <span className="text-base">{ns.emoji}</span>
+                    <span className="text-[10px] font-medium">{ns.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
           )}
@@ -889,6 +1003,9 @@ export default function FrequencyStudio() {
             <p className="text-sm font-mono" style={{ color: "#6B7A99" }}>{formatTime(player.playTime)}</p>
           )}
         </div>
+
+        {/* ── Layer Mix label ──────────────────────────────────────── */}
+        <p className="text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: "#6B7A99" }}>LAYER MIX</p>
 
         {/* ── Now Playing Status Bar ───────────────────────────────── */}
         <div className="mb-4 px-4 py-3 rounded-2xl" style={{
@@ -919,33 +1036,7 @@ export default function FrequencyStudio() {
           </div>
         </div>
 
-        {/* ── Layer Mix (all volumes together) ────────────────────── */}
-        <div className="p-4 rounded-2xl mb-4" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
-          <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: "#6B7A99" }}>LAYER MIX</p>
-          <div className="space-y-4">
-            {[
-              { label: "Frequency", value: player.volume, onChange: (v: number) => player.setVolume(v), color: "#00D4AA", dbLabel: `${Math.round(20 * Math.log10(Math.max(0.01, player.volume)))} dB`, inactive: false },
-              { label: "Music", value: music.musicVolume, onChange: (v: number) => music.setMusicVolume(v), color: "#8B5CF6", dbLabel: null, inactive: !music.activeMusic },
-              { label: "Nature", value: nature.natureVolume, onChange: (v: number) => nature.setNatureVolume(v), color: "#6366F1", dbLabel: null, inactive: !nature.activeNature },
-            ].map(layer => (
-              <div key={layer.label} style={{ opacity: layer.inactive ? 0.35 : 1 }}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: layer.inactive ? "#3A4A6B" : "#8FA3BF" }}>{layer.label}</span>
-                  {layer.inactive ? (
-                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: "#4A5568", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>Off</span>
-                  ) : (
-                    <span className="text-sm font-bold" style={{ color: layer.color }}>
-                      {Math.round(layer.value * 100)}%{layer.dbLabel ? ` (${layer.dbLabel})` : ""}
-                    </span>
-                  )}
-                </div>
-                <Slider min={0} max={1} step={0.01} value={[layer.value]}
-                  onValueChange={([v]) => !layer.inactive && layer.onChange(v)}
-                  disabled={layer.inactive} />
-              </div>
-            ))}
-          </div>
-        </div>
+
 
         {/* ── Visualizer (always visible, like mobile) ─────────────── */}
         <div className="mb-4 rounded-2xl overflow-hidden" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
@@ -1016,43 +1107,7 @@ export default function FrequencyStudio() {
           </div>
         </div>
 
-        {/* ── Music Layer ─────────────────────────────────────────── */}
-        <div className="mb-4">
-          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>MUSIC LAYER</p>
-          <div className="grid grid-cols-4 gap-2">
-            {[{id:null,label:"Off",icon:"—",color:"#4A5568"},{id:"ambient",label:"Ambient",icon:"♪",color:"#00D4AA"},{id:"drone",label:"Drone",icon:"〰",color:"#8B5CF6"},{id:"crystal",label:"Crystal",icon:"◇",color:"#EC4899"}].map(mm => (
-              <button key={mm.label} onClick={() => music.selectMusic(mm.id, player.isPlaying)}
-                className="flex flex-col items-center gap-2 py-4 rounded-2xl transition-all active:scale-95"
-                style={music.activeMusic === mm.id ? {
-                  background: `${mm.color}20`, border: `2px solid ${mm.color}60`, color: mm.color,
-                } : {
-                  background: "#11142A", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
-                }}>
-                <span className="text-xl">{mm.icon}</span>
-                <span className="text-xs font-semibold">{mm.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {/* ── Nature Layer ────────────────────────────────────────── */}
-        <div className="mb-4">
-          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>NATURE LAYER</p>
-          <div className="grid grid-cols-6 gap-2">
-            {[{id:null,label:"Off",emoji:"—",color:"#4A5568"},{id:"rain",label:"Rain",emoji:"🌧️",color:"#3B82F6"},{id:"ocean",label:"Ocean",emoji:"🌊",color:"#00D4AA"},{id:"forest",label:"Forest",emoji:"🌲",color:"#22C55E"},{id:"wind",label:"Wind",emoji:"🌬️",color:"#94A3B8"},{id:"fire",label:"Fire",emoji:"🔥",color:"#F97316"}].map(ns => (
-              <button key={ns.label} onClick={() => nature.selectNature(ns.id, player.isPlaying)}
-                className="flex flex-col items-center gap-1.5 py-3 rounded-2xl transition-all active:scale-95"
-                style={nature.activeNature === ns.id ? {
-                  background: `${ns.color}20`, border: `2px solid ${ns.color}60`, color: ns.color,
-                } : {
-                  background: "#11142A", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
-                }}>
-                <span className="text-lg">{ns.emoji}</span>
-                <span className="text-[10px] font-medium">{ns.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* ── Featured Presets (Presets First) ────────────────────── */}
         <div className="mb-4">
