@@ -890,24 +890,58 @@ export default function FrequencyStudio() {
           )}
         </div>
 
+        {/* ── Now Playing Status Bar ───────────────────────────────── */}
+        <div className="mb-4 px-4 py-3 rounded-2xl" style={{
+          background: player.isPlaying ? "rgba(0,212,170,0.07)" : "rgba(255,255,255,0.03)",
+          border: player.isPlaying ? "1px solid rgba(0,212,170,0.25)" : "1px solid rgba(255,255,255,0.06)",
+        }}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-bold" style={{ color: player.isPlaying ? "#00D4AA" : "#4A5568" }}>
+              {player.isPlaying ? "▶" : "○"}
+            </span>
+            <span className="text-sm font-semibold" style={{ color: player.isPlaying ? "#E8EDF5" : "#6B7A99" }}>
+              {customFreq % 1 === 0 ? customFreq : customFreq.toFixed(2)} Hz
+            </span>
+            <span style={{ color: "#3A4A6B" }}>·</span>
+            <span className="text-sm" style={{ color: player.isPlaying ? "#C5CAD6" : "#4A5568" }}>
+              {WAVEFORM_LABELS[waveform]}
+            </span>
+            <span style={{ color: "#3A4A6B" }}>·</span>
+            <span className="text-sm" style={{ color: player.isPlaying ? "#C5CAD6" : "#4A5568" }}>
+              {playMode === "mono" ? "Pure Tone" : playMode === "binaural" ? `Binaural · ${beatHz} Hz beat · ${brainwaveBand(beatHz)}` : `Isochronic · ${isoRate} Hz`}
+            </span>
+            {player.isPlaying && (
+              <>
+                <span style={{ color: "#3A4A6B" }}>·</span>
+                <span className="text-sm font-mono" style={{ color: "#00D4AA" }}>{formatTime(player.playTime)}</span>
+              </>
+            )}
+          </div>
+        </div>
+
         {/* ── Layer Mix (all volumes together) ────────────────────── */}
         <div className="p-4 rounded-2xl mb-4" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
           <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: "#6B7A99" }}>LAYER MIX</p>
           <div className="space-y-4">
             {[
-              { label: "Frequency", value: player.volume, onChange: (v: number) => player.setVolume(v), color: "#00D4AA", dbLabel: `${Math.round(20 * Math.log10(Math.max(0.01, player.volume)))} dB` },
-              { label: "Music", value: music.musicVolume, onChange: (v: number) => music.setMusicVolume(v), color: "#8B5CF6", dbLabel: null },
-              { label: "Nature", value: nature.natureVolume, onChange: (v: number) => nature.setNatureVolume(v), color: "#6366F1", dbLabel: null },
+              { label: "Frequency", value: player.volume, onChange: (v: number) => player.setVolume(v), color: "#00D4AA", dbLabel: `${Math.round(20 * Math.log10(Math.max(0.01, player.volume)))} dB`, inactive: false },
+              { label: "Music", value: music.musicVolume, onChange: (v: number) => music.setMusicVolume(v), color: "#8B5CF6", dbLabel: null, inactive: !music.activeMusic },
+              { label: "Nature", value: nature.natureVolume, onChange: (v: number) => nature.setNatureVolume(v), color: "#6366F1", dbLabel: null, inactive: !nature.activeNature },
             ].map(layer => (
-              <div key={layer.label}>
+              <div key={layer.label} style={{ opacity: layer.inactive ? 0.35 : 1 }}>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#8FA3BF" }}>{layer.label}</span>
-                  <span className="text-sm font-bold" style={{ color: layer.color }}>
-                    {Math.round(layer.value * 100)}%{layer.dbLabel ? ` (${layer.dbLabel})` : ""}
-                  </span>
+                  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: layer.inactive ? "#3A4A6B" : "#8FA3BF" }}>{layer.label}</span>
+                  {layer.inactive ? (
+                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: "#4A5568", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>Off</span>
+                  ) : (
+                    <span className="text-sm font-bold" style={{ color: layer.color }}>
+                      {Math.round(layer.value * 100)}%{layer.dbLabel ? ` (${layer.dbLabel})` : ""}
+                    </span>
+                  )}
                 </div>
                 <Slider min={0} max={1} step={0.01} value={[layer.value]}
-                  onValueChange={([v]) => layer.onChange(v)} />
+                  onValueChange={([v]) => !layer.inactive && layer.onChange(v)}
+                  disabled={layer.inactive} />
               </div>
             ))}
           </div>
@@ -1020,10 +1054,10 @@ export default function FrequencyStudio() {
           </div>
         </div>
 
-        {/* ── Presets ─────────────────────────────────────────────── */}
+        {/* ── Featured Presets (Presets First) ────────────────────── */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#6B7A99" }}>PRESETS</p>
+            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#6B7A99" }}>FEATURED PRESETS</p>
             <div className="flex gap-2">
               <button onClick={() => setShowBreathing(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
@@ -1080,6 +1114,13 @@ export default function FrequencyStudio() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* ── "Or customize below" divider ──────────────────── */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
+          <span className="text-xs font-medium" style={{ color: "#3A4A6B" }}>or customize below</span>
+          <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
         </div>
 
         {/* ── Sleep Timer ─────────────────────────────────────────── */}
