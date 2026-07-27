@@ -744,11 +744,11 @@ export default function FrequencyStudio() {
         </div>
 
         {/* ── Headphones disclaimer (top, like mobile) ────────────── */}
-        <div className="rounded-2xl overflow-hidden mb-4" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>
+        <div className="rounded-2xl overflow-hidden mb-4" style={{ background: "rgba(0,212,170,0.06)", border: "1px solid rgba(0,212,170,0.2)" }}>
           <button onClick={() => setDisclaimerOpen(v => !v)}
             className="w-full flex items-center gap-3 px-4 py-3 text-left"
-            style={{ color: "#F59E0B" }}>
-            <span className="text-base">⚠</span>
+            style={{ color: "#00D4AA" }}>
+            <Headphones size={15} />
             <span className="text-sm font-semibold flex-1">Headphones recommended for best results</span>
             <span className="text-xs">{disclaimerOpen ? "▲" : "▼"}</span>
           </button>
