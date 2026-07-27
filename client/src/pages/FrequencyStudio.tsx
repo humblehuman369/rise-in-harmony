@@ -1062,51 +1062,6 @@ export default function FrequencyStudio() {
 
 
 
-        {/* ── Quick Presets ───────────────────────────────────────── */}
-        <div className="mb-4">
-          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>QUICK PRESETS</p>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {PRECISION_PRESETS.slice(0, 8).map((p, i) => (
-              <button key={i} onClick={() => void handlePrecisionPreset(p)}
-                className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all active:scale-95"
-                style={player.session?.name === p.session.name && player.isPlaying ? {
-                  background: p.color, color: "#0A0B14", border: `2px solid ${p.color}`,
-                } : {
-                  background: `${p.color}15`, color: p.color, border: `1px solid ${p.color}40`,
-                }}>
-                {p.label.replace(" Hz — ", " ").replace(" Hz beat", "").replace(" Hz", " Hz")}
-              </button>
-            ))}
-            <button onClick={() => setBrowserOpen(true)}
-              className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all"
-              style={{ background: "rgba(0,212,170,0.08)", color: "#00D4AA", border: "1px solid rgba(0,212,170,0.2)" }}>
-              + More
-            </button>
-          </div>
-        </div>
-
-        {/* ── Healing Frequency Grid ──────────────────────────────── */}
-        <div className="mb-4">
-          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>HEALING FREQUENCY</p>
-          <div className="grid grid-cols-5 gap-2">
-            {[{hz:174,name:"Foundation",color:"#EF4444"},{hz:285,name:"Quantum",color:"#F97316"},{hz:396,name:"Liberation",color:"#EAB308"},{hz:417,name:"Transmutation",color:"#84CC16"},{hz:432,name:"Natural",color:"#00D4AA"},{hz:528,name:"Miracle",color:"#3B82F6"},{hz:639,name:"Connection",color:"#8B5CF6"},{hz:741,name:"Awakening",color:"#A855F7"},{hz:852,name:"Spiritual",color:"#EC4899"},{hz:963,name:"Divine",color:"#F472B6"}].map(f => (
-              <button key={f.hz} onClick={() => {
-                setCustomFreq(f.hz); setCustomFreqInput(f.hz.toFixed(2));
-                if (player.isPlaying) { const freqR = playMode === "binaural" ? f.hz + beatHz : undefined; player.setFrequency(f.hz, freqR); }
-              }}
-                className="flex flex-col items-center gap-1 py-3 rounded-2xl transition-all active:scale-95"
-                style={customFreq === f.hz ? {
-                  background: `${f.color}20`, border: `2px solid ${f.color}60`, color: f.color,
-                } : {
-                  background: "#11142A", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
-                }}>
-                <span className="text-lg font-bold" style={{ color: customFreq === f.hz ? f.color : "#E8EDF5" }}>{f.hz}</span>
-                <span className="text-[10px]">{f.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
 
 
         {/* ── Featured Presets (Presets First) ────────────────────── */}
