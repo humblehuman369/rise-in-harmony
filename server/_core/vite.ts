@@ -60,8 +60,13 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  // fall through to index.html if the file doesn't exist — but never mask
+  // missing media as HTML (that produces "silent" playback of index.html).
+  app.use("*", (req, res) => {
+    if (/\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(req.path)) {
+      res.status(404).type("text/plain").send("Audio asset not found");
+      return;
+    }
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

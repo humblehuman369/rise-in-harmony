@@ -1,9 +1,9 @@
 /**
  * Meditation Catalog (shared) — TrueHz HQ studio sessions
  *
- * Six full-length recorded meditations mirrored from the web catalog.
- * Mobile falls back to procedural nature textures for recorded keys until
- * remote MP3 streaming is wired on-device.
+ * Nine full-length recorded meditations mirrored from the web catalog.
+ * Masters stream from Manus CDN (see mobile useMeditationPlayer /
+ * web backgroundLoops). Procedural nature textures are the offline fallback.
  */
 import type { Meditation, MeditationCategory } from "@rih/shared-types";
 
@@ -175,6 +175,93 @@ export const MEDITATIONS: Meditation[] = [
       "Remain open until the session completes. No goal but being.",
     ],
     isPremium: true,
+  },
+  {
+    id: "deep-into-nature-60",
+    title: "Deep Into Nature",
+    subtitle: "60-minute forest immersion",
+    category: "healing",
+    durationMinutes: 60,
+    description:
+      "A full-hour journey into living forest textures — birdsong, rustling leaves, gentle streams, and earth resonance.",
+    benefit: "Deep nervous system reset, stress dissolution, primal reconnection with the natural world",
+    icon: "Wind",
+    color: "#22C55E",
+    colorSecondary: "#16A34A",
+    soundscape: "deep-into-nature-60",
+    musicMode: "none",
+    recommendedFrequencyId: "174",
+    recommendedFrequencyLabel: "174Hz Foundation",
+    frequencyRationale:
+      "174 Hz is the grounding foundation tone — pairing it with nature soundscapes deepens safety and belonging.",
+    affirmation: "I belong to the earth. The earth belongs to me.",
+    guidance: [
+      "Find a comfortable position. Allow your body to be fully supported.",
+      "Close your eyes and let the forest sounds surround you completely.",
+      "Breathe slowly and naturally. There is nothing to do but receive.",
+      "Notice the layers — near sounds and distant ones, movement and stillness.",
+      "Let your thoughts dissolve into the soundscape. You are part of this.",
+      "Rest here as long as you need. The forest holds you.",
+    ],
+    isPremium: false,
+  },
+  {
+    id: "inner-calling-60",
+    title: "Inner Calling",
+    subtitle: "60-minute deep inner journey",
+    category: "spiritual",
+    durationMinutes: 60,
+    description:
+      "A full-hour contemplative soundscape designed for deep inner listening and authentic self-connection.",
+    benefit: "Clarity of purpose, deep self-connection, access to inner wisdom and intuition",
+    icon: "Eye",
+    color: "#8B5CF6",
+    colorSecondary: "#6D28D9",
+    soundscape: "inner-calling-60",
+    musicMode: "none",
+    recommendedFrequencyId: "963",
+    recommendedFrequencyLabel: "963Hz Divine",
+    frequencyRationale:
+      "963 Hz is associated with the crown chakra and higher awareness — stillness to hear what has always been calling.",
+    affirmation: "I listen deeply. My inner voice is clear and true.",
+    guidance: [
+      "Sit or lie in a position you can hold comfortably for an hour.",
+      "Set a gentle intention — not a goal, but a direction of attention.",
+      "Let the music carry you inward. Follow what draws your awareness.",
+      "When insights arise, simply notice them without grasping.",
+      "If emotions surface, breathe through them with openness.",
+      "Trust the process. What needs to be heard will be heard.",
+    ],
+    isPremium: true,
+  },
+  {
+    id: "peaceful-ocean-60",
+    title: "Peaceful Ocean",
+    subtitle: "60-minute ocean meditation",
+    category: "stress",
+    durationMinutes: 60,
+    description:
+      "A full-hour ocean immersion — waves arriving and receding in their own perfect rhythm.",
+    benefit: "Stress release, emotional cleansing, deep relaxation, improved sleep onset",
+    icon: "Droplets",
+    color: "#3B82F6",
+    colorSecondary: "#1D4ED8",
+    soundscape: "peaceful-ocean-60",
+    musicMode: "none",
+    recommendedFrequencyId: "528",
+    recommendedFrequencyLabel: "528Hz Miracle Tone",
+    frequencyRationale:
+      "528 Hz is known as the miracle tone — layered beneath ocean waves it amplifies the cleansing quality of the session.",
+    affirmation: "Like the ocean, I am vast, fluid, and at peace.",
+    guidance: [
+      "Lie down if possible. Let your body become heavy and still.",
+      "Focus on the rhythm of the waves — each one complete in itself.",
+      "Match your breath to the ocean's rhythm. Inhale as waves arrive, exhale as they recede.",
+      "Feel any tension in your body being drawn out with each receding wave.",
+      "You are the ocean as much as you are the shore. Both are you.",
+      "Rest in this vastness. Let the water carry everything away.",
+    ],
+    isPremium: false,
   },
 ];
 

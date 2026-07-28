@@ -846,6 +846,9 @@ export function startNatureSynth(
     "reiki-healing-garden-285": "forest",
     "spiritual-meditation-444": "cave",
     "third-eye-activation-528": "cave",
+    "deep-into-nature-60": "forest",
+    "inner-calling-60": "cave",
+    "peaceful-ocean-60": "ocean",
   };
   const resolved = RECORDED_FALLBACKS[sound] ?? sound;
   const factory = NATURE_SYNTHS[resolved as ProceduralNatureSound];

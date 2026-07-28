@@ -30,16 +30,29 @@ const DEFAULT_NATURE_VOLUME = 0.75;
 const DEFAULT_MUSIC_VOLUME = 0.45;
 const DEFAULT_FREQUENCY_VOLUME = 0.35;
 
-/** Production CDN for TrueHz HQ meditation masters (same files as web). */
-const TRUEHZ_MASTER_BASE = "https://www.riseinharmony.com/meditations";
-
+/**
+ * TrueHz HQ meditation masters — same Manus CDN URLs as web backgroundLoops.
+ * (riseinharmony.com/meditations/* is not deployed; it returns SPA HTML.)
+ */
 const TRUEHZ_MASTER_URLS: Record<string, string> = {
-  "calm-sleep-528": `${TRUEHZ_MASTER_BASE}/calm-sleep-528.mp3`,
-  "deep-serenity-444": `${TRUEHZ_MASTER_BASE}/deep-serenity-444.mp3`,
-  "nature-meditation-174": `${TRUEHZ_MASTER_BASE}/nature-meditation-174.mp3`,
-  "reiki-healing-garden-285": `${TRUEHZ_MASTER_BASE}/reiki-healing-garden-285.mp3`,
-  "spiritual-meditation-444": `${TRUEHZ_MASTER_BASE}/spiritual-meditation-444.mp3`,
-  "third-eye-activation-528": `${TRUEHZ_MASTER_BASE}/third-eye-activation-528.mp3`,
+  "calm-sleep-528":
+    "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/IYQghxoiyPtmxTWZ.mp3",
+  "deep-serenity-444":
+    "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/XrswIdGeuQpsHQZo.mp3",
+  "nature-meditation-174":
+    "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ySLrOnBvjVJpOcpp.mp3",
+  "reiki-healing-garden-285":
+    "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/JMfdCoiZFkPyxCYD.mp3",
+  "spiritual-meditation-444":
+    "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/GtKAQCHgteBuniTF.mp3",
+  "third-eye-activation-528":
+    "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/fsamjpcaHNeOwiPp.mp3",
+  "deep-into-nature-60":
+    "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/WKmRGyioQaoQKeeJ.mp3",
+  "inner-calling-60":
+    "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ktyVgoowVIAMSvwT.mp3",
+  "peaceful-ocean-60":
+    "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/gjiHzXouliJdAAeH.mp3",
 };
 
 export type MeditationMode = "sound" | "frequency";
@@ -107,6 +120,20 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
     }
   }, []);
 
+  const startProceduralNature = useCallback((med: Meditation) => {
+    const ctx = getContext();
+    const masterOutput = getMasterOutput(ctx);
+    const synth = startNatureSynth(ctx, med.soundscape);
+    if (!synth) return false;
+    const volumeGain = ctx.createGain();
+    volumeGain.gain.value = natureVolRef.current;
+    synth.output.connect(volumeGain);
+    volumeGain.connect(masterOutput);
+    natureSynthRef.current = synth;
+    natureGainRef.current = volumeGain;
+    return true;
+  }, []);
+
   const startMasterPlayer = useCallback(
     (med: Meditation) => {
       stopMasterPlayer();
@@ -148,23 +175,15 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
   const startNatureLayer = useCallback(
     (med: Meditation) => {
       stopNatureLayer();
-      // Prefer TrueHz master stream when available
+      // Prefer TrueHz master stream when available; fall back to procedural
+      // nature textures if the CDN/static host is missing the MP3 (was serving
+      // SPA HTML → silent "playback").
       if (masterUrlFor(med)) {
-        return startMasterPlayer(med);
+        if (startMasterPlayer(med)) return true;
       }
-      const ctx = getContext();
-      const masterOutput = getMasterOutput(ctx);
-      const synth = startNatureSynth(ctx, med.soundscape);
-      if (!synth) return false;
-      const volumeGain = ctx.createGain();
-      volumeGain.gain.value = natureVolRef.current;
-      synth.output.connect(volumeGain);
-      volumeGain.connect(masterOutput);
-      natureSynthRef.current = synth;
-      natureGainRef.current = volumeGain;
-      return true;
+      return startProceduralNature(med);
     },
-    [stopNatureLayer, startMasterPlayer],
+    [stopNatureLayer, startMasterPlayer, startProceduralNature],
   );
 
   // ─── Music Layer (Procedural) ──────────────────────────────────────────────

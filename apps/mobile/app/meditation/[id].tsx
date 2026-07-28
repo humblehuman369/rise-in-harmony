@@ -51,6 +51,9 @@ const SOUNDSCAPE_LABEL: Record<string, string> = {
   "reiki-healing-garden-285": "TrueHz Reiki Garden",
   "spiritual-meditation-444": "TrueHz Spiritual Meditation",
   "third-eye-activation-528": "TrueHz Third Eye",
+  "deep-into-nature-60": "Deep Into Nature",
+  "inner-calling-60": "Inner Calling",
+  "peaceful-ocean-60": "Peaceful Ocean",
 };
 
 export default function MeditationSessionScreen() {

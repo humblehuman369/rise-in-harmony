@@ -36,11 +36,14 @@ const RECORDED_FALLBACKS: Record<string, string> = {
   "reiki-healing-garden-285": "forest",
   "spiritual-meditation-444": "cave",
   "third-eye-activation-528": "cave",
+  "deep-into-nature-60": "forest",
+  "inner-calling-60": "cave",
+  "peaceful-ocean-60": "ocean",
 };
 
 describe("meditation catalog", () => {
-  it("has 6 TrueHz meditations", () => {
-    expect(MEDITATIONS).toHaveLength(6);
+  it("has 9 TrueHz meditations", () => {
+    expect(MEDITATIONS).toHaveLength(9);
   });
 
   it("has unique ids", () => {

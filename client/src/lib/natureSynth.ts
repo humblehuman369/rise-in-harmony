@@ -563,6 +563,29 @@ const SYNTHS: Record<SynthNatureSound, (ctx: AudioContext) => NatureSynthHandle>
 };
 
 /**
+ * Recorded studio keys have no 1:1 procedural equivalent. When an MP3 fails
+ * to load (missing deploy asset, network error), map to the closest live
+ * texture so the session is never silent.
+ */
+const RECORDED_FALLBACKS: Record<string, SynthNatureSound> = {
+  "sleep-preparation": "night",
+  "deep-focus": "river",
+  "anxiety-reset": "ocean",
+  "chakra-dawn": "forest",
+  "morning-breath": "forest",
+  "reiki-432": "bowl",
+  "calm-sleep-528": "night",
+  "deep-serenity-444": "ocean",
+  "nature-meditation-174": "forest",
+  "reiki-healing-garden-285": "forest",
+  "spiritual-meditation-444": "cave",
+  "third-eye-activation-528": "cave",
+  "deep-into-nature-60": "forest",
+  "inner-calling-60": "cave",
+  "peaceful-ocean-60": "ocean",
+};
+
+/**
  * Start a procedural nature soundscape. Returns a handle whose `output`
  * GainNode should be connected into the destination graph, and a `stop()`
  * for full cleanup. Returns null for unknown keys.
@@ -571,7 +594,9 @@ export function startNatureSynth(
   ctx: AudioContext,
   sound: string,
 ): NatureSynthHandle | null {
-  const factory = SYNTHS[sound as SynthNatureSound];
+  if (sound === "silence" || sound === "none") return null;
+  const resolved = RECORDED_FALLBACKS[sound] ?? sound;
+  const factory = SYNTHS[resolved as SynthNatureSound];
   if (!factory) return null;
   return factory(ctx);
 }

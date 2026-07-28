@@ -1,8 +1,8 @@
 /**
  * Meditation Catalog — TrueHz HQ studio sessions
  *
- * Six full-length recorded meditations (not procedural beds). Each track is a
- * complete TrueHz-tuned music session; soundscape keys map to MP3s in
+ * Nine full-length recorded meditations (not procedural beds). Each track is a
+ * complete TrueHz-tuned music session; soundscape keys map to CDN MP3s in
  * backgroundLoops / RECORDED_NATURE_URLS. musicMode is "none" because the
  * frequency and ambience are baked into the recording.
  */

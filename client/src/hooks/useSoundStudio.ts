@@ -95,9 +95,29 @@ export function useSoundStudio() {
   // HTMLAudioElement for recorded nature soundscapes (e.g. Sleep Preparation)
   const natureAudioRef = useRef<HTMLAudioElement | null>(null);
   const natureAudioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  /**
+   * When true, nature audio is playing via HTMLAudioElement only (no Web Audio
+   * graph). Required for cross-origin CDN hosts that omit CORS headers —
+   * createMediaElementSource + crossOrigin="anonymous" would otherwise fail
+   * silently and produce no sound.
+   */
+  const natureElementOnlyRef = useRef(false);
   // HTMLAudioElement for music real-audio playback
   const musicAudioRef = useRef<HTMLAudioElement | null>(null);
   const musicAudioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+
+  /** Effective element volume when nature is outside the Web Audio graph. */
+  const applyNatureElementVolume = useCallback(
+    (natureVolume: number, masterVolume: number) => {
+      if (natureAudioRef.current && natureElementOnlyRef.current) {
+        natureAudioRef.current.volume = Math.max(
+          0,
+          Math.min(1, natureVolume * masterVolume),
+        );
+      }
+    },
+    [],
+  );
 
   const [audioContextSuspended, setAudioContextSuspended] = useState(false);
   const onErrorRef = useRef<AudioErrorCallback | null>(null);
@@ -181,6 +201,7 @@ export function useSoundStudio() {
       try { natureAudioSourceRef.current.disconnect(); } catch {}
       natureAudioSourceRef.current = null;
     }
+    natureElementOnlyRef.current = false;
   }, []);
 
   // ── Frequency layer ──────────────────────────────────────────────────────────
@@ -246,9 +267,53 @@ export function useSoundStudio() {
     if (recordedUrl) {
       const audio = new Audio(recordedUrl);
       audio.loop = true;
+
+      // Absolute cross-origin URLs (Manus CDN) typically omit CORS headers.
+      // MediaElementAudioSourceNode requires CORS when crossOrigin is set, so
+      // those hosts must play as a plain HTMLAudioElement (element.volume).
+      let crossOrigin = false;
+      try {
+        const abs = new URL(recordedUrl, window.location.href);
+        crossOrigin = abs.origin !== window.location.origin;
+      } catch {
+        crossOrigin = recordedUrl.startsWith("http");
+      }
+
+      const fallbackToProcedural = () => {
+        if (natureAudioRef.current !== audio) return;
+        try { audio.pause(); } catch {}
+        natureAudioRef.current = null;
+        natureElementOnlyRef.current = false;
+        if (natureAudioSourceRef.current) {
+          try { natureAudioSourceRef.current.disconnect(); } catch {}
+          natureAudioSourceRef.current = null;
+        }
+        const handle = startNatureSynth(ctx, soundKey);
+        if (!handle || !natureGainRef.current) return;
+        handle.output.connect(natureGainRef.current);
+        natureGainRef.current.gain.setValueAtTime(0, ctx.currentTime);
+        natureGainRef.current.gain.linearRampToValueAtTime(
+          state.natureVolume,
+          ctx.currentTime + 3,
+        );
+        natureSynthRef.current = handle;
+      };
+
+      if (crossOrigin) {
+        natureElementOnlyRef.current = true;
+        audio.volume = Math.max(
+          0,
+          Math.min(1, state.natureVolume * state.masterVolume),
+        );
+        audio.addEventListener("error", fallbackToProcedural, { once: true });
+        audio.play().catch(fallbackToProcedural);
+        natureAudioRef.current = audio;
+        return;
+      }
+
+      // Same-origin: route through Web Audio for shared master/compressor gains
       audio.crossOrigin = "anonymous";
       audio.volume = 1;
-
       const source = ctx.createMediaElementSource(audio);
       source.connect(natureGainRef.current);
 
@@ -259,7 +324,8 @@ export function useSoundStudio() {
         now + 3  // 3-second fade-in
       );
 
-      audio.play().catch(() => {});
+      audio.addEventListener("error", fallbackToProcedural, { once: true });
+      audio.play().catch(fallbackToProcedural);
 
       natureAudioRef.current = audio;
       natureAudioSourceRef.current = source;
@@ -280,7 +346,7 @@ export function useSoundStudio() {
     );
 
     natureSynthRef.current = handle;
-  }, [stopNature, state.natureVolume]);
+  }, [stopNature, state.natureVolume, state.masterVolume]);
 
   // ── Master play / stop ───────────────────────────────────────────────────────
   const startAllLayers = useCallback((s: StudioState) => {
@@ -355,14 +421,21 @@ export function useSoundStudio() {
         if (musicGainRef.current) musicGainRef.current.gain.linearRampToValueAtTime(value, (ctxRef.current?.currentTime ?? 0) + 0.05);
       } else if (layer === "nature") {
         next.natureVolume = value;
-        if (natureGainRef.current) natureGainRef.current.gain.linearRampToValueAtTime(value, (ctxRef.current?.currentTime ?? 0) + 0.05);
+        if (natureElementOnlyRef.current) {
+          applyNatureElementVolume(value, prev.masterVolume);
+        } else if (natureGainRef.current) {
+          natureGainRef.current.gain.linearRampToValueAtTime(value, (ctxRef.current?.currentTime ?? 0) + 0.05);
+        }
       } else if (layer === "master") {
         next.masterVolume = value;
         if (masterGainRef.current) masterGainRef.current.gain.linearRampToValueAtTime(value, (ctxRef.current?.currentTime ?? 0) + 0.05);
+        if (natureElementOnlyRef.current) {
+          applyNatureElementVolume(prev.natureVolume, value);
+        }
       }
       return next;
     });
-  }, []);
+  }, [applyNatureElementVolume]);
 
   /** Change the healing frequency — restarts only the frequency layer */
   const setFrequency = useCallback((hz: number) => {

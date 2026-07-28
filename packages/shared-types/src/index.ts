@@ -151,6 +151,9 @@ export type NatureSoundscape =
   | "reiki-healing-garden-285"
   | "spiritual-meditation-444"
   | "third-eye-activation-528"
+  | "deep-into-nature-60"
+  | "inner-calling-60"
+  | "peaceful-ocean-60"
   | "silence";
 
 export type MusicMode = "ambient" | "drone" | "crystal" | "none";

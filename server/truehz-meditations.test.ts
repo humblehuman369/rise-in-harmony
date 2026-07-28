@@ -1,8 +1,8 @@
 /**
  * TrueHz HQ meditation catalog — wiring tests
  *
- * Validates the six studio sessions are registered end-to-end:
- *  - background loop catalog + static /meditations URLs
+ * Validates the nine studio sessions are registered end-to-end:
+ *  - background loop catalog + Manus CDN URLs
  *  - web + shared meditation catalogs
  *  - musicMode none (self-contained TrueHz masters)
  */
@@ -18,16 +18,19 @@ const TRUEHZ_IDS = [
   "reiki-healing-garden-285",
   "spiritual-meditation-444",
   "third-eye-activation-528",
+  "deep-into-nature-60",
+  "inner-calling-60",
+  "peaceful-ocean-60",
 ] as const;
 
 describe("TrueHz meditation sessions", () => {
-  it("catalog has exactly six sessions (web)", () => {
-    expect(MEDITATIONS).toHaveLength(6);
+  it("catalog has exactly nine sessions (web)", () => {
+    expect(MEDITATIONS).toHaveLength(9);
     expect(MEDITATIONS.map((m) => m.id).sort()).toEqual([...TRUEHZ_IDS].sort());
   });
 
-  it("catalog has exactly six sessions (shared)", () => {
-    expect(SHARED_MEDITATIONS).toHaveLength(6);
+  it("catalog has exactly nine sessions (shared)", () => {
+    expect(SHARED_MEDITATIONS).toHaveLength(9);
     expect(SHARED_MEDITATIONS.map((m) => m.id).sort()).toEqual([...TRUEHZ_IDS].sort());
   });
 
@@ -39,10 +42,12 @@ describe("TrueHz meditation sessions", () => {
     }
   });
 
-  it("each session resolves to a /meditations/*.mp3 URL", () => {
+  it("each session resolves to a Manus CDN MP3 URL", () => {
     for (const id of TRUEHZ_IDS) {
       const url = getLibraryLoopUrl(id);
-      expect(url).toBe(`/meditations/${id}.mp3`);
+      expect(url, id).toMatch(
+        /^https:\/\/files\.manuscdn\.com\/user_upload_by_module\/session_file\/\d+\/[A-Za-z0-9]+\.mp3$/,
+      );
     }
   });
 

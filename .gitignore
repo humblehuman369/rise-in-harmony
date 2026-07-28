@@ -127,6 +127,8 @@ references/audio/processed/
 # via apps/mobile/assets/sounds/.gitignore negation rules).
 apps/mobile/assets/sounds/*.wav
 
-# TrueHz meditation masters (large MP3s; deploy separately or via CDN)
+# TrueHz meditation masters — large MP3s hosted on Manus CDN (see
+# client/src/data/backgroundLoops.ts). Keep local copies / processed
+# working files out of git.
 client/public/meditations/*.mp3
 references/audio/processed/meditations/
