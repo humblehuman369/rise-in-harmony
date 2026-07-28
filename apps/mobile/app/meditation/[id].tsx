@@ -15,9 +15,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import Slider from "@react-native-community/slider";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
 import AudioVisualizer from "@/components/AudioVisualizer";
+import VolumeSlider from "@/components/VolumeSlider";
 import { MEDITATIONS, FREQUENCIES } from "@rih/shared-utils";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import { useMeditationPlayer, type MeditationMode } from "@/hooks/useMeditationPlayer";
@@ -198,6 +198,9 @@ export default function MeditationSessionScreen() {
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        // Let nested volume sliders capture horizontal pans
+        nestedScrollEnabled
       >
         {/* Hero */}
         <Animated.View
@@ -306,38 +309,31 @@ export default function MeditationSessionScreen() {
           color={meditation.color}
         />
 
-        {/* Volume mixing */}
-        <View style={styles.mixCard}>
+        {/* Volume mixing — VolumeSlider has a 40pt hit target and mute toggle.
+            Wrapped so ScrollView does not steal horizontal drag gestures. */}
+        <View
+          style={styles.mixCard}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+        >
           <Text style={styles.mixTitle}>
-            Soundscape · {SOUNDSCAPE_LABEL[meditation.soundscape] ?? meditation.soundscape}
+            Volume · {SOUNDSCAPE_LABEL[meditation.soundscape] ?? meditation.soundscape}
           </Text>
-          <View style={styles.sliderRow}>
-            <Text style={styles.sliderLabel}>Nature</Text>
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={1}
-              value={natureVolume}
-              onValueChange={setNatureVolume}
-              minimumTrackTintColor={meditation.color}
-              maximumTrackTintColor="rgba(255,255,255,0.1)"
-              thumbTintColor={meditation.color}
-            />
-          </View>
+          <VolumeSlider
+            value={natureVolume}
+            onValueChange={setNatureVolume}
+            color={meditation.color}
+            label="Soundscape"
+            showLevel
+          />
           {showFrequencyLayer && (
-            <View style={styles.sliderRow}>
-              <Text style={styles.sliderLabel}>Frequency</Text>
-              <Slider
-                style={styles.slider}
-                minimumValue={0}
-                maximumValue={1}
-                value={frequencyVolume}
-                onValueChange={setFrequencyVolume}
-                minimumTrackTintColor={colors.teal}
-                maximumTrackTintColor="rgba(255,255,255,0.1)"
-                thumbTintColor={colors.teal}
-              />
-            </View>
+            <VolumeSlider
+              value={frequencyVolume}
+              onValueChange={setFrequencyVolume}
+              color={colors.teal}
+              label="Frequency"
+              showLevel
+            />
           )}
         </View>
 
@@ -488,13 +484,6 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginBottom: spacing[2],
   },
-  sliderRow: { flexDirection: "row", alignItems: "center", gap: spacing[2] },
-  sliderLabel: {
-    width: 76,
-    fontSize: fontSizes.sm,
-    color: colors.textSecondary,
-  },
-  slider: { flex: 1 },
   // Rationale
   rationaleCard: {
     width: "90%",

@@ -485,16 +485,16 @@ function MeditationPlayer({
                     {meditation.frequencyRationale}
                   </p>
                   {/* Frequency volume */}
-                  <div className="flex items-center gap-3 mt-3">
-                    <VolumeX size={12} style={{ color: '#6B7A99' }} />
+                  <div className="flex items-center gap-3 mt-3 py-1">
+                    <VolumeX size={14} style={{ color: '#6B7A99' }} />
                     <Slider
                       value={[freqVolume * 100]}
                       onValueChange={([v]) => setFreqVolume(v / 100)}
                       min={0} max={100} step={1}
-                      className="flex-1"
+                      className="flex-1 min-h-10 cursor-pointer [&_[data-slot=slider-track]]:h-2.5 [&_[data-slot=slider-thumb]]:size-5 [&_[data-slot=slider-thumb]]:cursor-grab [&_[data-slot=slider-thumb]]:active:cursor-grabbing"
                     />
-                    <Volume2 size={12} style={{ color: '#6B7A99' }} />
-                    <span className="text-xs w-8 text-right" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                    <Volume2 size={14} style={{ color: '#6B7A99' }} />
+                    <span className="text-xs w-8 text-right tabular-nums" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
                       {Math.round(freqVolume * 100)}%
                     </span>
                   </div>
@@ -503,16 +503,35 @@ function MeditationPlayer({
             </div>
           )}
 
-          {/* Ambient volume */}
-          <div className="rounded-2xl p-4" style={{ background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)', border: isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)' }}>
-            <div className="flex items-center gap-2 mb-3">
-              <Music2 size={14} style={{ color: '#8FA3BF' }} />
-              <span className="text-sm font-medium" style={{ color: isLight ? '#4A5568' : '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
-                Ambient Sound Volume
+          {/* Ambient volume — larger thumb/track for easy drag on touch + mouse */}
+          <div className="rounded-2xl p-4 relative z-20" style={{ background: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)', border: isLight ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <Music2 size={14} style={{ color: '#8FA3BF' }} />
+                <span className="text-sm font-medium" style={{ color: isLight ? '#4A5568' : '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
+                  Sound Volume
+                </span>
+              </div>
+              <span className="text-xs font-semibold tabular-nums" style={{ color: meditation.color, fontFamily: 'DM Sans, sans-serif' }}>
+                {Math.round(volume * 100)}%
               </span>
             </div>
-            <div className="flex items-center gap-3">
-              <VolumeX size={12} style={{ color: '#6B7A99' }} />
+            <div className="flex items-center gap-3 py-1">
+              <button
+                type="button"
+                aria-label="Mute sound"
+                className="shrink-0 p-1 rounded-md hover:bg-white/5"
+                onClick={() => {
+                  const next = volume > 0 ? 0 : 0.85;
+                  setVolume(next);
+                  setLayerVolume("nature", next);
+                  setLayerVolume("music", next);
+                }}
+              >
+                {volume === 0
+                  ? <VolumeX size={16} style={{ color: '#6B7A99' }} />
+                  : <Volume2 size={16} style={{ color: '#6B7A99' }} />}
+              </button>
               <Slider
                 value={[volume * 100]}
                 onValueChange={([v]) => {
@@ -521,12 +540,9 @@ function MeditationPlayer({
                   setLayerVolume("music", v / 100);
                 }}
                 min={0} max={100} step={1}
-                className="flex-1"
+                className="flex-1 min-h-10 cursor-pointer [&_[data-slot=slider-track]]:h-2.5 [&_[data-slot=slider-thumb]]:size-5 [&_[data-slot=slider-thumb]]:cursor-grab [&_[data-slot=slider-thumb]]:active:cursor-grabbing [&_[data-slot=slider-range]]:bg-[var(--slider-accent)] [&_[data-slot=slider-thumb]]:border-[var(--slider-accent)]"
+                style={{ ["--slider-accent" as string]: meditation.color } as React.CSSProperties}
               />
-              <Volume2 size={12} style={{ color: '#6B7A99' }} />
-              <span className="text-xs w-8 text-right" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-                {Math.round(volume * 100)}%
-              </span>
             </div>
           </div>
 
