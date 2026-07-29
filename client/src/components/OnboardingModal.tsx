@@ -5,9 +5,9 @@
  * persists completion state in localStorage to show only once.
  * Bioluminescent Depth theme
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
-import { X, ChevronRight, Moon, Zap, Brain, Sparkles, Heart, Waves, Headphones, AlarmClock, LogIn } from "lucide-react";
+import { X, ChevronRight, Moon, Zap, Brain, Sparkles, Heart, Waves, Headphones, AlarmClock, LogIn, Play, Square } from "lucide-react";
 import { startLogin } from "@/const";
 import { toast } from "sonner";
 import { trackOnboardingComplete, trackOnboardingStarted, trackFirstAlarmSet } from "@/hooks/useAnalytics";
@@ -482,114 +482,174 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
           </div>
         )}
 
-        {/* STEP 4: Recommendation */}
+        {/* STEP 4: Recommendation — with live DDS preview */}
         {step === "recommendation" && recommendation && (
-          <div className="relative px-8 pt-4 pb-8">
-            <div className="text-center mb-6">
-              <div
-                className="text-xs font-semibold uppercase tracking-widest mb-3"
-                style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}
-              >
-                Your frequency plan
-              </div>
-              <h2
-                className="text-2xl font-semibold mb-1"
-                style={{ fontFamily: "Cormorant Garamond, serif", color: isLight ? "#1A1D2E" : "#E8EDF5" }}
-              >
-                {recommendation.label}
-              </h2>
-            </div>
+          <RecommendationStep
+            recommendation={recommendation}
+            wakeTime={wakeTime}
+            alarmCreated={alarmCreated}
+            createAlarmPending={createAlarm.isPending}
+            onSetAlarm={handleSetFirstAlarm}
+            onGoToPlayer={handleGoToPlayer}
+            onComplete={handleComplete}
+            isLight={isLight}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
 
-            {/* Frequency card */}
-            <div
-              className="rounded-2xl p-6 mb-5 text-center relative overflow-hidden"
-              style={{
-                background: isLight ? `linear-gradient(135deg, ${recommendation.color}10 0%, rgba(245,246,249,0.9) 100%)` : `linear-gradient(135deg, ${recommendation.color}12 0%, rgba(18,21,42,0.8) 100%)`,
-                border: `1px solid ${recommendation.color}30`,
-                boxShadow: `0 0 40px ${recommendation.color}15`,
-              }}
-            >
-              <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: `radial-gradient(ellipse at 50% 0%, ${recommendation.color}15 0%, transparent 60%)`,
-                }}
-              />
-              <div className="relative">
-                {/* Frequency orb */}
-                <div
-                  className="w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-4"
-                  style={{
-                    background: `radial-gradient(circle, ${recommendation.color}30 0%, ${recommendation.color}08 100%)`,
-                    border: `2px solid ${recommendation.color}40`,
-                    boxShadow: `0 0 30px ${recommendation.color}30`,
-                  }}
-                >
-                  <span
-                    className="font-mono-brand text-2xl font-bold"
-                    style={{ color: recommendation.color }}
-                  >
-                    {recommendation.recommendedHz}
-                  </span>
-                </div>
+// ─── Recommendation step extracted so it can manage its own audio state ──────
+interface RecStepProps {
+  recommendation: { recommendedHz: number; recommendedName: string; recommendedBenefit: string; color: string; label: string };
+  wakeTime: string | null;
+  alarmCreated: boolean;
+  createAlarmPending: boolean;
+  onSetAlarm: () => void;
+  onGoToPlayer: () => void;
+  onComplete: () => void;
+  isLight: boolean;
+}
+function RecommendationStep({ recommendation, wakeTime, alarmCreated, createAlarmPending, onSetAlarm, onGoToPlayer, onComplete, isLight }: RecStepProps) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [pulsePhase, setPulsePhase] = useState(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
+  const animRef = useRef<number>(0);
 
-                <div
-                  className="text-xl font-semibold mb-1"
-                  style={{ fontFamily: "Cormorant Garamond, serif", color: isLight ? "#1A1D2E" : "#E8EDF5" }}
-                >
-                  {recommendation.recommendedName}
-                </div>
-                <div
-                  className="text-sm leading-relaxed"
-                  style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}
-                >
-                  {recommendation.recommendedBenefit}
-                </div>
-              </div>
-            </div>
+  // Animate the orb pulse when playing
+  useEffect(() => {
+    if (!isPlaying) { cancelAnimationFrame(animRef.current); return; }
+    const tick = () => {
+      setPulsePhase(p => (p + 0.04) % (Math.PI * 2));
+      animRef.current = requestAnimationFrame(tick);
+    };
+    animRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animRef.current);
+  }, [isPlaying]);
 
-            {/* CTAs */}
-            <div className="space-y-3">
-              {wakeTime && !alarmCreated && (
-                <button
-                  onClick={handleSetFirstAlarm}
-                  disabled={createAlarm.isPending}
-                  className="w-full py-4 rounded-full text-base font-semibold flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60"
-                  style={{
-                    background: "linear-gradient(135deg, #F59E0B, #D97706)",
-                    color: "#0A0B14",
-                    fontFamily: "DM Sans, sans-serif",
-                  }}
-                >
-                  <AlarmClock size={18} />
-                  {createAlarm.isPending ? "Setting alarm…" : `Set my ${wakeTime}am alarm`}
-                </button>
-              )}
-              {alarmCreated && (
-                <div
-                  className="w-full py-3 rounded-full text-sm font-semibold flex items-center justify-center gap-2"
-                  style={{ background: "rgba(0,212,170,0.12)", border: "1px solid rgba(0,212,170,0.3)", color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}
-                >
-                  ✓ Alarm set for {wakeTime}am, weekdays
-                </div>
-              )}
-              <button
-                onClick={handleGoToPlayer}
-                className="btn-teal w-full py-4 text-base font-semibold flex items-center justify-center gap-2"
-              >
-                <Waves size={18} />
-                Play {recommendation.recommendedName}
-              </button>
-              <button
-                onClick={handleComplete}
-                className="w-full py-2 text-xs transition-colors duration-200"
-                style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}
-              >
-                Explore on my own
-              </button>
-            </div>
+  // Stop audio on unmount
+  useEffect(() => () => { stopPreview(); }, []);
+
+  const stopPreview = useCallback(() => {
+    if (gainRef.current && audioCtxRef.current) {
+      gainRef.current.gain.setTargetAtTime(0, audioCtxRef.current.currentTime, 0.3);
+      setTimeout(() => {
+        workletNodeRef.current?.disconnect();
+        gainRef.current?.disconnect();
+        audioCtxRef.current?.close();
+        audioCtxRef.current = null;
+        workletNodeRef.current = null;
+        gainRef.current = null;
+      }, 600);
+    }
+    setIsPlaying(false);
+  }, []);
+
+  const togglePreview = useCallback(async () => {
+    if (isPlaying) { stopPreview(); return; }
+    try {
+      const ctx = new AudioContext();
+      audioCtxRef.current = ctx;
+      await ctx.audioWorklet.addModule('/dds-processor.js');
+      const node = new AudioWorkletNode(ctx, 'dds-processor');
+      workletNodeRef.current = node;
+      const gain = ctx.createGain();
+      gainRef.current = gain;
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.setTargetAtTime(0.35, ctx.currentTime, 0.5);
+      node.port.postMessage({ type: 'setParams', freq: recommendation.recommendedHz, waveform: 'sine', mode: 'mono' });
+      node.connect(gain);
+      gain.connect(ctx.destination);
+      setIsPlaying(true);
+      // Auto-stop after 60 seconds
+      setTimeout(() => stopPreview(), 60_000);
+    } catch {
+      // AudioWorklet not available — silently skip
+    }
+  }, [isPlaying, recommendation.recommendedHz, stopPreview]);
+
+  const pulseScale = isPlaying ? 1 + Math.sin(pulsePhase) * 0.06 : 1;
+
+  return (
+    <div className="relative px-8 pt-4 pb-8">
+      <div className="text-center mb-5">
+        <div className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "#6B7A99", fontFamily: "DM Sans, sans-serif" }}>
+          Your frequency plan
+        </div>
+        <h2 className="text-2xl font-semibold mb-1" style={{ fontFamily: "Cormorant Garamond, serif", color: isLight ? "#1A1D2E" : "#E8EDF5" }}>
+          {recommendation.label}
+        </h2>
+      </div>
+
+      {/* Frequency card with live preview */}
+      <div
+        className="rounded-2xl p-5 mb-4 text-center relative overflow-hidden"
+        style={{
+          background: isLight ? `linear-gradient(135deg, ${recommendation.color}10 0%, rgba(245,246,249,0.9) 100%)` : `linear-gradient(135deg, ${recommendation.color}12 0%, rgba(18,21,42,0.8) 100%)`,
+          border: `1px solid ${recommendation.color}30`,
+          boxShadow: `0 0 40px ${recommendation.color}15`,
+        }}
+      >
+        <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 0%, ${recommendation.color}15 0%, transparent 60%)` }} />
+        <div className="relative">
+          {/* Pulsing orb — click to preview */}
+          <button
+            onClick={togglePreview}
+            className="w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-3 transition-transform duration-150 active:scale-95"
+            style={{
+              background: `radial-gradient(circle, ${recommendation.color}30 0%, ${recommendation.color}08 100%)`,
+              border: `2px solid ${recommendation.color}${isPlaying ? '80' : '40'}`,
+              boxShadow: isPlaying ? `0 0 40px ${recommendation.color}60, 0 0 80px ${recommendation.color}20` : `0 0 30px ${recommendation.color}30`,
+              transform: `scale(${pulseScale})`,
+            }}
+            title={isPlaying ? 'Stop preview' : 'Preview this frequency'}
+          >
+            {isPlaying
+              ? <Square size={18} style={{ color: recommendation.color }} />
+              : <Play size={18} style={{ color: recommendation.color }} />
+            }
+          </button>
+          <p className="text-[10px] mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+            {isPlaying ? 'Playing live — tap to stop' : 'Tap to hear a 60-second preview'}
+          </p>
+          <div className="text-xl font-semibold mb-1" style={{ fontFamily: "Cormorant Garamond, serif", color: isLight ? "#1A1D2E" : "#E8EDF5" }}>
+            {recommendation.recommendedHz} Hz · {recommendation.recommendedName}
+          </div>
+          <div className="text-sm leading-relaxed" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
+            {recommendation.recommendedBenefit}
+          </div>
+        </div>
+      </div>
+
+      {/* CTAs */}
+      <div className="space-y-3">
+        {wakeTime && !alarmCreated && (
+          <button
+            onClick={onSetAlarm}
+            disabled={createAlarmPending}
+            className="w-full py-4 rounded-full text-base font-semibold flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-60"
+            style={{ background: "linear-gradient(135deg, #F59E0B, #D97706)", color: "#0A0B14", fontFamily: "DM Sans, sans-serif" }}
+          >
+            <AlarmClock size={18} />
+            {createAlarmPending ? "Setting alarm…" : `Set my ${wakeTime}am alarm`}
+          </button>
+        )}
+        {alarmCreated && (
+          <div className="w-full py-3 rounded-full text-sm font-semibold flex items-center justify-center gap-2"
+            style={{ background: "rgba(0,212,170,0.12)", border: "1px solid rgba(0,212,170,0.3)", color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}>
+            ✓ Alarm set for {wakeTime}am, weekdays
           </div>
         )}
+        <button onClick={onGoToPlayer} className="btn-teal w-full py-4 text-base font-semibold flex items-center justify-center gap-2">
+          <Waves size={18} />
+          Play {recommendation.recommendedName} in Studio
+        </button>
+        <button onClick={onComplete} className="w-full py-2 text-xs transition-colors duration-200" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>
+          Explore on my own
+        </button>
       </div>
     </div>
   );

@@ -33,6 +33,7 @@ import SessionJournal from "@/components/SessionJournal";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { startLogin } from "@/const";
+import ShareCard from "@/components/ShareCard";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -320,6 +321,7 @@ export default function FrequencyStudio() {
   const [serverFavsLoaded, setServerFavsLoaded] = useState(false);
   const [showJournal, setShowJournal] = useState(false);
   const sessionStartRef = useRef<number | null>(null);
+  const [showShareCard, setShowShareCard] = useState(false);
 
   // Ambient tab state
   const [ambientTab, setAmbientTab] = useState<"nature" | "music" | "uploads">("nature");
@@ -1033,6 +1035,15 @@ export default function FrequencyStudio() {
                 <span className="text-sm font-mono" style={{ color: "#00D4AA" }}>{formatTime(player.playTime)}</span>
               </>
             )}
+            {player.playTime >= 60 && (
+              <button
+                onClick={() => setShowShareCard(true)}
+                className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-200"
+                style={{ background: "rgba(0,212,170,0.1)", border: "1px solid rgba(0,212,170,0.25)", color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}
+              >
+                ↗ Share
+              </button>
+            )}
           </div>
         </div>
 
@@ -1301,6 +1312,15 @@ export default function FrequencyStudio() {
 
       {/* Overlays */}
       {showBreathing && <BreathingGuide onClose={() => setShowBreathing(false)} accentColor="#00D4AA" />}
+      {showShareCard && (
+        <ShareCard
+          hz={customFreq}
+          name={`${customFreq.toFixed(0)} Hz`}
+          durationSeconds={player.playTime}
+          color="#00D4AA"
+          onClose={() => setShowShareCard(false)}
+        />
+      )}
       {showJournal && (
         <SessionJournal
           frequencyHz={customFreq}

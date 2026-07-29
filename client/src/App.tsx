@@ -25,6 +25,8 @@ import Programs from "./pages/Programs";
 import Convert from "./pages/Convert";
 import ReikiPlayer from "./pages/ReikiPlayer";
 import Journey from "./pages/Journey";
+import Prescription from "./pages/Prescription";
+import Gift from "./pages/Gift";
 import { useAuth } from "./_core/hooks/useAuth";
 import { useLocalSessionImport } from "./hooks/useLocalSessionImport";
 import { useAnalytics } from "./hooks/useAnalytics";
@@ -43,6 +45,8 @@ function Router() {
       <Route path="/convert" component={Convert} />
       <Route path="/reiki" component={ReikiPlayer} />
       <Route path="/journey" component={Journey} />
+      <Route path="/prescription" component={Prescription} />
+      <Route path="/gift" component={Gift} />
       <Route path="/precision">{() => { window.location.replace("/studio"); return null; }}</Route>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
