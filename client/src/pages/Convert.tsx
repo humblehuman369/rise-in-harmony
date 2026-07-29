@@ -20,7 +20,7 @@ import {
 import Layout from "@/components/Layout";
 import PremiumPaywall from "@/components/PremiumPaywall";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
+import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
 import {
   isAcceptedConvertFile,
@@ -551,13 +551,13 @@ export default function Convert() {
             <p className={`mb-4 ${c.muted}`}>
               Sign in to upload and retune tracks.
             </p>
-            <a
-              href={getLoginUrl()}
+            <button
+              onClick={() => startLogin()}
               className="inline-block px-6 py-3 rounded-xl font-semibold text-sm"
               style={{ background: c.accent, color: "#04120E" }}
             >
               Sign in
-            </a>
+            </button>
           </div>
         ) : (
           <>

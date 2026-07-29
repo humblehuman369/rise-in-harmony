@@ -9,7 +9,7 @@ import { Check, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
+import { startLogin } from "@/const";
 import { trackUpgradeTapped } from "@/hooks/useAnalytics";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -90,7 +90,7 @@ export default function PricingSection() {
   const handleChoose = async (tier: Tier) => {
     trackUpgradeTapped(tier === "annual" ? "yearly" : tier);
     if (!user) {
-      window.location.href = getLoginUrl();
+      startLogin();
       return;
     }
     if (!billingConfig.data?.enabled) {

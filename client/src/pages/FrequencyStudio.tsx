@@ -32,7 +32,7 @@ import BreathingGuide from "@/components/BreathingGuide";
 import SessionJournal from "@/components/SessionJournal";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
+import { startLogin } from "@/const";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -646,7 +646,7 @@ export default function FrequencyStudio() {
   const saveSound = useCallback(async () => {
     if (!user) {
       toast.error("Sign in to save sounds", {
-        action: { label: "Sign in", onClick: () => { window.location.href = getLoginUrl(); } },
+        action: { label: "Sign in", onClick: () => { startLogin(); } },
       });
       return;
     }
@@ -674,7 +674,7 @@ export default function FrequencyStudio() {
   const handleUpload = useCallback(async (file: File) => {
     if (!user) {
       toast.error("Sign in to upload MP3 backgrounds", {
-        action: { label: "Sign in", onClick: () => { window.location.href = getLoginUrl(); } },
+        action: { label: "Sign in", onClick: () => { startLogin(); } },
       });
       return;
     }

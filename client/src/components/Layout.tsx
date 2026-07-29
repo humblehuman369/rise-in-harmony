@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
+import { startLogin } from "@/const";
 import { useTheme } from "@/contexts/ThemeContext";
 
 // ─── Nav definitions ──────────────────────────────────────────────────────────
@@ -307,8 +307,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               )}
             </div>
           ) : (
-            <a
-              href={getLoginUrl()}
+            <button
+              onClick={() => startLogin()}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200"
               style={{
                 background: 'linear-gradient(135deg, rgba(0,212,170,0.18), rgba(0,212,170,0.08))',
@@ -328,7 +328,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             >
               <LogIn size={14} />
               Sign In
-            </a>
+            </button>
           )}
         </div>
       </header>
@@ -493,8 +493,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
             ) : (
-              <a
-                href={getLoginUrl()}
+              <button
+                onClick={() => startLogin()}
                 className="flex items-center justify-center gap-2 w-full text-sm font-semibold py-2.5 rounded-xl transition-all duration-200"
                 style={{
                   background: 'linear-gradient(135deg, rgba(0,212,170,0.15), rgba(0,212,170,0.08))',
@@ -507,7 +507,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               >
                 <LogIn size={15} />
                 Sign In
-              </a>
+              </button>
             )}
           </div>
         </div>
@@ -618,8 +618,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </span>
               </button>
             ) : (
-              <a
-                href={getLoginUrl()}
+              <button
+                onClick={() => startLogin()}
                 className="flex flex-col items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 flex-shrink-0"
                 style={{ width: '76px', height: '80px' }}
               >
@@ -631,7 +631,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
                   Sign In
                 </span>
-              </a>
+              </button>
             )}
           </div>
         </div>

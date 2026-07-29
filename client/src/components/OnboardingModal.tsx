@@ -8,7 +8,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { X, ChevronRight, Moon, Zap, Brain, Sparkles, Heart, Waves, Headphones, AlarmClock, LogIn } from "lucide-react";
-import { getLoginUrl } from "@/const";
+import { startLogin } from "@/const";
 import { toast } from "sonner";
 import { trackOnboardingComplete, trackOnboardingStarted, trackFirstAlarmSet } from "@/hooks/useAnalytics";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -294,22 +294,21 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
                   <span className="text-[11px] font-medium" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Already a member?</span>
                   <div className="flex-1 h-px" style={{ background: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.07)' }} />
                 </div>
-                <a
-                  href={getLoginUrl()}
+                <button
+                  onClick={() => startLogin()}
                   className="w-full py-3 rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98]"
                   style={{
                     background: isLight ? 'rgba(0,212,170,0.08)' : 'rgba(0,212,170,0.1)',
                     border: '1px solid rgba(0,212,170,0.28)',
                     color: '#00D4AA',
                     fontFamily: 'DM Sans, sans-serif',
-                    textDecoration: 'none',
                   }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = isLight ? 'rgba(0,212,170,0.15)' : 'rgba(0,212,170,0.18)'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isLight ? 'rgba(0,212,170,0.08)' : 'rgba(0,212,170,0.1)'; }}
                 >
                   <LogIn size={15} />
                   Sign In to Your Account
-                </a>
+                </button>
               </>
             )}
 

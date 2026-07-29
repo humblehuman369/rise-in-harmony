@@ -11,7 +11,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
+import { startLogin } from "@/const";
 
 // ─── Chakra / Solfeggio frequency data ────────────────────────────────────────
 
@@ -649,7 +649,7 @@ export default function Journey() {
     if (isAuthenticated) {
       navigate("/reiki");
     } else {
-      window.location.href = getLoginUrl();
+      startLogin();
     }
   }, [isAuthenticated, navigate]);
 

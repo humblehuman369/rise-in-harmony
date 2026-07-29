@@ -3,6 +3,7 @@ import {
   COOKIE_NAME,
   SESSION_ACCESS_MS,
   SESSION_REFRESH_MS,
+  decodeOAuthState,
 } from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
 import axios, { type AxiosInstance } from "axios";
@@ -48,8 +49,8 @@ class OAuthService {
   }
 
   private decodeState(state: string): string {
-    const redirectUri = atob(state);
-    return redirectUri;
+    // Handles both legacy bare-base64(redirectUri) and new JSON {redirectUri,nonce} formats.
+    return decodeOAuthState(state).redirectUri;
   }
 
   async getTokenByCode(

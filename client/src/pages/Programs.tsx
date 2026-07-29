@@ -18,7 +18,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import PremiumPaywall from "@/components/PremiumPaywall";
-import { getLoginUrl } from "@/const";
+import { startLogin } from "@/const";
 
 export default function Programs() {
   const { isAuthenticated } = useAuth();
@@ -134,13 +134,13 @@ export default function Programs() {
             </p>
 
             {!isAuthenticated ? (
-              <a
-                href={getLoginUrl()}
+              <button
+                onClick={() => startLogin()}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold"
                 style={{ background: program.accentColor, color: "#0A0B14" }}
               >
                 Sign in to enroll
-              </a>
+              </button>
             ) : !isEnrolled ? (
               <button
                 type="button"

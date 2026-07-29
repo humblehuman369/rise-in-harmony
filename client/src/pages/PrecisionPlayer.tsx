@@ -33,7 +33,7 @@ import { BACKGROUND_LOOPS, formatSoundSummary, type BackgroundType } from "@/dat
 import { uploadSoundMp3 } from "@/lib/soundUpload";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
+import { startLogin } from "@/const";
 
 // ─── Preset catalog ──────────────────────────────────────────────────────────
 
@@ -329,7 +329,7 @@ export default function PrecisionPlayer() {
   const saveSound = useCallback(async () => {
     if (!user) {
       toast.error("Sign in to save sounds to your account", {
-        action: { label: "Sign in", onClick: () => { window.location.href = getLoginUrl(); } },
+        action: { label: "Sign in", onClick: () => { startLogin(); } },
       });
       return;
     }
@@ -350,7 +350,7 @@ export default function PrecisionPlayer() {
   const handleUpload = useCallback(async (file: File) => {
     if (!user) {
       toast.error("Sign in to upload MP3 backgrounds", {
-        action: { label: "Sign in", onClick: () => { window.location.href = getLoginUrl(); } },
+        action: { label: "Sign in", onClick: () => { startLogin(); } },
       });
       return;
     }
