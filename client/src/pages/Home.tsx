@@ -78,18 +78,16 @@ export default function Home() {
     <Layout>
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
-        {/* Background image */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src="/manus-storage/rih-hero-bg_b01c003a.jpg"
-            alt="Bioluminescent deep ocean scene representing healing frequency vibrations"
-            className="w-full h-full object-cover"
-            style={{ opacity: 0.55 }}
-          />
+        {/* Background gradient — bioluminescent depth */}
+        <div className="absolute inset-0 z-0" style={{
+          background: isLight
+            ? 'linear-gradient(135deg, #EDF0F7 0%, #D4EEF0 40%, #E0F0EE 100%)'
+            : 'linear-gradient(160deg, #0A0B14 0%, #071828 40%, #071A20 70%, #0A0B14 100%)',
+        }}>
           <div className="absolute inset-0" style={{
             background: isLight
-              ? 'linear-gradient(135deg, rgba(245,246,249,0.82) 0%, rgba(245,246,249,0.45) 50%, rgba(245,246,249,0.75) 100%)'
-              : 'linear-gradient(135deg, rgba(10,11,20,0.85) 0%, rgba(10,11,20,0.5) 50%, rgba(10,11,20,0.8) 100%)',
+              ? 'radial-gradient(ellipse 90% 70% at 65% 45%, rgba(0,212,170,0.1) 0%, transparent 65%)'
+              : 'radial-gradient(ellipse 90% 70% at 65% 45%, rgba(0,212,170,0.14) 0%, rgba(0,80,120,0.08) 40%, transparent 70%)',
           }} />
         </div>
 
@@ -464,7 +462,7 @@ export default function Home() {
       <footer className="py-8 border-t" style={{ borderColor: isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)', background: isLight ? '#EDF0F7' : '#0A0B14' }}>
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="/manus-storage/rih-logo-icon_0fedc44f.png" alt="Rise In Harmony logo" className="w-6 h-6 object-contain" />
+            <img src="/rih-logo.svg" alt="Rise In Harmony logo" className="w-6 h-6 object-contain" />
             <span className="text-sm font-medium" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
               Rise In Harmony
             </span>

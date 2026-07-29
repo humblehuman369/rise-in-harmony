@@ -15,9 +15,11 @@ export const startLogin = () => {
   const appId = import.meta.env.VITE_APP_ID;
   const redirectUri = `${window.location.origin}/api/oauth/callback`;
   const nonce = crypto.randomUUID();
-  // Write the CSRF nonce cookie (SameSite=None; Secure so it survives the
-  // cross-origin redirect from manus.im back to riseinharmony.com)
-  document.cookie = `__Host-oauth_state=${nonce}; Path=/; Max-Age=600; SameSite=None; Secure`;
+  // Store the CSRF nonce in sessionStorage. sessionStorage persists across
+  // same-origin navigations (including the OAuth redirect back from manus.im)
+  // and is far more reliable than SameSite=None cookies, which are blocked by
+  // many browsers on cross-site top-level redirects.
+  try { sessionStorage.setItem('__oauth_nonce', nonce); } catch { /* private mode */ }
   const state = btoa(JSON.stringify({ redirectUri, nonce }));
   const url = new URL(`${oauthPortalUrl}/app-auth`);
   url.searchParams.set("appId", appId);

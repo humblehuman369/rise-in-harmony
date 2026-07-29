@@ -126,7 +126,7 @@ export default function About() {
             <div className="w-9 h-9 rounded-xl flex items-center justify-center"
               style={{ background: 'rgba(0,212,170,0.1)', border: '1px solid rgba(0,212,170,0.2)' }}>
               <img
-                src="/manus-storage/rih-logo-icon_0fedc44f.png"
+                src="/rih-logo.svg"
                 alt="Rise In Harmony"
                 className="w-6 h-6 object-contain"
               />

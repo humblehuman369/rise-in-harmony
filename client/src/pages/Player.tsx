@@ -412,12 +412,10 @@ export default function Player() {
             {/* Background image */}
             <div className="relative w-full max-w-sm mx-auto">
               <div className="absolute inset-0 rounded-2xl overflow-hidden">
-                <img
-                  src="/manus-storage/rih-player-bg_ac962b3f.jpg"
-                  alt=""
-                  className="w-full h-full object-cover"
-                  style={{ opacity: 0.3 }}
-                />
+                <div className="w-full h-full" style={{
+                  background: 'linear-gradient(160deg, #071828 0%, #071A20 50%, #0A0B14 100%)',
+                  opacity: 0.8,
+                }} />
                 <div className="absolute inset-0 rounded-2xl" style={{
                   background: isLight
                     ? 'radial-gradient(circle at center, transparent 30%, rgba(245,246,249,0.7) 100%)'

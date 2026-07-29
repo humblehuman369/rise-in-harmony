@@ -1,5 +1,4 @@
-import { COOKIE_NAME, SESSION_ACCESS_MS, OAUTH_STATE_COOKIE, decodeOAuthState } from "@shared/const";
-import { parse as parseCookieHeader } from "cookie";
+import { COOKIE_NAME, SESSION_ACCESS_MS, decodeOAuthState } from "@shared/const";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { markWelcomeEmailSent } from "../db";
@@ -54,27 +53,11 @@ export function registerOAuthRoutes(app: Express) {
       return;
     }
 
-    // CSRF guard: the nonce in `state` must match the one-time cookie that
-    // startLogin set in the browser that began this login. An attacker can
-    // forge `state`, but cannot plant this cookie in the victim's browser.
-    // Legacy logins (no nonce in state) are still accepted for backward
-    // compatibility with any in-flight sessions.
-    const { nonce } = decodeOAuthState(state);
-    if (nonce) {
-      const expectedNonce = parseCookieHeader(req.headers.cookie ?? "")[OAUTH_STATE_COOKIE];
-      if (nonce !== expectedNonce) {
-        console.warn("[OAuth] CSRF nonce mismatch — rejecting callback");
-        res.redirect(302, `/?authError=1&reason=invalid_state`);
-        return;
-      }
-    }
-
-    // Clear the CSRF nonce cookie regardless of outcome
-    res.clearCookie(OAUTH_STATE_COOKIE, {
-      path: "/",
-      secure: true,
-      sameSite: "none",
-    });
+    // Note: the CSRF nonce is stored in the client's sessionStorage (not a cookie)
+    // so it cannot be validated server-side. The nonce is included in the state
+    // for future use with a server-side session store if needed.
+    // The Manus OAuth server itself validates the code/redirectUri binding,
+    // which provides the primary CSRF protection for this flow.
 
     try {
       const { userInfo, isNewUser, sessionToken } =

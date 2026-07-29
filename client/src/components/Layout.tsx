@@ -154,7 +154,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <Link href="/">
           <div className="flex items-center gap-2.5 cursor-pointer select-none">
             <img
-              src="/manus-storage/rih-logo-icon_0fedc44f.png"
+              src="/rih-logo.svg"
               alt="Rise In Harmony"
               className="w-7 h-7 object-contain"
             />
