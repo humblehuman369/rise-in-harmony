@@ -9,7 +9,7 @@ import { Link, useLocation } from "wouter";
 import {
   Home, Music2, AlarmClock, BookOpen, BarChart3, Settings,
   Layers, Headphones, ShieldCheck, LogIn, LogOut, User,
-  GraduationCap, Sun, Moon, CalendarRange, Sparkles, Map, ChevronDown, Heart, Gift,
+  GraduationCap, Sun, Moon, CalendarRange, Sparkles, Map, ChevronDown, Heart, Gift, Route,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -48,6 +48,7 @@ const baseNavItems = [
   { href: "/learn", icon: GraduationCap, label: "Learn" },
   { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
   { href: "/gift", icon: Gift, label: "Gift" },
+  { href: "/onboarding", icon: Route, label: "How It Works" },
   { href: "/", icon: Home, label: "Home" },
 ];
 
