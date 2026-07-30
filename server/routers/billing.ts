@@ -99,7 +99,7 @@ export const billingRouter = router({
       const base = appBaseUrl(ctx.req);
       const successPath =
         input.successPath ??
-        "/dashboard?billing=success&session_id={CHECKOUT_SESSION_ID}";
+        "/journey?welcome=1&session_id={CHECKOUT_SESSION_ID}";
       // Stripe requires the session_id placeholder only on success_url when used;
       // if caller omitted it, append for dashboard default only.
       const successUrl = successPath.includes("{CHECKOUT_SESSION_ID}")
@@ -143,7 +143,7 @@ export const billingRouter = router({
     const stripe = getStripe();
     const session = await stripe.billingPortal.sessions.create({
       customer: user.stripeCustomerId,
-      return_url: `${appBaseUrl(ctx.req)}/dashboard`,
+      return_url: `${appBaseUrl(ctx.req)}/journey`,
     });
     return { url: session.url };
   }),

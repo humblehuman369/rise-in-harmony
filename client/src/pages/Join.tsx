@@ -225,7 +225,7 @@ export default function Join() {
     }
     setPendingTier(tier);
     try {
-      const { url } = await createCheckout.mutateAsync({ tier, successPath: "/dashboard?billing=success" });
+      const { url } = await createCheckout.mutateAsync({ tier, successPath: "/journey?welcome=1" });
       if (url) window.location.href = url;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not start checkout");

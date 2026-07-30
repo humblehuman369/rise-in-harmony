@@ -12,6 +12,7 @@ import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
+import { toast } from "sonner";
 
 // ─── Chakra / Solfeggio frequency data ────────────────────────────────────────
 
@@ -526,6 +527,18 @@ export default function Journey() {
 
   // Keep ref in sync with state so keyboard/touch handlers always have the latest value
   useEffect(() => { activeSectionRef.current = activeSection; }, [activeSection]);
+
+  // ── Welcome toast after successful subscription ──────────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("welcome") === "1") {
+      toast.success("Welcome to Premium ✦", {
+        description: "Your subscription is active. Enjoy the full library.",
+        duration: 6000,
+      });
+      window.history.replaceState({}, "", "/journey");
+    }
+  }, []);
 
   // ── Helper: scroll to a specific section index ──────────────────────────
   const scrollToSection = useCallback((idx: number) => {
