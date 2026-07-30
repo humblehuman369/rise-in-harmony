@@ -309,16 +309,30 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               )}
             </div>
           ) : (
-            <button
-              onClick={() => startLogin()}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200"
-              style={{
-                background: 'linear-gradient(135deg, rgba(0,212,170,0.18), rgba(0,212,170,0.08))',
-                border: '1px solid rgba(0,212,170,0.3)',
-                color: '#00D4AA',
-                fontFamily: 'DM Sans, sans-serif',
-                boxShadow: '0 0 16px rgba(0,212,170,0.12)',
-              }}
+            <div className="flex items-center gap-2">
+              <Link href="/join">
+                <div
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(139,92,246,0.07))',
+                    border: '1px solid rgba(139,92,246,0.28)',
+                    color: '#8B5CF6',
+                    fontFamily: 'DM Sans, sans-serif',
+                  }}
+                >
+                  Subscribe
+                </div>
+              </Link>
+              <button
+                onClick={() => startLogin()}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(0,212,170,0.18), rgba(0,212,170,0.08))',
+                  border: '1px solid rgba(0,212,170,0.3)',
+                  color: '#00D4AA',
+                  fontFamily: 'DM Sans, sans-serif',
+                  boxShadow: '0 0 16px rgba(0,212,170,0.12)',
+                }}
               onMouseEnter={e => {
                 (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg, rgba(0,212,170,0.28), rgba(0,212,170,0.16))';
                 (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(0,212,170,0.22)';
@@ -331,6 +345,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <LogIn size={14} />
               Sign In
             </button>
+            </div>
           )}
         </div>
       </header>
