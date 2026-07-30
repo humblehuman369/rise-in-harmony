@@ -87,7 +87,7 @@ export default function PremiumPaywall({
     trackUpgradeTapped(tier === "annual" ? "yearly" : tier);
 
     if (!user) {
-      startLogin();
+      startLogin(tier); // store tier so checkout resumes after sign-in
       return;
     }
     if (!billingConfig.data?.enabled) {

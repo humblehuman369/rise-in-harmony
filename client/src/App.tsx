@@ -30,6 +30,10 @@ import Gift from "./pages/Gift";
 import { useAuth } from "./_core/hooks/useAuth";
 import { useLocalSessionImport } from "./hooks/useLocalSessionImport";
 import { useAnalytics } from "./hooks/useAnalytics";
+import { useEffect, useRef } from "react";
+import { trpc } from "./lib/trpc";
+import { PENDING_CHECKOUT_KEY } from "./const";
+import { toast } from "sonner";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -69,6 +73,21 @@ function AppContent() {
   useAnalytics(user?.id ?? undefined, user?.email ?? undefined);
   // One-time bulk import of localStorage sessions to server after login
   useLocalSessionImport(user?.id);
+  // Resume pending checkout after sign-in (e.g. guest clicked Subscribe then logged in)
+  const createCheckout = trpc.billing.createCheckoutSession.useMutation();
+  const resumedRef = useRef(false);
+  useEffect(() => {
+    if (!user || resumedRef.current) return;
+    let tier: string | null = null;
+    try { tier = sessionStorage.getItem(PENDING_CHECKOUT_KEY); } catch { /* private mode */ }
+    if (!tier) return;
+    resumedRef.current = true;
+    try { sessionStorage.removeItem(PENDING_CHECKOUT_KEY); } catch { /* */ }
+    createCheckout
+      .mutateAsync({ tier: tier as "monthly" | "annual" | "lifetime" })
+      .then(({ url }) => { if (url) window.location.href = url; })
+      .catch(() => toast.error("Could not resume checkout — please try subscribing again."));
+  }, [user]);
   const isLight = theme === 'light';
   return (
     <>

@@ -90,7 +90,7 @@ export default function PricingSection() {
   const handleChoose = async (tier: Tier) => {
     trackUpgradeTapped(tier === "annual" ? "yearly" : tier);
     if (!user) {
-      startLogin();
+      startLogin(tier); // store tier so checkout resumes after sign-in
       return;
     }
     if (!billingConfig.data?.enabled) {
