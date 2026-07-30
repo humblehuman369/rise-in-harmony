@@ -8,7 +8,7 @@ import { ArrowLeft, FileText } from "lucide-react";
 import Layout from "@/components/Layout";
 
 const LAST_UPDATED = "June 29, 2026";
-const CONTACT_EMAIL = "legal@riseinharmony.com";
+const CONTACT_EMAIL = "support@riseinharmony.com";
 const APP_NAME = "Rise In Harmony";
 
 interface Section {

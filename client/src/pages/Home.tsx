@@ -471,14 +471,14 @@ export default function Home() {
             © 2026 Rise In Harmony. Begin every morning in resonance.
           </div>
           <div className="flex gap-6">
-            {['Privacy', 'Terms', 'Contact'].map(l => (
-              <button key={l} onClick={() => toast(`${l} — coming soon`)}
+            {([['Privacy', '/privacy'], ['Terms', '/terms'], ['Contact', 'mailto:hello@riseinharmony.com']] as [string, string][]).map(([l, href]) => (
+              <a key={l} href={href}
                 className="text-xs transition-colors duration-200"
-                style={{ color: isLight ? '#6B7A99' : '#4A5568', fontFamily: 'DM Sans, sans-serif' }}
+                style={{ color: isLight ? '#6B7A99' : '#4A5568', fontFamily: 'DM Sans, sans-serif', textDecoration: 'none' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = isLight ? '#1A1D2E' : '#6B7A99'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isLight ? '#6B7A99' : '#4A5568'; }}>
                 {l}
-              </button>
+              </a>
             ))}
           </div>
         </div>

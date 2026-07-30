@@ -10,8 +10,8 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "hello@riseinharmony.app";
-const APP_URL = process.env.APP_URL || "https://riseinharmony.app";
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "hello@riseinharmony.com";
+const APP_URL = process.env.APP_URL || "https://www.riseinharmony.com";
 
 // ─── Email Templates ──────────────────────────────────────────────────────────
 
