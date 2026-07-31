@@ -464,6 +464,17 @@ export function useFrequencyPlayer(onError?: AudioErrorCallback) {
     }
   }, []);
 
+  // ── Real-time binaural beat sweep (for Deep Sleep Wake sequence) ───────────
+  // Sends a new freqL/freqR pair to the running DDS worklet without restarting.
+  // carrierHz: the base carrier frequency (e.g. 200 Hz)
+  // beatHz: the binaural beat offset (e.g. 3 = Delta, 6 = Theta, 10 = Alpha)
+  const sweepBeat = useCallback((carrierHz: number, beatHz: number) => {
+    const node = workletNodeRef.current;
+    if (!node) return;
+    node.port.postMessage({ type: "setFreq", freqL: carrierHz, freqR: carrierHz + beatHz });
+    node.port.postMessage({ type: "setMode", mode: "binaural" });
+  }, []);
+
   // ── Tone timbre (tuning fork ↔ singing bowl) — switches live ──────────────
   const setTimbre = useCallback((t: ToneTimbre) => {
     timbreRef.current = t;
@@ -509,5 +520,6 @@ export function useFrequencyPlayer(onError?: AudioErrorCallback) {
     togglePlay,
     setVolume,
     setTimbre,
+    sweepBeat,
   };
 }

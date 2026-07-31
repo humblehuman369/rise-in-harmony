@@ -83,6 +83,8 @@ function loadSavedMixes(): SavedStudioMix[] {
 }
 
 // ─── Local alarm type ─────────────────────────────────────────────────────────
+type SleepProfile = "light" | "normal" | "heavy" | "very_heavy";
+
 interface Alarm {
   id: string;
   time: string;
@@ -92,6 +94,7 @@ interface Alarm {
   days: number[];
   enabled: boolean;
   fadeInMinutes: number;
+  sleepProfile?: SleepProfile;
   soundType?: "frequency" | "user_sound" | "studio_mix";
   studioMixId?: string;
   studioMixName?: string;
@@ -115,8 +118,9 @@ function persistLocalAlarms(alarms: Alarm[]) {
 
 const WAKE_SEQUENCES = [
   { id: "gentle", name: "Gentle Morning", icon: Sunrise, description: "432Hz → 528Hz fade-in over 5 min", isPremium: false, color: "#F59E0B" },
-  { id: "chakra", name: "Chakra Awakening", icon: Waves, description: "Root to Crown — 7 chakra progression", isPremium: true, color: "#8B5CF6" },
-  { id: "binaural-focus", name: "Binaural Focus", icon: Zap, description: "Alpha waves for mental clarity", isPremium: true, color: "#00D4AA" },
+  { id: "deep-sleep-wake", name: "Deep Sleep Wake", icon: Waves, description: "δ Delta → θ Theta → α Alpha — brain-guided wake", isPremium: false, color: "#00D4AA" },
+  { id: "chakra", name: "Chakra Awakening", icon: Zap, description: "Root to Crown — 7 chakra progression", isPremium: true, color: "#8B5CF6" },
+  { id: "binaural-focus", name: "Binaural Focus", icon: BellRing, description: "Alpha waves for mental clarity", isPremium: true, color: "#3B82F6" },
 ];
 
 const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -460,6 +464,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
   const [selectedSeq, setSelectedSeq] = useState(editingAlarm?.sequenceId ?? "gentle");
   const [selectedDays, setSelectedDays] = useState(editingAlarm?.days ?? [1, 2, 3, 4, 5]);
   const [fadeIn, setFadeIn] = useState(editingAlarm?.fadeInMinutes ?? 5);
+  const [sleepProfile, setSleepProfile] = useState<SleepProfile>(editingAlarm?.sleepProfile ?? "normal");
   const [soundMode, setSoundMode] = useState<SoundTab>(
     editingAlarm?.studioMixId ? "studio" : editingAlarm?.ambientId ? "ambient" : "frequency"
   );
@@ -512,6 +517,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
       frequencyId: selectedFreq, sequenceId: selectedSeq,
       days: selectedDays, enabled: editingAlarm?.enabled ?? true,
       fadeInMinutes: fadeIn,
+      sleepProfile,
     };
     if (soundMode === "studio" && selectedMixId) {
       const mix = savedMixes.find(m => m.id === selectedMixId);
@@ -690,16 +696,21 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                     const previewKey = `freq:${f.id}`;
                     const isPreviewing = previewId === previewKey;
                     const previewUrl = f.audioUrl ?? getLibraryLoopUrl(`binaural-${f.hz}`);
+                    // 432Hz and 528Hz are always free for alarm use — they are the brand promise
+                    const alarmFree = f.hz === 432 || f.hz === 528;
+                    const isLocked = f.isPremium && !isPremium && !alarmFree;
                     return (
-                      <button key={f.id} onClick={() => { if (f.isPremium && !isPremium) { onPremiumNeeded(); return; } setSelectedFreq(f.id); }}
+                      <button key={f.id} onClick={() => { if (isLocked) { onPremiumNeeded(); return; } setSelectedFreq(f.id); }}
                         className="p-3 rounded-xl text-left transition-all duration-200 relative"
                         style={{
                           background: selectedFreq === f.id ? `${f.color}18` : 'rgba(255,255,255,0.03)',
                           border: `1px solid ${selectedFreq === f.id ? f.color + '40' : 'rgba(255,255,255,0.06)'}`,
-                          opacity: f.isPremium ? 0.75 : 1,
+                          opacity: isLocked ? 0.65 : 1,
                         }}>
-                        {f.isPremium ? (
+                        {isLocked ? (
                           <Lock size={9} style={{ color: '#8B5CF6', position: 'absolute', top: 8, right: 8 }} />
+                        ) : alarmFree && f.isPremium ? (
+                          <span style={{ position: 'absolute', top: 6, right: 6, fontSize: 8, color: '#00D4AA', fontFamily: 'DM Sans, sans-serif', background: 'rgba(0,212,170,0.12)', padding: '1px 4px', borderRadius: 4 }}>FREE</span>
                         ) : (
                           <button onClick={(e) => togglePreview(previewKey, previewUrl, e)}
                             className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-150"
@@ -831,6 +842,30 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                     fontFamily: 'DM Sans, sans-serif',
                   }}>
                   {v}m
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Sleep Profile ── */}
+          <div className="mb-6">
+            <label className="block text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Sleep Profile</label>
+            <p className="text-[11px] mb-3" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Controls how quickly the alarm escalates to full volume</p>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { id: 'light' as const, label: 'Light Sleeper', desc: 'Slow, gentle rise', color: '#00D4AA' },
+                { id: 'normal' as const, label: 'Normal', desc: 'Balanced escalation', color: '#8B5CF6' },
+                { id: 'heavy' as const, label: 'Heavy Sleeper', desc: 'Faster escalation', color: '#F59E0B' },
+                { id: 'very_heavy' as const, label: 'Very Heavy', desc: 'Quick to full volume', color: '#EF4444' },
+              ] as const).map(p => (
+                <button key={p.id} onClick={() => setSleepProfile(p.id)}
+                  className="p-3 rounded-xl text-left transition-all duration-200"
+                  style={{
+                    background: sleepProfile === p.id ? `${p.color}12` : 'rgba(255,255,255,0.03)',
+                    border: `1.5px solid ${sleepProfile === p.id ? p.color + '45' : 'rgba(255,255,255,0.06)'}`,
+                  }}>
+                  <div className="text-xs font-semibold" style={{ color: sleepProfile === p.id ? p.color : '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>{p.label}</div>
+                  <div className="text-[10px] mt-0.5" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>{p.desc}</div>
                 </button>
               ))}
             </div>
@@ -1364,8 +1399,13 @@ export default function Alarm() {
             soundName={soundName}
             sound={sound}
             fadeInMinutes={firingAlarm.fadeInMinutes}
+            sleepProfile={firingAlarm.sleepProfile ?? "normal"}
+            snoozeCount={snoozeCount}
+            maxSnoozes={MAX_SNOOZES}
+            sequenceId={firingAlarm.sequenceId}
             onStop={handleStop}
             onSnooze={isGentleReentry ? handleStop : handleSnooze}
+            missionEnabled={true}
           />
         );
       })()}
