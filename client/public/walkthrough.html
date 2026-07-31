@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rise In Harmony — Live Journey Walkthrough</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0A0B14; --surface: #1A1C29; --teal: #00D4AA;
+      --purple: #8B5CF6; --gold: #FFD93D; --text: #F3F4F6;
+      --muted: #9CA3AF; --hairline: #2D3142;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
+
+    /* ── CANVAS ── */
+    #bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    /* ── PROGRESS ── */
+    #progress-bar {
+      position: fixed; top: 0; left: 0; height: 2px;
+      background: linear-gradient(to right, var(--teal), var(--purple));
+      z-index: 100; transition: width 0.1s linear;
+      box-shadow: 0 0 8px var(--teal);
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 48px;
+      background: linear-gradient(to bottom, rgba(10,11,20,0.96) 0%, transparent 100%);
+      backdrop-filter: blur(12px);
+    }
+    .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; color: var(--text); text-decoration: none; }
+    .nav-logo span { color: var(--teal); }
+    .nav-dots { display: flex; gap: 8px; align-items: center; }
+    .nav-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--hairline); cursor: pointer; transition: all 0.3s; }
+    .nav-dot.active { background: var(--teal); box-shadow: 0 0 6px var(--teal); transform: scale(1.4); }
+    .nav-cta {
+      display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px;
+      border-radius: 100px; background: var(--teal); color: var(--bg);
+      font-weight: 700; font-size: 14px; text-decoration: none; transition: all 0.2s;
+    }
+    .nav-cta:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    /* ── SECTIONS ── */
+    section {
+      position: relative; z-index: 1; min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 120px 48px 80px;
+    }
+    .inner { max-width: 1200px; width: 100%; margin: 0 auto; }
+
+    /* ── HERO ── */
+    #hero { text-align: center; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px; padding: 6px 18px;
+      border-radius: 100px; border: 1px solid rgba(0,212,170,0.3);
+      background: rgba(0,212,170,0.08); color: var(--teal);
+      font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 32px;
+    }
+    .hero-badge::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--teal);
+      animation: blink 2s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    h1 {
+      font-family: 'Cormorant Garamond', serif; font-size: clamp(52px, 7vw, 96px);
+      font-weight: 300; line-height: 1.05; margin-bottom: 24px;
+      background: linear-gradient(135deg, #fff 0%, #a5b4fc 60%, var(--teal) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-sub { font-size: clamp(16px, 2vw, 20px); color: var(--muted); max-width: 580px; margin: 0 auto 48px; line-height: 1.75; }
+    .hero-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn-p {
+      display: inline-flex; align-items: center; gap: 10px; padding: 16px 40px;
+      border-radius: 100px; background: var(--teal); color: var(--bg);
+      font-weight: 700; font-size: 16px; text-decoration: none; border: none; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-p:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,212,170,0.35); }
+    .btn-g {
+      display: inline-flex; align-items: center; gap: 10px; padding: 16px 40px;
+      border-radius: 100px; border: 1px solid var(--hairline); color: var(--text);
+      font-size: 16px; text-decoration: none; background: none; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-g:hover { border-color: var(--teal); color: var(--teal); }
+    .scroll-hint {
+      position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      color: var(--muted); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+      animation: float 2.5s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(8px)} }
+    .scroll-arrow { width: 18px; height: 18px; border-right: 1px solid var(--muted); border-bottom: 1px solid var(--muted); transform: rotate(45deg); }
+
+    /* ── REVEAL ── */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.9s ease, transform 0.9s ease; }
+    .reveal.in { opacity: 1; transform: translateY(0); }
+    .d1 { transition-delay: 0.1s; } .d2 { transition-delay: 0.2s; } .d3 { transition-delay: 0.3s; } .d4 { transition-delay: 0.4s; }
+
+    /* ── DIVIDER ── */
+    .div { width: 100%; max-width: 1200px; height: 1px; background: linear-gradient(to right, transparent, var(--hairline), transparent); margin: 0 auto; position: relative; z-index: 1; }
+
+    /* ── STEP HEADER ── */
+    .step-hd { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+    .step-num { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+    .step-lbl { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+    h2 { font-family: 'Cormorant Garamond', serif; font-size: clamp(36px, 5vw, 62px); font-weight: 400; line-height: 1.15; margin-bottom: 20px; }
+    .body-text { font-size: 18px; color: var(--muted); line-height: 1.8; max-width: 580px; margin-bottom: 32px; }
+
+    /* ── CHIPS ── */
+    .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 100px; font-size: 13px; font-weight: 500; border: 1px solid; }
+    .ct { border-color: rgba(0,212,170,0.3); background: rgba(0,212,170,0.07); color: var(--teal); }
+    .cp { border-color: rgba(139,92,246,0.3); background: rgba(139,92,246,0.07); color: var(--purple); }
+    .cg { border-color: rgba(255,217,61,0.3); background: rgba(255,217,61,0.07); color: var(--gold); }
+
+    /* ── SPLIT ── */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+    .split.rev { direction: rtl; } .split.rev > * { direction: ltr; }
+
+    /* ── MOCKUP ── */
+    .mock { background: var(--surface); border: 1px solid var(--hairline); border-radius: 20px; overflow: hidden; }
+    .mock-inner { padding: 32px; background: linear-gradient(145deg, #0D0F1E, #1A1C29); }
+
+    /* ── PRICING GRID ── */
+    .price-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 40px; }
+    .pc { background: var(--surface); border: 1px solid var(--hairline); border-radius: 16px; padding: 28px; position: relative; transition: transform 0.3s; }
+    .pc:hover { transform: translateY(-4px); }
+    .pc::before { content:''; position:absolute; top:0;left:0;right:0;height:2px;border-radius:16px 16px 0 0; }
+    .pc.t::before{background:var(--teal)} .pc.p::before{background:var(--purple)} .pc.g::before{background:var(--gold)}
+    .pc.featured { border-color: var(--purple); background: rgba(139,92,246,0.05); }
+    .pc-tier { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+    .pc-price { font-family: 'Cormorant Garamond', serif; font-size: 42px; margin-bottom: 8px; }
+    .pc-desc { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+    .pc-badge { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 10px; font-weight: 700; background: var(--purple); color: #fff; margin-bottom: 10px; }
+
+    /* ── BADGE TRIO ── */
+    .badge-trio { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 40px; }
+    .ab { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 28px 20px; background: var(--surface); border: 1px solid var(--hairline); border-radius: 16px; text-align: center; }
+    .ab-ring { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+    .ab-name { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; }
+    .ab-desc { font-size: 12px; color: var(--muted); }
+
+    /* ── TOAST ── */
+    .toast {
+      display: flex; align-items: center; gap: 14px; padding: 18px 22px;
+      background: var(--surface); border: 1px solid rgba(0,212,170,0.4); border-radius: 14px;
+      margin-top: 28px; max-width: 460px; position: relative; overflow: hidden;
+    }
+    .toast-ico { width: 38px; height: 38px; border-radius: 50%; background: rgba(0,212,170,0.12); display: flex; align-items: center; justify-content: center; color: var(--teal); font-size: 16px; flex-shrink: 0; }
+    .toast-t { font-size: 14px; font-weight: 600; color: var(--teal); margin-bottom: 3px; }
+    .toast-b { font-size: 13px; color: var(--muted); }
+    .toast-prog { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--teal); animation: drain 6s linear infinite; }
+    @keyframes drain { from{width:100%} to{width:0%} }
+
+    /* ── JOURNEY FEATURES ── */
+    .jf-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-top: 36px; }
+    .jf { padding: 20px; background: var(--surface); border: 1px solid var(--hairline); border-radius: 12px; transition: border-color 0.3s; }
+    .jf:hover { border-color: rgba(0,212,170,0.4); }
+    .jf-icon { font-size: 22px; margin-bottom: 10px; }
+    .jf-name { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .jf-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+    /* ── WAVEFORM ── */
+    .wf { display: flex; align-items: center; gap: 3px; height: 36px; }
+    .wf-bar { width: 3px; border-radius: 2px; background: var(--teal); animation: wv 1.3s ease-in-out infinite; }
+    @keyframes wv { 0%,100%{height:5px;opacity:0.3} 50%{height:30px;opacity:1} }
+
+    /* ── APP FEATURES GRID ── */
+    .feat3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+    .feat-card { padding: 28px; background: var(--surface); border: 1px solid var(--hairline); border-radius: 16px; }
+    .feat-lbl { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+    .feat-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; margin-bottom: 10px; }
+    .feat-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* ── SPEC CARDS ── */
+    .spec2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; }
+    .sc { padding: 20px; background: var(--surface); border: 1px solid var(--hairline); border-radius: 12px; text-align: center; }
+    .sc-val { font-family: 'Cormorant Garamond', serif; font-size: 28px; color: var(--teal); margin-bottom: 6px; }
+    .sc-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* ── CLOSING ── */
+    #closing { text-align: center; background: radial-gradient(ellipse at center, rgba(0,212,170,0.06) 0%, transparent 65%); }
+    .closing-line { font-family: 'Cormorant Garamond', serif; font-size: clamp(40px,6vw,76px); font-weight: 300; font-style: italic; color: var(--teal); margin-bottom: 20px; }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:900px){
+      nav{padding:16px 24px;}
+      section{padding:100px 24px 60px;}
+      .split,.split.rev{grid-template-columns:1fr;gap:40px;direction:ltr;}
+      .price-grid,.badge-trio,.feat3{grid-template-columns:1fr;}
+      .jf-grid{grid-template-columns:1fr 1fr;}
+      .nav-dots{display:none;}
+    }
+    @media(max-width:600px){
+      .jf-grid{grid-template-columns:1fr;}
+      .spec2{grid-template-columns:1fr 1fr;}
+    }
+  </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div id="progress-bar" style="width:0%"></div>
+
+<nav>
+  <a href="#hero" class="nav-logo">Rise In <span>Harmony</span></a>
+  <div class="nav-dots" id="nav-dots"></div>
+  <a href="https://www.riseinharmony.com/join" class="nav-cta" target="_blank">
+    Subscribe
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+  </a>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="inner" style="text-align:center">
+    <div class="hero-badge reveal">Live Walkthrough</div>
+    <h1 class="reveal d1">Begin Your Day<br>in Resonance</h1>
+    <p class="hero-sub reveal d2">Welcome to Rise In Harmony — a healing frequency app designed to align your mind, body, and spirit. Experience the subscriber journey, step by step.</p>
+    <div class="hero-btns reveal d3">
+      <button class="btn-p" onclick="document.getElementById('s1').scrollIntoView({behavior:'smooth'})">
+        Start the Journey
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+      <a href="https://www.riseinharmony.com" class="btn-g" target="_blank">Open App</a>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll to explore</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- STEP 1: CHOOSE PLAN -->
+<section id="s1" data-step="1">
+  <div class="inner">
+    <div class="reveal">
+      <div class="step-hd">
+        <div class="step-num" style="background:rgba(0,212,170,0.12);color:var(--teal)">01</div>
+        <span class="step-lbl">Choose Your Plan</span>
+      </div>
+      <h2>Three Tiers.<br>One Clear Decision.</h2>
+      <p class="body-text">Visit riseinharmony.com/join and select the subscription that resonates with you. Your selection is remembered — so when you sign in, checkout resumes automatically.</p>
+    </div>
+    <div class="price-grid reveal d2">
+      <div class="pc t">
+        <div class="pc-tier" style="color:var(--teal)">Monthly</div>
+        <div class="pc-price" style="color:var(--teal)">$7.99<span style="font-size:16px;color:var(--muted)">/mo</span></div>
+        <div class="pc-desc">Flexible explorers. Cancel anytime.</div>
+        <div class="chips"><span class="chip ct">Full library</span><span class="chip ct">All 26 Hz</span></div>
+      </div>
+      <div class="pc p featured">
+        <div class="pc-badge">Best Value</div>
+        <div class="pc-tier" style="color:var(--purple)">Annual</div>
+        <div class="pc-price" style="color:var(--purple)">$49.99<span style="font-size:16px;color:var(--muted)">/yr</span></div>
+        <div class="pc-desc">7-day free trial. Committed practitioners.</div>
+        <div class="chips"><span class="chip cp">7-day trial</span><span class="chip cp">Priority support</span></div>
+      </div>
+      <div class="pc g">
+        <div class="pc-tier" style="color:var(--gold)">Founder Lifetime</div>
+        <div class="pc-price" style="color:var(--gold)">$149.99<span style="font-size:16px;color:var(--muted)"> once</span></div>
+        <div class="pc-desc">500 seats only. Early believers.</div>
+        <div class="chips"><span class="chip cg">Lifetime access</span><span class="chip cg">Founder badge</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- STEP 2: SIGN IN -->
+<section id="s2" data-step="2">
+  <div class="inner split">
+    <div class="reveal">
+      <div class="step-hd">
+        <div class="step-num" style="background:rgba(139,92,246,0.12);color:var(--purple)">02</div>
+        <span class="step-lbl">Sign In or Create Account</span>
+      </div>
+      <h2>One Portal.<br>Zero Friction.</h2>
+      <p class="body-text">Clicking Subscribe stores your selected tier in session memory and routes you to the Manus OAuth portal. No separate registration form. Your account is created in a single step.</p>
+      <div class="chips">
+        <span class="chip ct">Google</span><span class="chip ct">Apple</span><span class="chip ct">Microsoft</span><span class="chip ct">Facebook</span><span class="chip ct">Email</span>
+      </div>
+      <p style="margin-top:20px;font-size:14px;color:var(--muted)">Your subscription intent is stored — you never lose your place.</p>
+    </div>
+    <div class="reveal d2">
+      <div class="mock">
+        <div class="mock-inner">
+          <div style="text-align:center;margin-bottom:24px">
+            <div style="width:52px;height:52px;border-radius:50%;background:rgba(0,212,170,0.12);border:1px solid rgba(0,212,170,0.3);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:22px">🌊</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:19px;margin-bottom:4px">Sign in to Rise In Harmony</div>
+            <div style="font-size:12px;color:var(--muted)">Choose your preferred method</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-radius:10px;border:1px solid var(--hairline);background:rgba(255,255,255,0.02);font-size:13px;cursor:pointer;transition:border-color 0.2s" onmouseover="this.style.borderColor='rgba(0,212,170,0.4)'" onmouseout="this.style.borderColor='var(--hairline)'">
+              <span>🔵</span> Continue with Google
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-radius:10px;border:1px solid var(--hairline);background:rgba(255,255,255,0.02);font-size:13px;cursor:pointer;transition:border-color 0.2s" onmouseover="this.style.borderColor='rgba(0,212,170,0.4)'" onmouseout="this.style.borderColor='var(--hairline)'">
+              <span>🍎</span> Continue with Apple
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-radius:10px;border:1px solid var(--hairline);background:rgba(255,255,255,0.02);font-size:13px;cursor:pointer;transition:border-color 0.2s" onmouseover="this.style.borderColor='rgba(0,212,170,0.4)'" onmouseout="this.style.borderColor='var(--hairline)'">
+              <span>📧</span> Continue with Email
+            </div>
+          </div>
+          <div style="text-align:center;margin-top:18px;font-size:11px;color:var(--muted)">Secured by Manus OAuth · CSRF protected</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- STEP 3: CHECKOUT -->
+<section id="s3" data-step="3">
+  <div class="inner split rev">
+    <div class="reveal">
+      <div class="step-hd">
+        <div class="step-num" style="background:rgba(99,91,255,0.12);color:#635BFF">03</div>
+        <span class="step-lbl">Stripe Checkout</span>
+      </div>
+      <h2>Payment Resumes<br>Automatically.</h2>
+      <p class="body-text">After authentication, the app detects the stored intent and immediately opens Stripe Checkout — pre-loaded with the selected plan. No second click. Under 60 seconds from intent to confirmation.</p>
+      <div class="chips">
+        <span class="chip ct">PCI-compliant</span><span class="chip ct">7-day free trial</span><span class="chip ct">Auto-resume</span>
+      </div>
+    </div>
+    <div class="reveal d2">
+      <div class="mock">
+        <div class="mock-inner">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+            <div style="width:36px;height:36px;border-radius:8px;background:#635BFF;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px">S</div>
+            <div><div style="font-size:14px;font-weight:600">Rise In Harmony</div><div style="font-size:11px;color:var(--muted)">Annual Plan — 7-day free trial</div></div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);border:1px solid var(--hairline);border-radius:10px;padding:14px;margin-bottom:12px">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:6px">CARD NUMBER</div>
+            <div style="font-size:13px;letter-spacing:2px">•••• •••• •••• 4242</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+            <div style="background:rgba(255,255,255,0.03);border:1px solid var(--hairline);border-radius:10px;padding:14px">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:6px">EXPIRY</div><div style="font-size:13px">12 / 28</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.03);border:1px solid var(--hairline);border-radius:10px;padding:14px">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:6px">CVC</div><div style="font-size:13px">•••</div>
+            </div>
+          </div>
+          <div style="background:#635BFF;border-radius:10px;padding:14px;text-align:center;font-weight:700;font-size:14px;color:#fff;cursor:pointer">Start Free Trial →</div>
+          <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--muted)">$0 today. $49.99/year after 7 days.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- STEP 4+5: WELCOME -->
+<section id="s4" data-step="4">
+  <div class="inner" style="text-align:center">
+    <div class="reveal">
+      <div class="step-hd" style="justify-content:center">
+        <div class="step-num" style="background:rgba(255,217,61,0.12);color:var(--gold)">04</div>
+        <span class="step-lbl">The Welcome Moment</span>
+      </div>
+      <h2>Subscription Confirmed.<br><em style="color:var(--teal);font-style:italic">Welcome to Premium ✦</em></h2>
+      <p class="body-text" style="margin:0 auto 0">On successful payment, you are redirected to your Journey tab. Three confirmations appear, followed by a gentle notification.</p>
+    </div>
+    <div class="badge-trio reveal d2">
+      <div class="ab">
+        <div class="ab-ring" style="background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.3)">✓</div>
+        <div class="ab-name" style="color:var(--teal)">SUBSCRIPTION ACTIVE</div>
+        <div class="ab-desc">Your account is fully unlocked</div>
+      </div>
+      <div class="ab">
+        <div class="ab-ring" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3)">★</div>
+        <div class="ab-name" style="color:var(--purple)">FULL LIBRARY UNLOCKED</div>
+        <div class="ab-desc">All meditation tracks available</div>
+      </div>
+      <div class="ab">
+        <div class="ab-ring" style="background:rgba(255,217,61,0.1);border:1px solid rgba(255,217,61,0.3)">〜</div>
+        <div class="ab-name" style="color:var(--gold)">ALL 26 FREQUENCIES</div>
+        <div class="ab-desc">Complete healing spectrum</div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:center" class="reveal d3">
+      <div class="toast">
+        <div class="toast-ico">✦</div>
+        <div>
+          <div class="toast-t">Welcome to Premium ✦</div>
+          <div class="toast-b">Your subscription is active. Enjoy the full library.</div>
+        </div>
+        <div class="toast-prog"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- STEP 5: JOURNEY TAB -->
+<section id="s5" data-step="5">
+  <div class="inner">
+    <div class="reveal">
+      <div class="step-hd">
+        <div class="step-num" style="background:rgba(0,212,170,0.12);color:var(--teal)">05</div>
+        <span class="step-lbl">The Journey Tab</span>
+      </div>
+      <h2>Your Healing Practice<br>Starts Here.</h2>
+      <p class="body-text">Every new subscriber lands on the Journey tab — routed here intentionally to immerse them in practice immediately. Six sections guide you from curiosity to daily ritual.</p>
+    </div>
+    <div class="jf-grid reveal d2">
+      <div class="jf"><div class="jf-icon">〜</div><div class="jf-name">Healing Frequencies</div><div class="jf-desc">26 precisely synthesized frequencies with benefit mapping</div></div>
+      <div class="jf"><div class="jf-icon">🧠</div><div class="jf-name">Body &amp; Mind</div><div class="jf-desc">Frequency-to-benefit mapping for mind, body, and spirit</div></div>
+      <div class="jf"><div class="jf-icon">✦</div><div class="jf-name">Sacred Geometry</div><div class="jf-desc">Visual representations of harmonic resonance patterns</div></div>
+      <div class="jf"><div class="jf-icon">🔬</div><div class="jf-name">Science of Sound</div><div class="jf-desc">Research behind healing frequencies and brainwave entrainment</div></div>
+      <div class="jf"><div class="jf-icon">📊</div><div class="jf-name">Waveform Visualization</div><div class="jf-desc">Real-time rendering of your active frequency session</div></div>
+      <div class="jf"><div class="jf-icon">🔔</div><div class="jf-name">Begin Your Practice</div><div class="jf-desc">Set your healing alarm and start your first session</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- STEP 6: FULL APP -->
+<section id="s6" data-step="6">
+  <div class="inner">
+    <div class="reveal" style="text-align:center;margin-bottom:60px">
+      <div class="step-hd" style="justify-content:center">
+        <div class="step-num" style="background:rgba(0,212,170,0.12);color:var(--teal)">06</div>
+        <span class="step-lbl">The Full Application</span>
+      </div>
+      <h2>Everything You Need<br>to Heal, Every Day.</h2>
+      <p class="body-text" style="margin:0 auto">Six core features powered by the same Direct Digital Synthesis engine — the most precise frequency generation in any consumer wellness app.</p>
+    </div>
+
+    <!-- Frequency Studio -->
+    <div class="split reveal" style="margin-bottom:72px">
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--teal);margin-bottom:14px">Frequency Studio</div>
+        <h2 style="font-size:clamp(28px,4vw,46px)">The Heart of<br>Rise In Harmony.</h2>
+        <p class="body-text">DDS engine generating any frequency from 1 to 22,000 Hz at 0.01 Hz resolution. Binaural, isochronic, or mono. Layer music and nature sounds. Brainwave state shown in real time.</p>
+        <div class="spec2">
+          <div class="sc"><div class="sc-val">1–22k Hz</div><div class="sc-lbl">Range</div></div>
+          <div class="sc"><div class="sc-val">±0.05 Hz</div><div class="sc-lbl">Precision</div></div>
+        </div>
+      </div>
+      <div class="reveal d2">
+        <div class="mock">
+          <div class="mock-inner" style="text-align:center">
+            <div style="font-size:68px;font-weight:700;color:var(--teal);letter-spacing:-2px;margin-bottom:6px;text-shadow:0 0 30px rgba(0,212,170,0.4)">528.00</div>
+            <div style="font-size:16px;color:var(--muted);margin-bottom:22px">Hz · Solfeggio · Sine Wave</div>
+            <div class="wf" style="justify-content:center;margin-bottom:22px">
+              <div class="wf-bar" style="animation-delay:0s"></div><div class="wf-bar" style="animation-delay:0.12s"></div>
+              <div class="wf-bar" style="animation-delay:0.24s"></div><div class="wf-bar" style="animation-delay:0.36s"></div>
+              <div class="wf-bar" style="animation-delay:0.48s"></div><div class="wf-bar" style="animation-delay:0.36s"></div>
+              <div class="wf-bar" style="animation-delay:0.24s"></div><div class="wf-bar" style="animation-delay:0.12s"></div>
+              <div class="wf-bar" style="animation-delay:0s"></div>
+            </div>
+            <div class="chips" style="justify-content:center"><span class="chip ct">Binaural</span><span class="chip ct">Isochronic</span><span class="chip ct">Mono</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Healing Alarm -->
+    <div class="split rev reveal" style="margin-bottom:72px">
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--purple);margin-bottom:14px">Healing Alarm + Sleep-to-Wake</div>
+        <h2 style="font-size:clamp(28px,4vw,46px)">Heal While You Sleep.<br>Rise in Resonance.</h2>
+        <p class="body-text">Set a healing frequency to wake you each morning. The Sleep-to-Wake Cycle links your bedtime Delta isochronic session directly to your morning alarm.</p>
+        <div class="chips" style="margin-top:20px">
+          <span class="chip cp">528 Hz Transformation</span><span class="chip cp">432 Hz Natural Harmony</span>
+          <span class="chip cp">396 Hz Liberation</span><span class="chip cp">963 Hz Crown Activation</span>
+        </div>
+      </div>
+      <div class="reveal d2">
+        <div class="mock">
+          <div class="mock-inner">
+            <div style="text-align:center;margin-bottom:20px">
+              <div style="font-size:52px;font-weight:700;color:var(--text);letter-spacing:-1px">06:30</div>
+              <div style="font-size:13px;color:var(--teal)">Morning Harmony · 432 Hz</div>
+            </div>
+            <div style="background:rgba(139,92,246,0.07);border:1px solid rgba(139,92,246,0.3);border-radius:12px;padding:18px">
+              <div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:12px">Sleep-to-Wake Cycle</div>
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div style="text-align:center"><div style="font-size:18px;margin-bottom:4px">🌙</div><div style="font-size:12px;font-weight:600">22:30</div><div style="font-size:10px;color:var(--muted)">Delta Sleep</div></div>
+                <div style="flex:1;height:1px;background:linear-gradient(to right,var(--purple),var(--teal));margin:0 14px"></div>
+                <div style="text-align:center"><div style="font-size:18px;margin-bottom:4px">☀️</div><div style="font-size:12px;font-weight:600">06:30</div><div style="font-size:10px;color:var(--muted)">528 Hz Wake</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 more features -->
+    <div class="feat3 reveal">
+      <div class="feat-card">
+        <div class="feat-lbl" style="color:var(--gold)">Reiki Session</div>
+        <div class="feat-title">5-Phase Guided Healing</div>
+        <div class="feat-desc">Tri-layer DDS at 216, 432, and 864 Hz. Crystal Bowl or Tibetan Bowl. Live phase guidance throughout.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-lbl" style="color:var(--teal)">Meditation Player</div>
+        <div class="feat-title">9 TrueHz Tracks</div>
+        <div class="feat-desc">Healing frequencies baked into the master recording. Sound Only or Sound + Frequency overlay modes.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-lbl" style="color:var(--purple)">AI Prescription</div>
+        <div class="feat-title">Your Frequency, Precisely Tuned</div>
+        <div class="feat-desc">4-question intake quiz. Recommends Hz, mode, beat, and nature layer. One-tap launch into Studio.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- CLOSING -->
+<section id="closing">
+  <div class="inner reveal" style="text-align:center">
+    <div class="wf" style="justify-content:center;margin-bottom:40px">
+      <div class="wf-bar" style="animation-delay:0s"></div><div class="wf-bar" style="animation-delay:0.15s"></div>
+      <div class="wf-bar" style="animation-delay:0.3s"></div><div class="wf-bar" style="animation-delay:0.45s"></div>
+      <div class="wf-bar" style="animation-delay:0.6s"></div><div class="wf-bar" style="animation-delay:0.45s"></div>
+      <div class="wf-bar" style="animation-delay:0.3s"></div><div class="wf-bar" style="animation-delay:0.15s"></div>
+      <div class="wf-bar" style="animation-delay:0s"></div>
+    </div>
+    <p class="closing-line">Begin your day in resonance.</p>
+    <p style="font-size:18px;color:var(--muted);max-width:480px;margin:0 auto 40px;line-height:1.75">Rise In Harmony — a healing frequency app designed to align your mind, body, and spirit.</p>
+    <div class="hero-btns">
+      <a href="https://www.riseinharmony.com/join" class="btn-p" target="_blank">
+        Start Your Journey
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+      <a href="https://www.riseinharmony.com" class="btn-g" target="_blank">Open App</a>
+    </div>
+    <p style="margin-top:28px;font-size:13px;color:var(--muted)">riseinharmony.com</p>
+  </div>
+</section>
+
+<script>
+// ── CANVAS ──
+const cv = document.getElementById('bg-canvas');
+const cx = cv.getContext('2d');
+let W, H, pts = [];
+function resize(){ W = cv.width = innerWidth; H = cv.height = innerHeight; }
+function mkPts(){ pts=[]; for(let i=0;i<55;i++) pts.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+0.3,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,o:Math.random()*.35+.08}); }
+function draw(){
+  cx.clearRect(0,0,W,H);
+  const g1=cx.createRadialGradient(W*.15,H*.5,0,W*.15,H*.5,W*.4);
+  g1.addColorStop(0,'rgba(0,212,170,0.05)'); g1.addColorStop(1,'transparent');
+  cx.fillStyle=g1; cx.fillRect(0,0,W,H);
+  const g2=cx.createRadialGradient(W*.85,H*.3,0,W*.85,H*.3,W*.35);
+  g2.addColorStop(0,'rgba(139,92,246,0.04)'); g2.addColorStop(1,'transparent');
+  cx.fillStyle=g2; cx.fillRect(0,0,W,H);
+  pts.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy;
+    if(p.x<0)p.x=W; if(p.x>W)p.x=0; if(p.y<0)p.y=H; if(p.y>H)p.y=0;
+    cx.beginPath(); cx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    cx.fillStyle=`rgba(0,212,170,${p.o})`; cx.fill();
+  });
+  requestAnimationFrame(draw);
+}
+resize(); mkPts(); draw();
+window.addEventListener('resize',()=>{resize();mkPts();});
+
+// ── PROGRESS ──
+const pb = document.getElementById('progress-bar');
+window.addEventListener('scroll',()=>{
+  const pct = scrollY/(document.documentElement.scrollHeight-innerHeight)*100;
+  pb.style.width=pct+'%';
+});
+
+// ── NAV DOTS ──
+const steps = document.querySelectorAll('[data-step]');
+const dotsEl = document.getElementById('nav-dots');
+steps.forEach((s,i)=>{
+  const d=document.createElement('div'); d.className='nav-dot';
+  d.onclick=()=>s.scrollIntoView({behavior:'smooth'});
+  dotsEl.appendChild(d);
+});
+
+// ── REVEAL + ACTIVE DOT ──
+const obs = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('in'); });
+},{threshold:0.12});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+const stepObs = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const i=parseInt(e.target.dataset.step)-1;
+      document.querySelectorAll('.nav-dot').forEach((d,j)=>d.classList.toggle('active',j===i));
+    }
+  });
+},{threshold:0.4});
+steps.forEach(s=>stepObs.observe(s));
+</script>
+</body>
+</html>

@@ -29,6 +29,7 @@ import Prescription from "./pages/Prescription";
 import Gift from "./pages/Gift";
 import Join from "./pages/Join";
 import Onboarding from "./pages/Onboarding";
+import Walkthrough from "./pages/Walkthrough";
 import { useAuth } from "./_core/hooks/useAuth";
 import { useLocalSessionImport } from "./hooks/useLocalSessionImport";
 import { useAnalytics } from "./hooks/useAnalytics";
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/gift" component={Gift} />
       <Route path="/join" component={Join} />
       <Route path="/onboarding" component={Onboarding} />
+      <Route path="/walkthrough" component={Walkthrough} />
       <Route path="/precision">{() => { window.location.replace("/studio"); return null; }}</Route>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />

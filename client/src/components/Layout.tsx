@@ -48,7 +48,7 @@ const baseNavItems = [
   { href: "/learn", icon: GraduationCap, label: "Learn" },
   { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
   { href: "/gift", icon: Gift, label: "Gift" },
-  { href: "/onboarding", icon: Route, label: "How It Works" },
+  { href: "/walkthrough", icon: Route, label: "How It Works" },
   { href: "/", icon: Home, label: "Home" },
 ];
 
