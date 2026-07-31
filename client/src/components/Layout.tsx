@@ -356,28 +356,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         style={{
           top: '60px',
           bottom: 0,
-          background: c.sidebarBg,
+          background: isLight ? c.sidebarBg : 'linear-gradient(180deg, #0E1020 0%, #0A0B14 100%)',
           borderRight: `1px solid ${c.sidebarBorder}`,
+          boxShadow: isLight ? 'none' : '4px 0 32px rgba(0,0,0,0.4)',
         }}>
         {/* Divider — top spacing now provided by top nav bar */}
         <div className="mx-6 mt-4 mb-4" style={{ height: '1px', background: c.divider }} />
 
         {/* Nav */}
-        <nav className="flex-1 px-3 space-y-1">
+        <nav className="flex-1 px-3 space-y-0.5">
           {navItems.map(({ href, icon: Icon, label }) => {
             const active = location === href;
             return (
               <Link key={href} href={href}>
-                <div className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group",
-                  active ? "text-[#0A0B14]" : ""
-                )}
+                <div
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden"
                   style={{
-                    color: active ? '#0A0B14' : c.navInactive,
-                    ...(active ? {
-                      background: 'linear-gradient(135deg, #00D4AA, #00B894)',
-                      boxShadow: '0 0 20px rgba(0,212,170,0.3)',
-                    } : { background: 'transparent' }),
+                    color: active ? '#00D4AA' : c.navInactive,
+                    background: active
+                      ? (isLight ? 'rgba(0,212,170,0.10)' : 'rgba(0,212,170,0.08)')
+                      : 'transparent',
+                    borderLeft: active ? '3px solid #00D4AA' : '3px solid transparent',
+                    boxShadow: active && !isLight ? '0 0 12px rgba(0,212,170,0.08)' : 'none',
                   }}
                   onMouseEnter={e => {
                     if (!active) {
@@ -392,8 +392,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     }
                   }}
                 >
-                  <Icon size={18} strokeWidth={active ? 2.5 : 1.8} />
-                  <span className="text-sm font-medium" style={{ fontFamily: 'DM Sans, sans-serif' }}>{label}</span>
+                  <Icon
+                    size={18}
+                    strokeWidth={active ? 2.5 : 1.8}
+                    style={{ color: active ? '#00D4AA' : undefined, filter: active && !isLight ? 'drop-shadow(0 0 4px rgba(0,212,170,0.5))' : 'none' }}
+                  />
+                  <span className="text-sm font-medium" style={{ fontFamily: 'DM Sans, sans-serif', color: active ? '#00D4AA' : undefined }}>{label}</span>
                 </div>
               </Link>
             );
@@ -430,7 +434,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full transition-all duration-200 cursor-pointer"
               style={{
                 color: location === '/settings' ? '#00D4AA' : c.navInactive,
-                background: location === '/settings' ? 'rgba(0,212,170,0.08)' : 'transparent',
+                background: location === '/settings' ? (isLight ? 'rgba(0,212,170,0.10)' : 'rgba(0,212,170,0.08)') : 'transparent',
+                borderLeft: location === '/settings' ? '3px solid #00D4AA' : '3px solid transparent',
                 fontFamily: 'DM Sans, sans-serif',
               }}
               onMouseEnter={e => {

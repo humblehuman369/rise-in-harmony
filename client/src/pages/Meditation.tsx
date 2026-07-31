@@ -606,12 +606,20 @@ export default function Meditation() {
 
   return (
     <Layout>
-      <div className="container py-8 max-w-4xl">
+      <div className="min-h-screen relative" style={{ background: isLight ? '#F5F6F9' : '#0A0B14' }}>
+        {/* Bioluminescent background */}
+        {!isLight && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+            <div className="absolute" style={{ top: '5%', left: '20%', width: '60%', height: '50%', background: 'radial-gradient(ellipse, rgba(0,212,170,0.04) 0%, transparent 70%)' }} />
+            <div className="absolute" style={{ bottom: '10%', right: '5%', width: '45%', height: '40%', background: 'radial-gradient(ellipse, rgba(139,92,246,0.04) 0%, transparent 70%)' }} />
+          </div>
+        )}
+      <div className="container py-8 max-w-4xl relative" style={{ zIndex: 1 }}>
         {/* Page header */}
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-4"
-            style={{ background: 'rgba(0,212,170,0.1)', border: '1px solid rgba(0,212,170,0.25)', color: '#009E80', fontFamily: 'DM Sans, sans-serif' }}>
-            <Sparkles size={12} />
+            style={{ background: 'rgba(0,212,170,0.08)', border: '1px solid rgba(0,212,170,0.25)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00D4AA] animate-pulse" />
             {MEDITATIONS.length} TrueHz Meditations
           </div>
           <h1 className="mb-2" style={{
@@ -620,11 +628,12 @@ export default function Meditation() {
             fontWeight: 600,
             color: isLight ? '#1A1D2E' : '#E8EDF5',
             lineHeight: 1.1,
+            textShadow: isLight ? 'none' : '0 0 40px rgba(0,212,170,0.1)',
           }}>
             Meditation Library
           </h1>
           <p className="text-base" style={{ color: isLight ? '#4A5568' : '#8FA3BF', fontFamily: 'DM Sans, sans-serif', maxWidth: '520px' }}>
-            Each meditation is available in two modes — <strong style={{ color: isLight ? '#1A1D2E' : '#E8EDF5' }}>Sound Only</strong> for a pure ambient experience, or <strong style={{ color: '#009E80' }}>Sound + Frequency</strong> to layer a healing tone beneath the soundscape.
+            Each meditation is available in two modes — <strong style={{ color: isLight ? '#1A1D2E' : '#E8EDF5' }}>Sound Only</strong> for a pure ambient experience, or <strong style={{ color: '#00D4AA' }}>Sound + Frequency</strong> to layer a healing tone beneath the soundscape.
           </p>
         </div>
 
@@ -691,7 +700,8 @@ export default function Meditation() {
             <p style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>No meditations in this category yet.</p>
           </div>
         )}
-      </div>
+      </div>{/* /container */}
+      </div>{/* /min-h-screen */}
 
       {/* Player modal */}
       {selectedMeditation && (

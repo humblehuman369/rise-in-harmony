@@ -109,10 +109,18 @@ export default function PricingSection() {
   };
 
   return (
-    <section id="pricing" className="py-24" style={{ background: isLight ? '#EDF0F7' : '#0D0F1E' }}>
-      <div className="container">
+    <section id="pricing" className="py-24 relative overflow-hidden" style={{ background: isLight ? '#EDF0F7' : '#0D0F1E' }}>
+      {/* Bioluminescent background */}
+      {!isLight && (
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute" style={{ top: '10%', left: '50%', transform: 'translateX(-50%)', width: '80%', height: '80%', background: 'radial-gradient(ellipse, rgba(139,92,246,0.04) 0%, transparent 70%)' }} />
+        </div>
+      )}
+      <div className="container relative" style={{ zIndex: 1 }}>
         <div className="text-center mb-14">
-          <div className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
+            style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#8B5CF6' }} />
             Simple pricing
           </div>
           <h2 style={{
@@ -140,10 +148,12 @@ export default function PricingSection() {
                 style={{
                   background: plan.highlight
                     ? (isLight ? `linear-gradient(160deg, ${plan.color}14 0%, #FFFFFF 100%)` : `linear-gradient(160deg, ${plan.color}14 0%, #12152A 100%)`)
-                    : (isLight ? '#FFFFFF' : '#11142A'),
-                  border: `1px solid ${plan.highlight ? `${plan.color}45` : (isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.07)')}`,
-                  boxShadow: plan.highlight ? `0 0 48px ${plan.color}20` : (isLight ? '0 2px 12px rgba(0,0,0,0.07)' : 'none'),
-
+                    : (isLight ? '#FFFFFF' : '#0E1020'),
+                  border: `1px solid ${plan.highlight ? `${plan.color}55` : (isLight ? 'rgba(0,0,0,0.08)' : `${plan.color}20`)}`,
+                  boxShadow: plan.highlight
+                    ? `0 0 60px ${plan.color}25, 0 0 120px ${plan.color}08, 0 8px 32px rgba(0,0,0,0.4)`
+                    : (isLight ? '0 2px 12px rgba(0,0,0,0.07)' : `0 0 20px ${plan.color}08, 0 4px 20px rgba(0,0,0,0.3)`),
+                  transition: 'box-shadow 300ms ease, transform 300ms ease',
                 }}
               >
                 {plan.highlight && (

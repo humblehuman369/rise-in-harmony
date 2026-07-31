@@ -142,85 +142,115 @@ function FrequencyCard({ freq, isPlaying, onPlay, showChakraPosition }: {
 }) {
   return (
     <div
-      className="glow-card p-5 cursor-pointer group"
+      className="cursor-pointer group relative overflow-hidden"
+      style={{
+        background: isPlaying
+          ? `linear-gradient(135deg, ${freq.color}12, ${freq.color}06)`
+          : 'rgba(13,15,30,0.95)',
+        border: `1px solid ${isPlaying ? `${freq.color}45` : 'rgba(0,212,170,0.12)'}`,
+        borderRadius: '1.25rem',
+        transition: 'all 300ms cubic-bezier(0.23, 1, 0.32, 1)',
+        boxShadow: isPlaying
+          ? `0 0 40px ${freq.color}20, 0 8px 32px rgba(0,0,0,0.5)`
+          : '0 4px 20px rgba(0,0,0,0.3)',
+      }}
       onClick={() => onPlay(freq)}
+      onMouseEnter={e => {
+        if (!isPlaying) {
+          (e.currentTarget as HTMLElement).style.borderColor = `${freq.color}35`;
+          (e.currentTarget as HTMLElement).style.boxShadow = `0 0 30px ${freq.color}12, 0 8px 32px rgba(0,0,0,0.5)`;
+          (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+        }
+      }}
+      onMouseLeave={e => {
+        if (!isPlaying) {
+          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,212,170,0.12)';
+          (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+          (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+        }
+      }}
     >
-      <div className="flex items-start gap-4">
-        {/* Hz badge */}
-        <div className="flex-shrink-0 w-14 h-14 rounded-xl flex flex-col items-center justify-center relative"
-          style={{
-            background: `${freq.color}15`,
-            border: `1px solid ${freq.color}30`,
-          }}>
-          {showChakraPosition && freq.chakraPosition && (
-            <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold"
-              style={{ background: freq.color, color: '#0A0B14' }}>
-              {freq.chakraPosition}
+      {/* Subtle radial glow in top-left corner */}
+      <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none" style={{
+        background: `radial-gradient(ellipse at 0% 0%, ${freq.color}08 0%, transparent 70%)`,
+      }} />
+
+      <div className="p-4">
+        {/* Top row: Hz number + play button */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex flex-col">
+            {showChakraPosition && freq.chakraPosition && (
+              <div className="text-[9px] font-bold uppercase tracking-widest mb-1"
+                style={{ color: freq.color, fontFamily: 'DM Sans, sans-serif', opacity: 0.7 }}>
+                Chakra {freq.chakraPosition}
+              </div>
+            )}
+            <div className="flex items-baseline gap-1">
+              <span className="font-mono-brand text-3xl font-bold leading-none"
+                style={{ color: freq.color, textShadow: `0 0 20px ${freq.color}40` }}>
+                {freq.hz}
+              </span>
+              <span className="text-sm font-medium" style={{ color: `${freq.color}70` }}>Hz</span>
             </div>
-          )}
-          <span className="font-mono-brand text-sm font-bold leading-tight" style={{ color: freq.color }}>
-            {freq.hz}
+          </div>
+          {/* Play button */}
+          <button
+            className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
+            style={{
+              background: isPlaying
+                ? freq.color
+                : freq.isPremium
+                  ? 'rgba(139,92,246,0.15)'
+                  : `${freq.color}18`,
+              border: `1px solid ${isPlaying ? freq.color : freq.isPremium ? 'rgba(139,92,246,0.3)' : `${freq.color}30`}`,
+              color: isPlaying ? '#0A0B14' : freq.isPremium ? '#8B5CF6' : freq.color,
+              boxShadow: isPlaying ? `0 0 20px ${freq.color}50` : 'none',
+            }}
+          >
+            {freq.isPremium ? (
+              <Lock size={14} />
+            ) : isPlaying ? (
+              <Pause size={14} fill="currentColor" />
+            ) : (
+              <Play size={14} fill="currentColor" style={{ marginLeft: '1px' }} />
+            )}
+          </button>
+        </div>
+
+        {/* Name + badges */}
+        <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+          <span className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+            {freq.name}
           </span>
-          <span className="font-mono-brand text-[10px]" style={{ color: `${freq.color}80` }}>Hz</span>
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
-              {freq.name}
+          {freq.isPremium && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold flex items-center gap-0.5"
+              style={{ background: 'rgba(139,92,246,0.15)', color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>
+              <Lock size={7} /> PRO
             </span>
-            {freq.isPremium && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1"
-                style={{ background: 'rgba(139,92,246,0.15)', color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>
-                <Lock size={8} />
-                PRO
-              </span>
-            )}
-            {freq.audioUrl && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
-                style={{ background: 'rgba(34,197,94,0.12)', color: '#22C55E', fontFamily: 'DM Sans, sans-serif' }}>
-                RECORDED
-              </span>
-            )}
-          </div>
-          <div className="text-xs mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-            {freq.description}
-          </div>
-          <div className="text-xs leading-relaxed" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
-            {freq.benefit}
-          </div>
-          {freq.binauralOffset && (
-            <div className="mt-2 text-[10px] px-2 py-1 rounded-md inline-block"
-              style={{ background: 'rgba(139,92,246,0.08)', color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>
-              🎧 Binaural: {freq.hz}Hz + {freq.hz + freq.binauralOffset}Hz = {freq.binauralOffset}Hz beat
-            </div>
           )}
-          {/* Sanskrit pronunciation guide */}
-          <PronunciationGuide freq={freq} />
+          {freq.audioUrl && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold"
+              style={{ background: 'rgba(34,197,94,0.12)', color: '#22C55E', fontFamily: 'DM Sans, sans-serif' }}>
+              RECORDED
+            </span>
+          )}
         </div>
 
-        {/* Play button */}
-        <button
-          className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
-          style={{
-            background: isPlaying
-              ? `${freq.color}`
-              : freq.isPremium
-                ? 'rgba(139,92,246,0.15)'
-                : `${freq.color}20`,
-            color: isPlaying ? '#0A0B14' : freq.isPremium ? '#8B5CF6' : freq.color,
-            boxShadow: isPlaying ? `0 0 20px ${freq.color}50` : 'none',
-          }}
-        >
-          {freq.isPremium ? (
-            <Lock size={16} />
-          ) : isPlaying ? (
-            <Pause size={16} fill="currentColor" />
-          ) : (
-            <Play size={16} fill="currentColor" style={{ marginLeft: '1px' }} />
-          )}
-        </button>
+        {/* Description */}
+        <div className="text-xs mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+          {freq.description}
+        </div>
+        <div className="text-xs leading-relaxed line-clamp-2" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
+          {freq.benefit}
+        </div>
+
+        {freq.binauralOffset && (
+          <div className="mt-2 text-[10px] px-2 py-1 rounded-md inline-block"
+            style={{ background: 'rgba(139,92,246,0.08)', color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>
+            🎧 {freq.binauralOffset}Hz binaural beat
+          </div>
+        )}
+        <PronunciationGuide freq={freq} />
       </div>
     </div>
   );
@@ -275,13 +305,21 @@ export default function Library() {
 
   return (
     <Layout>
-      <div className="min-h-screen" style={{ background: '#0A0B14' }}>
+      <div className="min-h-screen relative" style={{ background: '#0A0B14' }}>
+        {/* Bioluminescent background */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+          <div className="absolute" style={{ top: '-10%', left: '-5%', width: '60%', height: '60%', background: 'radial-gradient(ellipse, rgba(0,212,170,0.04) 0%, transparent 70%)' }} />
+          <div className="absolute" style={{ bottom: '10%', right: '-5%', width: '50%', height: '50%', background: 'radial-gradient(ellipse, rgba(139,92,246,0.04) 0%, transparent 70%)' }} />
+        </div>
+        <div className="relative" style={{ zIndex: 1 }}>
         {/* Header */}
         <div className="px-6 pt-8 pb-4">
-          <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-3"
+            style={{ background: 'rgba(0,212,170,0.08)', border: '1px solid rgba(0,212,170,0.2)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00D4AA] animate-pulse" />
             Frequency Library
           </div>
-          <h1 className="mb-2" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5' }}>
+          <h1 className="mb-2" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2.4rem', fontWeight: 600, color: '#E8EDF5', textShadow: '0 0 40px rgba(0,212,170,0.15)' }}>
             Healing Tones
           </h1>
           <div className="flex gap-4 text-sm mb-5 flex-wrap" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
@@ -434,7 +472,7 @@ export default function Library() {
             )}
 
             {/* Frequency grid */}
-            <div className="px-6 pb-8 space-y-3">
+            <div className="px-6 pb-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
               {filtered.length === 0 ? (
                 <div className="glow-card p-12 text-center">
                   <Filter size={32} className="mx-auto mb-4" style={{ color: '#4A5568' }} />
@@ -487,7 +525,8 @@ export default function Library() {
             </div>
           </>
         )}
-      </div>
+      </div>{/* /relative zIndex:1 */}
+      </div>{/* /min-h-screen */}
 
       {/* Premium Paywall Modal */}
       {paywallFreq && (

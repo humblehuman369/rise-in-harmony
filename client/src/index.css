@@ -189,6 +189,112 @@
     }
   }
 
+  /* ── Glow card variants ───────────────────────────────────────────────────── */
+  .glow-card-teal {
+    background: rgba(0,212,170,0.06);
+    border: 1px solid rgba(0,212,170,0.25);
+    border-radius: 1rem;
+    box-shadow: 0 0 30px rgba(0,212,170,0.12), 0 4px 20px rgba(0,0,0,0.3);
+    transition: box-shadow 300ms ease, transform 300ms ease;
+  }
+  .glow-card-teal:hover {
+    box-shadow: 0 0 50px rgba(0,212,170,0.22), 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(-2px);
+  }
+  .glow-card-purple {
+    background: rgba(139,92,246,0.06);
+    border: 1px solid rgba(139,92,246,0.25);
+    border-radius: 1rem;
+    box-shadow: 0 0 30px rgba(139,92,246,0.12), 0 4px 20px rgba(0,0,0,0.3);
+    transition: box-shadow 300ms ease, transform 300ms ease;
+  }
+  .glow-card-purple:hover {
+    box-shadow: 0 0 50px rgba(139,92,246,0.22), 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(-2px);
+  }
+  .glow-card-gold {
+    background: rgba(245,158,11,0.06);
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 1rem;
+    box-shadow: 0 0 30px rgba(245,158,11,0.12), 0 4px 20px rgba(0,0,0,0.3);
+    transition: box-shadow 300ms ease, transform 300ms ease;
+  }
+  .glow-card-gold:hover {
+    box-shadow: 0 0 50px rgba(245,158,11,0.22), 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(-2px);
+  }
+
+  /* ── Nav active indicator — left-edge teal bar ───────────────────────────── */
+  .nav-item-active {
+    position: relative;
+    color: #00D4AA !important;
+    background: rgba(0,212,170,0.08) !important;
+  }
+  .nav-item-active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: #00D4AA;
+    border-radius: 0 2px 2px 0;
+    box-shadow: 0 0 8px rgba(0,212,170,0.6);
+  }
+
+  /* ── Hz display glow ─────────────────────────────────────────────────────── */
+  .hz-display {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 700;
+    color: #00D4AA;
+    text-shadow: 0 0 30px rgba(0,212,170,0.5), 0 0 60px rgba(0,212,170,0.2);
+    line-height: 1;
+  }
+
+  /* ── Bioluminescent background ───────────────────────────────────────────── */
+  .bio-bg {
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 80%, rgba(0,212,170,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 20%, rgba(139,92,246,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 100% 80% at 50% 50%, rgba(0,40,80,0.3) 0%, transparent 80%),
+      #0A0B14;
+  }
+
+  /* ── Frequency library grid card ─────────────────────────────────────────── */
+  .freq-card {
+    background: rgba(13,15,30,0.95);
+    border: 1px solid rgba(0,212,170,0.15);
+    border-radius: 1.25rem;
+    transition: all 300ms cubic-bezier(0.23, 1, 0.32, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  .freq-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 30%, rgba(0,212,170,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .freq-card:hover {
+    border-color: rgba(0,212,170,0.35);
+    box-shadow: 0 0 40px rgba(0,212,170,0.12), 0 8px 32px rgba(0,0,0,0.5);
+    transform: translateY(-3px);
+  }
+
+  /* ── Analog clock face ───────────────────────────────────────────────────── */
+  .clock-face {
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, rgba(0,212,170,0.08) 0%, rgba(10,11,20,0.95) 60%);
+    border: 2px solid rgba(0,212,170,0.3);
+    box-shadow:
+      0 0 0 4px rgba(0,212,170,0.06),
+      0 0 40px rgba(0,212,170,0.15),
+      0 0 80px rgba(0,212,170,0.06),
+      inset 0 0 30px rgba(0,212,170,0.04);
+  }
+
   /* Glow card — signature element */
   .glow-card {
     background: oklch(0.12 0.020 265);
@@ -290,6 +396,57 @@
     animation: alarm-ring 1.5s ease-out infinite;
   }
 
+  /* ── New bioluminescent animation utilities ───────────────────────────────── */
+  @keyframes jellyfish-float {
+    0% { transform: translateY(100vh) scale(0.8) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 0.6; }
+    100% { transform: translateY(-20vh) scale(1.2) rotate(20deg); opacity: 0; }
+  }
+  @keyframes bio-pulse {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.08); }
+  }
+  @keyframes teal-glow-pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(0,212,170,0.3), 0 0 40px rgba(0,212,170,0.1); }
+    50% { box-shadow: 0 0 40px rgba(0,212,170,0.6), 0 0 80px rgba(0,212,170,0.2); }
+  }
+  @keyframes orb-breathe {
+    0%, 100% { transform: scale(1); filter: brightness(1); }
+    50% { transform: scale(1.06); filter: brightness(1.2); }
+  }
+  @keyframes ripple-out {
+    0% { transform: scale(0.6); opacity: 0.8; }
+    100% { transform: scale(2.4); opacity: 0; }
+  }
+  @keyframes slide-up-fade {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes achievement-pop {
+    0% { transform: scale(0.5); opacity: 0; }
+    70% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .animate-bio-pulse {
+    animation: bio-pulse 4s ease-in-out infinite;
+  }
+  .animate-teal-glow {
+    animation: teal-glow-pulse 3s ease-in-out infinite;
+  }
+  .animate-orb-breathe {
+    animation: orb-breathe 4s ease-in-out infinite;
+  }
+  .animate-ripple {
+    animation: ripple-out 2.5s ease-out infinite;
+  }
+  .animate-slide-up {
+    animation: slide-up-fade 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  }
+  .animate-achievement-pop {
+    animation: achievement-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
   /* Noise texture overlay */
   .noise-overlay::after {
     content: '';
@@ -359,7 +516,7 @@
       0 8px 40px oklch(0 0 0 / 0.5),
       0 0 30px oklch(0.72 0.16 175 / 0.08),
       inset 0 1px 0 oklch(1 0 0 / 0.10);
-    border-color: oklch(1 0 0 / 8%);
+    border-color: rgba(0,212,170,0.25);
     transform: translateY(-2px);
   }
 

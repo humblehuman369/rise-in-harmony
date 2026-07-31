@@ -91,22 +91,44 @@ export default function Home() {
           }} />
         </div>
 
-        {/* Animated rings */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-          {[1, 2, 3].map(i => (
+        {/* Animated rings — bioluminescent */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0" style={{ right: '-20%', top: '10%' }}>
+          {[1, 2, 3, 4, 5].map(i => (
             <div
               key={i}
               className="absolute rounded-full border"
               style={{
-                width: `${200 + i * 120}px`,
-                height: `${200 + i * 120}px`,
-                borderColor: `rgba(0,212,170,${0.12 - i * 0.03})`,
-                animation: `frequency-pulse ${3 + i * 0.8}s ease-in-out infinite`,
-                animationDelay: `${i * 0.4}s`,
+                width: `${150 + i * 100}px`,
+                height: `${150 + i * 100}px`,
+                borderColor: `rgba(0,212,170,${Math.max(0.02, 0.14 - i * 0.025)})`,
+                animation: `frequency-pulse ${2.5 + i * 0.7}s ease-in-out infinite`,
+                animationDelay: `${i * 0.35}s`,
+                boxShadow: i === 1 ? '0 0 30px rgba(0,212,170,0.08)' : 'none',
               }}
             />
           ))}
+          {/* Center glow orb */}
+          <div className="absolute w-16 h-16 rounded-full" style={{
+            background: 'radial-gradient(circle, rgba(0,212,170,0.3) 0%, rgba(0,212,170,0.05) 60%, transparent 100%)',
+            animation: 'bio-pulse 4s ease-in-out infinite',
+          }} />
         </div>
+        {/* Secondary purple ring cluster — top right */}
+        {!isLight && (
+          <div className="absolute pointer-events-none z-0" style={{ top: '15%', right: '10%' }}>
+            {[1, 2].map(i => (
+              <div key={i} className="absolute rounded-full border" style={{
+                width: `${60 + i * 40}px`,
+                height: `${60 + i * 40}px`,
+                top: '50%', left: '50%',
+                transform: 'translate(-50%, -50%)',
+                borderColor: `rgba(139,92,246,${0.12 - i * 0.04})`,
+                animation: `frequency-pulse ${4 + i * 1}s ease-in-out infinite`,
+                animationDelay: `${i * 0.6}s`,
+              }} />
+            ))}
+          </div>
+        )}
 
         <div className="container relative z-10 pt-20 pb-16">
           <div className="max-w-3xl">

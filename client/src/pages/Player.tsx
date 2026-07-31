@@ -317,7 +317,14 @@ export default function Player() {
           onClose={() => setShowPaywall(false)}
         />
       )}
-      <div className="min-h-screen flex flex-col" style={{ background: isLight ? '#F5F6F9' : '#0A0B14' }} onClick={unlockAudio}>
+      <div className="min-h-screen flex flex-col relative" style={{ background: isLight ? '#F5F6F9' : '#0A0B14' }} onClick={unlockAudio}>
+        {/* Bioluminescent background */}
+        {!isLight && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+            <div className="absolute" style={{ top: '5%', right: '10%', width: '55%', height: '55%', background: 'radial-gradient(ellipse, rgba(0,212,170,0.04) 0%, transparent 70%)' }} />
+            <div className="absolute" style={{ bottom: '15%', left: '5%', width: '45%', height: '45%', background: 'radial-gradient(ellipse, rgba(139,92,246,0.04) 0%, transparent 70%)' }} />
+          </div>
+        )}
         {/* Tap-to-enable audio banner — shown when AudioContext is suspended by autoplay policy */}
         {audioContextSuspended && (
           <div
@@ -336,10 +343,12 @@ export default function Player() {
           </div>
         )}
         {/* Header */}
-        <div className="px-6 pt-8 pb-4">
+        <div className="px-6 pt-8 pb-4 relative" style={{ zIndex: 1 }}>
           <div className="flex items-start justify-between mb-2">
             <div>
-              <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-2"
+                style={{ background: 'rgba(0,212,170,0.08)', border: '1px solid rgba(0,212,170,0.2)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00D4AA] animate-pulse" />
                 Frequency Player
               </div>
               <h1 style={{
@@ -347,6 +356,7 @@ export default function Player() {
                 fontSize: '2rem',
                 fontWeight: 600,
                 color: isLight ? '#1A1D2E' : '#E8EDF5',
+                textShadow: isLight ? 'none' : '0 0 40px rgba(0,212,170,0.1)',
               }}>
                 Healing Tones
               </h1>
@@ -406,7 +416,7 @@ export default function Player() {
         </div>
 
         {/* Main player area */}
-        <div className="flex-1 flex flex-col lg:flex-row gap-8 px-6 pb-8">
+        <div className="flex-1 flex flex-col lg:flex-row gap-8 px-6 pb-8 relative" style={{ zIndex: 1 }}>
           {/* Left: Visualizer + Controls */}
           <div className="flex-1 flex flex-col items-center justify-center">
             {/* Background image */}
@@ -426,7 +436,7 @@ export default function Player() {
               <div className="relative z-10 p-8">
                 {/* Frequency info */}
                 <div className="text-center mb-6">
-                  <div className="font-mono-brand text-4xl font-bold mb-1" style={{ color: selected.color }}>
+                  <div className="font-mono-brand text-5xl font-bold mb-1" style={{ color: selected.color, textShadow: `0 0 30px ${selected.color}50, 0 0 60px ${selected.color}20` }}>
                     {selected.hz}
                     {selected.binauralOffset ? `/${selected.hz + selected.binauralOffset}` : ''}
                     <span className="text-lg ml-1" style={{ color: `${selected.color}80` }}>Hz</span>

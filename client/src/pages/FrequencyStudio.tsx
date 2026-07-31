@@ -736,12 +736,22 @@ export default function FrequencyStudio() {
 
   return (
     <Layout>
-      <div className="max-w-xl mx-auto px-4 pb-32 pt-4">
+      <div className="min-h-screen relative" style={{ background: '#0A0B14' }}>
+        {/* Bioluminescent background */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+          <div className="absolute" style={{ top: '5%', left: '50%', transform: 'translateX(-50%)', width: '80%', height: '60%', background: 'radial-gradient(ellipse, rgba(0,212,170,0.05) 0%, transparent 70%)' }} />
+          <div className="absolute" style={{ bottom: '10%', right: '5%', width: '40%', height: '40%', background: 'radial-gradient(ellipse, rgba(139,92,246,0.04) 0%, transparent 70%)' }} />
+        </div>
+      <div className="max-w-xl mx-auto px-4 pb-32 pt-4 relative" style={{ zIndex: 1 }}>
 
-        {/* ── Header ─────────────────────────────────────────────── */}
+        {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="mb-4">
-          <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: "#6B7A99" }}>PRECISION FREQUENCY STUDIO</p>
-          <h1 className="text-3xl font-bold mb-1" style={{ fontFamily: "DM Sans, sans-serif", color: "#E8EDF5" }}>Frequency Studio</h1>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-2"
+            style={{ background: 'rgba(0,212,170,0.08)', border: '1px solid rgba(0,212,170,0.2)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00D4AA] animate-pulse" />
+            Precision Frequency Studio
+          </div>
+          <h1 className="text-3xl font-bold mb-1" style={{ fontFamily: "Cormorant Garamond, serif", color: "#E8EDF5", textShadow: '0 0 40px rgba(0,212,170,0.1)' }}>Frequency Studio</h1>
           <p className="text-xs" style={{ color: "#6B7A99" }}>DDS precision synthesis · Layered ambient mixing · ±0.05 Hz accuracy</p>
         </div>
 
@@ -1310,6 +1320,8 @@ export default function FrequencyStudio() {
         </div>
       </div>
 
+      </div>{/* /max-w-xl */}
+      </div>{/* /min-h-screen */}
       {/* Overlays */}
       {showBreathing && <BreathingGuide onClose={() => setShowBreathing(false)} accentColor="#00D4AA" />}
       {showShareCard && (

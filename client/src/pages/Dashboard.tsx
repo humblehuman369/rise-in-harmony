@@ -599,14 +599,21 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="min-h-screen" style={{ background: '#0A0B14' }}>
+      <div className="min-h-screen relative" style={{ background: '#0A0B14' }}>
+        {/* Bioluminescent background */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+          <div className="absolute" style={{ top: '0%', left: '30%', width: '70%', height: '50%', background: 'radial-gradient(ellipse, rgba(139,92,246,0.04) 0%, transparent 70%)' }} />
+          <div className="absolute" style={{ bottom: '20%', left: '0%', width: '50%', height: '40%', background: 'radial-gradient(ellipse, rgba(0,212,170,0.03) 0%, transparent 70%)' }} />
+        </div>
         {/* Header */}
-        <div className="px-6 pt-8 pb-6 flex items-end justify-between gap-4 flex-wrap">
+        <div className="px-6 pt-8 pb-6 flex items-end justify-between gap-4 flex-wrap relative" style={{ zIndex: 1 }}>
           <div>
-            <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-2"
+              style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#8B5CF6' }} />
               Wellness Analytics
             </div>
-            <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5' }}>
+            <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5', textShadow: '0 0 40px rgba(139,92,246,0.1)' }}>
               Your Journey
             </h1>
           </div>
@@ -621,7 +628,7 @@ export default function Dashboard() {
         )}
 
         {/* Stats grid */}
-        <div className="px-6 mb-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="px-6 mb-6 grid grid-cols-2 lg:grid-cols-4 gap-4 relative" style={{ zIndex: 1 }}>
           {statsLoading ? (
             <div className="col-span-4 flex items-center justify-center py-8">
               <Loader2 size={24} className="animate-spin" style={{ color: '#00D4AA' }} />

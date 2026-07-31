@@ -883,6 +883,69 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
 interface AlarmPrefill { wakeTime?: string; frequencyHz?: number; }
 
 // ─── Main Alarm page ──────────────────────────────────────────────────────────
+// ─── Live Analog Clock ───────────────────────────────────────────────────────
+function LiveAnalogClock() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const size = 80;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size / 2 - 4;
+  const h = now.getHours() % 12;
+  const m = now.getMinutes();
+  const s = now.getSeconds();
+  const hAngle = ((h + m / 60) / 12) * 360 - 90;
+  const mAngle = ((m + s / 60) / 60) * 360 - 90;
+  const sAngle = (s / 60) * 360 - 90;
+  const toXY = (angle: number, len: number) => ({
+    x: cx + Math.cos((angle * Math.PI) / 180) * len,
+    y: cy + Math.sin((angle * Math.PI) / 180) * len,
+  });
+  const hEnd = toXY(hAngle, r * 0.5);
+  const mEnd = toXY(mAngle, r * 0.72);
+  const sEnd = toXY(sAngle, r * 0.82);
+  const ticks = Array.from({ length: 12 }, (_, i) => {
+    const a = (i / 12) * 360 - 90;
+    const outer = toXY(a, r - 1);
+    const inner = toXY(a, r - (i % 3 === 0 ? 8 : 5));
+    return { outer, inner, major: i % 3 === 0 };
+  });
+  return (
+    <div className="flex-shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size}>
+        {/* Clock face */}
+        <circle cx={cx} cy={cy} r={r} fill="rgba(10,11,20,0.95)" stroke="rgba(0,212,170,0.3)" strokeWidth="1.5" />
+        <circle cx={cx} cy={cy} r={r + 3} fill="none" stroke="rgba(0,212,170,0.06)" strokeWidth="4" />
+        {/* Tick marks */}
+        {ticks.map((t, i) => (
+          <line key={i} x1={t.outer.x} y1={t.outer.y} x2={t.inner.x} y2={t.inner.y}
+            stroke={t.major ? 'rgba(0,212,170,0.6)' : 'rgba(0,212,170,0.25)'}
+            strokeWidth={t.major ? 1.5 : 0.8} strokeLinecap="round" />
+        ))}
+        {/* Hour hand */}
+        <line x1={cx} y1={cy} x2={hEnd.x} y2={hEnd.y} stroke="#E8EDF5" strokeWidth="2.5" strokeLinecap="round" />
+        {/* Minute hand */}
+        <line x1={cx} y1={cy} x2={mEnd.x} y2={mEnd.y} stroke="#00D4AA" strokeWidth="1.8" strokeLinecap="round" />
+        {/* Second hand */}
+        <line x1={cx} y1={cy} x2={sEnd.x} y2={sEnd.y} stroke="#F59E0B" strokeWidth="1" strokeLinecap="round" />
+        {/* Center dot */}
+        <circle cx={cx} cy={cy} r={3} fill="#00D4AA" />
+        {/* Glow filter */}
+        <defs>
+          <filter id="clock-glow">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+            <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(0,212,170,0.15)" strokeWidth="8" filter="url(#clock-glow)" />
+      </svg>
+    </div>
+  );
+}
+
 export default function Alarm() {
   const { isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
@@ -1142,19 +1205,34 @@ export default function Alarm() {
 
   return (
     <Layout>
-      <div className="min-h-screen" style={{ background: '#0A0B14' }}>
+      <div className="min-h-screen relative" style={{ background: '#0A0B14' }}>
+        {/* Bioluminescent background */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+          <div className="absolute" style={{ top: '0%', left: '50%', transform: 'translateX(-50%)', width: '80%', height: '40%', background: 'radial-gradient(ellipse, rgba(245,158,11,0.04) 0%, transparent 70%)' }} />
+          <div className="absolute" style={{ bottom: '10%', right: '5%', width: '40%', height: '40%', background: 'radial-gradient(ellipse, rgba(0,212,170,0.03) 0%, transparent 70%)' }} />
+        </div>
         {/* Header */}
-        <div className="px-6 pt-8 pb-6">
-          <div className="flex items-start justify-between">
+        <div className="px-6 pt-8 pb-6 relative" style={{ zIndex: 1 }}>
+          {/* Hero: Analog Clock + Title */}
+          <div className="flex items-center gap-6 mb-6">
+            {/* Analog clock face */}
+            <LiveAnalogClock />
             <div>
-              <div className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Smart Alarm</div>
-              <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5' }}>Healing Alarms</h1>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-2"
+                style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#F59E0B', fontFamily: 'DM Sans, sans-serif' }}>
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#F59E0B' }} />
+                Smart Alarm
+              </div>
+              <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5', textShadow: '0 0 30px rgba(245,158,11,0.1)' }}>Healing Alarms</h1>
+              <p className="text-sm mt-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Wake gently with healing frequencies</p>
             </div>
-            <button onClick={handleAddAlarm} className="btn-teal flex items-center gap-2 px-5 py-2.5 text-sm font-semibold">
-              <Plus size={16} /> New Alarm
-            </button>
+            <div className="ml-auto">
+              <button onClick={handleAddAlarm} className="btn-teal flex items-center gap-2 px-5 py-2.5 text-sm font-semibold">
+                <Plus size={16} /> New Alarm
+              </button>
+            </div>
           </div>
-          <div className="flex gap-4 mt-6">
+          <div className="flex gap-4">
             {[
               { label: "Active Alarms", value: enabledCount, color: '#00D4AA' },
               { label: "Total Alarms", value: alarms.length, color: '#8B5CF6' },

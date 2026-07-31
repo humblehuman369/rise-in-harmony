@@ -669,7 +669,14 @@ export default function ReikiPlayer() {
 
   return (
     <Layout>
-      <div className="min-h-screen" style={{ background: bg }} onClick={unlockAudio}>
+      <div className="min-h-screen relative" style={{ background: bg }} onClick={unlockAudio}>
+        {/* Bioluminescent background */}
+        {!isLight && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+            <div className="absolute" style={{ top: '5%', left: '50%', transform: 'translateX(-50%)', width: '90%', height: '60%', background: `radial-gradient(ellipse, ${bowlAccent}06 0%, transparent 70%)` }} />
+            <div className="absolute" style={{ bottom: '10%', right: '5%', width: '40%', height: '40%', background: 'radial-gradient(ellipse, rgba(139,92,246,0.04) 0%, transparent 70%)' }} />
+          </div>
+        )}
 
         {/* ── Autoplay blocked banner ────────────────────────────────────── */}
         {audioContextSuspended && (
