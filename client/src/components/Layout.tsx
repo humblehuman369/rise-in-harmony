@@ -19,6 +19,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 // ─── Nav definitions ──────────────────────────────────────────────────────────
 
 const mobileNavItems = [
+  { href: "/", icon: Home, label: "Home" },
   { href: "/journey", icon: Map, label: "Journey" },
   { href: "/alarm", icon: AlarmClock, label: "Alarm" },
   { href: "/player", icon: Music2, label: "Player" },
@@ -29,8 +30,6 @@ const mobileNavItems = [
   { href: "/programs", icon: CalendarRange, label: "Programs" },
   { href: "/learn", icon: GraduationCap, label: "Learn" },
   { href: "/dashboard", icon: BarChart3, label: "Dashboard" },
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/settings", icon: Settings, label: "Settings" },
 ];
 
 const adminNavItem = { href: "/admin", icon: ShieldCheck, label: "Admin" };
@@ -170,27 +169,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Right side — auth controls */}
         <div className="flex items-center gap-2">
-          {/* Theme toggle */}
-          {toggleTheme && (
-            <button
-              onClick={toggleTheme}
-              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200"
-              style={{ color: c.navInactive, background: 'transparent' }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.background = c.navHoverBg;
-                (e.currentTarget as HTMLElement).style.color = c.navInactiveHover;
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.background = 'transparent';
-                (e.currentTarget as HTMLElement).style.color = c.navInactive;
-              }}
-              title={isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
-            >
-              {isLight ? <Moon size={17} strokeWidth={1.8} /> : <Sun size={17} strokeWidth={1.8} />}
-            </button>
-          )}
-
-          {/* Auth button */}
+          {/* Auth button — theme toggle moved into user dropdown */}
           {isAuthenticated && user ? (
             <div className="relative">
               <button
@@ -289,6 +268,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           Settings
                         </div>
                       </Link>
+                      {toggleTheme && (
+                        <button
+                          onClick={() => { toggleTheme(); setUserMenuOpen(false); }}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium w-full transition-all duration-150"
+                          style={{ color: c.navInactive, fontFamily: 'DM Sans, sans-serif', background: 'transparent' }}
+                          onMouseEnter={e => {
+                            (e.currentTarget as HTMLElement).style.background = c.navHoverBg;
+                            (e.currentTarget as HTMLElement).style.color = c.navInactiveHover;
+                          }}
+                          onMouseLeave={e => {
+                            (e.currentTarget as HTMLElement).style.background = 'transparent';
+                            (e.currentTarget as HTMLElement).style.color = c.navInactive;
+                          }}
+                        >
+                          {isLight ? <Moon size={14} /> : <Sun size={14} />}
+                          {isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+                        </button>
+                      )}
                       <div className="my-1" style={{ height: '1px', background: c.divider, margin: '4px 12px' }} />
                       <button
                         onClick={() => { logout(); setUserMenuOpen(false); }}
@@ -408,53 +405,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="px-3 pb-6">
           <div className="mx-3 mb-4" style={{ height: '1px', background: c.divider }} />
 
-          {/* Theme toggle */}
-          {toggleTheme && (
-            <button
-              onClick={toggleTheme}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full transition-all duration-200 mb-1"
-              style={{ color: c.navInactive, background: 'transparent', fontFamily: 'DM Sans, sans-serif' }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.background = c.navHoverBg;
-                (e.currentTarget as HTMLElement).style.color = c.navInactiveHover;
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.background = 'transparent';
-                (e.currentTarget as HTMLElement).style.color = c.navInactive;
-              }}
-              title={isLight ? "Switch to Dark Mode" : "Switch to Light Mode"}
-            >
-              {isLight ? <Moon size={18} strokeWidth={1.8} /> : <Sun size={18} strokeWidth={1.8} />}
-              <span className="text-sm font-medium">{isLight ? "Dark Mode" : "Light Mode"}</span>
-            </button>
-          )}
-
-          <Link href="/settings">
-            <div
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full transition-all duration-200 cursor-pointer"
-              style={{
-                color: location === '/settings' ? '#00D4AA' : c.navInactive,
-                background: location === '/settings' ? (isLight ? 'rgba(0,212,170,0.10)' : 'rgba(0,212,170,0.08)') : 'transparent',
-                borderLeft: location === '/settings' ? '3px solid #00D4AA' : '3px solid transparent',
-                fontFamily: 'DM Sans, sans-serif',
-              }}
-              onMouseEnter={e => {
-                if (location !== '/settings') {
-                  (e.currentTarget as HTMLElement).style.background = c.navHoverBg;
-                  (e.currentTarget as HTMLElement).style.color = c.navInactiveHover;
-                }
-              }}
-              onMouseLeave={e => {
-                if (location !== '/settings') {
-                  (e.currentTarget as HTMLElement).style.background = 'transparent';
-                  (e.currentTarget as HTMLElement).style.color = c.navInactive;
-                }
-              }}
-            >
-              <Settings size={18} strokeWidth={location === '/settings' ? 2.5 : 1.8} />
-              <span className="text-sm font-medium">Settings</span>
-            </div>
-          </Link>
+          {/* Settings and theme toggle moved to user profile dropdown */}
 
           {/* Legal links */}
           <div className="flex flex-wrap gap-x-1 px-3 mt-1">
@@ -604,43 +555,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               );
             })}
 
-            {/* Theme toggle in mobile nav */}
-            {toggleTheme && (
-              <button
-                onClick={toggleTheme}
-                className="flex flex-col items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 flex-shrink-0"
-                style={{ width: '76px', height: '80px' }}
-                title={isLight ? "Dark Mode" : "Light Mode"}
-              >
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'transparent' }}>
-                  {isLight
-                    ? <Moon size={22} strokeWidth={1.8} style={{ color: c.mobileIconInactive }} />
-                    : <Sun size={22} strokeWidth={1.8} style={{ color: c.mobileIconInactive }} />
-                  }
-                </div>
-                <span className="text-[11px] font-semibold leading-none"
-                  style={{ color: c.mobileLabelInactive, fontFamily: 'DM Sans, sans-serif' }}>
-                  {isLight ? 'Dark' : 'Light'}
-                </span>
-              </button>
-            )}
-
-            {/* Sign in / out */}
-            {isAuthenticated ? (
-              <button
-                onClick={() => logout()}
-                className="flex flex-col items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 flex-shrink-0"
-                style={{ width: '76px', height: '80px' }}
-              >
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'transparent' }}>
-                  <LogOut size={22} strokeWidth={1.8} style={{ color: c.mobileIconInactive }} />
-                </div>
-                <span className="text-[11px] font-semibold leading-none"
-                  style={{ color: c.mobileLabelInactive, fontFamily: 'DM Sans, sans-serif' }}>
-                  Sign Out
-                </span>
-              </button>
-            ) : (
+            {/* Sign in button for guests only in mobile nav */}
+            {!isAuthenticated && (
               <button
                 onClick={() => startLogin()}
                 className="flex flex-col items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 flex-shrink-0"
