@@ -4,7 +4,7 @@
  * Presents the six new advanced alarm system features using the
  * app's Bioluminescent Depth design language.
  */
-import { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { Link } from "wouter";
 import Layout from "@/components/Layout";
 
@@ -55,11 +55,11 @@ function FeatureRow({
   reverse = false,
 }: {
   number: string;
-  title: React.ReactNode;
+  title: React.ReactNode | string;
   accentColor: string;
   description: string;
   points: Array<{ label: string; text: string }>;
-  visual: React.ReactNode;
+  visual: React.ReactNode | string;
   reverse?: boolean;
 }) {
   return (
