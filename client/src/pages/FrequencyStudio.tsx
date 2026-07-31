@@ -1321,7 +1321,6 @@ export default function FrequencyStudio() {
       </div>
 
       </div>
-      </div>
       {/* Overlays */}
       {showBreathing && <BreathingGuide onClose={() => setShowBreathing(false)} accentColor="#00D4AA" />}
       {showShareCard && (
