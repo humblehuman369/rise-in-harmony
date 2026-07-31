@@ -1320,8 +1320,8 @@ export default function FrequencyStudio() {
         </div>
       </div>
 
-      </div>{/* /max-w-xl */}
-      </div>{/* /min-h-screen */}
+      </div>
+      </div>
       {/* Overlays */}
       {showBreathing && <BreathingGuide onClose={() => setShowBreathing(false)} accentColor="#00D4AA" />}
       {showShareCard && (

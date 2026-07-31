@@ -525,8 +525,8 @@ export default function Library() {
             </div>
           </>
         )}
-      </div>{/* /relative zIndex:1 */}
-      </div>{/* /min-h-screen */}
+      </div>
+      </div>
 
       {/* Premium Paywall Modal */}
       {paywallFreq && (

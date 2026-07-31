@@ -700,8 +700,8 @@ export default function Meditation() {
             <p style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>No meditations in this category yet.</p>
           </div>
         )}
-      </div>{/* /container */}
-      </div>{/* /min-h-screen */}
+      </div>
+      </div>
 
       {/* Player modal */}
       {selectedMeditation && (
