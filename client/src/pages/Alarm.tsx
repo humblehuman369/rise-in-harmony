@@ -21,7 +21,6 @@ import { trpc } from "@/lib/trpc";
 import { trackPaywallTriggered } from "@/hooks/useAnalytics";
 import PremiumPaywall from "@/components/PremiumPaywall";
 import AlarmRinging, { type RingingSound } from "@/components/AlarmRinging";
-import SleepToWake from "@/components/SleepToWake";
 
 // ─── Grounding frequency for gentle re-entry on 3rd snooze ─────────────────
 const GROUNDING_FREQ_ID = "174hz"; // 174 Hz — Foundation / Pain Relief
@@ -1382,11 +1381,6 @@ export default function Alarm() {
             <span className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Browser notifications active — alarms will fire even when the app is minimized.</span>
           </div>
         )}
-
-        {/* ─── Sleep-to-Wake Cycle ─────────────────────────────────────────────── */}
-        <div className="mx-6 mb-4">
-          <SleepToWake />
-        </div>
 
         <div className="mx-6 mb-8 p-4 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(239,68,68,0.05))', border: '1px solid rgba(245,158,11,0.15)' }}>
           <div className="flex items-start gap-3">
