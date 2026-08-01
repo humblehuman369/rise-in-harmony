@@ -462,9 +462,9 @@ function Section({
   return (
       <section
       id={id}
-      className={`relative flex flex-col items-center justify-center px-6 py-6 ${className}`}
+      className={`relative flex flex-col items-center justify-center px-5 py-4 ${className}`}
       style={{
-        minHeight: "100dvh",
+        minHeight: "calc(100dvh - 140px)",
         scrollSnapAlign: "start",
         scrollSnapStop: "always",
         ...style,
@@ -672,7 +672,7 @@ export default function Journey() {
       <div
         ref={containerRef}
         style={{
-          height: "calc(100dvh - 0px)",
+          height: "calc(100dvh - 60px - 80px)",
           overflowY: "scroll",
           scrollSnapType: "y mandatory",
           scrollBehavior: "smooth",
@@ -686,7 +686,7 @@ export default function Journey() {
           <div className="relative z-10 text-center max-w-lg mx-auto">
             {/* Badge */}
             <div
-              className="journey-reveal inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium mb-8"
+              className="journey-reveal inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium mb-4"
               style={{ background: "rgba(0,212,170,0.1)", border: "1px solid rgba(0,212,170,0.25)", color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}
             >
               <span>✦</span> Healing Frequencies
@@ -712,7 +712,7 @@ export default function Journey() {
               No medication. No expensive therapy. Just sound.
             </p>
             <p
-              className="journey-reveal text-sm mb-10"
+              className="journey-reveal text-sm mb-6"
               style={{ color: "rgba(232,237,245,0.4)", fontFamily: "DM Sans, sans-serif", transitionDelay: "220ms" }}
             >
               Precision-synthesized to 0.01Hz accuracy using DDS technology.
@@ -775,7 +775,7 @@ export default function Journey() {
             <h2 className="journey-reveal text-3xl md:text-4xl font-bold mb-2" style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif", transitionDelay: "80ms" }}>
               A Full-Body Neural Symphony
             </h2>
-            <p className="journey-reveal text-sm mb-8 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif", transitionDelay: "160ms" }}>
+            <p className="journey-reveal text-sm mb-4 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif", transitionDelay: "160ms" }}>
               Rise In Harmony is an integrated system for your entire being —
               body, mind, and soul — built on validated scientific principles.
             </p>
@@ -783,7 +783,7 @@ export default function Journey() {
             <HealingTriangle active={activeSection === 2} />
 
             {/* Science footnotes */}
-            <div className="mt-6 grid grid-cols-2 gap-3 max-w-sm mx-auto text-left">
+            <div className="mt-3 grid grid-cols-2 gap-2 max-w-sm mx-auto text-left">
               {[
                 { label: "Chronobiology", note: "Aligns with sleep-rhythm research" },
                 { label: "Brainwave Entrainment", note: "Guides brain to focus or rest" },
@@ -799,7 +799,7 @@ export default function Journey() {
 
             <button
               onClick={scrollToNext}
-              className="mt-8 px-6 py-2.5 rounded-full text-sm font-medium"
+              className="mt-4 px-6 py-2 rounded-full text-sm font-medium"
               style={{ background: "rgba(0,212,170,0.1)", border: "1px solid rgba(0,212,170,0.25)", color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}
             >
               Continue →
@@ -816,14 +816,14 @@ export default function Journey() {
             <h2 className="journey-reveal text-3xl md:text-4xl font-bold mb-2" style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif", transitionDelay: "80ms" }}>
               Real Support, Real Results
             </h2>
-            <p className="journey-reveal text-sm mb-8 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif", transitionDelay: "160ms" }}>
+            <p className="journey-reveal text-sm mb-4 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif", transitionDelay: "160ms" }}>
               More affordable than supplements. Works even if other methods haven't.
               One subscription covers everything.
             </p>
 
             {/* Value checklist */}
             <div
-              className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-8 max-w-md mx-auto"
+              className="flex flex-wrap justify-center gap-x-4 gap-y-1 mb-4 max-w-md mx-auto"
               style={{ fontFamily: "DM Sans, sans-serif" }}
             >
               {[
@@ -840,7 +840,7 @@ export default function Journey() {
             </div>
 
             {/* Program cards — staggered cascade reveal */}
-            <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto">
+            <div className="grid grid-cols-2 gap-2 max-w-lg mx-auto">
               {PROGRAMS.map((prog, idx) => (
                 <button
                   key={prog.title}
@@ -868,7 +868,7 @@ export default function Journey() {
 
             <button
               onClick={scrollToNext}
-              className="mt-8 px-6 py-2.5 rounded-full text-sm font-medium"
+              className="mt-4 px-6 py-2 rounded-full text-sm font-medium"
               style={{ background: "rgba(0,212,170,0.1)", border: "1px solid rgba(0,212,170,0.25)", color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}
             >
               Continue →
@@ -885,13 +885,13 @@ export default function Journey() {
             <h2 className="journey-reveal text-3xl md:text-4xl font-bold mb-2" style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif", transitionDelay: "80ms" }}>
               Why It Works
             </h2>
-            <p className="journey-reveal text-sm mb-8 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif", transitionDelay: "160ms" }}>
+            <p className="journey-reveal text-sm mb-4 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif", transitionDelay: "160ms" }}>
               Three interlocking principles — ancient wisdom validated by modern research.
             </p>
 
             <WaveformViz active={activeSection === 4} />
 
-            <div className="mt-8 grid grid-cols-1 gap-4 max-w-lg mx-auto text-left">
+            <div className="mt-4 grid grid-cols-1 gap-2 max-w-lg mx-auto text-left">
               {SCIENCE.map(item => (
                 <div
                   key={item.title}
@@ -918,7 +918,7 @@ export default function Journey() {
 
             <button
               onClick={scrollToNext}
-              className="mt-8 px-6 py-2.5 rounded-full text-sm font-medium"
+              className="mt-4 px-6 py-2 rounded-full text-sm font-medium"
               style={{ background: "rgba(0,212,170,0.1)", border: "1px solid rgba(0,212,170,0.25)", color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}
             >
               I'm Ready →
@@ -949,7 +949,7 @@ export default function Journey() {
                 <span style={{ color: "#00D4AA" }}>Healing Journey</span>
               </h2>
               <p
-                className="journey-reveal text-base mb-8 max-w-sm mx-auto"
+                className="journey-reveal text-base mb-5 max-w-sm mx-auto"
                 style={{ color: "rgba(232,237,245,0.55)", fontFamily: "DM Sans, sans-serif", transitionDelay: "160ms" }}
               >
                 Your body already knows how to heal.
@@ -970,7 +970,7 @@ export default function Journey() {
               </div>
 
               {/* Quick links */}
-              <div className="mt-8 flex flex-wrap justify-center gap-3">
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
                 {PROGRAMS.map(p => (
                   <button
                     key={p.href}
