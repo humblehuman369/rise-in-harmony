@@ -1277,25 +1277,36 @@ export default function Alarm() {
         </div>
         {/* Hero: Large centered clock with concentric rings */}
         <div className="relative flex flex-col items-center pt-8 pb-4" style={{ zIndex: 1 }}>
-          {/* Concentric ring layers behind the clock */}
-          <div className="absolute" style={{
+          {/* Concentric ring layers behind the clock — purely radial, no box */}
+          <div style={{
+            position: 'absolute',
             top: '50%', left: '50%',
             transform: 'translate(-50%, -50%)',
-            width: 400, height: 400,
+            width: 0, height: 0,
             pointerEvents: 'none',
           }}>
-            {[1, 0.82, 0.66, 0.52].map((scale, i) => (
-              <div key={i} className="absolute inset-0 rounded-full" style={{
+            {[380, 310, 250, 200].map((diameter, i) => (
+              <div key={i} style={{
+                position: 'absolute',
+                width: diameter,
+                height: diameter,
+                borderRadius: '50%',
                 border: `1px solid rgba(0,212,170,${0.18 - i * 0.04})`,
-                transform: `scale(${scale})`,
-                top: 0, left: 0,
+                top: -diameter / 2,
+                left: -diameter / 2,
                 animation: `bio-pulse ${4 + i * 0.8}s ease-in-out infinite`,
                 animationDelay: `${i * 0.5}s`,
               }} />
             ))}
-            {/* Soft ambient glow */}
-            <div className="absolute inset-0 rounded-full" style={{
-              background: 'radial-gradient(circle, rgba(0,212,170,0.12) 0%, rgba(0,212,170,0.04) 50%, transparent 75%)',
+            {/* Soft ambient radial glow */}
+            <div style={{
+              position: 'absolute',
+              width: 420,
+              height: 420,
+              borderRadius: '50%',
+              top: -210,
+              left: -210,
+              background: 'radial-gradient(circle, rgba(0,212,170,0.1) 0%, rgba(0,212,170,0.03) 55%, transparent 75%)',
               animation: 'bio-pulse 5s ease-in-out infinite',
             }} />
           </div>
