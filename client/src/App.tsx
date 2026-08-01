@@ -32,6 +32,7 @@ import Onboarding from "./pages/Onboarding";
 import Walkthrough from "./pages/Walkthrough";
 import AlarmFeatures from "./pages/AlarmFeatures";
 import DeepSleepWake from "./pages/DeepSleepWake";
+import DiscoveryPaths from "./pages/DiscoveryPaths";
 import { useAuth } from "./_core/hooks/useAuth";
 import { useLocalSessionImport } from "./hooks/useLocalSessionImport";
 import { useAnalytics } from "./hooks/useAnalytics";
@@ -61,6 +62,7 @@ function Router() {
       <Route path="/walkthrough" component={Walkthrough} />
       <Route path="/alarm-features" component={AlarmFeatures} />
       <Route path="/deep-sleep-wake" component={DeepSleepWake} />
+      <Route path="/discovery-paths" component={DiscoveryPaths} />
       <Route path="/precision">{() => { window.location.replace("/studio"); return null; }}</Route>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
