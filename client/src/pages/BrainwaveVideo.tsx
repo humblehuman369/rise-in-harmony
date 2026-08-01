@@ -25,7 +25,7 @@ const PHASES = [
     title: "Delta Phase — Deep Sleep",
     time: "Seconds 0 – 4 · 3 Hz binaural beat · 5% → 22% volume",
     color: "#8B5CF6",
-    text: `"Imagine an alarm that meets you where you are. In deep sleep, your brain operates at three hertz — Delta waves. Conventional alarms shatter this state with a blaring noise. Rise In Harmony begins here, at the Delta frequency, with a gentle, barely audible pulse. It doesn't wake you; it simply nudges your subconscious."`,
+    text: `Imagine an alarm that meets you where you are. In deep sleep, your brain operates at three hertz — Delta waves. Conventional alarms shatter this state with a blaring noise. Rise In Harmony begins here, at the Delta frequency, with a gentle, barely audible pulse. It doesn't wake you; it simply nudges your subconscious.`,
   },
   {
     sym: "θ",
@@ -33,7 +33,7 @@ const PHASES = [
     title: "Theta Phase — Hypnagogic Threshold",
     time: "Seconds 4 – 7 · 6 Hz binaural beat · 22% → 60% volume",
     color: "#00D4AA",
-    text: `"As the alarm softly escalates, the frequency sweeps in real-time to six hertz — Theta. This is the hypnagogic threshold. Your brain is guided naturally into a lighter, dream-like state. You are stirring, but without the panic or the cortisol spike of a sudden awakening."`,
+    text: `As the alarm softly escalates, the frequency sweeps in real-time to six hertz — Theta. This is the hypnagogic threshold. Your brain is guided naturally into a lighter, dream-like state. You are stirring, but without the panic or the cortisol spike of a sudden awakening.`,
   },
   {
     sym: "α",
@@ -41,7 +41,7 @@ const PHASES = [
     title: "Alpha Phase — Relaxed Wakefulness",
     time: "Seconds 7 – 10 · 10 Hz binaural beat · 60% → 100% volume",
     color: "#F59E0B",
-    text: `"Finally, as the volume reaches its peak, the frequency arrives at ten hertz — Alpha. The screen floods with the warm light of a simulated sunrise. You are awake. Relaxed, clear, and perfectly aligned with your natural circadian rhythm. This is how you were meant to wake up."`,
+    text: `Finally, as the volume reaches its peak, the frequency arrives at ten hertz — Alpha. The screen floods with the warm light of a simulated sunrise. You are awake. Relaxed, clear, and perfectly aligned with your natural circadian rhythm. This is how you were meant to wake up.`,
   },
 ];
 
@@ -121,8 +121,14 @@ export default function BrainwaveVideo() {
 
         {/* ── Presentation Script ── */}
         <section style={{ position: "relative", zIndex: 1, maxWidth: 900, margin: "0 auto", paddingLeft: 24, paddingRight: 24, paddingBottom: 100 }}>
-          <div style={{ display: "inline-block", padding: "5px 14px", border: `1px solid ${S.border}`, fontFamily: S.mono, fontSize: 11, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: S.muted, marginBottom: 40 }}>
-            Presentation Script
+          <div style={{ marginBottom: 48 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: S.teal, marginBottom: 16 }}>
+              <div style={{ width: 28, height: 1, background: S.teal }} />
+              The Science
+            </div>
+            <h2 style={{ fontFamily: S.serif, fontSize: "clamp(1.8rem, 3vw, 2.4rem)", fontWeight: 700, color: S.text, lineHeight: 1.2, margin: 0 }}>
+              Three phases. One natural transition.
+            </h2>
           </div>
 
           {PHASES.map(phase => (
