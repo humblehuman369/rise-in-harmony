@@ -1251,12 +1251,22 @@ export default function Alarm() {
         <div className="px-6 pt-8 pb-6 relative" style={{ zIndex: 1 }}>
           {/* Hero: Analog Clock + Title */}
           <div className="flex items-center gap-6 mb-6">
-            {/* Analog clock face with radial glow */}
-            <div className="relative flex-shrink-0">
+            {/* Analog clock face with concentric ring ripples */}
+            <div className="relative flex-shrink-0" style={{ width: 80, height: 80 }}>
+              {/* Concentric rings — matching screenshot */}
+              {[2.8, 2.2, 1.7, 1.3].map((scale, i) => (
+                <div key={i} className="absolute inset-0 rounded-full pointer-events-none" style={{
+                  border: `1px solid rgba(0,212,170,${0.06 + i * 0.04})`,
+                  transform: `scale(${scale})`,
+                  animation: `ripple-out ${3 + i * 0.8}s ease-out infinite`,
+                  animationDelay: `${i * 0.6}s`,
+                }} />
+              ))}
+              {/* Soft glow fill */}
               <div className="absolute inset-0 rounded-full pointer-events-none" style={{
-                background: 'radial-gradient(circle, rgba(0,212,170,0.25) 0%, rgba(0,212,170,0.08) 50%, transparent 75%)',
-                transform: 'scale(1.8)',
-                filter: 'blur(16px)',
+                background: 'radial-gradient(circle, rgba(0,212,170,0.18) 0%, rgba(0,212,170,0.05) 55%, transparent 80%)',
+                transform: 'scale(1.6)',
+                filter: 'blur(12px)',
                 animation: 'bio-pulse 4s ease-in-out infinite',
               }} />
               <LiveAnalogClock />
