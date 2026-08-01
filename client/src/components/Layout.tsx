@@ -400,6 +400,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </Link>
               {/* Deep Sleep Wake sub-item — shown only after Alarm */}
               {href === '/walkthrough' && (
+                <>
+                <Link href="/homepage-showcase">
+                  <div
+                    className="flex items-center gap-2 ml-6 pl-3 py-1.5 transition-all duration-200"
+                    style={{
+                      color: location === '/homepage-showcase' ? '#00D4AA' : c.navInactive,
+                      borderLeft: location === '/homepage-showcase' ? '2px solid #00D4AA' : '2px solid transparent',
+                      fontSize: '12px',
+                      fontFamily: 'DM Sans, sans-serif',
+                    }}
+                    onMouseEnter={e => {
+                      if (location !== '/homepage-showcase') {
+                        (e.currentTarget as HTMLElement).style.color = '#00D4AA';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (location !== '/homepage-showcase') {
+                        (e.currentTarget as HTMLElement).style.color = c.navInactive;
+                      }
+                    }}
+                  >
+                    <span style={{ fontSize: '12px' }}>🏠</span>
+                    <span>Homepage Showcase</span>
+                  </div>
+                </Link>
                 <Link href="/discovery-paths">
                   <div
                     className="flex items-center gap-2 ml-6 pl-3 py-1.5 transition-all duration-200"
@@ -424,6 +449,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <span>Four Paths</span>
                   </div>
                 </Link>
+                </>
               )}
               {href === '/alarm' && (
                 <>
