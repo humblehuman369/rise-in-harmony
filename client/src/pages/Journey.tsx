@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
+import BioluminescentBackground from "@/components/BioluminescentBackground";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { toast } from "sonner";
@@ -668,6 +669,7 @@ export default function Journey() {
 
   return (
     <Layout>
+      <BioluminescentBackground variant="teal" density="low" />
       {/* Scroll-snap container fills the main content area */}
       <div
         ref={containerRef}

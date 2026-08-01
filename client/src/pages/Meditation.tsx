@@ -644,104 +644,27 @@ export default function Meditation() {
           </div>
         )}
       <div className="container py-8 max-w-4xl relative" style={{ zIndex: 1 }}>
-        {/* Golden Lotus Hero Banner */}
-        {!isLight && (
-          <div className="mb-8 rounded-3xl overflow-hidden relative" style={{
-            background: 'linear-gradient(135deg, rgba(10,11,20,0.95) 0%, rgba(20,15,5,0.9) 50%, rgba(10,11,20,0.95) 100%)',
-            border: '1px solid rgba(245,158,11,0.2)',
-            minHeight: '160px',
+        {/* Page header */}
+        <div className="mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-4"
+            style={{ background: 'rgba(0,212,170,0.08)', border: '1px solid rgba(0,212,170,0.25)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00D4AA] animate-pulse" />
+            {MEDITATIONS.length} TrueHz Meditations
+          </div>
+          <h1 className="mb-2" style={{
+            fontFamily: 'Cormorant Garamond, serif',
+            fontSize: 'clamp(2rem, 5vw, 3rem)',
+            fontWeight: 600,
+            color: isLight ? '#1A1D2E' : '#E8EDF5',
+            lineHeight: 1.1,
+            textShadow: isLight ? 'none' : '0 0 40px rgba(0,212,170,0.1)',
           }}>
-            {/* Amber ambient glow */}
-            <div className="absolute inset-0" style={{
-              background: 'radial-gradient(ellipse 70% 80% at 70% 50%, rgba(245,158,11,0.12) 0%, transparent 70%)',
-            }} />
-            {/* Golden lotus SVG */}
-            <div className="absolute" style={{ right: '16px', top: '50%', transform: 'translateY(-50%)', width: '130px', height: '130px', opacity: 0.85 }}>
-              <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%', filter: 'drop-shadow(0 0 16px rgba(245,158,11,0.6)) drop-shadow(0 0 32px rgba(245,158,11,0.3))' }}>
-                <defs>
-                  <radialGradient id="lotusPetal" cx="50%" cy="80%" r="70%">
-                    <stop offset="0%" stopColor="#FCD34D" stopOpacity="0.95"/>
-                    <stop offset="50%" stopColor="#F59E0B" stopOpacity="0.8"/>
-                    <stop offset="100%" stopColor="#D97706" stopOpacity="0.4"/>
-                  </radialGradient>
-                  <radialGradient id="lotusCenter" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#FEF3C7" stopOpacity="1"/>
-                    <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.7"/>
-                  </radialGradient>
-                </defs>
-                {/* Outer petals */}
-                {[0,45,90,135,180,225,270,315].map((deg, i) => {
-                  const rad = deg * Math.PI / 180;
-                  const cx = 60 + Math.cos(rad) * 28;
-                  const cy = 60 + Math.sin(rad) * 28;
-                  return <ellipse key={i} cx={cx} cy={cy} rx="14" ry="22"
-                    transform={`rotate(${deg + 90}, ${cx}, ${cy})`}
-                    fill="url(#lotusPetal)" opacity="0.75" />;
-                })}
-                {/* Inner petals */}
-                {[22.5,67.5,112.5,157.5,202.5,247.5,292.5,337.5].map((deg, i) => {
-                  const rad = deg * Math.PI / 180;
-                  const cx = 60 + Math.cos(rad) * 18;
-                  const cy = 60 + Math.sin(rad) * 18;
-                  return <ellipse key={i} cx={cx} cy={cy} rx="10" ry="17"
-                    transform={`rotate(${deg + 90}, ${cx}, ${cy})`}
-                    fill="url(#lotusPetal)" opacity="0.9" />;
-                })}
-                {/* Center */}
-                <circle cx="60" cy="60" r="12" fill="url(#lotusCenter)" />
-                <circle cx="60" cy="60" r="6" fill="#FEF3C7" opacity="0.9" />
-                {/* Light rays */}
-                {[0,30,60,90,120,150,180,210,240,270,300,330].map((deg, i) => {
-                  const rad = deg * Math.PI / 180;
-                  return <line key={i}
-                    x1={60 + Math.cos(rad) * 14} y1={60 + Math.sin(rad) * 14}
-                    x2={60 + Math.cos(rad) * 55} y2={60 + Math.sin(rad) * 55}
-                    stroke="#FCD34D" strokeWidth="0.5" opacity="0.25" />;
-                })}
-              </svg>
-            </div>
-            {/* Text */}
-            <div className="relative px-6 py-6" style={{ zIndex: 1 }}>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-3"
-                style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#F59E0B', fontFamily: 'DM Sans, sans-serif' }}>
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#F59E0B' }} />
-                TrueHz™ Meditations
-              </div>
-              <h1 style={{
-                fontFamily: 'Cormorant Garamond, serif',
-                fontSize: 'clamp(1.8rem, 5vw, 2.6rem)',
-                fontWeight: 600,
-                color: '#E8EDF5',
-                lineHeight: 1.1,
-                textShadow: '0 0 40px rgba(245,158,11,0.2)',
-                maxWidth: '55%',
-              }}>
-                Meditation Library
-              </h1>
-              <p className="text-sm mt-2" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif', maxWidth: '55%' }}>
-                {MEDITATIONS.length} sessions · Sound Only or Sound + Frequency
-              </p>
-            </div>
-          </div>
-        )}
-        {isLight && (
-          <div className="mb-8">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-4"
-              style={{ background: 'rgba(0,212,170,0.08)', border: '1px solid rgba(0,212,170,0.25)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00D4AA] animate-pulse" />
-              {MEDITATIONS.length} TrueHz Meditations
-            </div>
-            <h1 className="mb-2" style={{
-              fontFamily: 'Cormorant Garamond, serif',
-              fontSize: 'clamp(2rem, 5vw, 3rem)',
-              fontWeight: 600,
-              color: '#1A1D2E',
-              lineHeight: 1.1,
-            }}>
-              Meditation Library
-            </h1>
-          </div>
-        )}
+            Meditation Library
+          </h1>
+          <p className="text-base" style={{ color: isLight ? '#4A5568' : '#8FA3BF', fontFamily: 'DM Sans, sans-serif', maxWidth: '520px' }}>
+            Each meditation is available in two modes — <strong style={{ color: isLight ? '#1A1D2E' : '#E8EDF5' }}>Sound Only</strong> for a pure ambient experience, or <strong style={{ color: '#00D4AA' }}>Sound + Frequency</strong> to layer a healing tone beneath the soundscape.
+          </p>
+        </div>
 
         {/* Category tabs */}
         <div className="flex gap-2 flex-wrap mb-8">

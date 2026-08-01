@@ -94,99 +94,6 @@ const PRECISION_PRESETS: Array<{ label: string; session: PrecisionSession; color
   { label: "Focus 40 Hz", color: "#F97316", session: { freqL: 200, beatHz: 40, waveform: "sine", mode: "isochronic", name: "Focus 40 Hz" } },
 ];
 
-// ─── Sine Wave Visualizer ──────────────────────────────────────────────────
-function SineWaveVisualizer({ hz, isPlaying }: { hz: number; isPlaying: boolean }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number>(0);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d")!;
-    const W = canvas.offsetWidth;
-    const H = 72;
-    canvas.width = W;
-    canvas.height = H;
-
-    let t = 0;
-    const speed = isPlaying ? 0.04 : 0.01;
-    // Normalize visible cycles: show ~3 cycles regardless of Hz
-    const cycles = 3;
-
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-      // Glow effect via shadow
-      ctx.shadowColor = "#00D4AA";
-      ctx.shadowBlur = 8;
-      ctx.strokeStyle = "#00D4AA";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let x = 0; x <= W; x++) {
-        const phase = (x / W) * Math.PI * 2 * cycles + t;
-        const amp = isPlaying ? (H / 2 - 8) : (H / 2 - 18);
-        const y = H / 2 + Math.sin(phase) * amp;
-        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      // Faded second wave for depth
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = "rgba(0,212,170,0.2)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let x = 0; x <= W; x++) {
-        const phase = (x / W) * Math.PI * 2 * cycles + t + 0.8;
-        const amp = isPlaying ? (H / 2 - 14) : (H / 2 - 22);
-        const y = H / 2 + Math.sin(phase) * amp;
-        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      t += speed;
-      rafRef.current = requestAnimationFrame(draw);
-    }
-    rafRef.current = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [hz, isPlaying]);
-
-  return (
-    <div className="mb-4 rounded-xl overflow-hidden" style={{
-      background: "rgba(0,212,170,0.04)",
-      border: "1px solid rgba(0,212,170,0.12)",
-    }}>
-      <canvas ref={canvasRef} style={{ width: "100%", height: "72px", display: "block" }} />
-    </div>
-  );
-}
-
-function BrainwaveBandIndicator({ hz }: { hz: number }) {
-  const band = hz < 4 ? "Delta" : hz < 8 ? "Theta" : hz < 13 ? "Alpha" : hz < 30 ? "Beta" : "Gamma";
-  const desc: Record<string, string> = {
-    Delta: "Deep sleep · 0.5–4 Hz",
-    Theta: "Meditation · 4–8 Hz",
-    Alpha: "Relaxation · 8–13 Hz",
-    Beta: "Focus · 13–30 Hz",
-    Gamma: "Insight · 30+ Hz",
-  };
-  const colors: Record<string, string> = {
-    Delta: "#6366F1", Theta: "#EC4899", Alpha: "#00D4AA", Beta: "#F59E0B", Gamma: "#EF4444",
-  };
-  const color = colors[band];
-  return (
-    <div className="flex items-center gap-3 mb-4 px-4 py-3 rounded-xl" style={{
-      background: `${color}10`,
-      border: `1px solid ${color}30`,
-    }}>
-      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: `${color}20`, border: `1.5px solid ${color}50` }}>
-        <span style={{ fontSize: '1rem' }}>🧠</span>
-      </div>
-      <div>
-        <div className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: `${color}90` }}>BRAINWAVE</div>
-        <div className="text-sm font-bold" style={{ color }}>{band} · {hz < 1 ? hz.toFixed(2) : hz % 1 === 0 ? hz : hz.toFixed(1)} Hz</div>
-        <div className="text-[10px]" style={{ color: `${color}70` }}>{desc[band]}</div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Favorites persistence ──────────────────────────────────────────────────
 interface Favorite {
   id: string;
@@ -897,28 +804,6 @@ export default function FrequencyStudio() {
             <a href="/technology" className="text-xs font-semibold transition-opacity hover:opacity-80"
               style={{ color: "#00D4AA" }}>Powered by TrueHz™ Precision Tuning →</a>
           </div>
-          {/* Animated sine waveform visualizer */}
-          <SineWaveVisualizer hz={customFreq} isPlaying={player.isPlaying} />
-
-          {/* Brainwave band indicator */}
-          <BrainwaveBandIndicator hz={customFreq} />
-
-          {/* Frequency quick-select pills */}
-          <div className="flex gap-2 overflow-x-auto pb-1 mb-4 scrollbar-hide">
-            {[174, 285, 396, 417, 432, 528, 639, 741].map(hz => (
-              <button key={hz}
-                onClick={() => { setCustomFreq(hz); setCustomFreqInput(hz.toFixed(2)); if (player.isPlaying) player.setFrequency(hz); }}
-                className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-150"
-                style={{
-                  background: customFreq === hz ? 'rgba(0,212,170,0.2)' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${customFreq === hz ? 'rgba(0,212,170,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                  color: customFreq === hz ? '#00D4AA' : '#6B7A99',
-                }}>
-                {hz}
-              </button>
-            ))}
-          </div>
-
           {/* 6 nudge buttons */}
           <div className="grid grid-cols-6 gap-2 mb-4">
             {([-10, -1, -0.1, 0.1, 1, 10] as const).map(d => (

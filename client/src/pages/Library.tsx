@@ -9,18 +9,17 @@ import Layout from "@/components/Layout";
 import BioluminescentBackground from "@/components/BioluminescentBackground";
 import HealingDirectory from "@/components/HealingDirectory";
 import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFrequencyPlayer";
-import SacredGeometryIcon from "@/components/SacredGeometryIcon";
 import { HEALING_FREQUENCIES } from "@/data/healingFrequencies";
 import PremiumPaywall from "@/components/PremiumPaywall";
 
 type LibraryView = "playable" | "directory";
 
 function initialLibraryView(): LibraryView {
-  if (typeof window === "undefined") return "playable";
+  if (typeof window === "undefined") return "directory";
   const param = new URLSearchParams(window.location.search).get("view");
   if (param === "playable") return "playable";
   if (param === "directory") return "directory";
-  return "playable";
+  return "directory";
 }
 
 const CATEGORIES = ["all", "chakra", "solfeggio", "binaural", "recorded"] as const;
@@ -178,9 +177,8 @@ function FrequencyCard({ freq, isPlaying, onPlay, showChakraPosition }: {
       }} />
 
       <div className="p-4">
-        {/* Top row: Hz display + sacred geometry icon */}
-        <div className="flex items-start justify-between mb-2">
-          {/* Hz number — large Cormorant Garamond */}
+        {/* Top row: Hz circle + play button */}
+        <div className="flex items-start justify-between mb-3">
           <div className="flex flex-col">
             {showChakraPosition && freq.chakraPosition && (
               <div className="text-[9px] font-bold uppercase tracking-widest mb-1"
@@ -188,27 +186,35 @@ function FrequencyCard({ freq, isPlaying, onPlay, showChakraPosition }: {
                 Chakra {freq.chakraPosition}
               </div>
             )}
-            <div className="flex items-baseline gap-1" style={{ animation: isPlaying ? 'bio-pulse 2.5s ease-in-out infinite' : 'none' }}>
-              <span style={{
-                fontFamily: 'Cormorant Garamond, serif',
-                fontSize: '2.4rem',
-                fontWeight: 700,
-                lineHeight: 1,
-                color: freq.color,
-                textShadow: `0 0 24px ${freq.color}70, 0 0 48px ${freq.color}35, 0 0 80px ${freq.color}18`,
-              }}>
-                {freq.hz}
-              </span>
-              <span style={{ fontSize: '0.65rem', fontWeight: 600, color: `${freq.color}80`, fontFamily: 'DM Sans, sans-serif', marginBottom: '4px' }}>Hz</span>
+            {/* Large glowing Hz circle */}
+            <div className="relative flex items-center justify-center mb-1" style={{ width: 72, height: 72 }}>
+              {/* Outer glow ring */}
+              <div className="absolute inset-0 rounded-full" style={{
+                background: `radial-gradient(circle, ${freq.color}20 0%, ${freq.color}08 50%, transparent 75%)`,
+                animation: isPlaying ? 'bio-pulse 2s ease-in-out infinite' : 'none',
+              }} />
+              {/* Circle border */}
+              <div className="absolute inset-2 rounded-full" style={{
+                border: `1.5px solid ${freq.color}35`,
+                background: `${freq.color}06`,
+              }} />
+              {/* Hz number */}
+              <div className="relative flex items-baseline gap-0.5">
+                <span style={{
+                  fontFamily: 'Cormorant Garamond, serif',
+                  fontSize: '1.6rem',
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  color: freq.color,
+                  textShadow: `0 0 20px ${freq.color}60, 0 0 40px ${freq.color}30`,
+                }}>
+                  {freq.hz}
+                </span>
+                <span style={{ fontSize: '0.6rem', fontWeight: 600, color: `${freq.color}80`, fontFamily: 'DM Sans, sans-serif' }}>Hz</span>
+              </div>
             </div>
           </div>
-          {/* Sacred geometry icon top-right */}
-          <SacredGeometryIcon hz={freq.hz} color={freq.color} size={42} opacity={isPlaying ? 0.9 : 0.55} />
-        </div>
-
-        {/* Play button row */}
-        <div className="flex items-center justify-between mb-2">
-          <div />
+          {/* Play button */}
           <button
             className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
             style={{
