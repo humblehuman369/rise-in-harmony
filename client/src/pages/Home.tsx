@@ -241,6 +241,67 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── Walkthrough Video Section ── */}
+      <section className="py-16" style={{ background: isLight ? '#EDF0F7' : '#080910', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="container">
+          {/* Section header */}
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 mb-4" style={{ fontSize: 12, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+              <div style={{ width: 28, height: 1, background: '#00D4AA' }} />
+              See It In Action
+              <div style={{ width: 28, height: 1, background: '#00D4AA' }} />
+            </div>
+            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', fontWeight: 700, color: isLight ? '#1A1D2E' : '#E8EDF5', lineHeight: 1.2, marginBottom: 12 }}>
+              Your complete healing practice,<br />
+              <span style={{ color: '#00D4AA', fontStyle: 'italic' }}>in one app.</span>
+            </h2>
+            <p style={{ fontSize: '1rem', color: '#8FA3BF', maxWidth: 560, margin: '0 auto', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.7 }}>
+              From your morning alarm to guided Reiki sessions — watch how Rise In Harmony walks you through a complete day of healing.
+            </p>
+          </div>
+
+          {/* Video player */}
+          <div style={{ maxWidth: 960, margin: '0 auto', position: 'relative' }}>
+            {/* Glow halo behind the video */}
+            <div style={{ position: 'absolute', inset: -2, background: 'linear-gradient(135deg, rgba(0,212,170,0.3), rgba(139,92,246,0.2), rgba(245,158,11,0.15))', filter: 'blur(24px)', opacity: 0.5, zIndex: 0, borderRadius: 4 }} />
+            <div style={{ position: 'relative', zIndex: 1, border: '1px solid rgba(0,212,170,0.25)', boxShadow: '0 0 60px rgba(0,212,170,0.1), 0 32px 64px rgba(0,0,0,0.5)', background: '#000', borderRadius: 4, overflow: 'hidden' }}>
+              {/* Corner accents */}
+              <div style={{ position: 'absolute', top: 0, left: 0, width: 20, height: 20, borderTop: '2px solid #00D4AA', borderLeft: '2px solid #00D4AA', zIndex: 2 }} />
+              <div style={{ position: 'absolute', top: 0, right: 0, width: 20, height: 20, borderTop: '2px solid #00D4AA', borderRight: '2px solid #00D4AA', zIndex: 2 }} />
+              <div style={{ position: 'absolute', bottom: 0, left: 0, width: 20, height: 20, borderBottom: '2px solid #00D4AA', borderLeft: '2px solid #00D4AA', zIndex: 2 }} />
+              <div style={{ position: 'absolute', bottom: 0, right: 0, width: 20, height: 20, borderBottom: '2px solid #00D4AA', borderRight: '2px solid #00D4AA', zIndex: 2 }} />
+              <video
+                controls
+                autoPlay
+                muted
+                loop
+                playsInline
+                poster="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ogogFVfpAWOFjhwM.png"
+                style={{ display: 'block', width: '100%', aspectRatio: '16/9', background: '#000' }}
+              >
+                <source src="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/slhyBjmPRMvrbWpF.mp4" type="video/mp4" />
+              </video>
+            </div>
+          </div>
+
+          {/* Four feature pills below the video */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8" style={{ maxWidth: 960, margin: '32px auto 0' }}>
+            {[
+              { icon: '⏰', color: '#00D4AA', label: 'Healing Alarm', sub: '432Hz · 528Hz · δ→θ→α' },
+              { icon: '🎛️', color: '#8B5CF6', label: 'Frequency Studio', sub: '1–22,000 Hz · DDS engine' },
+              { icon: '🪷', color: '#F59E0B', label: 'Meditation Player', sub: '9 TrueHz tracks · 60 min' },
+              { icon: '✦', color: '#00D4AA', label: 'Reiki Sessions', sub: '5-phase · Crystal & Tibetan' },
+            ].map(f => (
+              <div key={f.label} style={{ padding: '16px 20px', border: `1px solid ${f.color}22`, background: `${f.color}08`, borderRadius: 8, textAlign: 'center' }}>
+                <div style={{ fontSize: 22, marginBottom: 6 }}>{f.icon}</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif', marginBottom: 3 }}>{f.label}</div>
+                <div style={{ fontSize: '0.72rem', color: '#6B7A99', fontFamily: 'DM Mono, monospace' }}>{f.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* TrueHz technology banner */}
       <section className="py-10" style={{ background: isLight ? '#F5F6F9' : '#0A0B14' }}>
         <div className="container space-y-4">
