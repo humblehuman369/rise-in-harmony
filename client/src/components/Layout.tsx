@@ -22,7 +22,7 @@ const mobileNavItems = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/journey", icon: Map, label: "Journey" },
   { href: "/alarm", icon: AlarmClock, label: "Alarm" },
-  { href: "/player", icon: Music2, label: "Player" },
+  { href: "/player", icon: Music2, label: "Frequency" },
   { href: "/reiki", icon: Sparkles, label: "Reiki" },
   { href: "/meditation", icon: Headphones, label: "Meditate" },
   { href: "/studio", icon: Layers, label: "Studio" },
@@ -37,7 +37,7 @@ const adminNavItem = { href: "/admin", icon: ShieldCheck, label: "Admin" };
 const baseNavItems = [
   { href: "/journey", icon: Map, label: "Journey" },
   { href: "/alarm", icon: AlarmClock, label: "Alarm" },
-  { href: "/player", icon: Music2, label: "Player" },
+  { href: "/player", icon: Music2, label: "Frequency" },
   { href: "/reiki", icon: Sparkles, label: "Reiki" },
   { href: "/meditation", icon: Headphones, label: "Meditate" },
   { href: "/studio", icon: Layers, label: "Studio" },
