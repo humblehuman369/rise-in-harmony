@@ -399,7 +399,34 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               </Link>
               {/* Deep Sleep Wake sub-item — shown only after Alarm */}
+              {href === '/walkthrough' && (
+                <Link href="/discovery-paths">
+                  <div
+                    className="flex items-center gap-2 ml-6 pl-3 py-1.5 transition-all duration-200"
+                    style={{
+                      color: location === '/discovery-paths' ? '#F59E0B' : c.navInactive,
+                      borderLeft: location === '/discovery-paths' ? '2px solid #F59E0B' : '2px solid transparent',
+                      fontSize: '12px',
+                      fontFamily: 'DM Sans, sans-serif',
+                    }}
+                    onMouseEnter={e => {
+                      if (location !== '/discovery-paths') {
+                        (e.currentTarget as HTMLElement).style.color = '#F59E0B';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (location !== '/discovery-paths') {
+                        (e.currentTarget as HTMLElement).style.color = c.navInactive;
+                      }
+                    }}
+                  >
+                    <span style={{ fontSize: '12px' }}>🧭</span>
+                    <span>Four Paths</span>
+                  </div>
+                </Link>
+              )}
               {href === '/alarm' && (
+                <>
                 <Link href="/deep-sleep-wake">
                   <div
                     className="flex items-center gap-2 ml-6 pl-3 py-1.5 transition-all duration-200"
@@ -424,6 +451,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <span>Deep Sleep Wake</span>
                   </div>
                 </Link>
+                <Link href="/alarm-features">
+                  <div
+                    className="flex items-center gap-2 ml-6 pl-3 py-1.5 transition-all duration-200"
+                    style={{
+                      color: location === '/alarm-features' ? '#00D4AA' : c.navInactive,
+                      borderLeft: location === '/alarm-features' ? '2px solid #00D4AA' : '2px solid transparent',
+                      fontSize: '12px',
+                      fontFamily: 'DM Sans, sans-serif',
+                    }}
+                    onMouseEnter={e => {
+                      if (location !== '/alarm-features') {
+                        (e.currentTarget as HTMLElement).style.color = '#00D4AA';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (location !== '/alarm-features') {
+                        (e.currentTarget as HTMLElement).style.color = c.navInactive;
+                      }
+                    }}
+                  >
+                    <span style={{ fontSize: '12px' }}>⚡</span>
+                    <span>All Features</span>
+                  </div>
+                </Link>
+                </>
               )}
               </>
             );

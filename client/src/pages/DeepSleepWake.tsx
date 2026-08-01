@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Link } from "wouter";
 import Layout from "@/components/Layout";
 
-const VIDEO_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/IMiiasJftUnLFGiq.mp4";
+const VIDEO_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/uBsjcjxSCjPKyins.mp4";
 const POSTER_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/NqZXMFZpPkTIMAwR.png";
 
 export default function DeepSleepWake() {

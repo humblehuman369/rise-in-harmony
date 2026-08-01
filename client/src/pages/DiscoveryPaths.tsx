@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Link } from "wouter";
 import Layout from "../components/Layout";
 
-const VIDEO_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/wcwRahzZlvJmXoYk.mp4";
+const VIDEO_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/zEfhQrVqqYOqJSPS.mp4";
 const POSTER_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/TtbNGYlpCBuPzRzQ.png";
 
 const PATHS = [
