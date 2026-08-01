@@ -37,7 +37,15 @@ const ALARMS_STORAGE_KEY = "rih_alarms";
 
 // ─── Wake Sequence types ────────────────────────────────────────────────────
 
-type WakeSequenceId = "none" | "gentle-morning" | "chakra-awakening";
+type WakeSequenceId = "none" | "gentle-morning" | "deep-sleep-wake" | "chakra-awakening";
+type SleepProfile = "light" | "normal" | "heavy" | "very-heavy";
+
+const SLEEP_PROFILES: Array<{ id: SleepProfile; label: string; fadeMin: number; color: string }> = [
+  { id: "light", label: "Light Sleeper", fadeMin: 8, color: "#00D4AA" },
+  { id: "normal", label: "Normal", fadeMin: 6, color: "#6C5CE7" },
+  { id: "heavy", label: "Heavy Sleeper", fadeMin: 4, color: "#F59E0B" },
+  { id: "very-heavy", label: "Very Heavy", fadeMin: 3, color: "#EF4444" },
+];
 
 interface WakeSequence {
   id: WakeSequenceId;
@@ -66,6 +74,18 @@ const WAKE_SEQUENCES: WakeSequence[] = [
     steps: [
       { hz: 432, name: "Natural Harmony", durationMin: 3 },
       { hz: 528, name: "Miracle Tone", durationMin: 2 },
+    ],
+  },
+  {
+    id: "deep-sleep-wake",
+    label: "Deep Sleep Wake",
+    description: "δ Delta → θ Theta → α Alpha — brainwave sweep",
+    isPremium: false,
+    color: "#A78BFA",
+    steps: [
+      { hz: 3, name: "Delta — Deep Sleep", durationMin: 2 },
+      { hz: 6, name: "Theta — Hypnagogic", durationMin: 2 },
+      { hz: 10, name: "Alpha — Wakefulness", durationMin: 1 },
     ],
   },
   {
@@ -159,6 +179,7 @@ export default function AlarmScreen() {
   const [newFreqId, setNewFreqId] = useState(DEFAULT_FREQUENCY.id);
   const [newFadeMin, setNewFadeMin] = useState(5);
   const [newSequenceId, setNewSequenceId] = useState<WakeSequenceId>("none");
+  const [sleepProfile, setSleepProfile] = useState<SleepProfile>("normal");
 
   useAlarmNotifications();
 
@@ -403,6 +424,36 @@ export default function AlarmScreen() {
                         ))}
                       </View>
                     )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* ── Sleep Profile selector ──────────────────────────────── */}
+            <Text style={styles.sectionLabel}>Sleep Profile</Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+              {SLEEP_PROFILES.map((profile) => {
+                const isActive = sleepProfile === profile.id;
+                return (
+                  <TouchableOpacity
+                    key={profile.id}
+                    style={[
+                      styles.freqChip,
+                      isActive && {
+                        backgroundColor: profile.color + '25',
+                        borderColor: profile.color + '60',
+                      },
+                    ]}
+                    onPress={() => { setSleepProfile(profile.id); setNewFadeMin(profile.fadeMin); }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[
+                      styles.freqChipHz,
+                      isActive && { color: profile.color },
+                    ]}>
+                      {profile.label}
+                    </Text>
+                    <Text style={styles.freqChipName}>{profile.fadeMin}m fade</Text>
                   </TouchableOpacity>
                 );
               })}

@@ -382,12 +382,24 @@ export function useMeditationPlayer(meditation: Meditation | null, mode: Meditat
     };
   }, [meditation?.id, clearTick, teardownAll]);
 
+  const seekTo = useCallback((seconds: number) => {
+    if (masterPlayerRef.current) {
+      masterPlayerRef.current.seekTo(seconds);
+      setState(prev => ({
+        ...prev,
+        elapsedSec: Math.max(0, Math.min(seconds, prev.totalSec ?? 0)),
+        stepIndex: 0,
+      }));
+    }
+  }, []);
+
   return {
     ...state,
     totalSec,
     play,
     pause,
     stop,
+    seekTo,
     setNatureVolume,
     setFrequencyVolume,
   };

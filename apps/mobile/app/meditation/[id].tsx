@@ -17,6 +17,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
 import AudioVisualizer from "@/components/AudioVisualizer";
+import Slider from "@react-native-community/slider";
 import VolumeSlider from "@/components/VolumeSlider";
 import { MEDITATIONS, FREQUENCIES } from "@rih/shared-utils";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
@@ -86,9 +87,12 @@ export default function MeditationSessionScreen() {
     play,
     pause,
     stop,
+    seekTo,
     setNatureVolume,
     setFrequencyVolume,
   } = useMeditationPlayer(meditation, mode);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [seekValue, setSeekValue] = useState(0);
 
   const sessionStartedRef = useRef(false);
 
@@ -224,17 +228,18 @@ export default function MeditationSessionScreen() {
           {formatTime(elapsedSec)}{" "}
           <Text style={styles.timerTotal}>/ {formatTime(totalSec)}</Text>
         </Text>
-        <View style={styles.progressTrack}>
-          <View
-            style={[
-              styles.progressFill,
-              {
-                width: `${Math.min(progress * 100, 100)}%`,
-                backgroundColor: meditation.color,
-              },
-            ]}
-          />
-        </View>
+        <Slider
+          style={{ width: '100%', height: 32 }}
+          minimumValue={0}
+          maximumValue={totalSec > 0 ? totalSec : 1}
+          value={isSeeking ? seekValue : elapsedSec}
+          minimumTrackTintColor={meditation.color}
+          maximumTrackTintColor="rgba(255,255,255,0.15)"
+          thumbTintColor={meditation.color}
+          onSlidingStart={(v) => { setIsSeeking(true); setSeekValue(v); }}
+          onValueChange={(v) => setSeekValue(v)}
+          onSlidingComplete={(v) => { seekTo(v); setIsSeeking(false); }}
+        />
 
         {/* Play / pause */}
         <TouchableOpacity
