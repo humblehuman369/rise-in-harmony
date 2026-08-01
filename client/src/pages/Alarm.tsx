@@ -1275,8 +1275,19 @@ export default function Alarm() {
           <div className="absolute" style={{ top: '0%', left: '50%', transform: 'translateX(-50%)', width: '80%', height: '40%', background: 'radial-gradient(ellipse, rgba(245,158,11,0.04) 0%, transparent 70%)' }} />
           <div className="absolute" style={{ bottom: '10%', right: '5%', width: '40%', height: '40%', background: 'radial-gradient(ellipse, rgba(0,212,170,0.03) 0%, transparent 70%)' }} />
         </div>
+        {/* Page title header */}
+        <div className="px-6 pt-6 pb-2 relative" style={{ zIndex: 1 }}>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-2"
+            style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#F59E0B', fontFamily: 'DM Sans, sans-serif' }}>
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#F59E0B' }} />
+            Smart Alarm
+          </div>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5', textShadow: '0 0 30px rgba(245,158,11,0.1)' }}>Healing Alarms</h1>
+          <p className="text-sm mt-0.5" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Wake gently with healing frequencies</p>
+        </div>
+
         {/* Hero: Large centered clock with concentric rings */}
-        <div className="relative flex flex-col items-center pt-8 pb-4" style={{ zIndex: 1 }}>
+        <div className="relative flex flex-col items-center pt-4 pb-4" style={{ zIndex: 1 }}>
           {/* Concentric ring layers behind the clock — purely radial, no box */}
           <div style={{
             position: 'absolute',
