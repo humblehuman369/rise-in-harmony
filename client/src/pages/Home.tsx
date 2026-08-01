@@ -7,7 +7,6 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { Play, AlarmClock, Waves, Sparkles, ChevronRight, Star, Shield, Zap, Map } from "lucide-react";
 import Layout from "@/components/Layout";
-import BioluminescentBackground from "@/components/BioluminescentBackground";
 import PricingSection from "@/components/PricingSection";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { toast } from "sonner";
@@ -77,7 +76,6 @@ export default function Home() {
 
   return (
     <Layout>
-      <BioluminescentBackground variant="teal" density="medium" />
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
         {/* Background gradient — bioluminescent depth */}
