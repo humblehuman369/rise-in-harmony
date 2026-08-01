@@ -11,6 +11,7 @@ import {
   Scan, Volume2, VolumeX, Timer, Radio, Music2, Info,
 } from "lucide-react";
 import Layout from "@/components/Layout";
+import BioluminescentBackground from "@/components/BioluminescentBackground";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -633,6 +634,7 @@ export default function Meditation() {
 
   return (
     <Layout>
+      <BioluminescentBackground variant="teal" density="low" />
       <div className="min-h-screen relative" style={{ background: isLight ? '#F5F6F9' : '#0A0B14' }}>
         {/* Bioluminescent background */}
         {!isLight && (

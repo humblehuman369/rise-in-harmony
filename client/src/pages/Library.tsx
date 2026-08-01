@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { Play, Pause, Lock, Search, Filter, ChevronDown, ChevronUp, Volume2, BookOpen, Waves } from "lucide-react";
 import Layout from "@/components/Layout";
+import BioluminescentBackground from "@/components/BioluminescentBackground";
 import HealingDirectory from "@/components/HealingDirectory";
 import { useFrequencyPlayer, FREQUENCIES, type Frequency } from "@/hooks/useFrequencyPlayer";
 import { HEALING_FREQUENCIES } from "@/data/healingFrequencies";
@@ -170,13 +171,13 @@ function FrequencyCard({ freq, isPlaying, onPlay, showChakraPosition }: {
         }
       }}
     >
-      {/* Subtle radial glow in top-left corner */}
-      <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none" style={{
-        background: `radial-gradient(ellipse at 0% 0%, ${freq.color}08 0%, transparent 70%)`,
+      {/* Full-card radial glow overlay */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: `radial-gradient(ellipse 80% 60% at 20% 20%, ${freq.color}06 0%, transparent 65%)`,
       }} />
 
       <div className="p-4">
-        {/* Top row: Hz number + play button */}
+        {/* Top row: Hz circle + play button */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex flex-col">
             {showChakraPosition && freq.chakraPosition && (
@@ -185,12 +186,32 @@ function FrequencyCard({ freq, isPlaying, onPlay, showChakraPosition }: {
                 Chakra {freq.chakraPosition}
               </div>
             )}
-            <div className="flex items-baseline gap-1">
-              <span className="font-mono-brand text-3xl font-bold leading-none"
-                style={{ color: freq.color, textShadow: `0 0 20px ${freq.color}40` }}>
-                {freq.hz}
-              </span>
-              <span className="text-sm font-medium" style={{ color: `${freq.color}70` }}>Hz</span>
+            {/* Large glowing Hz circle */}
+            <div className="relative flex items-center justify-center mb-1" style={{ width: 72, height: 72 }}>
+              {/* Outer glow ring */}
+              <div className="absolute inset-0 rounded-full" style={{
+                background: `radial-gradient(circle, ${freq.color}20 0%, ${freq.color}08 50%, transparent 75%)`,
+                animation: isPlaying ? 'bio-pulse 2s ease-in-out infinite' : 'none',
+              }} />
+              {/* Circle border */}
+              <div className="absolute inset-2 rounded-full" style={{
+                border: `1.5px solid ${freq.color}35`,
+                background: `${freq.color}06`,
+              }} />
+              {/* Hz number */}
+              <div className="relative flex items-baseline gap-0.5">
+                <span style={{
+                  fontFamily: 'Cormorant Garamond, serif',
+                  fontSize: '1.6rem',
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  color: freq.color,
+                  textShadow: `0 0 20px ${freq.color}60, 0 0 40px ${freq.color}30`,
+                }}>
+                  {freq.hz}
+                </span>
+                <span style={{ fontSize: '0.6rem', fontWeight: 600, color: `${freq.color}80`, fontFamily: 'DM Sans, sans-serif' }}>Hz</span>
+              </div>
             </div>
           </div>
           {/* Play button */}
@@ -305,6 +326,7 @@ export default function Library() {
 
   return (
     <Layout>
+      <BioluminescentBackground variant="teal" density="low" />
       <div className="min-h-screen relative" style={{ background: '#0A0B14' }}>
         {/* Bioluminescent background */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>

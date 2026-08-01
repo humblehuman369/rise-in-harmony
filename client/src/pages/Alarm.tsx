@@ -11,6 +11,7 @@ import {
   Square, Check, ChevronUp, ChevronDown,
 } from "lucide-react";
 import Layout from "@/components/Layout";
+import BioluminescentBackground from "@/components/BioluminescentBackground";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { BACKGROUND_LOOPS, getLibraryLoopUrl } from "@/data/backgroundLoops";
 import { Switch } from "@/components/ui/switch";
@@ -1239,6 +1240,7 @@ export default function Alarm() {
 
   return (
     <Layout>
+      <BioluminescentBackground variant="teal" density="low" />
       <div className="min-h-screen relative" style={{ background: '#0A0B14' }}>
         {/* Bioluminescent background */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
@@ -1249,8 +1251,16 @@ export default function Alarm() {
         <div className="px-6 pt-8 pb-6 relative" style={{ zIndex: 1 }}>
           {/* Hero: Analog Clock + Title */}
           <div className="flex items-center gap-6 mb-6">
-            {/* Analog clock face */}
-            <LiveAnalogClock />
+            {/* Analog clock face with radial glow */}
+            <div className="relative flex-shrink-0">
+              <div className="absolute inset-0 rounded-full pointer-events-none" style={{
+                background: 'radial-gradient(circle, rgba(0,212,170,0.25) 0%, rgba(0,212,170,0.08) 50%, transparent 75%)',
+                transform: 'scale(1.8)',
+                filter: 'blur(16px)',
+                animation: 'bio-pulse 4s ease-in-out infinite',
+              }} />
+              <LiveAnalogClock />
+            </div>
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-2"
                 style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#F59E0B', fontFamily: 'DM Sans, sans-serif' }}>

@@ -787,10 +787,18 @@ export default function FrequencyStudio() {
                 onChange={e => setCustomFreqInput(e.target.value)}
                 onBlur={commitFreq}
                 onKeyDown={e => e.key === "Enter" && commitFreq()}
-                className="text-6xl font-bold text-center bg-transparent outline-none w-48"
-                style={{ color: "#00D4AA", fontFamily: "DM Sans, sans-serif", caretColor: "#00D4AA" }}
+                className="text-7xl font-bold text-center bg-transparent outline-none"
+                style={{
+                  color: "#00D4AA",
+                  fontFamily: "Cormorant Garamond, serif",
+                  caretColor: "#00D4AA",
+                  textShadow: "0 0 40px rgba(0,212,170,0.6), 0 0 80px rgba(0,212,170,0.3), 0 0 120px rgba(0,212,170,0.15)",
+                  minWidth: "8rem",
+                  maxWidth: "14rem",
+                  width: "auto",
+                }}
               />
-              <span className="text-2xl font-medium mb-2" style={{ color: "#6B7A99" }}>Hz</span>
+              <span className="text-3xl font-medium mb-3" style={{ color: "rgba(0,212,170,0.7)", fontFamily: "Cormorant Garamond, serif" }}>Hz</span>
             </div>
             <p className="text-xs mt-1" style={{ color: "#4A5568" }}>1 – 22,000 Hz · 0.01 resolution</p>
             <a href="/technology" className="text-xs font-semibold transition-opacity hover:opacity-80"
