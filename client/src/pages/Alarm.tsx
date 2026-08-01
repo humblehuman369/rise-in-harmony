@@ -919,16 +919,15 @@ interface AlarmPrefill { wakeTime?: string; frequencyHz?: number; }
 
 // ─── Main Alarm page ──────────────────────────────────────────────────────────
 // ─── Live Analog Clock ───────────────────────────────────────────────────────
-function LiveAnalogClock() {
+function LiveAnalogClock({ size = 260 }: { size?: number }) {
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
-  const size = 80;
   const cx = size / 2;
   const cy = size / 2;
-  const r = size / 2 - 4;
+  const r = size / 2 - 6;
   const h = now.getHours() % 12;
   const m = now.getMinutes();
   const s = now.getSeconds();
@@ -939,43 +938,72 @@ function LiveAnalogClock() {
     x: cx + Math.cos((angle * Math.PI) / 180) * len,
     y: cy + Math.sin((angle * Math.PI) / 180) * len,
   });
-  const hEnd = toXY(hAngle, r * 0.5);
-  const mEnd = toXY(mAngle, r * 0.72);
-  const sEnd = toXY(sAngle, r * 0.82);
-  const ticks = Array.from({ length: 12 }, (_, i) => {
-    const a = (i / 12) * 360 - 90;
+  const hEnd = toXY(hAngle, r * 0.52);
+  const mEnd = toXY(mAngle, r * 0.74);
+  const sEnd = toXY(sAngle, r * 0.84);
+  const ticks = Array.from({ length: 60 }, (_, i) => {
+    const a = (i / 60) * 360 - 90;
+    const isMajor = i % 5 === 0;
     const outer = toXY(a, r - 1);
-    const inner = toXY(a, r - (i % 3 === 0 ? 8 : 5));
-    return { outer, inner, major: i % 3 === 0 };
+    const inner = toXY(a, r - (isMajor ? r * 0.1 : r * 0.05));
+    return { outer, inner, major: isMajor };
   });
+  const hourNums = [12, 3, 6, 9].map(n => {
+    const a = ((n / 12) * 360 - 90) * Math.PI / 180;
+    return { n, x: cx + Math.cos(a) * (r * 0.78), y: cy + Math.sin(a) * (r * 0.78) };
+  });
+  const hh = String(now.getHours() % 12 || 12).padStart(2, '0');
+  const mm = String(m).padStart(2, '0');
+  const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
   return (
-    <div className="flex-shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size}>
-        {/* Clock face */}
-        <circle cx={cx} cy={cy} r={r} fill="rgba(10,11,20,0.95)" stroke="rgba(0,212,170,0.3)" strokeWidth="1.5" />
-        <circle cx={cx} cy={cy} r={r + 3} fill="none" stroke="rgba(0,212,170,0.06)" strokeWidth="4" />
-        {/* Tick marks */}
+    <div style={{ width: size, height: size, position: 'relative', flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ filter: 'drop-shadow(0 0 24px rgba(0,212,170,0.25))' }}>
+        <defs>
+          <filter id="clock-glow-lg">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          <radialGradient id="clockFace" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#0D1020" stopOpacity="1"/>
+            <stop offset="100%" stopColor="#080A14" stopOpacity="1"/>
+          </radialGradient>
+        </defs>
+        <circle cx={cx} cy={cy} r={r + 8} fill="none" stroke="rgba(0,212,170,0.08)" strokeWidth="12" filter="url(#clock-glow-lg)" />
+        <circle cx={cx} cy={cy} r={r} fill="url(#clockFace)" />
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(0,212,170,0.45)" strokeWidth="1.5" />
+        <circle cx={cx} cy={cy} r={r - 10} fill="none" stroke="rgba(0,212,170,0.08)" strokeWidth="1" />
         {ticks.map((t, i) => (
           <line key={i} x1={t.outer.x} y1={t.outer.y} x2={t.inner.x} y2={t.inner.y}
-            stroke={t.major ? 'rgba(0,212,170,0.6)' : 'rgba(0,212,170,0.25)'}
-            strokeWidth={t.major ? 1.5 : 0.8} strokeLinecap="round" />
+            stroke={t.major ? 'rgba(0,212,170,0.7)' : 'rgba(0,212,170,0.2)'}
+            strokeWidth={t.major ? 1.5 : 0.7} strokeLinecap="round" />
         ))}
-        {/* Hour hand */}
-        <line x1={cx} y1={cy} x2={hEnd.x} y2={hEnd.y} stroke="#E8EDF5" strokeWidth="2.5" strokeLinecap="round" />
-        {/* Minute hand */}
-        <line x1={cx} y1={cy} x2={mEnd.x} y2={mEnd.y} stroke="#00D4AA" strokeWidth="1.8" strokeLinecap="round" />
-        {/* Second hand */}
-        <line x1={cx} y1={cy} x2={sEnd.x} y2={sEnd.y} stroke="#F59E0B" strokeWidth="1" strokeLinecap="round" />
-        {/* Center dot */}
-        <circle cx={cx} cy={cy} r={3} fill="#00D4AA" />
-        {/* Glow filter */}
-        <defs>
-          <filter id="clock-glow">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-            <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-        </defs>
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(0,212,170,0.15)" strokeWidth="8" filter="url(#clock-glow)" />
+        {hourNums.map(({ n, x, y }) => (
+          <text key={n} x={x} y={y} textAnchor="middle" dominantBaseline="middle"
+            fill="rgba(232,237,245,0.85)" fontSize={size * 0.065}
+            fontFamily="DM Sans, sans-serif" fontWeight="500">
+            {n}
+          </text>
+        ))}
+        <line x1={cx} y1={cy} x2={hEnd.x} y2={hEnd.y}
+          stroke="#E8EDF5" strokeWidth={size * 0.022} strokeLinecap="round"
+          filter="url(#clock-glow-lg)" />
+        <line x1={cx} y1={cy} x2={mEnd.x} y2={mEnd.y}
+          stroke="#00D4AA" strokeWidth={size * 0.015} strokeLinecap="round"
+          filter="url(#clock-glow-lg)" />
+        <line x1={cx} y1={cy} x2={sEnd.x} y2={sEnd.y}
+          stroke="rgba(0,212,170,0.6)" strokeWidth={size * 0.006} strokeLinecap="round" />
+        <circle cx={cx} cy={cy} r={size * 0.025} fill="#0D1020" stroke="#00D4AA" strokeWidth="1.5" />
+        <circle cx={cx} cy={cy} r={size * 0.012} fill="#00D4AA" />
+        <text x={cx} y={cy + r * 0.42} textAnchor="middle"
+          fill="rgba(0,212,170,0.9)" fontSize={size * 0.115}
+          fontFamily="DM Mono, monospace" fontWeight="600">
+          {hh}:{mm}
+        </text>
+        <text x={cx} y={cy + r * 0.58} textAnchor="middle"
+          fill="rgba(0,212,170,0.5)" fontSize={size * 0.055}
+          fontFamily="DM Sans, sans-serif" fontWeight="500">
+          {ampm}
+        </text>
       </svg>
     </div>
   );
@@ -1247,56 +1275,40 @@ export default function Alarm() {
           <div className="absolute" style={{ top: '0%', left: '50%', transform: 'translateX(-50%)', width: '80%', height: '40%', background: 'radial-gradient(ellipse, rgba(245,158,11,0.04) 0%, transparent 70%)' }} />
           <div className="absolute" style={{ bottom: '10%', right: '5%', width: '40%', height: '40%', background: 'radial-gradient(ellipse, rgba(0,212,170,0.03) 0%, transparent 70%)' }} />
         </div>
-        {/* Header */}
-        <div className="px-6 pt-8 pb-6 relative" style={{ zIndex: 1 }}>
-          {/* Hero: Analog Clock + Title */}
-          <div className="flex items-center gap-6 mb-6">
-            {/* Analog clock face with concentric ring ripples */}
-            <div className="relative flex-shrink-0" style={{ width: 80, height: 80 }}>
-              {/* Concentric rings — matching screenshot */}
-              {[2.8, 2.2, 1.7, 1.3].map((scale, i) => (
-                <div key={i} className="absolute inset-0 rounded-full pointer-events-none" style={{
-                  border: `1px solid rgba(0,212,170,${0.06 + i * 0.04})`,
-                  transform: `scale(${scale})`,
-                  animation: `ripple-out ${3 + i * 0.8}s ease-out infinite`,
-                  animationDelay: `${i * 0.6}s`,
-                }} />
-              ))}
-              {/* Soft glow fill */}
-              <div className="absolute inset-0 rounded-full pointer-events-none" style={{
-                background: 'radial-gradient(circle, rgba(0,212,170,0.18) 0%, rgba(0,212,170,0.05) 55%, transparent 80%)',
-                transform: 'scale(1.6)',
-                filter: 'blur(12px)',
-                animation: 'bio-pulse 4s ease-in-out infinite',
+        {/* Hero: Large centered clock with concentric rings */}
+        <div className="relative flex flex-col items-center pt-8 pb-4" style={{ zIndex: 1 }}>
+          {/* Concentric ring layers behind the clock */}
+          <div className="absolute" style={{
+            top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 400, height: 400,
+            pointerEvents: 'none',
+          }}>
+            {[1, 0.82, 0.66, 0.52].map((scale, i) => (
+              <div key={i} className="absolute inset-0 rounded-full" style={{
+                border: `1px solid rgba(0,212,170,${0.18 - i * 0.04})`,
+                transform: `scale(${scale})`,
+                top: 0, left: 0,
+                animation: `bio-pulse ${4 + i * 0.8}s ease-in-out infinite`,
+                animationDelay: `${i * 0.5}s`,
               }} />
-              <LiveAnalogClock />
-            </div>
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-2"
-                style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#F59E0B', fontFamily: 'DM Sans, sans-serif' }}>
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#F59E0B' }} />
-                Smart Alarm
-              </div>
-              <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5', textShadow: '0 0 30px rgba(245,158,11,0.1)' }}>Healing Alarms</h1>
-              <p className="text-sm mt-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Wake gently with healing frequencies</p>
-            </div>
-            <div className="ml-auto">
-              <button onClick={handleAddAlarm} className="btn-teal flex items-center gap-2 px-5 py-2.5 text-sm font-semibold">
-                <Plus size={16} /> New Alarm
-              </button>
-            </div>
-          </div>
-          <div className="flex gap-4">
-            {[
-              { label: "Active Alarms", value: enabledCount, color: '#00D4AA' },
-              { label: "Total Alarms", value: alarms.length, color: '#8B5CF6' },
-              { label: "Streak", value: "7 days", color: '#F59E0B' },
-            ].map(stat => (
-              <div key={stat.label} className="glow-card px-4 py-3 flex-1">
-                <div className="text-xs mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>{stat.label}</div>
-                <div className="text-xl font-bold font-mono-brand" style={{ color: stat.color }}>{stat.value}</div>
-              </div>
             ))}
+            {/* Soft ambient glow */}
+            <div className="absolute inset-0 rounded-full" style={{
+              background: 'radial-gradient(circle, rgba(0,212,170,0.12) 0%, rgba(0,212,170,0.04) 50%, transparent 75%)',
+              animation: 'bio-pulse 5s ease-in-out infinite',
+            }} />
+          </div>
+
+          {/* The big clock */}
+          <LiveAnalogClock size={260} />
+
+          {/* New Alarm button — top right corner */}
+          <div className="absolute top-6 right-6">
+            <button onClick={handleAddAlarm}
+              className="btn-teal flex items-center gap-2 px-5 py-2.5 text-sm font-semibold">
+              <Plus size={16} /> New Alarm
+            </button>
           </div>
         </div>
 
@@ -1402,16 +1414,23 @@ export default function Alarm() {
           </div>
         )}
 
-        <div className="mx-6 mb-8 p-4 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(239,68,68,0.05))', border: '1px solid rgba(245,158,11,0.15)' }}>
-          <div className="flex items-start gap-3">
-            <AlarmClock size={18} style={{ color: '#F59E0B', flexShrink: 0, marginTop: '1px' }} />
-            <div>
-              <div className="text-sm font-semibold mb-1" style={{ color: '#F59E0B', fontFamily: 'DM Sans, sans-serif' }}>Native App Alarms</div>
-              <div className="text-xs leading-relaxed" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>The mobile app schedules alarms through the system notification service for exact delivery, even with the screen locked. Web alarms use browser notifications and require this tab to stay open.</div>
-            </div>
-          </div>
+        {/* Prominent "+  New Alarm" button at bottom — matching screenshot */}
+        <div className="px-6 pb-8 pt-2">
+          <button
+            onClick={handleAddAlarm}
+            className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-base font-semibold transition-all duration-200 active:scale-[0.98]"
+            style={{
+              background: 'linear-gradient(135deg, #00D4AA, #00B894)',
+              color: '#0A0B14',
+              fontFamily: 'DM Sans, sans-serif',
+              boxShadow: '0 0 32px rgba(0,212,170,0.35), 0 8px 24px rgba(0,0,0,0.3)',
+              fontSize: '1.05rem',
+            }}
+          >
+            <Plus size={20} strokeWidth={2.5} />
+            New Alarm
+          </button>
         </div>
-
 
       </div>
 
