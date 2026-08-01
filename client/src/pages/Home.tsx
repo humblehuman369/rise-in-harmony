@@ -315,7 +315,7 @@ export default function Home() {
             {/* Deep Sleep Wake featured card — spans full width on mobile, 2 cols on lg */}
             <a
               href="/deep-sleep-wake"
-              className="glow-card p-6 lg:col-span-3 flex items-center justify-between gap-6 group"
+              className="glow-card p-6 col-span-1 md:col-span-2 lg:col-span-3 flex items-center justify-between gap-6 group"
               style={{ textDecoration: 'none', border: '1px solid rgba(139,92,246,0.25)', background: 'linear-gradient(135deg, rgba(139,92,246,0.06), rgba(0,212,170,0.04))' }}
             >
               <div className="flex items-center gap-5">
