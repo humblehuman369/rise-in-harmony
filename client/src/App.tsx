@@ -33,6 +33,8 @@ import Walkthrough from "./pages/Walkthrough";
 import AlarmFeatures from "./pages/AlarmFeatures";
 import DeepSleepWake from "./pages/DeepSleepWake";
 import DiscoveryPaths from "./pages/DiscoveryPaths";
+import AlarmShowcase from "./pages/AlarmShowcase";
+import BrainwaveVideo from "./pages/BrainwaveVideo";
 import { useAuth } from "./_core/hooks/useAuth";
 import { useLocalSessionImport } from "./hooks/useLocalSessionImport";
 import { useAnalytics } from "./hooks/useAnalytics";
@@ -63,6 +65,8 @@ function Router() {
       <Route path="/alarm-features" component={AlarmFeatures} />
       <Route path="/deep-sleep-wake" component={DeepSleepWake} />
       <Route path="/discovery-paths" component={DiscoveryPaths} />
+      <Route path="/alarm-showcase" component={AlarmShowcase} />
+      <Route path="/brainwave-video" component={BrainwaveVideo} />
       <Route path="/precision">{() => { window.location.replace("/studio"); return null; }}</Route>
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />

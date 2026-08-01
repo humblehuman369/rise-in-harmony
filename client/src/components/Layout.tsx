@@ -475,6 +475,54 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <span>All Features</span>
                   </div>
                 </Link>
+                <Link href="/alarm-showcase">
+                  <div
+                    className="flex items-center gap-2 ml-6 pl-3 py-1.5 transition-all duration-200"
+                    style={{
+                      color: location === '/alarm-showcase' ? '#00D4AA' : c.navInactive,
+                      borderLeft: location === '/alarm-showcase' ? '2px solid #00D4AA' : '2px solid transparent',
+                      fontSize: '12px',
+                      fontFamily: 'DM Sans, sans-serif',
+                    }}
+                    onMouseEnter={e => {
+                      if (location !== '/alarm-showcase') {
+                        (e.currentTarget as HTMLElement).style.color = '#00D4AA';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (location !== '/alarm-showcase') {
+                        (e.currentTarget as HTMLElement).style.color = c.navInactive;
+                      }
+                    }}
+                  >
+                    <span style={{ fontSize: '12px' }}>🔔</span>
+                    <span>Alarm Showcase</span>
+                  </div>
+                </Link>
+                <Link href="/brainwave-video">
+                  <div
+                    className="flex items-center gap-2 ml-6 pl-3 py-1.5 transition-all duration-200"
+                    style={{
+                      color: location === '/brainwave-video' ? '#8B5CF6' : c.navInactive,
+                      borderLeft: location === '/brainwave-video' ? '2px solid #8B5CF6' : '2px solid transparent',
+                      fontSize: '12px',
+                      fontFamily: 'DM Sans, sans-serif',
+                    }}
+                    onMouseEnter={e => {
+                      if (location !== '/brainwave-video') {
+                        (e.currentTarget as HTMLElement).style.color = '#8B5CF6';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (location !== '/brainwave-video') {
+                        (e.currentTarget as HTMLElement).style.color = c.navInactive;
+                      }
+                    }}
+                  >
+                    <span style={{ fontFamily: 'Cormorant Garamond, serif', fontStyle: 'italic', fontSize: '14px', color: location === '/brainwave-video' ? '#8B5CF6' : '#6B7A99' }}>δθα</span>
+                    <span>Brainwave Video</span>
+                  </div>
+                </Link>
                 </>
               )}
               </>
