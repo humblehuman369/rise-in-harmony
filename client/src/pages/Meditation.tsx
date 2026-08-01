@@ -415,19 +415,46 @@ function MeditationPlayer({
             </button>
           </div>
 
-          {/* Progress bar */}
+          {/* Progress bar — seekable */}
           <div>
             <div className="flex justify-between text-xs mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
               <span>{formatTime(elapsed)}</span>
               <span>{formatTime(totalSeconds)}</span>
             </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)' }}>
-              <div className="h-full rounded-full transition-all duration-1000"
+            <div className="relative h-5 flex items-center">
+              {/* Track background */}
+              <div className="absolute inset-x-0 h-1.5 rounded-full" style={{ background: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)' }} />
+              {/* Filled portion */}
+              <div className="absolute left-0 h-1.5 rounded-full pointer-events-none transition-all duration-300"
                 style={{
                   width: `${progress}%`,
                   background: `linear-gradient(90deg, ${meditation.color}, ${meditation.colorSecondary})`,
                   boxShadow: `0 0 8px ${meditation.color}60`,
                 }} />
+              {/* Thumb knob */}
+              <div className="absolute h-3.5 w-3.5 rounded-full border-2 pointer-events-none transition-all duration-300"
+                style={{
+                  left: `calc(${progress}% - 7px)`,
+                  background: '#fff',
+                  borderColor: meditation.color,
+                  boxShadow: `0 0 8px ${meditation.color}80`,
+                }} />
+              {/* Invisible range input on top for interaction */}
+              <input
+                type="range"
+                min={0}
+                max={totalSeconds}
+                value={elapsed}
+                step={1}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                style={{ zIndex: 10 }}
+                onChange={e => {
+                  const newTime = Number(e.target.value);
+                  setElapsed(newTime);
+                  const step = Math.min(Math.floor(newTime / stepDuration), meditation.guidance.length - 1);
+                  setCurrentStep(step);
+                }}
+              />
             </div>
           </div>
 
