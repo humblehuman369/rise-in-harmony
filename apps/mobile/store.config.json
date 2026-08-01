@@ -1,0 +1,34 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "info": {
+      "en-US": {
+        "title": "Rise In Harmony",
+        "subtitle": "Healing Frequencies & Alarm",
+        "description": "Rise In Harmony replaces jarring alarms with precisely tuned healing frequencies — so your morning (and your practice) starts in calm.\n\nTRUEHZ™ PRECISION TUNING\nEvery tone is generated live on your device with TrueHz™ methodology — mathematically exact, zero compression artifacts, true dual-channel binaural when you want it. When we say 528 Hz, you hear 528.00 Hz.\n\nADVANCED HEALING ALARM\nThe world's first biologically-guided alarm. Choose your Sleep Profile (Light / Normal / Heavy / Very Heavy) and the alarm escalates through four stages — Whisper, Rise, Full, Persistent — matching your sleep depth. The Deep Sleep Wake sequence sweeps your brainwaves from δ Delta (3Hz) through θ Theta (6Hz) to α Alpha (10Hz), meeting your brain where it is and guiding it gently to wakefulness. 432Hz and 528Hz are free for all users.\n\nHEALING FREQUENCY LIBRARY\nExplore the Solfeggio scale (174–963 Hz), 432 Hz natural harmony, 444 Hz concert pitch, and brainwave companions (Alpha, Theta, Delta). Each tone includes context, chakra associations where relevant, and affirmations.\n\nTRUEHZ MEDITATIONS\nNine studio-produced TrueHz sessions (10–60 minutes): Nature Meditation (174 Hz), Calm Sleep (528 Hz), Third Eye Activation (528 Hz), Reiki Healing Garden (285 Hz), Deep Serenity (444 Hz), Spiritual Meditation (444 Hz), Deep Into Nature (60 min), Inner Calling (60 min), and Peaceful Ocean (60 min). Drag the progress bar to seek to any moment in your session.\n\nSOUND STUDIO\nLayer a healing frequency with ambient nature beds and musical textures (rain, ocean, forest, wind, fire + ambient / drone / crystal). Save your mixes.\n\n7-CHAKRA JOURNEY\nA guided Root-to-Crown sequence with matching Solfeggio tones, Sanskrit names, and affirmations.\n\nPRECISION PLAYER\nDial custom Hz, choose waveforms, and explore mono, binaural, or isochronic modes for deep focus or rest.\n\nWELLNESS DASHBOARD\nTrack sessions, streaks, and minutes. See how your practice builds over time.\n\nOFFLINE-CAPABLE CORE\nFrequencies and core audio engines work without a constant connection — your ritual still works in airplane mode.\n\nPREMIUM\nUnlock the full frequency library, all TrueHz meditations, unlimited alarms, and advanced studio features with Rise In Harmony Premium.\n\n---\n\nRise In Harmony is a wellness and relaxation app. It is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Consult a healthcare professional for medical advice.",
+        "promoText": "Wake gently with the Deep Sleep Wake sequence. Delta to Theta to Alpha brainwave sweep. Sleep Profiles, 4-stage escalation, seekable meditation.",
+        "releaseNotes": "Version 1.1.0 - Advanced Alarm System & Meditation Improvements\n\n- Deep Sleep Wake sequence: Delta to Theta to Alpha brainwave sweep guides your brain naturally from deep sleep to relaxed wakefulness (FREE for all users)\n- Sleep Profile selector: Light / Normal / Heavy / Very Heavy - personalises the 4-stage volume escalation curve to your sleep depth\n- 4-stage volume escalation: Whisper, Rise, Full, Persistent - no more shock-awake cortisol spikes\n- 432Hz and 528Hz healing frequencies now FREE for all alarm users\n- Seekable meditation progress bar - drag to any point in your session\n- Bioluminescent depth design refresh across all screens\n- Performance and stability improvements",
+        "keywords": [
+          "solfeggio",
+          "432hz",
+          "528hz",
+          "binaural",
+          "isochronic",
+          "chakra",
+          "truehz",
+          "sleep",
+          "meditate",
+          "wake",
+          "relax",
+          "calm",
+          "stress",
+          "focus"
+        ],
+        "marketingUrl": "https://www.riseinharmony.com",
+        "supportUrl": "https://www.riseinharmony.com",
+        "privacyPolicyUrl": "https://www.riseinharmony.com/privacy"
+      }
+    },
+    "categories": ["HEALTH_AND_FITNESS", "LIFESTYLE"]
+  }
+}
