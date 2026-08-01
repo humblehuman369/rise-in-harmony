@@ -120,7 +120,7 @@ function FrequencyBody({ active }: { active: boolean }) {
   }, [active]);
 
   return (
-    <div className="relative w-full max-w-sm mx-auto" style={{ height: "420px" }}>
+    <div className="relative w-full max-w-sm mx-auto" style={{ height: "clamp(280px, 48vh, 400px)" }}>
       {/* Human silhouette SVG */}
       <svg
         viewBox="0 0 200 420"
@@ -183,10 +183,10 @@ function FrequencyBody({ active }: { active: boolean }) {
             />
             {/* Label */}
             <div className="text-left" style={{ minWidth: "80px" }}>
-              <div className="text-xs font-bold leading-tight" style={{ color: freq.color, fontFamily: "DM Sans, sans-serif", fontSize: "10px" }}>
+              <div className="font-bold leading-tight" style={{ color: freq.color, fontFamily: "DM Sans, sans-serif", fontSize: "clamp(11px, 2.5vw, 13px)" }}>
                 {freq.hz} Hz
               </div>
-              <div className="text-xs leading-tight" style={{ color: "rgba(232,237,245,0.7)", fontFamily: "DM Sans, sans-serif", fontSize: "9px" }}>
+              <div className="leading-tight" style={{ color: "rgba(232,237,245,0.7)", fontFamily: "DM Sans, sans-serif", fontSize: "clamp(10px, 2.2vw, 12px)" }}>
                 {freq.label}
               </div>
             </div>
@@ -460,9 +460,9 @@ function Section({
   style?: React.CSSProperties;
 }) {
   return (
-    <section
+      <section
       id={id}
-      className={`relative flex flex-col items-center justify-center px-6 py-12 ${className}`}
+      className={`relative flex flex-col items-center justify-center px-6 py-6 ${className}`}
       style={{
         minHeight: "100dvh",
         scrollSnapAlign: "start",
@@ -749,7 +749,7 @@ export default function Journey() {
             <h2 className="journey-reveal text-3xl md:text-4xl font-bold mb-2" style={{ color: "#E8EDF5", fontFamily: "Cormorant Garamond, serif", transitionDelay: "80ms" }}>
               Every Cell Remembers
             </h2>
-            <p className="journey-reveal text-sm mb-8 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif", transitionDelay: "160ms" }}>
+            <p className="journey-reveal text-sm mb-4 max-w-md mx-auto" style={{ color: "rgba(232,237,245,0.5)", fontFamily: "DM Sans, sans-serif", transitionDelay: "160ms" }}>
               Solfeggio frequencies resonate with specific tissues and energy centres.
               Watch them light up as each tone activates its healing domain.
             </p>
@@ -758,7 +758,7 @@ export default function Journey() {
 
             <button
               onClick={scrollToNext}
-              className="mt-8 px-6 py-2.5 rounded-full text-sm font-medium"
+              className="mt-4 px-6 py-2 rounded-full text-sm font-medium"
               style={{ background: "rgba(0,212,170,0.1)", border: "1px solid rgba(0,212,170,0.25)", color: "#00D4AA", fontFamily: "DM Sans, sans-serif" }}
             >
               Continue →
