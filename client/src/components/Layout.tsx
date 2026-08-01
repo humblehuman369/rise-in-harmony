@@ -401,6 +401,30 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {/* Deep Sleep Wake sub-item — shown only after Alarm */}
               {href === '/walkthrough' && (
                 <>
+                <Link href="/see-it-in-action">
+                  <div
+                    className="flex items-center gap-2 ml-6 pl-3 py-1.5 transition-all duration-200"
+                    style={{
+                      color: location === '/see-it-in-action' ? '#F59E0B' : c.navInactive,
+                      borderLeft: location === '/see-it-in-action' ? '2px solid #F59E0B' : '2px solid transparent',
+                      fontSize: '12px',
+                      fontFamily: 'DM Sans, sans-serif',
+                    }}
+                    onMouseEnter={e => {
+                      if (location !== '/see-it-in-action') {
+                        (e.currentTarget as HTMLElement).style.color = '#F59E0B';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (location !== '/see-it-in-action') {
+                        (e.currentTarget as HTMLElement).style.color = c.navInactive;
+                      }
+                    }}
+                  >
+                    <span style={{ fontSize: '12px' }}>▶️</span>
+                    <span>See It In Action</span>
+                  </div>
+                </Link>
                 <Link href="/homepage-showcase">
                   <div
                     className="flex items-center gap-2 ml-6 pl-3 py-1.5 transition-all duration-200"
