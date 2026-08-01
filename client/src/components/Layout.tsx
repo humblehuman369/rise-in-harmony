@@ -365,6 +365,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {navItems.map(({ href, icon: Icon, label }) => {
             const active = location === href;
             return (
+              <>
               <Link key={href} href={href}>
                 <div
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden"
@@ -397,6 +398,34 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <span className="text-sm font-medium" style={{ fontFamily: 'DM Sans, sans-serif', color: active ? '#00D4AA' : undefined }}>{label}</span>
                 </div>
               </Link>
+              {/* Deep Sleep Wake sub-item — shown only after Alarm */}
+              {href === '/alarm' && (
+                <Link href="/deep-sleep-wake">
+                  <div
+                    className="flex items-center gap-2 ml-6 pl-3 py-1.5 transition-all duration-200"
+                    style={{
+                      color: location === '/deep-sleep-wake' ? '#8B5CF6' : c.navInactive,
+                      borderLeft: location === '/deep-sleep-wake' ? '2px solid #8B5CF6' : '2px solid transparent',
+                      fontSize: '12px',
+                      fontFamily: 'DM Sans, sans-serif',
+                    }}
+                    onMouseEnter={e => {
+                      if (location !== '/deep-sleep-wake') {
+                        (e.currentTarget as HTMLElement).style.color = '#8B5CF6';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (location !== '/deep-sleep-wake') {
+                        (e.currentTarget as HTMLElement).style.color = c.navInactive;
+                      }
+                    }}
+                  >
+                    <span style={{ fontFamily: 'Cormorant Garamond, serif', fontStyle: 'italic', fontSize: '14px', color: location === '/deep-sleep-wake' ? '#8B5CF6' : '#6B7A99' }}>δ→θ→α</span>
+                    <span>Deep Sleep Wake</span>
+                  </div>
+                </Link>
+              )}
+              </>
             );
           })}
         </nav>

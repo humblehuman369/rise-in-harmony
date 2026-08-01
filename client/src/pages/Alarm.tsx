@@ -1281,6 +1281,37 @@ export default function Alarm() {
           </div>
         </div>
 
+        {/* Deep Sleep Wake discovery banner */}
+        <div className="px-6 pb-4">
+          <a href="/deep-sleep-wake"
+            className="flex items-center justify-between gap-4 px-5 py-4 w-full"
+            style={{
+              background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(0,212,170,0.06))',
+              border: '1px solid rgba(139,92,246,0.25)',
+              textDecoration: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 flex-shrink-0"
+                style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)' }}>
+                <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '20px', fontStyle: 'italic', color: '#8B5CF6' }}>δ</span>
+              </div>
+              <div>
+                <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+                  Deep Sleep Wake Sequence
+                </div>
+                <div className="text-xs mt-0.5" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
+                  δ→θ→α · Brainwave sweep · How it works
+                </div>
+              </div>
+            </div>
+            <div className="text-xs font-semibold flex items-center gap-1 flex-shrink-0" style={{ color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>
+              Watch →
+            </div>
+          </a>
+        </div>
+
         {/* Alarm list */}
         <div className="px-6 pb-8 space-y-3">
           {serverAlarms.isLoading && isAuthenticated ? (

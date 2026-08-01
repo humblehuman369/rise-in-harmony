@@ -152,6 +152,17 @@ export default function AlarmFeatures() {
                   <FeaturePoint label="Alpha Phase (75–100%)" text="Beat sweeps to 10Hz. Relaxed, clear wakefulness at full resonance." color={AMBER} />
                   <FeaturePoint label="Live indicator" text="δ / θ / α phase shown on the wake screen in real time." color={TEAL} />
                 </ul>
+                <a href="/deep-sleep-wake" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  marginTop: 24, padding: '10px 20px',
+                  border: `1px solid ${PURPLE}50`,
+                  color: PURPLE, textDecoration: 'none',
+                  fontFamily: SANS, fontSize: '0.85rem', fontWeight: 700,
+                  background: `${PURPLE}10`,
+                  letterSpacing: '0.02em',
+                }}>
+                  ▶ Watch the video
+                </a>
               </div>
               <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${BORDER}`, borderRadius: 16, padding: 24 }}>
                 <div style={{ display: "flex", height: 10, borderRadius: 5, overflow: "hidden", marginBottom: 8 }}>

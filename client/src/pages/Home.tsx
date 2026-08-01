@@ -312,6 +312,34 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Deep Sleep Wake featured card — spans full width on mobile, 2 cols on lg */}
+            <a
+              href="/deep-sleep-wake"
+              className="glow-card p-6 lg:col-span-3 flex items-center justify-between gap-6 group"
+              style={{ textDecoration: 'none', border: '1px solid rgba(139,92,246,0.25)', background: 'linear-gradient(135deg, rgba(139,92,246,0.06), rgba(0,212,170,0.04))' }}
+            >
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)' }}>
+                  <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '28px', fontStyle: 'italic', color: '#8B5CF6' }}>δ</span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>New Feature</span>
+                  </div>
+                  <h3 className="text-base font-semibold mb-1" style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+                    Deep Sleep Wake Sequence
+                  </h3>
+                  <p className="text-sm" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                    The world's first alarm that sweeps δ→θ→α brainwave frequencies in real time — guiding your brain out of deep sleep naturally.
+                  </p>
+                </div>
+              </div>
+              <div className="text-sm font-semibold flex-shrink-0 flex items-center gap-1" style={{ color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>
+                Watch the video →
+              </div>
+            </a>
+
             {features.map((f, i) => (
               <div
                 key={f.title}
