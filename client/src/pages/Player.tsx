@@ -343,7 +343,7 @@ export default function Player() {
           </div>
         )}
         {/* Header */}
-        <div className="px-6 pt-8 pb-4 relative" style={{ zIndex: 1 }}>
+        <div className="px-6 pt-4 pb-2 relative" style={{ zIndex: 1 }}>
           <div className="flex items-start justify-between mb-2">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-2"
@@ -362,7 +362,7 @@ export default function Player() {
               </h1>
             </div>
             {/* Journey buttons */}
-            <div className="flex flex-col gap-2 mt-1">
+            <div className="flex flex-row flex-wrap gap-2 mt-1 justify-end">
               {/* Quick Start — immediately begins 3 min/chakra */}
               <button
                 onClick={quickStartJourney}
@@ -416,7 +416,7 @@ export default function Player() {
         </div>
 
         {/* Main player area */}
-        <div className="flex-1 flex flex-col lg:flex-row gap-8 px-6 pb-8 relative" style={{ zIndex: 1 }}>
+        <div className="flex-1 flex flex-col lg:flex-row gap-4 px-6 pb-4 relative" style={{ zIndex: 1 }}>
           {/* Left: Visualizer + Controls */}
           <div className="flex-1 flex flex-col items-center justify-center">
             {/* Background image */}
