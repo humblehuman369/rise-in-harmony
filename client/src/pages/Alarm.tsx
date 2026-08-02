@@ -287,99 +287,277 @@ function StarField() {
   );
 }
 
-// ─── Live Digital Clock Hero ──────────────────────────────────────────────────
-function LiveDigitalClock() {
+// ─── Bioluminescent Analog Clock Hero ────────────────────────────────────────
+function BioluminescentAnalogClock() {
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
 
-  const h = now.getHours();
-  const m = now.getMinutes();
-  const s = now.getSeconds();
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
-  const hStr = String(h12).padStart(2, '0');
-  const mStr = String(m).padStart(2, '0');
-  const sStr = String(s).padStart(2, '0');
+  const SIZE = 220;
+  const cx = SIZE / 2;
+  const cy = SIZE / 2;
+  const R = SIZE / 2 - 8; // outer radius of face
 
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const hrs = now.getHours() % 12;
+  const min = now.getMinutes();
+  const sec = now.getSeconds();
+  const ms  = now.getMilliseconds();
+
+  // Smooth angles (seconds tick, others interpolate)
+  const secAngle = ((sec + ms / 1000) / 60) * 360 - 90;
+  const minAngle = ((min + sec / 60) / 60) * 360 - 90;
+  const hrAngle  = ((hrs + min / 60) / 12) * 360 - 90;
+
+  const toXY = (angleDeg: number, len: number) => ({
+    x: cx + Math.cos((angleDeg * Math.PI) / 180) * len,
+    y: cy + Math.sin((angleDeg * Math.PI) / 180) * len,
+  });
+
+  const hrEnd  = toXY(hrAngle,  R * 0.50);
+  const minEnd = toXY(minAngle, R * 0.70);
+  const secEnd = toXY(secAngle, R * 0.82);
+  const secTail = toXY(secAngle + 180, R * 0.18);
+
+  // 60 tick marks
+  const ticks = Array.from({ length: 60 }, (_, i) => {
+    const a = (i / 60) * 360 - 90;
+    const isMajor = i % 5 === 0;
+    const isQuarter = i % 15 === 0;
+    const outerR = R - 2;
+    const innerR = isQuarter ? R - 14 : isMajor ? R - 10 : R - 6;
+    return { outer: toXY(a, outerR), inner: toXY(a, innerR), isMajor, isQuarter };
+  });
+
+  // Roman-style hour dots at 12, 3, 6, 9
+  const cardinalDots = [0, 3, 6, 9].map(i => ({
+    pos: toXY((i / 12) * 360 - 90, R - 22),
+    i,
+  }));
+
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const dayStr = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+  const dateStr = `${days[now.getDay()]} ${months[now.getMonth()]} ${now.getDate()}`;
+  const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
 
   return (
     <div className="flex flex-col items-center" style={{ position: 'relative' }}>
-      {/* Outer glow halo */}
+      {/* Layered glow halos */}
       <div className="absolute pointer-events-none" style={{
         top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: '320px', height: '120px',
-        background: 'radial-gradient(ellipse, rgba(0,212,170,0.12) 0%, transparent 70%)',
-        filter: 'blur(20px)',
-        animation: 'bio-pulse 4s ease-in-out infinite',
+        width: SIZE * 2.2, height: SIZE * 2.2,
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(0,212,170,0.10) 0%, rgba(0,212,170,0.04) 35%, transparent 65%)',
+        animation: 'bio-pulse 5s ease-in-out infinite',
       }} />
+      <div className="absolute pointer-events-none" style={{
+        top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: SIZE * 1.5, height: SIZE * 1.5,
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(0,212,170,0.18) 0%, transparent 60%)',
+        filter: 'blur(18px)',
+        animation: 'bio-pulse 3.5s ease-in-out 0.8s infinite',
+      }} />
+      {/* Expanding ring pulses */}
+      {[0, 1.2, 2.4].map((delay, i) => (
+        <div key={i} className="absolute pointer-events-none rounded-full" style={{
+          top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: SIZE * 0.92, height: SIZE * 0.92,
+          border: '1px solid rgba(0,212,170,0.15)',
+          animation: `ripple-out 4s ease-out ${delay}s infinite`,
+        }} />
+      ))}
 
-      {/* Time display */}
-      <div className="flex items-end gap-1 relative" style={{ zIndex: 1 }}>
-        <span style={{
-          fontFamily: 'DM Mono, monospace',
-          fontSize: 'clamp(3.5rem, 10vw, 5.5rem)',
-          fontWeight: 300,
-          letterSpacing: '-0.02em',
-          color: '#E8EDF5',
-          lineHeight: 1,
-          textShadow: '0 0 40px rgba(0,212,170,0.3), 0 0 80px rgba(0,212,170,0.1)',
-        }}>
-          {hStr}
-        </span>
-        <span style={{
-          fontFamily: 'DM Mono, monospace',
-          fontSize: 'clamp(3.5rem, 10vw, 5.5rem)',
-          fontWeight: 300,
-          color: 'rgba(0,212,170,0.6)',
-          lineHeight: 1,
-          animation: 'bio-pulse 1s ease-in-out infinite',
-          marginBottom: '0.05em',
-        }}>:</span>
-        <span style={{
-          fontFamily: 'DM Mono, monospace',
-          fontSize: 'clamp(3.5rem, 10vw, 5.5rem)',
-          fontWeight: 300,
-          letterSpacing: '-0.02em',
-          color: '#E8EDF5',
-          lineHeight: 1,
-          textShadow: '0 0 40px rgba(0,212,170,0.3), 0 0 80px rgba(0,212,170,0.1)',
-        }}>
-          {mStr}
-        </span>
-        <div className="flex flex-col items-start ml-2 mb-2" style={{ gap: '2px' }}>
-          <span style={{
+      {/* SVG Clock Face */}
+      <svg
+        width={SIZE}
+        height={SIZE}
+        style={{ position: 'relative', zIndex: 1, overflow: 'visible' }}
+      >
+        <defs>
+          {/* Deep ocean face gradient */}
+          <radialGradient id="bio-face" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stopColor="#0D1F2D" stopOpacity="1" />
+            <stop offset="60%" stopColor="#070D14" stopOpacity="1" />
+            <stop offset="100%" stopColor="#030609" stopOpacity="1" />
+          </radialGradient>
+          {/* Teal glow filter for hands */}
+          <filter id="teal-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          {/* Strong glow for second hand */}
+          <filter id="sec-glow" x="-80%" y="-80%" width="360%" height="360%">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          {/* Soft glow for face ring */}
+          <filter id="ring-glow" x="-10%" y="-10%" width="120%" height="120%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          {/* Minute hand gradient */}
+          <linearGradient id="min-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#00D4AA" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#00FFD1" stopOpacity="1" />
+          </linearGradient>
+          {/* Hour hand gradient */}
+          <linearGradient id="hr-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#E8EDF5" stopOpacity="0.7" />
+            <stop offset="100%" stopColor="#C4D4E8" stopOpacity="1" />
+          </linearGradient>
+        </defs>
+
+        {/* Outer decorative ring — bioluminescent border */}
+        <circle cx={cx} cy={cy} r={R + 4}
+          fill="none"
+          stroke="rgba(0,212,170,0.08)"
+          strokeWidth="8"
+          filter="url(#ring-glow)"
+        />
+        <circle cx={cx} cy={cy} r={R + 4}
+          fill="none"
+          stroke="rgba(0,212,170,0.25)"
+          strokeWidth="1"
+        />
+
+        {/* Clock face */}
+        <circle cx={cx} cy={cy} r={R} fill="url(#bio-face)" />
+
+        {/* Inner subtle glow ring */}
+        <circle cx={cx} cy={cy} r={R - 2}
+          fill="none"
+          stroke="rgba(0,212,170,0.06)"
+          strokeWidth="4"
+        />
+
+        {/* Tick marks */}
+        {ticks.map((t, i) => (
+          <line key={i}
+            x1={t.outer.x} y1={t.outer.y}
+            x2={t.inner.x} y2={t.inner.y}
+            stroke={
+              t.isQuarter ? 'rgba(0,212,170,0.9)'
+              : t.isMajor  ? 'rgba(0,212,170,0.55)'
+              : 'rgba(0,212,170,0.18)'
+            }
+            strokeWidth={t.isQuarter ? 2 : t.isMajor ? 1.2 : 0.7}
+            strokeLinecap="round"
+          />
+        ))}
+
+        {/* Cardinal glow dots (12, 3, 6, 9) */}
+        {cardinalDots.map(({ pos, i }) => (
+          <g key={i}>
+            <circle cx={pos.x} cy={pos.y} r={3.5}
+              fill="rgba(0,212,170,0.15)"
+              filter="url(#ring-glow)"
+            />
+            <circle cx={pos.x} cy={pos.y} r={2}
+              fill="#00D4AA"
+              opacity={0.8}
+            />
+          </g>
+        ))}
+
+        {/* Hour hand — wide, luminous white-blue */}
+        <line
+          x1={cx} y1={cy}
+          x2={hrEnd.x} y2={hrEnd.y}
+          stroke="url(#hr-grad)"
+          strokeWidth={5}
+          strokeLinecap="round"
+          filter="url(#teal-glow)"
+        />
+        {/* Hour hand core */}
+        <line
+          x1={cx} y1={cy}
+          x2={hrEnd.x} y2={hrEnd.y}
+          stroke="#D0E8F5"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+        />
+
+        {/* Minute hand — teal, glowing */}
+        <line
+          x1={cx} y1={cy}
+          x2={minEnd.x} y2={minEnd.y}
+          stroke="rgba(0,212,170,0.35)"
+          strokeWidth={6}
+          strokeLinecap="round"
+          filter="url(#teal-glow)"
+        />
+        <line
+          x1={cx} y1={cy}
+          x2={minEnd.x} y2={minEnd.y}
+          stroke="#00D4AA"
+          strokeWidth={2}
+          strokeLinecap="round"
+        />
+
+        {/* Second hand — thin, electric cyan with tail */}
+        <line
+          x1={secTail.x} y1={secTail.y}
+          x2={secEnd.x} y2={secEnd.y}
+          stroke="rgba(0,255,200,0.25)"
+          strokeWidth={4}
+          strokeLinecap="round"
+          filter="url(#sec-glow)"
+        />
+        <line
+          x1={secTail.x} y1={secTail.y}
+          x2={secEnd.x} y2={secEnd.y}
+          stroke="#00FFC8"
+          strokeWidth={1}
+          strokeLinecap="round"
+        />
+
+        {/* Center jewel */}
+        <circle cx={cx} cy={cy} r={7}
+          fill="rgba(0,212,170,0.15)"
+          filter="url(#teal-glow)"
+        />
+        <circle cx={cx} cy={cy} r={4}
+          fill="#0A0B14"
+          stroke="#00D4AA"
+          strokeWidth={1.5}
+        />
+        <circle cx={cx} cy={cy} r={2}
+          fill="#00D4AA"
+        />
+
+        {/* AM/PM label at 6 o'clock position */}
+        <text
+          x={cx}
+          y={cy + R * 0.55}
+          textAnchor="middle"
+          style={{
             fontFamily: 'DM Sans, sans-serif',
-            fontSize: '0.85rem',
+            fontSize: '9px',
             fontWeight: 600,
-            color: '#00D4AA',
-            letterSpacing: '0.05em',
-          }}>{ampm}</span>
-          <span style={{
-            fontFamily: 'DM Mono, monospace',
-            fontSize: '0.75rem',
-            color: 'rgba(0,212,170,0.5)',
-            letterSpacing: '0.08em',
-          }}>{sStr}</span>
-        </div>
-      </div>
+            fill: 'rgba(0,212,170,0.5)',
+            letterSpacing: '0.12em',
+          }}
+        >
+          {ampm}
+        </text>
+      </svg>
 
-      {/* Date */}
-      <div className="mt-2" style={{
+      {/* Date below clock */}
+      <div style={{
         fontFamily: 'DM Sans, sans-serif',
-        fontSize: '0.8rem',
+        fontSize: '0.72rem',
         fontWeight: 400,
-        color: 'rgba(139,163,191,0.7)',
-        letterSpacing: '0.12em',
+        color: 'rgba(139,163,191,0.55)',
+        letterSpacing: '0.14em',
         textTransform: 'uppercase',
+        marginTop: '0.75rem',
       }}>
-        {dayStr}
+        {dateStr}
       </div>
     </div>
   );
@@ -1354,9 +1532,9 @@ export default function Alarm() {
             </div>
           </div>
 
-          {/* Digital clock hero */}
+          {/* Bioluminescent analog clock hero */}
           <div className="flex justify-center mb-6">
-            <LiveDigitalClock />
+            <BioluminescentAnalogClock />
           </div>
 
           {/* Page title */}
