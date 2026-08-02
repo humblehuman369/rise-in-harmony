@@ -1,5 +1,6 @@
 /**
  * Alarm — Rise In Harmony Smart Alarm Scheduler
+ * Redesigned: Sleek futuristic nighttime aesthetic — luminous, serene, technology-forward
  * iOS-style alarm management: swipe-to-delete, tap-to-edit, drum-roll time picker
  * Server-sourced alarms (trpc.alarms.list) with localStorage fallback for guests
  * Optimistic updates with rollback on failure
@@ -8,10 +9,9 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Plus, AlarmClock, Trash2, Edit3, Bell, BellOff, Waves, Sunrise, Zap,
   Lock, BellRing, ShieldCheck, Layers, Smartphone, Music2, Wind, Play,
-  Square, Check, ChevronUp, ChevronDown,
+  Square, Check, Moon,
 } from "lucide-react";
 import Layout from "@/components/Layout";
-import BioluminescentBackground from "@/components/BioluminescentBackground";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { BACKGROUND_LOOPS, getLibraryLoopUrl } from "@/data/backgroundLoops";
 import { Switch } from "@/components/ui/switch";
@@ -47,12 +47,10 @@ function buildRingingSound(alarm: Alarm): RingingSound {
       };
     }
   }
-  // Frequency (default) — covers ambient fallback too
   const freq = FREQUENCIES.find(f => f.id === alarm.frequencyId) ?? FREQUENCIES.find(f => f.id === "432hz") ?? FREQUENCIES[0];
   return { type: "frequency", frequencyId: freq.id };
 }
 
-/** Build a gentle re-entry RingingSound using the 174Hz grounding frequency. */
 function buildGroundingSound(): RingingSound {
   const freq = FREQUENCIES.find(f => f.id === GROUNDING_FREQ_ID) ?? FREQUENCIES[0];
   return { type: "frequency", frequencyId: freq.id };
@@ -147,7 +145,6 @@ function DrumRollPicker({ value, items, onChange, height = 180 }: DrumRollPicker
 
   const selectedIdx = useMemo(() => items.findIndex(i => i.value === value), [items, value]);
 
-  // Scroll to selected on mount and when value changes
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -165,7 +162,6 @@ function DrumRollPicker({ value, items, onChange, height = 180 }: DrumRollPicker
   }, [items, onChange]);
 
   const handleScroll = useCallback(() => {
-    // Debounce snap
     const el = containerRef.current;
     if (!el) return;
     clearTimeout((el as HTMLDivElement & { _snapTimer?: ReturnType<typeof setTimeout> })._snapTimer);
@@ -176,29 +172,25 @@ function DrumRollPicker({ value, items, onChange, height = 180 }: DrumRollPicker
 
   return (
     <div className="relative overflow-hidden" style={{ height, width: '100%' }}>
-      {/* Selection highlight */}
       <div
         className="pointer-events-none absolute left-0 right-0 z-10"
         style={{
           top: '50%',
           transform: 'translateY(-50%)',
           height: ITEM_H,
-          background: 'rgba(0,212,170,0.1)',
-          borderTop: '1px solid rgba(0,212,170,0.3)',
-          borderBottom: '1px solid rgba(0,212,170,0.3)',
+          background: 'rgba(0,212,170,0.08)',
+          borderTop: '1px solid rgba(0,212,170,0.25)',
+          borderBottom: '1px solid rgba(0,212,170,0.25)',
         }}
       />
-      {/* Top fade */}
       <div className="pointer-events-none absolute top-0 left-0 right-0 z-10" style={{
         height: '40%',
-        background: 'linear-gradient(to bottom, rgba(18,21,42,1) 0%, transparent 100%)',
+        background: 'linear-gradient(to bottom, rgba(8,10,24,1) 0%, transparent 100%)',
       }} />
-      {/* Bottom fade */}
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10" style={{
         height: '40%',
-        background: 'linear-gradient(to top, rgba(18,21,42,1) 0%, transparent 100%)',
+        background: 'linear-gradient(to top, rgba(8,10,24,1) 0%, transparent 100%)',
       }} />
-      {/* Scroll container */}
       <div
         ref={containerRef}
         onScroll={handleScroll}
@@ -227,7 +219,7 @@ function DrumRollPicker({ value, items, onChange, height = 180 }: DrumRollPicker
               fontFamily: 'DM Mono, monospace',
               fontSize: '1.5rem',
               fontWeight: item.value === value ? 700 : 400,
-              color: item.value === value ? '#E8EDF5' : '#4A5568',
+              color: item.value === value ? '#E8EDF5' : '#2D3748',
               transition: 'color 0.15s, font-weight 0.15s',
               userSelect: 'none',
             }}
@@ -240,8 +232,7 @@ function DrumRollPicker({ value, items, onChange, height = 180 }: DrumRollPicker
   );
 }
 
-// ─── iOS-style swipeable AlarmCard ───────────────────────────────────────────
-/** Format milliseconds into "Xh Ym" or "Ym" or "< 1 min" */
+// ─── Format countdown ─────────────────────────────────────────────────────────
 function formatCountdown(ms: number): string {
   if (ms <= 0) return "< 1 min";
   const totalMin = Math.round(ms / 60000);
@@ -253,6 +244,148 @@ function formatCountdown(ms: number): string {
   return `${h}h ${m}m`;
 }
 
+// ─── Nighttime Star Field ─────────────────────────────────────────────────────
+function StarField() {
+  const stars = useMemo(() => Array.from({ length: 60 }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: Math.random() * 1.5 + 0.5,
+    opacity: Math.random() * 0.5 + 0.1,
+    delay: Math.random() * 4,
+    duration: Math.random() * 3 + 2,
+  })), []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }}>
+      {stars.map(s => (
+        <div
+          key={s.id}
+          className="absolute rounded-full"
+          style={{
+            left: `${s.x}%`,
+            top: `${s.y}%`,
+            width: s.size,
+            height: s.size,
+            background: '#E8EDF5',
+            opacity: s.opacity,
+            animation: `bio-pulse ${s.duration}s ease-in-out ${s.delay}s infinite`,
+          }}
+        />
+      ))}
+      {/* Aurora bands */}
+      <div className="absolute inset-0" style={{
+        background: 'radial-gradient(ellipse 120% 40% at 50% -10%, rgba(0,212,170,0.06) 0%, transparent 60%)',
+      }} />
+      <div className="absolute inset-0" style={{
+        background: 'radial-gradient(ellipse 80% 30% at 80% 20%, rgba(139,92,246,0.04) 0%, transparent 60%)',
+      }} />
+      <div className="absolute inset-0" style={{
+        background: 'radial-gradient(ellipse 60% 25% at 20% 60%, rgba(59,130,246,0.03) 0%, transparent 60%)',
+      }} />
+    </div>
+  );
+}
+
+// ─── Live Digital Clock Hero ──────────────────────────────────────────────────
+function LiveDigitalClock() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const s = now.getSeconds();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  const hStr = String(h12).padStart(2, '0');
+  const mStr = String(m).padStart(2, '0');
+  const sStr = String(s).padStart(2, '0');
+
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const dayStr = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+
+  return (
+    <div className="flex flex-col items-center" style={{ position: 'relative' }}>
+      {/* Outer glow halo */}
+      <div className="absolute pointer-events-none" style={{
+        top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '320px', height: '120px',
+        background: 'radial-gradient(ellipse, rgba(0,212,170,0.12) 0%, transparent 70%)',
+        filter: 'blur(20px)',
+        animation: 'bio-pulse 4s ease-in-out infinite',
+      }} />
+
+      {/* Time display */}
+      <div className="flex items-end gap-1 relative" style={{ zIndex: 1 }}>
+        <span style={{
+          fontFamily: 'DM Mono, monospace',
+          fontSize: 'clamp(3.5rem, 10vw, 5.5rem)',
+          fontWeight: 300,
+          letterSpacing: '-0.02em',
+          color: '#E8EDF5',
+          lineHeight: 1,
+          textShadow: '0 0 40px rgba(0,212,170,0.3), 0 0 80px rgba(0,212,170,0.1)',
+        }}>
+          {hStr}
+        </span>
+        <span style={{
+          fontFamily: 'DM Mono, monospace',
+          fontSize: 'clamp(3.5rem, 10vw, 5.5rem)',
+          fontWeight: 300,
+          color: 'rgba(0,212,170,0.6)',
+          lineHeight: 1,
+          animation: 'bio-pulse 1s ease-in-out infinite',
+          marginBottom: '0.05em',
+        }}>:</span>
+        <span style={{
+          fontFamily: 'DM Mono, monospace',
+          fontSize: 'clamp(3.5rem, 10vw, 5.5rem)',
+          fontWeight: 300,
+          letterSpacing: '-0.02em',
+          color: '#E8EDF5',
+          lineHeight: 1,
+          textShadow: '0 0 40px rgba(0,212,170,0.3), 0 0 80px rgba(0,212,170,0.1)',
+        }}>
+          {mStr}
+        </span>
+        <div className="flex flex-col items-start ml-2 mb-2" style={{ gap: '2px' }}>
+          <span style={{
+            fontFamily: 'DM Sans, sans-serif',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            color: '#00D4AA',
+            letterSpacing: '0.05em',
+          }}>{ampm}</span>
+          <span style={{
+            fontFamily: 'DM Mono, monospace',
+            fontSize: '0.75rem',
+            color: 'rgba(0,212,170,0.5)',
+            letterSpacing: '0.08em',
+          }}>{sStr}</span>
+        </div>
+      </div>
+
+      {/* Date */}
+      <div className="mt-2" style={{
+        fontFamily: 'DM Sans, sans-serif',
+        fontSize: '0.8rem',
+        fontWeight: 400,
+        color: 'rgba(139,163,191,0.7)',
+        letterSpacing: '0.12em',
+        textTransform: 'uppercase',
+      }}>
+        {dayStr}
+      </div>
+    </div>
+  );
+}
+
+// ─── Alarm Card (redesigned) ──────────────────────────────────────────────────
 function AlarmCard({ alarm, onToggle, onDelete, onEdit, nextFireTime }: {
   alarm: Alarm;
   onToggle: (id: string) => void;
@@ -267,7 +400,6 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit, nextFireTime }: {
   const ampm = hour >= 12 ? 'PM' : 'AM';
   const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
 
-  // Live countdown — refreshes every 60 s
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!alarm.enabled || !nextFireTime) return;
@@ -323,24 +455,34 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit, nextFireTime }: {
     onEdit(alarm);
   };
 
+  const accentColor = alarm.enabled ? (freq?.color || '#00D4AA') : '#2D3748';
+
   return (
-    <div className="relative overflow-hidden rounded-2xl" style={{ touchAction: 'pan-y' }}>
-      {/* Delete button revealed on swipe */}
+    <div className="relative overflow-hidden" style={{ borderRadius: '1.25rem', touchAction: 'pan-y' }}>
+      {/* Delete reveal */}
       <div className="absolute right-0 top-0 bottom-0 flex items-center justify-center"
-        style={{ width: `${DELETE_THRESHOLD}px`, background: '#EF4444' }}>
+        style={{ width: `${DELETE_THRESHOLD}px`, background: 'linear-gradient(135deg, #EF4444, #DC2626)', borderRadius: '0 1.25rem 1.25rem 0' }}>
         <button onClick={() => onDelete(alarm.id)} className="flex flex-col items-center gap-1 px-4">
-          <Trash2 size={18} color="white" />
-          <span className="text-[10px] font-semibold text-white">Delete</span>
+          <Trash2 size={16} color="white" />
+          <span className="text-[9px] font-semibold text-white tracking-wide uppercase">Delete</span>
         </button>
       </div>
 
       {/* Card */}
       <div
-        className={`glow-card p-5 cursor-pointer select-none ${!alarm.enabled ? 'opacity-60' : ''}`}
+        className={`cursor-pointer select-none ${!alarm.enabled ? 'opacity-50' : ''}`}
         style={{
           transform: `translateX(${swipeX}px)`,
           transition: isSwiping ? 'none' : 'transform 0.25s cubic-bezier(0.23,1,0.32,1)',
-          borderRadius: '1rem',
+          borderRadius: '1.25rem',
+          background: alarm.enabled
+            ? `linear-gradient(135deg, rgba(10,11,20,0.95) 0%, rgba(${accentColor === '#00D4AA' ? '0,212,170' : accentColor === '#8B5CF6' ? '139,92,246' : '245,158,11'},0.04) 100%)`
+            : 'rgba(10,11,20,0.8)',
+          border: `1px solid ${alarm.enabled ? `${accentColor}22` : 'rgba(255,255,255,0.04)'}`,
+          boxShadow: alarm.enabled
+            ? `0 0 0 1px ${accentColor}10, 0 4px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)`
+            : '0 2px 16px rgba(0,0,0,0.4)',
+          backdropFilter: 'blur(12px)',
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -348,76 +490,125 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit, nextFireTime }: {
         onPointerCancel={handlePointerUp}
         onClick={handleCardClick}
       >
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="font-mono-brand font-bold" style={{ fontSize: '2.5rem', lineHeight: 1, color: alarm.enabled ? '#E8EDF5' : '#6B7A99' }}>
-                {displayHour}:{m}
-              </span>
-              <span className="font-mono-brand text-lg font-medium" style={{ color: alarm.enabled ? '#6B7A99' : '#4A5568' }}>
-                {ampm}
-              </span>
-              <span className="text-[10px] font-medium ml-1" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>tap to edit</span>
-            </div>
-            <div className="text-sm font-medium mb-2" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>{alarm.label}</div>
-            <div className="flex gap-1.5 mb-3">
-              {DAY_LABELS.map((d, i) => (
-                <span key={i} className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold"
-                  style={{
-                    background: alarm.days.includes(i) ? `${freq?.color || '#00D4AA'}20` : 'rgba(255,255,255,0.04)',
-                    color: alarm.days.includes(i) ? freq?.color || '#00D4AA' : '#4A5568',
+        {/* Top accent line */}
+        {alarm.enabled && (
+          <div style={{
+            height: '1px',
+            background: `linear-gradient(90deg, transparent, ${accentColor}50, transparent)`,
+            borderRadius: '1.25rem 1.25rem 0 0',
+          }} />
+        )}
+
+        <div className="p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              {/* Time display */}
+              <div className="flex items-baseline gap-2 mb-1">
+                <span style={{
+                  fontFamily: 'DM Mono, monospace',
+                  fontSize: '2.8rem',
+                  fontWeight: 200,
+                  lineHeight: 1,
+                  letterSpacing: '-0.02em',
+                  color: alarm.enabled ? '#E8EDF5' : '#4A5568',
+                  textShadow: alarm.enabled ? `0 0 30px ${accentColor}30` : 'none',
+                }}>
+                  {String(displayHour).padStart(2, '0')}:{m}
+                </span>
+                <div className="flex flex-col gap-0.5 mb-1">
+                  <span style={{
                     fontFamily: 'DM Sans, sans-serif',
-                  }}>
-                  {d}
-                </span>
-              ))}
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: alarm.enabled ? accentColor : '#4A5568',
+                    letterSpacing: '0.06em',
+                  }}>{ampm}</span>
+                  <span style={{
+                    fontFamily: 'DM Sans, sans-serif',
+                    fontSize: '0.65rem',
+                    color: '#4A5568',
+                    letterSpacing: '0.04em',
+                  }}>tap to edit</span>
+                </div>
+              </div>
+
+              {/* Label */}
+              <div className="text-sm font-medium mb-3" style={{
+                color: alarm.enabled ? '#8FA3BF' : '#4A5568',
+                fontFamily: 'DM Sans, sans-serif',
+                letterSpacing: '0.01em',
+              }}>{alarm.label}</div>
+
+              {/* Day pills */}
+              <div className="flex gap-1.5 mb-3">
+                {DAY_LABELS.map((d, i) => (
+                  <span key={i}
+                    className="w-6 h-6 rounded-full flex items-center justify-center"
+                    style={{
+                      fontSize: '0.6rem',
+                      fontWeight: 700,
+                      fontFamily: 'DM Sans, sans-serif',
+                      letterSpacing: '0.02em',
+                      background: alarm.days.includes(i)
+                        ? `${accentColor}18`
+                        : 'rgba(255,255,255,0.03)',
+                      color: alarm.days.includes(i) ? accentColor : '#2D3748',
+                      border: `1px solid ${alarm.days.includes(i) ? accentColor + '30' : 'rgba(255,255,255,0.04)'}`,
+                    }}>
+                    {d}
+                  </span>
+                ))}
+              </div>
+
+              {/* Tags row */}
+              <div className="flex flex-wrap gap-1.5">
+                {alarm.studioMixId ? (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: 'rgba(139,92,246,0.12)', color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif', border: '1px solid rgba(139,92,246,0.2)' }}>
+                    <Layers size={8} />{alarm.studioMixName || 'Studio Mix'}
+                  </span>
+                ) : alarm.ambientId ? (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: 'rgba(59,130,246,0.12)', color: '#3B82F6', fontFamily: 'DM Sans, sans-serif', border: '1px solid rgba(59,130,246,0.2)' }}>
+                    <Music2 size={8} />{alarm.ambientLabel || 'Ambient'}
+                  </span>
+                ) : freq && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${freq.color}10`, color: freq.color, fontFamily: 'DM Sans, sans-serif', border: `1px solid ${freq.color}20` }}>
+                    {freq.hz}Hz — {freq.name}
+                  </span>
+                )}
+                {seq && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: `${seq.color}10`, color: seq.color, fontFamily: 'DM Sans, sans-serif', border: `1px solid ${seq.color}20` }}>
+                    {seq.isPremium && <Lock size={7} />}{seq.name}
+                  </span>
+                )}
+                {alarm.enabled && msUntil !== null && msUntil > 0 && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: 'rgba(0,212,170,0.08)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif', border: '1px solid rgba(0,212,170,0.15)' }}>
+                    <Moon size={7} /> in {formatCountdown(msUntil)}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {alarm.studioMixId ? (
-                <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: 'rgba(139,92,246,0.15)', color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>
-                  <Layers size={9} />{alarm.studioMixName || 'Studio Mix'}
-                </span>
-              ) : alarm.ambientId ? (
-                <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: 'rgba(59,130,246,0.15)', color: '#3B82F6', fontFamily: 'DM Sans, sans-serif' }}>
-                  <Music2 size={9} />{alarm.ambientLabel || 'Ambient'}
-                </span>
-              ) : freq && (
-                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${freq.color}15`, color: freq.color, fontFamily: 'DM Sans, sans-serif' }}>
-                  {freq.hz}Hz — {freq.name}
-                </span>
-              )}
-              {seq && (
-                <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: `${seq.color}15`, color: seq.color, fontFamily: 'DM Sans, sans-serif' }}>
-                  {seq.isPremium && <Lock size={9} />}{seq.name}
-                </span>
-              )}
-              {/* P2: Countdown badge */}
-              {alarm.enabled && msUntil !== null && msUntil > 0 && (
-                <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: 'rgba(0,212,170,0.1)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
-                  ⏰ in {formatCountdown(msUntil)}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-3" onClick={e => e.stopPropagation()}>
-            <Switch checked={alarm.enabled} onCheckedChange={() => onToggle(alarm.id)} />
-            <div className="flex gap-2">
-              <button onClick={(e) => { e.stopPropagation(); onEdit(alarm); }}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200"
-                style={{ color: '#6B7A99', background: 'rgba(255,255,255,0.04)' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#00D4AA'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
-                title="Edit alarm">
-                <Edit3 size={14} />
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); onDelete(alarm.id); }}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200"
-                style={{ color: '#6B7A99', background: 'rgba(255,255,255,0.04)' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#EF4444'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#6B7A99'; }}
-                title="Delete alarm">
-                <Trash2 size={14} />
-              </button>
+
+            {/* Right controls */}
+            <div className="flex flex-col items-end gap-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
+              <Switch checked={alarm.enabled} onCheckedChange={() => onToggle(alarm.id)} />
+              <div className="flex gap-1.5">
+                <button onClick={(e) => { e.stopPropagation(); onEdit(alarm); }}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
+                  style={{ color: '#4A5568', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#00D4AA'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,212,170,0.3)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.05)'; }}
+                  title="Edit alarm">
+                  <Edit3 size={12} />
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); onDelete(alarm.id); }}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
+                  style={{ color: '#4A5568', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#EF4444'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.3)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.05)'; }}
+                  title="Delete alarm">
+                  <Trash2 size={12} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -442,7 +633,6 @@ interface AlarmEditorSheetProps {
 function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, isPremium, onPremiumNeeded }: AlarmEditorSheetProps) {
   const isEditing = !!editingAlarm;
 
-  // Parse initial time
   const parseTime = (t: string) => {
     const [h, m] = t.split(':').map(Number);
     return { h: h ?? 7, m: m ?? 0 };
@@ -473,7 +663,6 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
   const [freqCategory, setFreqCategory] = useState<"solfeggio" | "binaural" | "recorded">("solfeggio");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Audio preview
   const [previewId, setPreviewId] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const stopPreview = useCallback(() => {
@@ -497,7 +686,6 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
   const { isAuthenticated } = useAuth();
   const mySounds = trpc.sounds.list.useQuery(undefined, { enabled: isAuthenticated });
 
-  // Build hour/minute items
   const hourItems = useMemo(() => Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: String(i + 1).padStart(2, '0') })), []);
   const minuteItems = useMemo(() => Array.from({ length: 60 }, (_, i) => ({ value: i, label: String(i).padStart(2, '0') })), []);
 
@@ -534,19 +722,24 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)' }}>
+      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)' }}>
       <div className="w-full max-w-md rounded-t-3xl sm:rounded-2xl overflow-hidden flex flex-col"
-        style={{ background: '#12152A', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '92vh' }}>
+        style={{
+          background: 'linear-gradient(180deg, #0D0F1E 0%, #080A18 100%)',
+          border: '1px solid rgba(0,212,170,0.1)',
+          boxShadow: '0 -20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(0,212,170,0.05)',
+          maxHeight: '92vh',
+        }}>
 
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} />
+          <div className="w-8 h-0.5 rounded-full" style={{ background: 'rgba(0,212,170,0.2)' }} />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-          <button onClick={onClose} className="text-sm font-semibold" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Cancel</button>
-          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.25rem', fontWeight: 600, color: '#E8EDF5' }}>
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+          <button onClick={onClose} className="text-sm font-medium" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Cancel</button>
+          <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.2rem', fontWeight: 600, color: '#E8EDF5', letterSpacing: '0.01em' }}>
             {isEditing ? 'Edit Alarm' : 'New Healing Alarm'}
           </h2>
           <button onClick={handleSave} className="text-sm font-bold" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
@@ -557,77 +750,62 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
 
-          {/* ── Alarm Name ── */}
+          {/* Alarm Name */}
           <div className="mb-5">
-            <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Alarm Name</label>
+            <label className="block text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Alarm Name</label>
             <input
               type="text" value={label} onChange={e => setLabel(e.target.value)} placeholder="e.g. Morning Harmony"
               autoFocus
               className="w-full px-4 py-3 rounded-xl text-sm"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,212,170,0.25)', color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif', outline: 'none' }}
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,212,170,0.15)', color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif', outline: 'none' }}
             />
           </div>
 
-          {/* ── iOS drum-roll time picker ── */}
+          {/* Time picker */}
           <div className="mb-6">
-            <label className="block text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-              Wake Time
-            </label>
-            <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(0,212,170,0.04)', border: '1px solid rgba(0,212,170,0.15)' }}>
+            <label className="block text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Wake Time</label>
+            <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(0,212,170,0.03)', border: '1px solid rgba(0,212,170,0.1)' }}>
               <div className="flex items-center justify-center gap-1 px-4 py-2">
-                {/* Hour wheel */}
                 <div style={{ flex: 1, maxWidth: 80 }}>
                   <DrumRollPicker value={hour12} items={hourItems} onChange={setHour12} height={180} />
                 </div>
-                <span className="font-mono-brand text-3xl font-bold" style={{ color: '#E8EDF5', paddingBottom: 4 }}>:</span>
-                {/* Minute wheel */}
+                <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '2rem', fontWeight: 200, color: 'rgba(0,212,170,0.5)', paddingBottom: 4 }}>:</span>
                 <div style={{ flex: 1, maxWidth: 80 }}>
                   <DrumRollPicker value={minute} items={minuteItems} onChange={setMinute} height={180} />
                 </div>
-                {/* AM/PM toggle */}
                 <div className="flex flex-col gap-2 ml-3">
-                  <button
-                    onClick={() => setIsAM(true)}
-                    className="px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
-                    style={{
-                      background: isAM ? 'rgba(0,212,170,0.2)' : 'rgba(255,255,255,0.04)',
-                      border: `1.5px solid ${isAM ? 'rgba(0,212,170,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                      color: isAM ? '#00D4AA' : '#4A5568',
-                      fontFamily: 'DM Sans, sans-serif',
-                    }}>
-                    AM
-                  </button>
-                  <button
-                    onClick={() => setIsAM(false)}
-                    className="px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
-                    style={{
-                      background: !isAM ? 'rgba(0,212,170,0.2)' : 'rgba(255,255,255,0.04)',
-                      border: `1.5px solid ${!isAM ? 'rgba(0,212,170,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                      color: !isAM ? '#00D4AA' : '#4A5568',
-                      fontFamily: 'DM Sans, sans-serif',
-                    }}>
-                    PM
-                  </button>
+                  {['AM', 'PM'].map(period => (
+                    <button key={period}
+                      onClick={() => setIsAM(period === 'AM')}
+                      className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200"
+                      style={{
+                        background: (period === 'AM') === isAM ? 'rgba(0,212,170,0.15)' : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${(period === 'AM') === isAM ? 'rgba(0,212,170,0.35)' : 'rgba(255,255,255,0.05)'}`,
+                        color: (period === 'AM') === isAM ? '#00D4AA' : '#4A5568',
+                        fontFamily: 'DM Sans, sans-serif',
+                      }}>
+                      {period}
+                    </button>
+                  ))}
                 </div>
               </div>
-              {/* Preview of selected time */}
-              <div className="text-center pb-3 font-mono-brand text-lg font-semibold" style={{ color: '#00D4AA' }}>
+              <div className="text-center pb-3" style={{ fontFamily: 'DM Mono, monospace', fontSize: '1.1rem', fontWeight: 300, color: '#00D4AA', letterSpacing: '0.05em' }}>
                 {String(hour12).padStart(2, '0')}:{String(minute).padStart(2, '0')} {isAM ? 'AM' : 'PM'}
               </div>
             </div>
           </div>
 
-          {/* ── Repeat days ── */}
+          {/* Repeat days */}
           <div className="mb-5">
-            <label className="block text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Repeat</label>
-            <div className="flex gap-2">
+            <label className="block text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Repeat</label>
+            <div className="flex gap-1.5">
               {DAY_LABELS.map((d, i) => (
                 <button key={i} onClick={() => toggleDay(i)}
                   className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200"
                   style={{
-                    background: selectedDays.includes(i) ? 'rgba(0,212,170,0.18)' : 'rgba(255,255,255,0.04)',
-                    border: `1.5px solid ${selectedDays.includes(i) ? 'rgba(0,212,170,0.5)' : 'rgba(255,255,255,0.06)'}`,
-                    color: selectedDays.includes(i) ? '#00D4AA' : '#6B7A99',
+                    background: selectedDays.includes(i) ? 'rgba(0,212,170,0.12)' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${selectedDays.includes(i) ? 'rgba(0,212,170,0.35)' : 'rgba(255,255,255,0.05)'}`,
+                    color: selectedDays.includes(i) ? '#00D4AA' : '#4A5568',
                     fontFamily: 'DM Sans, sans-serif',
                   }}>
                   {d}
@@ -641,9 +819,9 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                   <button key={preset.label} onClick={() => setSelectedDays(preset.days)}
                     className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all duration-150"
                     style={{
-                      background: active ? 'rgba(0,212,170,0.1)' : 'rgba(255,255,255,0.03)',
-                      border: '1px solid rgba(255,255,255,0.06)',
-                      color: active ? '#00D4AA' : '#6B7A99',
+                      background: active ? 'rgba(0,212,170,0.08)' : 'rgba(255,255,255,0.02)',
+                      border: `1px solid ${active ? 'rgba(0,212,170,0.2)' : 'rgba(255,255,255,0.04)'}`,
+                      color: active ? '#00D4AA' : '#4A5568',
                       fontFamily: 'DM Sans, sans-serif',
                     }}>
                     {preset.label}
@@ -653,24 +831,24 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
             </div>
           </div>
 
-          {/* ── Wake Sound ── */}
+          {/* Wake Sound */}
           <div className="mb-5">
-            <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Wake Sound</label>
+            <label className="block text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Wake Sound</label>
             <div className="flex gap-1.5 mb-3">
               {([
-                { mode: "frequency" as const, label: "Frequencies", icon: Waves, activeColor: '#00D4AA', activeBg: 'rgba(0,212,170,0.15)', activeBorder: 'rgba(0,212,170,0.4)' },
-                { mode: "ambient" as const, label: "Ambients", icon: Wind, activeColor: '#3B82F6', activeBg: 'rgba(59,130,246,0.15)', activeBorder: 'rgba(59,130,246,0.4)' },
-                { mode: "studio" as const, label: "My Mixes", icon: Layers, activeColor: '#8B5CF6', activeBg: 'rgba(139,92,246,0.15)', activeBorder: 'rgba(139,92,246,0.4)' },
+                { mode: "frequency" as const, label: "Frequencies", icon: Waves, activeColor: '#00D4AA', activeBg: 'rgba(0,212,170,0.12)', activeBorder: 'rgba(0,212,170,0.3)' },
+                { mode: "ambient" as const, label: "Ambients", icon: Wind, activeColor: '#3B82F6', activeBg: 'rgba(59,130,246,0.12)', activeBorder: 'rgba(59,130,246,0.3)' },
+                { mode: "studio" as const, label: "My Mixes", icon: Layers, activeColor: '#8B5CF6', activeBg: 'rgba(139,92,246,0.12)', activeBorder: 'rgba(139,92,246,0.3)' },
               ]).map(tab => (
                 <button key={tab.mode} onClick={() => setSoundMode(tab.mode)}
                   className="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200"
                   style={{
-                    background: soundMode === tab.mode ? tab.activeBg : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${soundMode === tab.mode ? tab.activeBorder : 'rgba(255,255,255,0.06)'}`,
-                    color: soundMode === tab.mode ? tab.activeColor : '#6B7A99',
+                    background: soundMode === tab.mode ? tab.activeBg : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${soundMode === tab.mode ? tab.activeBorder : 'rgba(255,255,255,0.05)'}`,
+                    color: soundMode === tab.mode ? tab.activeColor : '#4A5568',
                     fontFamily: 'DM Sans, sans-serif',
                   }}>
-                  <tab.icon size={12} /> {tab.label}
+                  <tab.icon size={11} /> {tab.label}
                 </button>
               ))}
             </div>
@@ -682,9 +860,9 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                     <button key={cat.id} onClick={() => setFreqCategory(cat.id)}
                       className="flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200"
                       style={{
-                        background: freqCategory === cat.id ? 'rgba(0,212,170,0.12)' : 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${freqCategory === cat.id ? 'rgba(0,212,170,0.3)' : 'rgba(255,255,255,0.05)'}`,
-                        color: freqCategory === cat.id ? '#00D4AA' : '#6B7A99',
+                        background: freqCategory === cat.id ? 'rgba(0,212,170,0.1)' : 'rgba(255,255,255,0.02)',
+                        border: `1px solid ${freqCategory === cat.id ? 'rgba(0,212,170,0.25)' : 'rgba(255,255,255,0.04)'}`,
+                        color: freqCategory === cat.id ? '#00D4AA' : '#4A5568',
                         fontFamily: 'DM Sans, sans-serif',
                       }}>
                       {cat.label}
@@ -696,32 +874,31 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                     const previewKey = `freq:${f.id}`;
                     const isPreviewing = previewId === previewKey;
                     const previewUrl = f.audioUrl ?? getLibraryLoopUrl(`binaural-${f.hz}`);
-                    // 432Hz and 528Hz are always free for alarm use — they are the brand promise
                     const alarmFree = f.hz === 432 || f.hz === 528;
                     const isLocked = f.isPremium && !isPremium && !alarmFree;
                     return (
                       <button key={f.id} onClick={() => { if (isLocked) { onPremiumNeeded(); return; } setSelectedFreq(f.id); }}
                         className="p-3 rounded-xl text-left transition-all duration-200 relative"
                         style={{
-                          background: selectedFreq === f.id ? `${f.color}18` : 'rgba(255,255,255,0.03)',
-                          border: `1px solid ${selectedFreq === f.id ? f.color + '40' : 'rgba(255,255,255,0.06)'}`,
-                          opacity: isLocked ? 0.65 : 1,
+                          background: selectedFreq === f.id ? `${f.color}12` : 'rgba(255,255,255,0.02)',
+                          border: `1px solid ${selectedFreq === f.id ? f.color + '30' : 'rgba(255,255,255,0.05)'}`,
+                          opacity: isLocked ? 0.55 : 1,
                         }}>
                         {isLocked ? (
                           <Lock size={9} style={{ color: '#8B5CF6', position: 'absolute', top: 8, right: 8 }} />
                         ) : alarmFree && f.isPremium ? (
-                          <span style={{ position: 'absolute', top: 6, right: 6, fontSize: 8, color: '#00D4AA', fontFamily: 'DM Sans, sans-serif', background: 'rgba(0,212,170,0.12)', padding: '1px 4px', borderRadius: 4 }}>FREE</span>
+                          <span style={{ position: 'absolute', top: 6, right: 6, fontSize: 8, color: '#00D4AA', fontFamily: 'DM Sans, sans-serif', background: 'rgba(0,212,170,0.1)', padding: '1px 4px', borderRadius: 4 }}>FREE</span>
                         ) : (
                           <button onClick={(e) => togglePreview(previewKey, previewUrl, e)}
                             className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-150"
-                            style={{ background: isPreviewing ? f.color : 'rgba(255,255,255,0.08)', border: `1px solid ${isPreviewing ? f.color : 'rgba(255,255,255,0.12)'}` }}>
+                            style={{ background: isPreviewing ? f.color : 'rgba(255,255,255,0.06)', border: `1px solid ${isPreviewing ? f.color : 'rgba(255,255,255,0.1)'}` }}>
                             {isPreviewing ? <Square size={7} fill="#0A0B14" style={{ color: '#0A0B14' }} /> : <Play size={7} fill="currentColor" style={{ color: f.color }} />}
                           </button>
                         )}
-                        <div className="font-mono-brand text-sm font-bold" style={{ color: f.color }}>
+                        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.85rem', fontWeight: 600, color: f.color }}>
                           {freqCategory === "binaural" ? f.name : `${f.hz}Hz`}
                         </div>
-                        <div className="text-xs mt-0.5 pr-6" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                        <div className="text-xs mt-0.5 pr-6" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
                           {freqCategory === "binaural" ? (f.binauralOffset ? `${f.binauralOffset}Hz beat` : f.hz + 'Hz') : f.name}
                         </div>
                       </button>
@@ -749,15 +926,15 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                             <button key={loop.id} onClick={() => setSelectedAmbientId(loop.id)}
                               className="p-2.5 rounded-xl text-center transition-all duration-200 relative"
                               style={{
-                                background: selectedAmbientId === loop.id ? 'rgba(59,130,246,0.18)' : 'rgba(255,255,255,0.03)',
-                                border: `1px solid ${selectedAmbientId === loop.id ? 'rgba(59,130,246,0.45)' : 'rgba(255,255,255,0.06)'}`,
+                                background: selectedAmbientId === loop.id ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.02)',
+                                border: `1px solid ${selectedAmbientId === loop.id ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.04)'}`,
                               }}>
                               <button onClick={(e) => togglePreview(previewKey, getLibraryLoopUrl(loop.id), e)}
                                 className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center"
-                                style={{ background: isPreviewing ? catColor : 'rgba(255,255,255,0.08)', border: `1px solid ${isPreviewing ? catColor : 'rgba(255,255,255,0.12)'}` }}>
+                                style={{ background: isPreviewing ? catColor : 'rgba(255,255,255,0.06)', border: `1px solid ${isPreviewing ? catColor : 'rgba(255,255,255,0.1)'}` }}>
                                 {isPreviewing ? <Square size={6} fill="#0A0B14" style={{ color: '#0A0B14' }} /> : <Play size={6} fill="currentColor" style={{ color: catColor }} />}
                               </button>
-                              <div className="text-xs font-semibold pt-1" style={{ color: selectedAmbientId === loop.id ? '#3B82F6' : '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
+                              <div className="text-xs font-medium pr-4" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif', fontSize: '0.65rem' }}>
                                 {loop.label}
                               </div>
                             </button>
@@ -777,22 +954,22 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                     <button key={mix.id} onClick={() => setSelectedMixId(mix.id)}
                       className="w-full p-3 rounded-xl text-left flex items-center gap-3 transition-all duration-200"
                       style={{
-                        background: selectedMixId === mix.id ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${selectedMixId === mix.id ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.06)'}`,
+                        background: selectedMixId === mix.id ? 'rgba(139,92,246,0.12)' : 'rgba(255,255,255,0.02)',
+                        border: `1px solid ${selectedMixId === mix.id ? 'rgba(139,92,246,0.3)' : 'rgba(255,255,255,0.04)'}`,
                       }}>
-                      <Layers size={16} style={{ color: '#8B5CF6', flexShrink: 0 }} />
+                      <Layers size={14} style={{ color: '#8B5CF6', flexShrink: 0 }} />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>{mix.name}</div>
-                        <div className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>{mix.settings.frequencyHz}Hz · {mix.settings.musicMode}</div>
+                        <div className="text-xs" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>{mix.settings.frequencyHz}Hz · {mix.settings.musicMode}</div>
                       </div>
-                      {selectedMixId === mix.id && <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#8B5CF6' }}><div className="w-2 h-2 rounded-full bg-white" /></div>}
+                      {selectedMixId === mix.id && <Check size={14} style={{ color: '#8B5CF6' }} />}
                     </button>
                   ))}
                 </div>
               ) : (
-                <div className="p-4 rounded-xl text-center" style={{ background: 'rgba(139,92,246,0.06)', border: '1px dashed rgba(139,92,246,0.2)' }}>
-                  <Layers size={20} style={{ color: '#8B5CF6', margin: '0 auto 8px' }} />
-                  <p className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                <div className="p-4 rounded-xl text-center" style={{ background: 'rgba(139,92,246,0.04)', border: '1px dashed rgba(139,92,246,0.15)' }}>
+                  <Layers size={18} style={{ color: '#8B5CF6', margin: '0 auto 8px' }} />
+                  <p className="text-xs" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
                     No saved mixes yet. Go to <strong style={{ color: '#8B5CF6' }}>Sound Studio</strong> and tap <strong style={{ color: '#8B5CF6' }}>Save Mix</strong>.
                   </p>
                 </div>
@@ -800,45 +977,45 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
             )}
           </div>
 
-          {/* ── Wake Sequence ── */}
+          {/* Wake Sequence */}
           <div className="mb-5">
-            <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Wake Sequence</label>
+            <label className="block text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Wake Sequence</label>
             <div className="space-y-2">
               {WAKE_SEQUENCES.map(seq => (
                 <button key={seq.id}
                   onClick={() => { if (seq.isPremium) { toast("✦ Premium sequence — upgrade to unlock"); return; } setSelectedSeq(seq.id); }}
                   className="w-full p-3 rounded-xl text-left flex items-center gap-3 transition-all duration-200"
                   style={{
-                    background: selectedSeq === seq.id ? `${seq.color}12` : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${selectedSeq === seq.id ? seq.color + '35' : 'rgba(255,255,255,0.06)'}`,
-                    opacity: seq.isPremium ? 0.7 : 1,
+                    background: selectedSeq === seq.id ? `${seq.color}10` : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${selectedSeq === seq.id ? seq.color + '25' : 'rgba(255,255,255,0.04)'}`,
+                    opacity: seq.isPremium ? 0.65 : 1,
                   }}>
-                  <seq.icon size={16} style={{ color: seq.color, flexShrink: 0 }} />
+                  <seq.icon size={14} style={{ color: seq.color, flexShrink: 0 }} />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold flex items-center gap-1.5" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
-                      {seq.name}{seq.isPremium && <Lock size={11} style={{ color: '#8B5CF6' }} />}
+                      {seq.name}{seq.isPremium && <Lock size={10} style={{ color: '#8B5CF6' }} />}
                     </div>
-                    <div className="text-xs truncate" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>{seq.description}</div>
+                    <div className="text-xs truncate" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>{seq.description}</div>
                   </div>
-                  {selectedSeq === seq.id && !seq.isPremium && <Check size={14} style={{ color: '#00D4AA', flexShrink: 0 }} />}
+                  {selectedSeq === seq.id && !seq.isPremium && <Check size={13} style={{ color: '#00D4AA', flexShrink: 0 }} />}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* ── Fade-in ── */}
+          {/* Fade-in */}
           <div className="mb-6">
-            <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+            <label className="block text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
               Fade-in: <span style={{ color: '#00D4AA' }}>{fadeIn} min</span>
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               {[1, 3, 5, 10, 15].map(v => (
                 <button key={v} onClick={() => setFadeIn(v)}
                   className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200"
                   style={{
-                    background: fadeIn === v ? 'rgba(0,212,170,0.2)' : 'rgba(255,255,255,0.04)',
-                    border: `1.5px solid ${fadeIn === v ? 'rgba(0,212,170,0.4)' : 'rgba(255,255,255,0.06)'}`,
-                    color: fadeIn === v ? '#00D4AA' : '#6B7A99',
+                    background: fadeIn === v ? 'rgba(0,212,170,0.15)' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${fadeIn === v ? 'rgba(0,212,170,0.35)' : 'rgba(255,255,255,0.05)'}`,
+                    color: fadeIn === v ? '#00D4AA' : '#4A5568',
                     fontFamily: 'DM Sans, sans-serif',
                   }}>
                   {v}m
@@ -847,10 +1024,10 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
             </div>
           </div>
 
-          {/* ── Sleep Profile ── */}
+          {/* Sleep Profile */}
           <div className="mb-6">
-            <label className="block text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Sleep Profile</label>
-            <p className="text-[11px] mb-3" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Controls how quickly the alarm escalates to full volume</p>
+            <label className="block text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Sleep Profile</label>
+            <p className="text-[10px] mb-3" style={{ color: '#2D3748', fontFamily: 'DM Sans, sans-serif' }}>Controls how quickly the alarm escalates to full volume</p>
             <div className="grid grid-cols-2 gap-2">
               {([
                 { id: 'light' as const, label: 'Light Sleeper', desc: 'Slow, gentle rise', color: '#00D4AA' },
@@ -861,46 +1038,46 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                 <button key={p.id} onClick={() => setSleepProfile(p.id)}
                   className="p-3 rounded-xl text-left transition-all duration-200"
                   style={{
-                    background: sleepProfile === p.id ? `${p.color}12` : 'rgba(255,255,255,0.03)',
-                    border: `1.5px solid ${sleepProfile === p.id ? p.color + '45' : 'rgba(255,255,255,0.06)'}`,
+                    background: sleepProfile === p.id ? `${p.color}10` : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${sleepProfile === p.id ? p.color + '30' : 'rgba(255,255,255,0.04)'}`,
                   }}>
-                  <div className="text-xs font-semibold" style={{ color: sleepProfile === p.id ? p.color : '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>{p.label}</div>
-                  <div className="text-[10px] mt-0.5" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>{p.desc}</div>
+                  <div className="text-xs font-semibold" style={{ color: sleepProfile === p.id ? p.color : '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>{p.label}</div>
+                  <div className="text-[10px] mt-0.5" style={{ color: '#2D3748', fontFamily: 'DM Sans, sans-serif' }}>{p.desc}</div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* ── Save button ── */}
-          <button onClick={handleSave} className="btn-teal w-full py-4 text-base font-semibold flex items-center justify-center gap-2 mb-4">
-            <Bell size={18} />
+          {/* Save button */}
+          <button onClick={handleSave} className="btn-teal w-full py-4 text-sm font-semibold flex items-center justify-center gap-2 mb-4">
+            <Bell size={16} />
             {isEditing ? 'Save Changes' : 'Set Healing Alarm'}
           </button>
 
-          {/* ── Delete (edit mode only) ── */}
+          {/* Delete (edit mode) */}
           {isEditing && onDelete && (
             <>
               {!showDeleteConfirm ? (
                 <button onClick={() => setShowDeleteConfirm(true)}
                   className="w-full py-3.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200"
-                  style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#EF4444', fontFamily: 'DM Sans, sans-serif' }}>
-                  <Trash2 size={15} /> Delete Alarm
+                  style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', color: '#EF4444', fontFamily: 'DM Sans, sans-serif' }}>
+                  <Trash2 size={14} /> Delete Alarm
                 </button>
               ) : (
-                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(239,68,68,0.3)' }}>
-                  <div className="px-4 py-3 text-center text-sm" style={{ color: '#E8EDF5', background: 'rgba(239,68,68,0.08)', fontFamily: 'DM Sans, sans-serif' }}>
+                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(239,68,68,0.2)' }}>
+                  <div className="px-4 py-3 text-center text-sm" style={{ color: '#E8EDF5', background: 'rgba(239,68,68,0.06)', fontFamily: 'DM Sans, sans-serif' }}>
                     Delete this alarm?
                   </div>
                   <div className="flex">
                     <button onClick={() => setShowDeleteConfirm(false)}
                       className="flex-1 py-3 text-sm font-semibold"
-                      style={{ color: '#6B7A99', background: 'rgba(255,255,255,0.03)', fontFamily: 'DM Sans, sans-serif' }}>
+                      style={{ color: '#4A5568', background: 'rgba(255,255,255,0.02)', fontFamily: 'DM Sans, sans-serif' }}>
                       Cancel
                     </button>
-                    <div style={{ width: '1px', background: 'rgba(255,255,255,0.06)' }} />
+                    <div style={{ width: '1px', background: 'rgba(255,255,255,0.04)' }} />
                     <button onClick={() => { onDelete(editingAlarm.id); onClose(); }}
                       className="flex-1 py-3 text-sm font-bold"
-                      style={{ color: '#EF4444', background: 'rgba(239,68,68,0.06)', fontFamily: 'DM Sans, sans-serif' }}>
+                      style={{ color: '#EF4444', background: 'rgba(239,68,68,0.04)', fontFamily: 'DM Sans, sans-serif' }}>
                       Delete
                     </button>
                   </div>
@@ -918,80 +1095,13 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
 interface AlarmPrefill { wakeTime?: string; frequencyHz?: number; }
 
 // ─── Main Alarm page ──────────────────────────────────────────────────────────
-// ─── Live Analog Clock ───────────────────────────────────────────────────────
-function LiveAnalogClock() {
-  const [now, setNow] = useState(new Date());
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
-  const size = 80;
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = size / 2 - 4;
-  const h = now.getHours() % 12;
-  const m = now.getMinutes();
-  const s = now.getSeconds();
-  const hAngle = ((h + m / 60) / 12) * 360 - 90;
-  const mAngle = ((m + s / 60) / 60) * 360 - 90;
-  const sAngle = (s / 60) * 360 - 90;
-  const toXY = (angle: number, len: number) => ({
-    x: cx + Math.cos((angle * Math.PI) / 180) * len,
-    y: cy + Math.sin((angle * Math.PI) / 180) * len,
-  });
-  const hEnd = toXY(hAngle, r * 0.5);
-  const mEnd = toXY(mAngle, r * 0.72);
-  const sEnd = toXY(sAngle, r * 0.82);
-  const ticks = Array.from({ length: 12 }, (_, i) => {
-    const a = (i / 12) * 360 - 90;
-    const outer = toXY(a, r - 1);
-    const inner = toXY(a, r - (i % 3 === 0 ? 8 : 5));
-    return { outer, inner, major: i % 3 === 0 };
-  });
-  return (
-    <div className="flex-shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size}>
-        {/* Clock face */}
-        <circle cx={cx} cy={cy} r={r} fill="rgba(10,11,20,0.95)" stroke="rgba(0,212,170,0.3)" strokeWidth="1.5" />
-        <circle cx={cx} cy={cy} r={r + 3} fill="none" stroke="rgba(0,212,170,0.06)" strokeWidth="4" />
-        {/* Tick marks */}
-        {ticks.map((t, i) => (
-          <line key={i} x1={t.outer.x} y1={t.outer.y} x2={t.inner.x} y2={t.inner.y}
-            stroke={t.major ? 'rgba(0,212,170,0.6)' : 'rgba(0,212,170,0.25)'}
-            strokeWidth={t.major ? 1.5 : 0.8} strokeLinecap="round" />
-        ))}
-        {/* Hour hand */}
-        <line x1={cx} y1={cy} x2={hEnd.x} y2={hEnd.y} stroke="#E8EDF5" strokeWidth="2.5" strokeLinecap="round" />
-        {/* Minute hand */}
-        <line x1={cx} y1={cy} x2={mEnd.x} y2={mEnd.y} stroke="#00D4AA" strokeWidth="1.8" strokeLinecap="round" />
-        {/* Second hand */}
-        <line x1={cx} y1={cy} x2={sEnd.x} y2={sEnd.y} stroke="#F59E0B" strokeWidth="1" strokeLinecap="round" />
-        {/* Center dot */}
-        <circle cx={cx} cy={cy} r={3} fill="#00D4AA" />
-        {/* Glow filter */}
-        <defs>
-          <filter id="clock-glow">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-            <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-        </defs>
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(0,212,170,0.15)" strokeWidth="8" filter="url(#clock-glow)" />
-      </svg>
-    </div>
-  );
-}
-
 export default function Alarm() {
   const { isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
 
-  // Server alarms (when authenticated)
   const serverAlarms = trpc.alarms.list.useQuery(undefined, { enabled: isAuthenticated });
-
-  // Local alarms (guest fallback)
   const [localAlarms, setLocalAlarms] = useState<Alarm[]>(loadLocalAlarms);
 
-  // Merge: prefer server data when available, fall back to local
   const alarms: Alarm[] = useMemo(() => {
     if (isAuthenticated && serverAlarms.data) {
       return serverAlarms.data.map(a => ({
@@ -1029,23 +1139,17 @@ export default function Alarm() {
   const isPremium = subStatus.data?.isPremium ?? false;
   const [prefill, setPrefill] = useState<AlarmPrefill | null>(null);
 
-  // ─── Ringing state (P1) ─────────────────────────────────────────────────────────────────────────────
   const [firingAlarm, setFiringAlarm] = useState<Alarm | null>(null);
-  // snoozeCount tracks how many times the current firing alarm has been snoozed
   const snoozeCountRef = useRef<Record<string, number>>({});
-  // Pending snooze re-fire — cleared on stop / unmount so we never setState after leave
   const snoozeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // isGentleReentry: true when we've hit MAX_SNOOZES and switch to grounding freq
   const [isGentleReentry, setIsGentleReentry] = useState(false);
 
-  // Countdown tick — force re-render every 60 s so countdown badges stay fresh
   const [, setCountdownTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setCountdownTick(t => t + 1), 60_000);
     return () => clearInterval(id);
   }, []);
 
-  // tRPC mutations with optimistic updates + rollback
   const createAlarmMutation = trpc.alarms.create.useMutation({
     onSuccess: () => utils.alarms.list.invalidate(),
     onError: () => { toast.error("Failed to save alarm — please try again"); utils.alarms.list.invalidate(); },
@@ -1097,7 +1201,6 @@ export default function Alarm() {
     onSettled: () => utils.alarms.list.invalidate(),
   });
 
-  // Onboarding quiz handoff
   useEffect(() => {
     const raw = localStorage.getItem("rih_alarm_prefill");
     if (!raw) return;
@@ -1110,7 +1213,6 @@ export default function Alarm() {
     setShowCreate(true);
   };
 
-  // ─── Ringing handlers (P1 + P4) ─────────────────────────────────────────────────────────────────────────────
   const handleAlarmFire = useCallback((alarmId: string) => {
     const alarm = alarms.find(a => a.id === alarmId);
     if (!alarm) return;
@@ -1128,9 +1230,7 @@ export default function Alarm() {
 
   const handleStop = useCallback(() => {
     clearSnoozeTimer();
-    if (firingAlarm) {
-      delete snoozeCountRef.current[firingAlarm.id];
-    }
+    if (firingAlarm) { delete snoozeCountRef.current[firingAlarm.id]; }
     setFiringAlarm(null);
     setIsGentleReentry(false);
   }, [firingAlarm, clearSnoozeTimer]);
@@ -1141,12 +1241,8 @@ export default function Alarm() {
     const alarm = firingAlarm;
     const count = (snoozeCountRef.current[id] ?? 0) + 1;
     snoozeCountRef.current[id] = count;
-
     const gentle = count >= MAX_SNOOZES;
-    if (gentle) {
-      // Next re-fire uses 174Hz grounding frequency
-      setIsGentleReentry(true);
-    }
+    if (gentle) setIsGentleReentry(true);
     setFiringAlarm(null);
     clearSnoozeTimer();
     snoozeTimerRef.current = setTimeout(() => {
@@ -1155,10 +1251,8 @@ export default function Alarm() {
     }, SNOOZE_MINUTES * 60 * 1000);
   }, [firingAlarm, clearSnoozeTimer]);
 
-  // Drop pending snooze re-fires when leaving the Alarm page
   useEffect(() => () => clearSnoozeTimer(), [clearSnoozeTimer]);
 
-  // Schedule notifications — wire onFire to launch AlarmRinging overlay
   useEffect(() => {
     alarms.forEach(alarm => {
       const freq = FREQUENCIES.find(f => f.id === alarm.frequencyId);
@@ -1240,98 +1334,154 @@ export default function Alarm() {
 
   return (
     <Layout>
-      <BioluminescentBackground variant="teal" density="low" />
-      <div className="min-h-screen relative" style={{ background: '#0A0B14' }}>
-        {/* Bioluminescent background */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
-          <div className="absolute" style={{ top: '0%', left: '50%', transform: 'translateX(-50%)', width: '80%', height: '40%', background: 'radial-gradient(ellipse, rgba(245,158,11,0.04) 0%, transparent 70%)' }} />
-          <div className="absolute" style={{ bottom: '10%', right: '5%', width: '40%', height: '40%', background: 'radial-gradient(ellipse, rgba(0,212,170,0.03) 0%, transparent 70%)' }} />
-        </div>
-        {/* Header */}
-        <div className="px-6 pt-8 pb-6 relative" style={{ zIndex: 1 }}>
-          {/* Hero: Analog Clock + Title */}
-          <div className="flex items-center gap-6 mb-6">
-            {/* Analog clock face with radial glow */}
-            <div className="relative flex-shrink-0">
-              <div className="absolute inset-0 rounded-full pointer-events-none" style={{
-                background: 'radial-gradient(circle, rgba(0,212,170,0.25) 0%, rgba(0,212,170,0.08) 50%, transparent 75%)',
-                transform: 'scale(1.8)',
-                filter: 'blur(16px)',
-                animation: 'bio-pulse 4s ease-in-out infinite',
-              }} />
-              <LiveAnalogClock />
-            </div>
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-2"
-                style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#F59E0B', fontFamily: 'DM Sans, sans-serif' }}>
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#F59E0B' }} />
+      {/* ── Full-page nighttime background ── */}
+      <div className="min-h-screen relative" style={{
+        background: 'linear-gradient(180deg, #050610 0%, #080A18 30%, #0A0B14 60%, #08090F 100%)',
+      }}>
+        <StarField />
+
+        {/* ── Hero section ── */}
+        <div className="relative px-5 pt-10 pb-6" style={{ zIndex: 1 }}>
+
+          {/* Page label */}
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full"
+              style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)' }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#F59E0B', animation: 'bio-pulse 2s ease-in-out infinite' }} />
+              <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.65rem', fontWeight: 600, color: '#F59E0B', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                 Smart Alarm
-              </div>
-              <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 600, color: '#E8EDF5', textShadow: '0 0 30px rgba(245,158,11,0.1)' }}>Healing Alarms</h1>
-              <p className="text-sm mt-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Wake gently with healing frequencies</p>
-            </div>
-            <div className="ml-auto">
-              <button onClick={handleAddAlarm} className="btn-teal flex items-center gap-2 px-5 py-2.5 text-sm font-semibold">
-                <Plus size={16} /> New Alarm
-              </button>
+              </span>
             </div>
           </div>
-          <div className="flex gap-4">
+
+          {/* Digital clock hero */}
+          <div className="flex justify-center mb-6">
+            <LiveDigitalClock />
+          </div>
+
+          {/* Page title */}
+          <div className="text-center mb-8">
+            <h1 style={{
+              fontFamily: 'Cormorant Garamond, serif',
+              fontSize: '1.75rem',
+              fontWeight: 400,
+              color: '#E8EDF5',
+              letterSpacing: '0.02em',
+              lineHeight: 1.2,
+            }}>
+              Healing Alarms
+            </h1>
+            <p style={{
+              fontFamily: 'DM Sans, sans-serif',
+              fontSize: '0.8rem',
+              color: 'rgba(139,163,191,0.6)',
+              marginTop: '0.35rem',
+              letterSpacing: '0.04em',
+            }}>
+              Wake gently with healing frequencies
+            </p>
+          </div>
+
+          {/* Stats row */}
+          <div className="flex gap-3 mb-6">
             {[
-              { label: "Active Alarms", value: enabledCount, color: '#00D4AA' },
-              { label: "Total Alarms", value: alarms.length, color: '#8B5CF6' },
-              { label: "Streak", value: "7 days", color: '#F59E0B' },
+              { label: "Active", value: enabledCount, color: '#00D4AA', bg: 'rgba(0,212,170,0.06)', border: 'rgba(0,212,170,0.12)' },
+              { label: "Total", value: alarms.length, color: '#8B5CF6', bg: 'rgba(139,92,246,0.06)', border: 'rgba(139,92,246,0.12)' },
+              { label: "Streak", value: "7 days", color: '#F59E0B', bg: 'rgba(245,158,11,0.06)', border: 'rgba(245,158,11,0.12)' },
             ].map(stat => (
-              <div key={stat.label} className="glow-card px-4 py-3 flex-1">
-                <div className="text-xs mb-1" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>{stat.label}</div>
-                <div className="text-xl font-bold font-mono-brand" style={{ color: stat.color }}>{stat.value}</div>
+              <div key={stat.label} className="flex-1 rounded-2xl px-4 py-3 flex flex-col items-center"
+                style={{ background: stat.bg, border: `1px solid ${stat.border}` }}>
+                <div style={{
+                  fontFamily: 'DM Mono, monospace',
+                  fontSize: '1.5rem',
+                  fontWeight: 300,
+                  color: stat.color,
+                  lineHeight: 1,
+                  textShadow: `0 0 20px ${stat.color}40`,
+                }}>{stat.value}</div>
+                <div style={{
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontSize: '0.6rem',
+                  color: 'rgba(139,163,191,0.5)',
+                  marginTop: '0.3rem',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}>{stat.label}</div>
               </div>
             ))}
           </div>
+
+          {/* New Alarm CTA */}
+          <div className="flex justify-center mb-6">
+            <button onClick={handleAddAlarm}
+              className="relative flex items-center gap-2.5 px-8 py-3.5 rounded-full font-semibold transition-all duration-300"
+              style={{
+                background: 'linear-gradient(135deg, #00D4AA, #00B894)',
+                color: '#050610',
+                fontSize: '0.875rem',
+                fontFamily: 'DM Sans, sans-serif',
+                boxShadow: '0 0 30px rgba(0,212,170,0.35), 0 4px 20px rgba(0,0,0,0.4)',
+                letterSpacing: '0.02em',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 50px rgba(0,212,170,0.55), 0 6px 30px rgba(0,0,0,0.5)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 0 30px rgba(0,212,170,0.35), 0 4px 20px rgba(0,0,0,0.4)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; }}
+            >
+              {/* Pulse ring */}
+              <span className="absolute inset-0 rounded-full pointer-events-none" style={{
+                border: '1px solid rgba(0,212,170,0.4)',
+                animation: 'ring-expand 2.5s ease-out infinite',
+              }} />
+              <Plus size={16} strokeWidth={2.5} />
+              New Alarm
+            </button>
+          </div>
         </div>
 
-        {/* Deep Sleep Wake discovery banner */}
-        <div className="px-6 pb-4">
+        {/* ── Deep Sleep Wake banner ── */}
+        <div className="px-5 pb-4" style={{ position: 'relative', zIndex: 1 }}>
           <a href="/deep-sleep-wake"
-            className="flex items-center justify-between gap-4 px-5 py-4 w-full"
+            className="flex items-center justify-between gap-4 px-5 py-4 w-full rounded-2xl"
             style={{
-              background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(0,212,170,0.06))',
-              border: '1px solid rgba(139,92,246,0.25)',
+              background: 'linear-gradient(135deg, rgba(139,92,246,0.07) 0%, rgba(0,212,170,0.04) 100%)',
+              border: '1px solid rgba(139,92,246,0.15)',
               textDecoration: 'none',
-              cursor: 'pointer',
+              backdropFilter: 'blur(8px)',
             }}
           >
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 flex-shrink-0"
-                style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)' }}>
-                <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '20px', fontStyle: 'italic', color: '#8B5CF6' }}>δ</span>
+              {/* Brainwave icon */}
+              <div className="flex items-center justify-center w-9 h-9 rounded-xl flex-shrink-0"
+                style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.2)' }}>
+                <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.1rem', fontStyle: 'italic', color: '#8B5CF6' }}>δ</span>
               </div>
               <div>
-                <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.8rem', fontWeight: 600, color: '#C4B5FD', letterSpacing: '0.01em' }}>
                   Deep Sleep Wake Sequence
                 </div>
-                <div className="text-xs mt-0.5" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.65rem', color: 'rgba(139,163,191,0.5)', marginTop: '0.2rem', letterSpacing: '0.03em' }}>
                   δ→θ→α · Brainwave sweep · How it works
                 </div>
               </div>
             </div>
-            <div className="text-xs font-semibold flex items-center gap-1 flex-shrink-0" style={{ color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif' }}>
+            <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.7rem', fontWeight: 600, color: '#8B5CF6', letterSpacing: '0.04em', flexShrink: 0 }}>
               Watch →
             </div>
           </a>
         </div>
 
-        {/* Alarm list */}
-        <div className="px-6 pb-8 space-y-3">
+        {/* ── Alarm list ── */}
+        <div className="px-5 pb-6 space-y-3" style={{ position: 'relative', zIndex: 1 }}>
           {serverAlarms.isLoading && isAuthenticated ? (
-            <div className="glow-card p-8 text-center">
-              <div className="text-sm" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Loading alarms...</div>
+            <div className="rounded-2xl p-8 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.8rem', color: '#4A5568' }}>Loading alarms...</div>
             </div>
           ) : alarms.length === 0 ? (
-            <div className="glow-card p-12 text-center">
-              <BellOff size={40} className="mx-auto mb-4" style={{ color: '#4A5568' }} />
-              <div className="text-base font-medium mb-2" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>No alarms yet</div>
-              <div className="text-sm mb-6" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Set your first healing alarm to begin your morning ritual</div>
+            <div className="rounded-2xl p-12 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div className="flex justify-center mb-4">
+                <Moon size={36} style={{ color: '#2D3748' }} />
+              </div>
+              <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.1rem', color: '#4A5568', marginBottom: '0.5rem' }}>No alarms yet</div>
+              <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.75rem', color: '#2D3748', marginBottom: '1.5rem' }}>Set your first healing alarm to begin your morning ritual</div>
               <button onClick={() => setShowCreate(true)} className="btn-teal px-6 py-2.5 text-sm font-semibold">Create First Alarm</button>
             </div>
           ) : (
@@ -1348,61 +1498,65 @@ export default function Alarm() {
           )}
         </div>
 
-        {/* Mobile: native app prompt */}
-        {mobilePlatform !== null && (
-          <div className="mx-6 mb-4 p-4 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(0,212,170,0.1), rgba(139,92,246,0.06))', border: '1px solid rgba(0,212,170,0.25)' }}>
-            <div className="flex items-start gap-3">
-              <Smartphone size={18} style={{ color: '#00D4AA', flexShrink: 0, marginTop: '1px' }} />
-              <div className="flex-1">
-                <div className="text-sm font-semibold mb-1" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>Get the real healing alarm</div>
-                <div className="text-xs leading-relaxed mb-3" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
-                  Phone browsers can't wake a locked phone. The Rise In Harmony app wakes you with your chosen healing frequency reliably, even with the screen locked.
+        {/* ── Notification / mobile banners ── */}
+        <div className="px-5 pb-4 space-y-3" style={{ position: 'relative', zIndex: 1 }}>
+
+          {mobilePlatform !== null && (
+            <div className="p-4 rounded-2xl" style={{ background: 'linear-gradient(135deg, rgba(0,212,170,0.06), rgba(139,92,246,0.04))', border: '1px solid rgba(0,212,170,0.12)' }}>
+              <div className="flex items-start gap-3">
+                <Smartphone size={16} style={{ color: '#00D4AA', flexShrink: 0, marginTop: '1px' }} />
+                <div className="flex-1">
+                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.8rem', fontWeight: 600, color: '#00D4AA', marginBottom: '0.35rem' }}>Get the real healing alarm</div>
+                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.7rem', color: 'rgba(139,163,191,0.6)', lineHeight: 1.5, marginBottom: '0.75rem' }}>
+                    Phone browsers can't wake a locked phone. The Rise In Harmony app wakes you with your chosen healing frequency reliably, even with the screen locked.
+                  </div>
+                  {IOS_APP_LIVE ? (
+                    <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" className="btn-teal inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold">
+                      <Smartphone size={12} /> Get the iOS App
+                    </a>
+                  ) : (
+                    <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.7rem', color: '#00D4AA' }}>The mobile app is in final testing — coming soon to iPhone and Android.</div>
+                  )}
                 </div>
-                {IOS_APP_LIVE ? (
-                  <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" className="btn-teal inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold">
-                    <Smartphone size={13} /> Get the iOS App
-                  </a>
-                ) : (
-                  <div className="text-xs font-medium" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>The mobile app is in final testing — coming soon to iPhone and Android.</div>
-                )}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {mobilePlatform === null && isSupported && !isGranted && (
-          <div className="mx-6 mb-4 p-4 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(0,212,170,0.08), rgba(59,130,246,0.05))', border: '1px solid rgba(0,212,170,0.2)' }}>
+          {mobilePlatform === null && isSupported && !isGranted && (
+            <div className="p-4 rounded-2xl" style={{ background: 'rgba(0,212,170,0.04)', border: '1px solid rgba(0,212,170,0.1)' }}>
+              <div className="flex items-start gap-3">
+                <BellRing size={16} style={{ color: '#00D4AA', flexShrink: 0, marginTop: '1px' }} />
+                <div className="flex-1">
+                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.8rem', fontWeight: 600, color: '#00D4AA', marginBottom: '0.35rem' }}>Enable Alarm Notifications</div>
+                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.7rem', color: 'rgba(139,163,191,0.6)', lineHeight: 1.5, marginBottom: '0.75rem' }}>Allow browser notifications so your healing alarms fire even when the app is in the background.</div>
+                  <button onClick={requestPermission} className="btn-teal px-4 py-2 text-xs font-semibold flex items-center gap-1.5">
+                    <Bell size={12} /> Enable Notifications
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {mobilePlatform === null && isGranted && (
+            <div className="p-3 rounded-2xl flex items-center gap-2.5" style={{ background: 'rgba(0,212,170,0.04)', border: '1px solid rgba(0,212,170,0.08)' }}>
+              <ShieldCheck size={13} style={{ color: '#00D4AA', flexShrink: 0 }} />
+              <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.7rem', color: 'rgba(139,163,191,0.5)' }}>Browser notifications active — alarms will fire even when the app is minimized.</span>
+            </div>
+          )}
+
+          <div className="p-4 rounded-2xl" style={{ background: 'rgba(245,158,11,0.04)', border: '1px solid rgba(245,158,11,0.1)' }}>
             <div className="flex items-start gap-3">
-              <BellRing size={18} style={{ color: '#00D4AA', flexShrink: 0, marginTop: '1px' }} />
-              <div className="flex-1">
-                <div className="text-sm font-semibold mb-1" style={{ color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>Enable Alarm Notifications</div>
-                <div className="text-xs leading-relaxed mb-3" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Allow browser notifications so your healing alarms fire even when the app is in the background.</div>
-                <button onClick={requestPermission} className="btn-teal px-4 py-2 text-xs font-semibold flex items-center gap-1.5">
-                  <Bell size={13} /> Enable Notifications
-                </button>
+              <AlarmClock size={16} style={{ color: '#F59E0B', flexShrink: 0, marginTop: '1px' }} />
+              <div>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.8rem', fontWeight: 600, color: '#F59E0B', marginBottom: '0.35rem' }}>Native App Alarms</div>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.7rem', color: 'rgba(139,163,191,0.5)', lineHeight: 1.5 }}>The mobile app schedules alarms through the system notification service for exact delivery, even with the screen locked. Web alarms use browser notifications and require this tab to stay open.</div>
               </div>
-            </div>
-          </div>
-        )}
-
-        {mobilePlatform === null && isGranted && (
-          <div className="mx-6 mb-4 p-3 rounded-xl flex items-center gap-2.5" style={{ background: 'rgba(0,212,170,0.06)', border: '1px solid rgba(0,212,170,0.12)' }}>
-            <ShieldCheck size={15} style={{ color: '#00D4AA', flexShrink: 0 }} />
-            <span className="text-xs" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>Browser notifications active — alarms will fire even when the app is minimized.</span>
-          </div>
-        )}
-
-        <div className="mx-6 mb-8 p-4 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(239,68,68,0.05))', border: '1px solid rgba(245,158,11,0.15)' }}>
-          <div className="flex items-start gap-3">
-            <AlarmClock size={18} style={{ color: '#F59E0B', flexShrink: 0, marginTop: '1px' }} />
-            <div>
-              <div className="text-sm font-semibold mb-1" style={{ color: '#F59E0B', fontFamily: 'DM Sans, sans-serif' }}>Native App Alarms</div>
-              <div className="text-xs leading-relaxed" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>The mobile app schedules alarms through the system notification service for exact delivery, even with the screen locked. Web alarms use browser notifications and require this tab to stay open.</div>
             </div>
           </div>
         </div>
 
-
+        {/* Bottom padding for nav */}
+        <div className="h-8" />
       </div>
 
       {showCreate && (
@@ -1417,7 +1571,6 @@ export default function Alarm() {
         <PremiumPaywall triggerFrequencyName="Unlimited alarms are a Premium feature" onClose={() => setShowAlarmPaywall(false)} />
       )}
 
-      {/* ─── Full-screen ringing overlay (P1) ───────────────────────────────────────────────────────────────────── */}
       {firingAlarm && (() => {
         const sound = isGentleReentry ? buildGroundingSound() : buildRingingSound(firingAlarm);
         const freq = FREQUENCIES.find(f => f.id === (isGentleReentry ? GROUNDING_FREQ_ID : firingAlarm.frequencyId));
@@ -1426,7 +1579,7 @@ export default function Alarm() {
           : (firingAlarm.studioMixName ?? freq?.name ?? 'Healing Frequency');
         const snoozeCount = snoozeCountRef.current[firingAlarm.id] ?? 0;
         const snoozeLabel = isGentleReentry
-          ? undefined // no more snooze after gentle re-entry
+          ? undefined
           : `Snooze ${SNOOZE_MINUTES} min${snoozeCount > 0 ? ` (${MAX_SNOOZES - snoozeCount} left)` : ''}`;
         return (
           <AlarmRinging
