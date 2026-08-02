@@ -316,3 +316,18 @@ export const convertApi = {
 export function convertWebUrl(path = "/convert"): string {
   return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
+
+// ─── Settings / Account management ───────────────────────────────────────────
+export const settingsApi = {
+  /**
+   * Permanently delete the authenticated user's account.
+   * Cancels active Stripe subscriptions, revokes RevenueCat entitlements,
+   * and removes all user data from the database (FK cascades).
+   * The confirmation string "DELETE MY ACCOUNT" is required by the server.
+   */
+  deleteAccount: () =>
+    trpcMutation<{ success: boolean }>("settings.deleteAccount", {
+      confirm: "DELETE MY ACCOUNT",
+    }),
+};
+

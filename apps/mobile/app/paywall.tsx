@@ -11,6 +11,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -266,6 +267,21 @@ export default function PaywallScreen() {
           Subscriptions auto-renew unless cancelled at least 24 hours before the end of the
           current period. Manage or cancel in your App Store account settings.
         </Text>
+        <View style={styles.legalLinks}>
+          <TouchableOpacity
+            onPress={() => Linking.openURL("https://www.riseinharmony.com/privacy")}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.legalLink}>Privacy Policy</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalLinkSep}> · </Text>
+          <TouchableOpacity
+            onPress={() => Linking.openURL("https://www.riseinharmony.com/terms")}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.legalLink}>Terms of Use</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -490,6 +506,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingHorizontal: spacing[6],
     lineHeight: 16,
+  },
+  // Legal links row
+  legalLinks: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: spacing[2],
+    marginBottom: spacing[4],
+  },
+  legalLink: {
+    fontSize: 11,
+    color: colors.teal,
+    textDecorationLine: "underline",
+  },
+  legalLinkSep: {
+    fontSize: 11,
+    color: colors.textDim,
   },
   // Needed for textSecondary
   textSecondary: { color: colors.textSecondary },

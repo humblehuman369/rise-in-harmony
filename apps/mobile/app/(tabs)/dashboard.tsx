@@ -12,14 +12,16 @@ import {
   Dimensions,
   ActivityIndicator,
   TouchableOpacity,
+  Alert,
 } from "react-native";
+import * as Linking from "expo-linking";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useState, useCallback } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
 import { CHAKRA_FREQUENCIES, FREQUENCIES, formatStreakLabel, calculateStreak } from "@rih/shared-utils";
 import { useAuthStore } from "@/store/authStore";
-import { api } from "@/lib/api";
+import { api, settingsApi } from "@/lib/api";
 import { loadJournalEntries, averageMood } from "@/lib/journal";
 import type { SessionStats, Session } from "@rih/shared-types";
 // Phase 2: Programs entry point is /(tabs)/programs
@@ -60,7 +62,7 @@ function getChakraActivity(sessions: Session[]): Set<number> {
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const { user, accessToken } = useAuthStore();
+  const { user, accessToken, logout } = useAuthStore();
   const [stats, setStats] = useState<SessionStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,6 +111,37 @@ export default function DashboardScreen() {
   const maxBar = Math.max(...weekMinutes, 1);
 
   const chakraActive = getChakraActivity(recentSessions);
+
+  const handleSignOut = async () => {
+    await logout();
+    router.replace("/");
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "This will permanently delete your account, cancel any active subscriptions, and remove all your data. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete My Account",
+          style: "destructive",
+          onPress: async () => {
+            const result = await settingsApi.deleteAccount();
+            if (result) {
+              await logout();
+              router.replace("/");
+            } else {
+              Alert.alert(
+                "Error",
+                "Failed to delete account. Please try again or contact support@riseinharmony.com."
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -314,6 +347,52 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Account Management — always visible for legal links; sign-out/delete only when authenticated */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <View style={styles.accountCard}>
+            <TouchableOpacity
+              style={styles.accountRow}
+              onPress={() => void Linking.openURL("https://www.riseinharmony.com/privacy")}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.accountRowText}>Privacy Policy</Text>
+              <Text style={styles.accountRowChevron}>›</Text>
+            </TouchableOpacity>
+            <View style={styles.accountDivider} />
+            <TouchableOpacity
+              style={styles.accountRow}
+              onPress={() => void Linking.openURL("https://www.riseinharmony.com/terms")}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.accountRowText}>Terms of Service</Text>
+              <Text style={styles.accountRowChevron}>›</Text>
+            </TouchableOpacity>
+            {user && (
+              <>
+                <View style={styles.accountDivider} />
+                <TouchableOpacity
+                  style={styles.accountRow}
+                  onPress={handleSignOut}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.accountRowText}>Sign Out</Text>
+                  <Text style={styles.accountRowChevron}>›</Text>
+                </TouchableOpacity>
+                <View style={styles.accountDivider} />
+                <TouchableOpacity
+                  style={styles.accountRow}
+                  onPress={handleDeleteAccount}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.accountRowText, styles.deleteText]}>Delete Account</Text>
+                  <Text style={[styles.accountRowChevron, styles.deleteText]}>›</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -843,5 +922,38 @@ const styles = StyleSheet.create({
     color: colors.textDim,
     paddingHorizontal: spacing[8],
     marginTop: spacing[2],
+  },
+  // Account management section
+  accountCard: {
+    marginHorizontal: spacing[5],
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.bgBorder,
+    borderRadius: radii.xl,
+    overflow: "hidden",
+    ...shadows.sm,
+  },
+  accountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[4],
+  },
+  accountRowText: {
+    fontSize: fontSizes.sm,
+    color: colors.textSecondary,
+  },
+  accountRowChevron: {
+    fontSize: fontSizes.base,
+    color: colors.textDim,
+  },
+  accountDivider: {
+    height: 1,
+    backgroundColor: colors.bgBorder,
+    marginHorizontal: spacing[4],
+  },
+  deleteText: {
+    color: "#EF4444",
   },
 });

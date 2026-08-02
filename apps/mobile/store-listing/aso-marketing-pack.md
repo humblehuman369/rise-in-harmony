@@ -122,7 +122,8 @@ Use this set on a **Custom Product Page** for sleep ads later.
 - Record on a real device or high-quality simulator capture  
 - 60 fps if possible; avoid busy UI transitions  
 - Keep first **3 seconds** crystal clear (autoplay is muted often—captions essential)  
-- Export: H.264 or ProRes → upload in ASC as App Preview for iPhone 6.7"  
+- Export: H.264 or ProRes → upload in ASC as App Preview for iPhone **6.9"** (1320×2868)
+- **Ready-to-upload file:** `app-preview/app-preview-20s-69inch.mp4` (1320×2868, H.264, 30fps, ~21s)  
 - Do **not** show medical claims, competitor apps, or pricing that can go stale  
 
 ### End card text (safe area)
@@ -138,7 +139,7 @@ TrueHz™ frequencies · Gentle alarm · Meditations
 1. [ ] Paste **keywords** into ASC (recommended 99-char string)  
 2. [ ] Redesign 6 screenshots with **primary captions**  
 3. [ ] Film **20s App Preview** from script  
-4. [ ] Upload preview under version 1.0.1 for iPhone 6.7"  
+4. [x] Upload `app-preview/app-preview-20s-69inch.mp4` under the **6.9" App Preview** slot in ASC  
 5. [ ] Optional: Custom Product Page using **sleep-focused** captions for ads  
 
 ---
