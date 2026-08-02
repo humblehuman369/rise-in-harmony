@@ -335,42 +335,8 @@ function BioluminescentAnalogClock() {
     return { outer: toXY(a, outerR), inner: toXY(a, innerR), isMajor, isQuarter };
   });
 
-  // Static ring sizes for the fading bioluminescent rings outside the clock
-  // Each ring is a fixed circle, opacity decreasing with distance
-  const outerRings = [
-    { scale: 1.08, opacity: 0.55, blur: 3,  width: 1.5 },
-    { scale: 1.22, opacity: 0.30, blur: 5,  width: 1.2 },
-    { scale: 1.40, opacity: 0.16, blur: 8,  width: 1.0 },
-    { scale: 1.62, opacity: 0.09, blur: 12, width: 0.8 },
-    { scale: 1.88, opacity: 0.05, blur: 16, width: 0.7 },
-  ];
-
   return (
     <div className="flex flex-col items-center" style={{ position: 'relative' }}>
-
-      {/* ── Fading bioluminescent rings (CSS divs, outside the SVG) ── */}
-      {outerRings.map((ring, i) => (
-        <div key={i} className="absolute pointer-events-none rounded-full" style={{
-          top: '50%', left: '50%',
-          width:  SIZE * ring.scale,
-          height: SIZE * ring.scale,
-          transform: 'translate(-50%, -50%)',
-          border: `${ring.width}px solid rgba(0,212,170,${ring.opacity})`,
-          boxShadow: `0 0 ${ring.blur}px rgba(0,212,170,${ring.opacity * 0.8}), inset 0 0 ${ring.blur}px rgba(0,212,170,${ring.opacity * 0.3})`,
-          animation: `bio-pulse ${4 + i * 0.6}s ease-in-out ${i * 0.4}s infinite`,
-        }} />
-      ))}
-
-      {/* ── Soft radial glow behind the clock ── */}
-      <div className="absolute pointer-events-none" style={{
-        top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: SIZE * 1.6, height: SIZE * 1.6,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0,212,170,0.14) 0%, rgba(0,212,170,0.04) 40%, transparent 70%)',
-        filter: 'blur(20px)',
-        animation: 'bio-pulse 3.5s ease-in-out infinite',
-      }} />
 
       {/* ── SVG Clock Face ── */}
       <svg
