@@ -584,12 +584,12 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit, nextFireTime }: {
 
   return (
     <div className="relative overflow-hidden" style={{ borderRadius: '1.25rem', touchAction: 'pan-y' }}>
-      {/* Delete reveal */}
+      {/* Delete reveal — dark teal, no red */}
       <div className="absolute right-0 top-0 bottom-0 flex items-center justify-center"
-        style={{ width: `${DELETE_THRESHOLD}px`, background: 'linear-gradient(135deg, #EF4444, #DC2626)', borderRadius: '0 1.25rem 1.25rem 0' }}>
+        style={{ width: `${DELETE_THRESHOLD}px`, background: 'linear-gradient(135deg, rgba(0,212,170,0.18), rgba(0,180,140,0.12))', borderRadius: '0 1.25rem 1.25rem 0', border: '1px solid rgba(0,212,170,0.20)', borderLeft: 'none' }}>
         <button onClick={() => onDelete(alarm.id)} className="flex flex-col items-center gap-1 px-4">
-          <Trash2 size={16} color="white" />
-          <span className="text-[9px] font-semibold text-white tracking-wide uppercase">Delete</span>
+          <Trash2 size={16} style={{ color: '#00D4AA' }} />
+          <span className="text-[9px] font-semibold tracking-wide uppercase" style={{ color: '#00D4AA' }}>Delete</span>
         </button>
       </div>
 
@@ -625,68 +625,91 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit, nextFireTime }: {
         )}
 
         <div className="p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              {/* Time display */}
-              <div className="flex items-baseline gap-2 mb-1">
+          {/* Top row: toggle right-aligned */}
+          <div className="flex items-center justify-between mb-3" onClick={e => e.stopPropagation()}>
+            <div className="flex gap-1.5">
+              <button onClick={(e) => { e.stopPropagation(); onEdit(alarm); }}
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
+                style={{ color: '#4A5568', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#00D4AA'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,212,170,0.3)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.05)'; }}
+                title="Edit alarm">
+                <Edit3 size={12} />
+              </button>
+              <button onClick={(e) => { e.stopPropagation(); onDelete(alarm.id); }}
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
+                style={{ color: '#4A5568', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#00D4AA'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,212,170,0.3)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.05)'; }}
+                title="Delete alarm">
+                <Trash2 size={12} />
+              </button>
+            </div>
+            <Switch checked={alarm.enabled} onCheckedChange={() => onToggle(alarm.id)} />
+          </div>
+
+          {/* Centered time block */}
+          <div className="flex flex-col items-center text-center mb-4">
+            {/* Time display */}
+            <div className="flex items-baseline gap-2 mb-1">
+              <span style={{
+                fontFamily: 'DM Mono, monospace',
+                fontSize: '3.2rem',
+                fontWeight: 200,
+                lineHeight: 1,
+                letterSpacing: '-0.02em',
+                color: alarm.enabled ? '#00D4AA' : '#4A5568',
+                textShadow: alarm.enabled ? '0 0 40px rgba(0,212,170,0.55), 0 0 80px rgba(0,212,170,0.20)' : 'none',
+              }}>
+                {String(displayHour).padStart(2, '0')}:{m}
+              </span>
+              <div className="flex flex-col gap-0.5 mb-1">
                 <span style={{
-                  fontFamily: 'DM Mono, monospace',
-                  fontSize: '2.8rem',
-                  fontWeight: 200,
-                  lineHeight: 1,
-                  letterSpacing: '-0.02em',
-                  color: alarm.enabled ? '#E8EDF5' : '#4A5568',
-                  textShadow: alarm.enabled ? `0 0 30px ${accentColor}30` : 'none',
-                }}>
-                  {String(displayHour).padStart(2, '0')}:{m}
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: alarm.enabled ? 'rgba(0,212,170,0.75)' : '#4A5568',
+                  letterSpacing: '0.06em',
+                }}>{ampm}</span>
+                <span style={{
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontSize: '0.65rem',
+                  color: '#4A5568',
+                  letterSpacing: '0.04em',
+                }}>tap to edit</span>
+              </div>
+            </div>
+
+            {/* Label */}
+            <div className="text-sm font-medium mb-3" style={{
+              color: alarm.enabled ? '#8FA3BF' : '#4A5568',
+              fontFamily: 'DM Sans, sans-serif',
+              letterSpacing: '0.01em',
+            }}>{alarm.label}</div>
+
+            {/* Day pills — centered */}
+            <div className="flex gap-1.5 mb-3 justify-center">
+              {DAY_LABELS.map((d, i) => (
+                <span key={i}
+                  className="w-6 h-6 rounded-full flex items-center justify-center"
+                  style={{
+                    fontSize: '0.6rem',
+                    fontWeight: 700,
+                    fontFamily: 'DM Sans, sans-serif',
+                    letterSpacing: '0.02em',
+                    background: alarm.days.includes(i)
+                      ? `${accentColor}18`
+                      : 'rgba(255,255,255,0.03)',
+                    color: alarm.days.includes(i) ? accentColor : '#2D3748',
+                    border: `1px solid ${alarm.days.includes(i) ? accentColor + '30' : 'rgba(255,255,255,0.04)'}`,
+                  }}>
+                  {d}
                 </span>
-                <div className="flex flex-col gap-0.5 mb-1">
-                  <span style={{
-                    fontFamily: 'DM Sans, sans-serif',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: alarm.enabled ? accentColor : '#4A5568',
-                    letterSpacing: '0.06em',
-                  }}>{ampm}</span>
-                  <span style={{
-                    fontFamily: 'DM Sans, sans-serif',
-                    fontSize: '0.65rem',
-                    color: '#4A5568',
-                    letterSpacing: '0.04em',
-                  }}>tap to edit</span>
-                </div>
-              </div>
+              ))}
+            </div>
 
-              {/* Label */}
-              <div className="text-sm font-medium mb-3" style={{
-                color: alarm.enabled ? '#8FA3BF' : '#4A5568',
-                fontFamily: 'DM Sans, sans-serif',
-                letterSpacing: '0.01em',
-              }}>{alarm.label}</div>
-
-              {/* Day pills */}
-              <div className="flex gap-1.5 mb-3">
-                {DAY_LABELS.map((d, i) => (
-                  <span key={i}
-                    className="w-6 h-6 rounded-full flex items-center justify-center"
-                    style={{
-                      fontSize: '0.6rem',
-                      fontWeight: 700,
-                      fontFamily: 'DM Sans, sans-serif',
-                      letterSpacing: '0.02em',
-                      background: alarm.days.includes(i)
-                        ? `${accentColor}18`
-                        : 'rgba(255,255,255,0.03)',
-                      color: alarm.days.includes(i) ? accentColor : '#2D3748',
-                      border: `1px solid ${alarm.days.includes(i) ? accentColor + '30' : 'rgba(255,255,255,0.04)'}`,
-                    }}>
-                    {d}
-                  </span>
-                ))}
-              </div>
-
-              {/* Tags row */}
-              <div className="flex flex-wrap gap-1.5">
+            {/* Tags row — centered */}
+            <div className="flex flex-wrap gap-1.5 justify-center">
                 {alarm.studioMixId ? (
                   <span className="text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: 'rgba(139,92,246,0.12)', color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif', border: '1px solid rgba(139,92,246,0.2)' }}>
                     <Layers size={8} />{alarm.studioMixName || 'Studio Mix'}
@@ -711,31 +734,8 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit, nextFireTime }: {
                   </span>
                 )}
               </div>
-            </div>
-
-            {/* Right controls */}
-            <div className="flex flex-col items-end gap-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
-              <Switch checked={alarm.enabled} onCheckedChange={() => onToggle(alarm.id)} />
-              <div className="flex gap-1.5">
-                <button onClick={(e) => { e.stopPropagation(); onEdit(alarm); }}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
-                  style={{ color: '#4A5568', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#00D4AA'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,212,170,0.3)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.05)'; }}
-                  title="Edit alarm">
-                  <Edit3 size={12} />
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); onDelete(alarm.id); }}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
-                  style={{ color: '#4A5568', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#EF4444'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.3)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#4A5568'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.05)'; }}
-                  title="Delete alarm">
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
