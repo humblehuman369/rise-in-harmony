@@ -115,7 +115,7 @@ function persistLocalAlarms(alarms: Alarm[]) {
 }
 
 const WAKE_SEQUENCES = [
-  { id: "gentle", name: "Gentle Morning", icon: Sunrise, description: "432Hz → 528Hz fade-in over 5 min", isPremium: false, color: "#F59E0B" },
+  { id: "gentle", name: "Gentle Morning", icon: Sunrise, description: "432Hz → 528Hz fade-in over 5 min", isPremium: false, color: "#F2C94C" },
   { id: "deep-sleep-wake", name: "Deep Sleep Wake", icon: Waves, description: "δ Delta → θ Theta → α Alpha — brain-guided wake", isPremium: false, color: "#00D4AA" },
   { id: "chakra", name: "Chakra Awakening", icon: Zap, description: "Root to Crown — 7 chakra progression", isPremium: true, color: "#8B5CF6" },
   { id: "binaural-focus", name: "Binaural Focus", icon: BellRing, description: "Alpha waves for mental clarity", isPremium: true, color: "#3B82F6" },
@@ -476,7 +476,7 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit, nextFireTime }: {
           transition: isSwiping ? 'none' : 'transform 0.25s cubic-bezier(0.23,1,0.32,1)',
           borderRadius: '1.25rem',
           background: alarm.enabled
-            ? `linear-gradient(135deg, rgba(10,11,20,0.95) 0%, rgba(${accentColor === '#00D4AA' ? '0,212,170' : accentColor === '#8B5CF6' ? '139,92,246' : '245,158,11'},0.04) 100%)`
+            ? `linear-gradient(135deg, rgba(10,11,20,0.95) 0%, rgba(${accentColor === '#00D4AA' ? '0,212,170' : accentColor === '#8B5CF6' ? '139,92,246' : '242,201,76'},0.04) 100%)`
             : 'rgba(10,11,20,0.8)',
           border: `1px solid ${alarm.enabled ? `${accentColor}22` : 'rgba(255,255,255,0.04)'}`,
           boxShadow: alarm.enabled
@@ -912,7 +912,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
               <div className="space-y-3">
                 {(['nature', 'music'] as const).map(cat => {
                   const loops = BACKGROUND_LOOPS.filter(l => l.category === cat);
-                  const catColor = cat === 'nature' ? '#00D4AA' : '#F59E0B';
+                  const catColor = cat === 'nature' ? '#00D4AA' : '#F2C94C';
                   return (
                     <div key={cat}>
                       <div className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: catColor, fontFamily: 'DM Sans, sans-serif' }}>
@@ -1032,7 +1032,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
               {([
                 { id: 'light' as const, label: 'Light Sleeper', desc: 'Slow, gentle rise', color: '#00D4AA' },
                 { id: 'normal' as const, label: 'Normal', desc: 'Balanced escalation', color: '#8B5CF6' },
-                { id: 'heavy' as const, label: 'Heavy Sleeper', desc: 'Faster escalation', color: '#F59E0B' },
+                { id: 'heavy' as const, label: 'Heavy Sleeper', desc: 'Faster escalation', color: '#F2C94C' },
                 { id: 'very_heavy' as const, label: 'Very Heavy', desc: 'Quick to full volume', color: '#EF4444' },
               ] as const).map(p => (
                 <button key={p.id} onClick={() => setSleepProfile(p.id)}
@@ -1346,9 +1346,9 @@ export default function Alarm() {
           {/* Page label */}
           <div className="flex items-center justify-center gap-2 mb-6">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full"
-              style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)' }}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#F59E0B', animation: 'bio-pulse 2s ease-in-out infinite' }} />
-              <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.65rem', fontWeight: 600, color: '#F59E0B', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              style={{ background: 'rgba(242,201,76,0.06)', border: '1px solid rgba(242,201,76,0.15)' }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#F2C94C', animation: 'bio-pulse 2s ease-in-out infinite' }} />
+              <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.65rem', fontWeight: 600, color: '#F2C94C', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                 Smart Alarm
               </span>
             </div>
@@ -1387,7 +1387,7 @@ export default function Alarm() {
             {[
               { label: "Active", value: enabledCount, color: '#00D4AA', bg: 'rgba(0,212,170,0.06)', border: 'rgba(0,212,170,0.12)' },
               { label: "Total", value: alarms.length, color: '#8B5CF6', bg: 'rgba(139,92,246,0.06)', border: 'rgba(139,92,246,0.12)' },
-              { label: "Streak", value: "7 days", color: '#F59E0B', bg: 'rgba(245,158,11,0.06)', border: 'rgba(245,158,11,0.12)' },
+              { label: "Streak", value: "7 days", color: '#F2C94C', bg: 'rgba(242,201,76,0.06)', border: 'rgba(242,201,76,0.12)' },
             ].map(stat => (
               <div key={stat.label} className="flex-1 rounded-2xl px-4 py-3 flex flex-col items-center"
                 style={{ background: stat.bg, border: `1px solid ${stat.border}` }}>
@@ -1544,11 +1544,11 @@ export default function Alarm() {
             </div>
           )}
 
-          <div className="p-4 rounded-2xl" style={{ background: 'rgba(245,158,11,0.04)', border: '1px solid rgba(245,158,11,0.1)' }}>
+          <div className="p-4 rounded-2xl" style={{ background: 'rgba(242,201,76,0.04)', border: '1px solid rgba(242,201,76,0.1)' }}>
             <div className="flex items-start gap-3">
-              <AlarmClock size={16} style={{ color: '#F59E0B', flexShrink: 0, marginTop: '1px' }} />
+              <AlarmClock size={16} style={{ color: '#F2C94C', flexShrink: 0, marginTop: '1px' }} />
               <div>
-                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.8rem', fontWeight: 600, color: '#F59E0B', marginBottom: '0.35rem' }}>Native App Alarms</div>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.8rem', fontWeight: 600, color: '#F2C94C', marginBottom: '0.35rem' }}>Native App Alarms</div>
                 <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.7rem', color: 'rgba(139,163,191,0.5)', lineHeight: 1.5 }}>The mobile app schedules alarms through the system notification service for exact delivery, even with the screen locked. Web alarms use browser notifications and require this tab to stay open.</div>
               </div>
             </div>
