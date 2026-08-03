@@ -39,22 +39,34 @@ export default function SilentHzBadge({ size = "sm" }: SilentHzBadgeProps) {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        className="flex items-center gap-1 font-bold transition-all active:scale-95"
+        className="flex items-center gap-1 font-bold transition-all active:scale-95 hover:brightness-110"
         style={{
-          background: "rgba(251,191,36,0.12)",
-          border: "1px solid rgba(251,191,36,0.35)",
+          background: open ? "rgba(251,191,36,0.18)" : "rgba(251,191,36,0.10)",
+          border: "1px solid rgba(251,191,36,0.4)",
           color: "#FBBF24",
           fontFamily: "DM Sans, sans-serif",
-          letterSpacing: "0.05em",
+          letterSpacing: "0.06em",
           textTransform: "uppercase",
-          borderRadius: isSmall ? "999px" : "10px",
-          padding: isSmall ? "2px 7px" : "4px 10px",
+          borderRadius: "999px",
+          padding: isSmall ? "2px 8px 2px 5px" : "4px 10px 4px 7px",
           fontSize: isSmall ? "10px" : "11px",
           cursor: "pointer",
+          boxShadow: open ? "0 0 10px rgba(251,191,36,0.2)" : "none",
+          transition: "background 0.15s, box-shadow 0.15s",
         }}
         aria-label="Learn about Silent Healing Hz"
       >
-        <EarOff size={isSmall ? 8 : 10} />
+        <span
+          style={{
+            width: isSmall ? 5 : 6,
+            height: isSmall ? 5 : 6,
+            borderRadius: "50%",
+            background: "#FBBF24",
+            display: "inline-block",
+            flexShrink: 0,
+            boxShadow: "0 0 4px rgba(251,191,36,0.7)",
+          }}
+        />
         Silent Healing Hz
       </button>
 
@@ -93,14 +105,17 @@ export default function SilentHzBadge({ size = "sm" }: SilentHzBadgeProps) {
           <p
             style={{
               fontSize: 11,
-              lineHeight: 1.6,
+              lineHeight: 1.65,
               color: "#8FA3BF",
               fontFamily: "DM Sans, sans-serif",
               marginBottom: 10,
             }}
           >
-            This frequency is below the range of human hearing. It works through{" "}
-            <strong style={{ color: "#E8EDF5" }}>brainwave entrainment</strong> — felt as a subtle pulse, not heard as a tone.
+            This frequency is below the range of hearing — and that is intentional.
+            Your body responds to rhythm the same way it responds to a heartbeat or a tide.
+            At this depth, the{" "}
+            <strong style={{ color: "#FBBF24" }}>frequency works through resonance</strong>,
+            not sound. You will not hear a tone. You will feel a quiet attunement.
           </p>
 
           <a
