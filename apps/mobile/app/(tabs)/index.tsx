@@ -1,289 +1,399 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
+/**
+ * Home Screen — Rise In Harmony
+ * Redesigned to match the web landing page (commit e5e3234):
+ * - Bioluminescent hero with headline + dual CTA
+ * - "You got so much more" revelation section
+ * - 3 key feature cards (Alarm, Studio, Library)
+ * - Solfeggio frequency list
+ * - Testimonial + final CTA
+ */
+import { useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  Animated,
+  Easing,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { colors, spacing, fontSizes, radii } from "@rih/ui-tokens";
-import { CHAKRA_FREQUENCIES, FREE_FREQUENCIES } from "@rih/shared-utils";
 import { useAuthStore } from "@/store/authStore";
 
+const { width: SCREEN_W } = Dimensions.get("window");
+
+// ─── Pulsing dot ──────────────────────────────────────────────────────────────
+function PulseDot() {
+  const anim = useRef(new Animated.Value(0.4)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1, duration: 1250, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0.4, duration: 1250, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    ).start();
+  }, [anim]);
+  return <Animated.View style={[styles.pulseDot, { opacity: anim }]} />;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+// ─── Data ─────────────────────────────────────────────────────────────────────
+const FEATURES = [
+  {
+    icon: "⏰",
+    title: "Healing Alarm",
+    body: "Wake to 432Hz or 528Hz. No jarring buzz — a soft, progressive rise that aligns body and mind.",
+    route: "/(tabs)/alarm",
+    color: colors.teal,
+  },
+  {
+    icon: "〰️",
+    title: "Frequency Studio",
+    body: "Layer binaural beats, isochronic tones, and nature sounds. Build your perfect healing session.",
+    route: "/(tabs)/studio",
+    color: "#8B5CF6",
+  },
+  {
+    icon: "🎵",
+    title: "Meditation Library",
+    body: "TrueHz-mastered tracks with healing frequencies baked in at ±0.05 Hz precision.",
+    route: "/(tabs)/library",
+    color: "#3B82F6",
+  },
+] as const;
+
+const SOLFEGGIO = [
+  { hz: 174, name: "Foundation", benefit: "Pain relief & grounding", color: "#6B7A99", id: "174hz" },
+  { hz: 285, name: "Quantum Cognition", benefit: "Tissue regeneration", color: "#3B82F6", id: "285hz" },
+  { hz: 396, name: "Liberation", benefit: "Release guilt & fear", color: "#EF4444", id: "396hz" },
+  { hz: 417, name: "Transformation", benefit: "Undo negative situations", color: "#F97316", id: "417hz" },
+  { hz: 528, name: "Love & Miracles", benefit: "DNA repair & healing", color: "#00D4AA", id: "528hz" },
+  { hz: 639, name: "Connection", benefit: "Harmonise relationships", color: "#22C55E", id: "639hz" },
+];
+
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
-
-  const greeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
-  };
+  const greeting = getGreeting();
+  const dayName = DAYS[new Date().getDay()];
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>{greeting()}</Text>
-            <Text style={styles.name}>
-              {user?.name ?? "Friend"}
-            </Text>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
+        {/* ── HERO ─────────────────────────────────────────────────────── */}
+        <View style={styles.hero}>
+          <View style={styles.heroGlow} />
+
+          {/* Greeting chip */}
+          <View style={styles.greetingChip}>
+            <PulseDot />
+            <Text style={styles.greetingChipText}>{greeting} · {dayName}</Text>
           </View>
-          {!user ? (
+
+          {/* Headline */}
+          <Text style={styles.heroHeadline}>
+            {"Your alarm,\n"}
+            <Text style={styles.heroAccent}>reimagined.</Text>
+          </Text>
+
+          {/* Sub-headline */}
+          <Text style={styles.heroSub}>
+            Wake gently with healing frequencies. No jarring buzz — just a soft, progressive rise that aligns your body and mind.
+          </Text>
+
+          {/* Primary CTA */}
+          <TouchableOpacity style={styles.ctaPrimary} onPress={() => router.push("/(tabs)/alarm")} activeOpacity={0.85}>
+            <Text style={styles.ctaPrimaryText}>⏰  Set Your Healing Alarm</Text>
+          </TouchableOpacity>
+
+          {/* Secondary CTA */}
+          <TouchableOpacity style={styles.ctaSecondary} onPress={() => router.push("/(tabs)/player" as any)} activeOpacity={0.85}>
+            <Text style={styles.ctaSecondaryText}>▶  Try a Free Frequency</Text>
+          </TouchableOpacity>
+
+          {/* Trust line */}
+          <Text style={styles.trustLine}>Free to start · No card required · 3 frequencies unlocked</Text>
+        </View>
+
+        {/* ── REVELATION ───────────────────────────────────────────────── */}
+        <View style={styles.section}>
+          <Text style={styles.eyebrow}>YOU DOWNLOADED AN ALARM.</Text>
+          <Text style={styles.headline}>
+            {"You got so much\n"}
+            <Text style={styles.accentText}>more.</Text>
+          </Text>
+          <Text style={styles.body}>
+            Rise In Harmony is a complete sound-healing system — precision frequencies, guided meditations, a binaural studio, and a smart alarm that wakes you in resonance.
+          </Text>
+        </View>
+
+        {/* ── FEATURES ─────────────────────────────────────────────────── */}
+        <View style={styles.featuresSection}>
+          {FEATURES.map((f) => (
             <TouchableOpacity
-              style={styles.loginBtn}
-              onPress={() => router.push("/login")}
+              key={f.title}
+              style={styles.featureCard}
+              onPress={() => router.push(f.route as any)}
               activeOpacity={0.8}
             >
-              <Text style={styles.loginBtnText}>Sign In</Text>
+              <View style={[styles.featureIcon, { backgroundColor: f.color + "18", borderColor: f.color + "30" }]}>
+                <Text style={styles.featureIconEmoji}>{f.icon}</Text>
+              </View>
+              <View style={styles.featureBody}>
+                <Text style={[styles.featureTitle, { color: f.color }]}>{f.title}</Text>
+                <Text style={styles.featureDesc}>{f.body}</Text>
+              </View>
             </TouchableOpacity>
-          ) : (
-            <View style={styles.logoMark}>
-              <Text style={styles.logoText}>RiH</Text>
+          ))}
+        </View>
+
+        {/* ── SOLFEGGIO FREQUENCIES ────────────────────────────────────── */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <View>
+              <Text style={styles.eyebrow}>SOLFEGGIO SCALE</Text>
+              <Text style={styles.headlineSmall}>Healing frequencies</Text>
             </View>
+            <TouchableOpacity onPress={() => router.push("/(tabs)/library")}>
+              <Text style={styles.seeAll}>See all →</Text>
+            </TouchableOpacity>
+          </View>
+
+          {SOLFEGGIO.map((f) => (
+            <TouchableOpacity
+              key={f.hz}
+              style={styles.freqRow}
+              onPress={() => router.push(`/player/${f.id}` as any)}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.freqDot, { backgroundColor: f.color + "18", borderColor: f.color + "35" }]}>
+                <Text style={[styles.freqHz, { color: f.color }]}>{f.hz}</Text>
+              </View>
+              <View style={styles.freqInfo}>
+                <Text style={styles.freqName}>{f.name}</Text>
+                <Text style={styles.freqBenefit}>{f.benefit}</Text>
+              </View>
+              <Text style={[styles.freqPlay, { color: f.color }]}>▶</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* ── TESTIMONIAL ──────────────────────────────────────────────── */}
+        <View style={styles.testimonialSection}>
+          <View style={styles.starsRow}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Text key={i} style={styles.star}>★</Text>
+            ))}
+          </View>
+          <Text style={styles.testimonialQuote}>
+            "I downloaded it for the alarm. I stayed for the frequencies. My mornings are completely different now."
+          </Text>
+          <Text style={styles.testimonialAttrib}>— Early adopter, Premium member</Text>
+        </View>
+
+        {/* ── FINAL CTA ────────────────────────────────────────────────── */}
+        <View style={styles.finalCta}>
+          <Text style={styles.finalHeadline}>
+            {"Your body already knows\n"}
+            <Text style={styles.accentText}>how to heal.</Text>
+          </Text>
+          <Text style={styles.finalSub}>
+            We give it the frequency to remember. Start free — three healing frequencies, no sign-up required.
+          </Text>
+          <TouchableOpacity style={styles.ctaPrimary} onPress={() => router.push("/(tabs)/alarm")} activeOpacity={0.85}>
+            <Text style={styles.ctaPrimaryText}>⏰  Set Your Healing Alarm</Text>
+          </TouchableOpacity>
+          {!user && (
+            <TouchableOpacity style={styles.ctaPremium} onPress={() => router.push("/paywall" as any)} activeOpacity={0.85}>
+              <Text style={styles.ctaPremiumText}>✦  Go Premium — from $4.17/mo</Text>
+            </TouchableOpacity>
           )}
         </View>
 
-        {/* Quick Start Card */}
-        <TouchableOpacity
-          style={styles.quickStartCard}
-          onPress={() => router.push("/chakra-journey")}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.quickStartLabel}>QUICK START</Text>
-          <Text style={styles.quickStartTitle}>7-Chakra Journey</Text>
-          <Text style={styles.quickStartSub}>
-            Root → Crown · 21 minutes · Full alignment
-          </Text>
-          <View style={styles.quickStartButton}>
-            <Text style={styles.quickStartButtonText}>▶  Begin Now</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* TrueHz technology promo */}
-        <TouchableOpacity
-          style={styles.trueHzCard}
-          onPress={() => router.push("/technology")}
-          activeOpacity={0.85}
-        >
-          <View style={styles.trueHzIcon}>
-            <Text style={styles.trueHzIconText}>Hz</Text>
-          </View>
-          <View style={styles.trueHzBody}>
-            <Text style={styles.trueHzTitle}>TrueHz™ Precision Tuning</Text>
-            <Text style={styles.trueHzSub}>
-              Mathematically exact frequencies — not recordings. See why it matters →
-            </Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Free Frequencies */}
-        <View style={styles.sectionRow}>
-          <Text style={styles.sectionTitle}>Free Frequencies</Text>
-          <TouchableOpacity onPress={() => router.push("/(tabs)/library")}>
-            <Text style={styles.seeAll}>See all →</Text>
-          </TouchableOpacity>
-        </View>
-        {FREE_FREQUENCIES.slice(0, 3).map((freq) => (
-          <TouchableOpacity
-            key={freq.id}
-            style={styles.freqRow}
-            onPress={() => router.push(`/player/${freq.id}`)}
-            activeOpacity={0.75}
-          >
-            <View style={[styles.freqDot, { backgroundColor: freq.color + "30", borderColor: freq.color + "50" }]}>
-              <Text style={[styles.freqHz, { color: freq.color }]}>{freq.hz}</Text>
-            </View>
-            <View style={styles.freqInfo}>
-              <Text style={styles.freqName}>{freq.name}</Text>
-              <Text style={styles.freqBenefit}>{freq.benefit}</Text>
-            </View>
-            <Text style={styles.freqPlay}>▶</Text>
-          </TouchableOpacity>
-        ))}
-
-        {/* Chakra Journey Preview */}
-        <Text style={styles.sectionTitle}>Chakra Journey</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chakraRow}
-        >
-          {CHAKRA_FREQUENCIES.map((freq) => (
-            <TouchableOpacity
-              key={freq.id}
-              style={[styles.chakraChip, { borderColor: freq.color + "40" }]}
-              onPress={() => router.push(`/player/${freq.id}`)}
-              activeOpacity={0.75}
-            >
-              <View style={[styles.chakraDot, { backgroundColor: freq.color }]} />
-              <Text style={[styles.chakraHz, { color: freq.color }]}>{freq.hz}Hz</Text>
-              <Text style={styles.chakraName} numberOfLines={1}>
-                {freq.chakraName?.replace(" Chakra", "")}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bgDeep,
-  },
-  scroll: {
+  container: { flex: 1, backgroundColor: colors.bgDeep },
+  scroll: { paddingBottom: spacing[10] },
+
+  // Hero
+  hero: {
     paddingHorizontal: spacing[5],
-    paddingBottom: spacing[10],
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    paddingTop: spacing[8],
+    paddingBottom: spacing[8],
     alignItems: "center",
-    paddingTop: spacing[4],
-    paddingBottom: spacing[6],
+    overflow: "hidden",
   },
-  greeting: {
-    fontSize: fontSizes.sm,
-    color: colors.textMuted,
-    letterSpacing: 0.5,
-  },
-  name: {
-    fontSize: fontSizes.xl,
-    color: colors.textPrimary,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  logoMark: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.tealDim,
-    borderWidth: 1,
-    borderColor: colors.tealBorder,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoText: {
-    color: colors.teal,
-    fontSize: fontSizes.xs,
-    fontWeight: "700",
-    letterSpacing: 1,
-  },
-  loginBtn: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    borderRadius: 100,
-    backgroundColor: "rgba(0,212,170,0.12)",
-    borderWidth: 1,
-    borderColor: colors.tealBorder,
-  },
-  loginBtnText: {
-    color: colors.teal,
-    fontSize: fontSizes.sm,
-    fontWeight: "600",
-  },
-  quickStartCard: {
-    backgroundColor: "rgba(0,212,170,0.06)",
-    borderWidth: 1,
-    borderColor: colors.tealBorder,
-    borderRadius: 16,
-    padding: spacing[5],
-    marginBottom: spacing[6],
-  },
-  quickStartLabel: {
-    fontSize: 10,
-    color: colors.teal,
-    fontWeight: "700",
-    letterSpacing: 2,
-    marginBottom: spacing[1],
-  },
-  quickStartTitle: {
-    fontSize: fontSizes["2xl"],
-    color: colors.textPrimary,
-    fontWeight: "600",
-    marginBottom: spacing[1],
-  },
-  quickStartSub: {
-    fontSize: fontSizes.sm,
-    color: colors.textMuted,
-    marginBottom: spacing[4],
-  },
-  quickStartButton: {
-    backgroundColor: colors.teal,
-    borderRadius: 100,
-    paddingVertical: spacing[3],
-    alignItems: "center",
-  },
-  quickStartButtonText: {
-    color: "#0A0B14",
-    fontSize: fontSizes.base,
-    fontWeight: "700",
-  },
-  sectionTitle: {
-    fontSize: fontSizes.sm,
-    color: colors.textMuted,
-    fontWeight: "600",
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
-    marginBottom: spacing[3],
-    marginTop: spacing[2],
-  },
-  sectionRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    justifyContent: "space-between",
-  },
-  trueHzCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing[3],
+  heroGlow: {
+    position: "absolute",
+    top: -60,
+    left: SCREEN_W * 0.1,
+    width: SCREEN_W * 0.8,
+    height: 280,
+    borderRadius: 999,
     backgroundColor: "rgba(0,212,170,0.07)",
+  },
+  greetingChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 100,
+    backgroundColor: "rgba(0,212,170,0.10)",
     borderWidth: 1,
-    borderColor: "rgba(0,212,170,0.25)",
-    borderRadius: radii.lg,
-    padding: spacing[4],
+    borderColor: "rgba(0,212,170,0.22)",
     marginBottom: spacing[5],
   },
-  trueHzIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: radii.md,
-    backgroundColor: "rgba(0,212,170,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
+  pulseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.teal,
   },
-  trueHzIconText: {
-    fontSize: fontSizes.base,
-    fontWeight: "800",
-    color: colors.teal,
-  },
-  trueHzBody: { flex: 1 },
-  trueHzTitle: {
-    fontSize: fontSizes.sm,
-    fontWeight: "700",
-    color: colors.teal,
-  },
-  trueHzSub: {
-    fontSize: fontSizes.xs,
-    color: colors.textMuted,
-    marginTop: 2,
-    lineHeight: 17,
-  },
-  seeAll: {
+  greetingChipText: {
     fontSize: fontSizes.xs,
     color: colors.teal,
     fontWeight: "600",
+    letterSpacing: 0.5,
   },
+  heroHeadline: {
+    fontSize: 40,
+    fontWeight: "600",
+    color: colors.textPrimary,
+    lineHeight: 46,
+    textAlign: "center",
+    marginBottom: spacing[4],
+  },
+  heroAccent: { color: colors.teal, fontStyle: "italic" },
+  heroSub: {
+    fontSize: fontSizes.base,
+    color: colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 24,
+    maxWidth: 320,
+    marginBottom: spacing[6],
+  },
+  ctaPrimary: {
+    backgroundColor: colors.teal,
+    borderRadius: 100,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    alignItems: "center",
+    width: "100%",
+    marginBottom: spacing[3],
+    shadowColor: colors.teal,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  ctaPrimaryText: { color: "#0A0B14", fontSize: fontSizes.base, fontWeight: "700" },
+  ctaSecondary: {
+    borderRadius: 100,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    alignItems: "center",
+    width: "100%",
+    marginBottom: spacing[4],
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  ctaSecondaryText: { color: colors.textPrimary, fontSize: fontSizes.base, fontWeight: "600" },
+  trustLine: { fontSize: 11, color: "rgba(139,163,191,0.45)", textAlign: "center" },
+
+  // Sections
+  section: {
+    paddingHorizontal: spacing[5],
+    paddingVertical: spacing[7],
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.05)",
+  },
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 2,
+    color: colors.teal,
+    textTransform: "uppercase",
+    marginBottom: spacing[2],
+  },
+  headline: {
+    fontSize: 30,
+    fontWeight: "600",
+    color: colors.textPrimary,
+    lineHeight: 36,
+    marginBottom: spacing[3],
+  },
+  headlineSmall: { fontSize: fontSizes.xl, fontWeight: "600", color: colors.textPrimary },
+  body: { fontSize: fontSizes.base, color: colors.textSecondary, lineHeight: 24 },
+  accentText: { color: colors.teal },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginBottom: spacing[4],
+  },
+  seeAll: { fontSize: fontSizes.sm, color: colors.teal, fontWeight: "600" },
+
+  // Features
+  featuresSection: {
+    paddingHorizontal: spacing[5],
+    paddingTop: spacing[7],
+    paddingBottom: spacing[7],
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.05)",
+    gap: spacing[3],
+  },
+  featureCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing[4],
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.07)",
+    borderRadius: radii.lg,
+    padding: spacing[4],
+  },
+  featureIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  featureIconEmoji: { fontSize: 20 },
+  featureBody: { flex: 1 },
+  featureTitle: { fontSize: fontSizes.base, fontWeight: "700", marginBottom: 4 },
+  featureDesc: { fontSize: fontSizes.sm, color: colors.textMuted, lineHeight: 20 },
+
+  // Frequencies
   freqRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.bgCard,
+    backgroundColor: "rgba(255,255,255,0.03)",
     borderWidth: 1,
-    borderColor: colors.bgBorder,
+    borderColor: "rgba(255,255,255,0.07)",
     borderRadius: 12,
     padding: spacing[4],
     marginBottom: spacing[2],
@@ -297,55 +407,66 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: spacing[3],
   },
-  freqHz: {
-    fontSize: 11,
-    fontWeight: "700",
-    fontVariant: ["tabular-nums"],
-  },
-  freqInfo: {
-    flex: 1,
-  },
-  freqName: {
-    fontSize: fontSizes.base,
-    color: colors.textPrimary,
-    fontWeight: "600",
-    marginBottom: 2,
-  },
-  freqBenefit: {
-    fontSize: fontSizes.xs,
-    color: colors.textMuted,
-  },
-  freqPlay: {
-    fontSize: fontSizes.sm,
-    color: colors.teal,
-    paddingLeft: spacing[3],
-  },
-  chakraRow: {
-    paddingBottom: spacing[2],
-    gap: spacing[2],
-  },
-  chakraChip: {
-    backgroundColor: colors.bgCard,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: spacing[3],
+  freqHz: { fontSize: 11, fontWeight: "700" },
+  freqInfo: { flex: 1 },
+  freqName: { fontSize: fontSizes.base, color: colors.textPrimary, fontWeight: "600", marginBottom: 2 },
+  freqBenefit: { fontSize: fontSizes.xs, color: colors.textMuted },
+  freqPlay: { fontSize: fontSizes.base, paddingLeft: spacing[3] },
+
+  // Testimonial
+  testimonialSection: {
+    paddingHorizontal: spacing[5],
+    paddingVertical: spacing[8],
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "rgba(0,212,170,0.03)",
     alignItems: "center",
-    width: 80,
   },
-  chakraDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginBottom: spacing[1],
-  },
-  chakraHz: {
-    fontSize: 11,
-    fontWeight: "700",
-    marginBottom: 2,
-  },
-  chakraName: {
-    fontSize: 10,
-    color: colors.textMuted,
+  starsRow: { flexDirection: "row", gap: 4, marginBottom: spacing[4] },
+  star: { fontSize: 16, color: "#F2C94C" },
+  testimonialQuote: {
+    fontSize: 19,
+    fontStyle: "italic",
+    color: "#C8D8E8",
+    lineHeight: 29,
     textAlign: "center",
+    marginBottom: spacing[3],
   },
+  testimonialAttrib: { fontSize: fontSizes.sm, color: colors.textMuted, textAlign: "center" },
+
+  // Final CTA
+  finalCta: {
+    paddingHorizontal: spacing[5],
+    paddingVertical: spacing[8],
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.05)",
+    alignItems: "center",
+  },
+  finalHeadline: {
+    fontSize: 30,
+    fontWeight: "600",
+    color: colors.textPrimary,
+    lineHeight: 36,
+    textAlign: "center",
+    marginBottom: spacing[3],
+  },
+  finalSub: {
+    fontSize: fontSizes.base,
+    color: colors.textSecondary,
+    textAlign: "center",
+    marginBottom: spacing[6],
+    lineHeight: 22,
+  },
+  ctaPremium: {
+    borderRadius: 100,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    alignItems: "center",
+    width: "100%",
+    marginTop: spacing[3],
+    backgroundColor: "rgba(139,92,246,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(139,92,246,0.30)",
+  },
+  ctaPremiumText: { color: "#A78BFA", fontSize: fontSizes.base, fontWeight: "600" },
 });
