@@ -9,8 +9,8 @@ import Layout from "@/components/Layout";
 import BioluminescentBackground from "@/components/BioluminescentBackground";
 import { useTheme } from "@/contexts/ThemeContext";
 
-const DEMO_VIDEO_URL =
-  "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/TecBKZnyxyGWsuey.mp4";
+const SILENT_HEALING_VIDEO_URL =
+  "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/FueLTmWRwbXWxsnA.mp4";
 
 const BRAINWAVE_ZONES = [
   {
@@ -101,7 +101,7 @@ export default function SilentHealing() {
           </p>
         </div>
 
-        {/* Demo video */}
+        {/* Silent Healing Hz educational video */}
         <div className="mb-10">
           <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(251,191,36,0.3)", boxShadow: "0 0 40px rgba(251,191,36,0.06), 0 20px 40px rgba(0,0,0,0.4)", background: "#000" }}>
             {[
@@ -113,7 +113,7 @@ export default function SilentHealing() {
               <div key={i} style={{ position: "absolute", width: 16, height: 16, zIndex: 2, ...s }} />
             ))}
             <video controls playsInline style={{ display: "block", width: "100%", aspectRatio: "16/9", background: "#000" }}>
-              <source src={DEMO_VIDEO_URL} type="video/mp4" />
+              <source src={SILENT_HEALING_VIDEO_URL} type="video/mp4" />
             </video>
           </div>
         </div>
