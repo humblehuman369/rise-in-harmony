@@ -254,14 +254,15 @@ export default function HealingDirectory() {
         </div>
         {activeCategory === "silent" && (
           <>
-            {/* Demo video */}
+            {/* Silent Healing Hz educational video */}
             <div className="mt-3 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(251,191,36,0.25)", background: "#000" }}>
               <video
                 controls
                 playsInline
+                poster="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/IgMHfxddpqkmRQxH.png"
                 style={{ display: "block", width: "100%", aspectRatio: "16/9", background: "#000" }}
               >
-                <source src="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/TecBKZnyxyGWsuey.mp4" type="video/mp4" />
+                <source src="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/FueLTmWRwbXWxsnA.mp4" type="video/mp4" />
               </video>
             </div>
             {/* Explainer banner */}
