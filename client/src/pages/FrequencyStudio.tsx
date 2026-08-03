@@ -1057,6 +1057,21 @@ export default function FrequencyStudio() {
                 <span className="text-sm font-mono" style={{ color: "#00D4AA" }}>{formatTime(player.playTime)}</span>
               </>
             )}
+            {player.isPlaying && customFreq < 20 && (
+              <span
+                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                style={{
+                  background: "rgba(251,191,36,0.12)",
+                  border: "1px solid rgba(251,191,36,0.35)",
+                  color: "#FBBF24",
+                  fontFamily: "DM Sans, sans-serif",
+                  letterSpacing: "0.01em",
+                }}
+              >
+                <span style={{ fontSize: "9px" }}>◉</span>
+                Silent Healing Tone — Felt, Not Heard
+              </span>
+            )}
             {player.playTime >= 60 && (
               <button
                 onClick={() => setShowShareCard(true)}
