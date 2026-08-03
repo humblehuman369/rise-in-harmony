@@ -720,7 +720,7 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit, nextFireTime }: {
                   </span>
                 ) : freq && (
                   <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${freq.color}10`, color: freq.color, fontFamily: 'DM Sans, sans-serif', border: `1px solid ${freq.color}20` }}>
-                    {freq.hz}Hz — {freq.name}
+                    {freq.hz}Hz - {freq.name}
                   </span>
                 )}
                 {seq && (
@@ -735,7 +735,6 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit, nextFireTime }: {
                 )}
               </div>
           </div>
-        </div>
         </div>
       </div>
     </div>
