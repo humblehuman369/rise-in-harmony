@@ -171,7 +171,10 @@ function MeditationPlayer({
   const [elapsed, setElapsed] = useState(0);
   // Ambient master bed loud; optional frequency underlay quieter when enabled
   const [volume, setVolume] = useState(0.85);
-  const [freqVolume, setFreqVolume] = useState(0.2);
+  // Sub-audible binaural carrier — kept very quiet so the 200Hz sine is
+  // imperceptible but the binaural beat effect still entrains the brain.
+  // Max 15% prevents the carrier from becoming audible over the meditation.
+  const [freqVolume, setFreqVolume] = useState(0.04);
   const [currentStep, setCurrentStep] = useState(0);
   const [showGuidance, setShowGuidance] = useState(true);
 
@@ -524,11 +527,11 @@ function MeditationPlayer({
                     <Slider
                       value={[freqVolume * 100]}
                       onValueChange={([v]) => setFreqVolume(v / 100)}
-                      min={0} max={100} step={1}
+                      min={0} max={15} step={1}
                       className="flex-1 min-h-10 cursor-pointer [&_[data-slot=slider-track]]:h-2.5 [&_[data-slot=slider-thumb]]:size-5 [&_[data-slot=slider-thumb]]:cursor-grab [&_[data-slot=slider-thumb]]:active:cursor-grabbing"
                     />
                     <Volume2 size={14} style={{ color: '#6B7A99' }} />
-                    <span className="text-xs w-8 text-right tabular-nums" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
+                    <span className="text-xs w-10 text-right tabular-nums" style={{ color: '#FBBF24', fontFamily: 'DM Sans, sans-serif' }}>
                       {Math.round(freqVolume * 100)}%
                     </span>
                   </div>
