@@ -306,8 +306,11 @@ function MeditationPlayer({
         musicVolume: volume,
       });
 
-      // Optional frequency underlay only for non-master (procedural) beds
-      if (mode === "frequency" && !isTrueHzMaster) startFrequency();
+      // Sub-audible binaural overlay — now always allowed in Sound + Frequency mode.
+      // The DDS engine adds a felt-not-heard binaural beat beneath the TrueHz master;
+      // the carrier (200 Hz) is inaudible at the low volume used and does not clash
+      // with the recording because it is a different frequency domain.
+      if (mode === "frequency") startFrequency();
 
       // Timer
       timerRef.current = setInterval(() => {
@@ -471,8 +474,7 @@ function MeditationPlayer({
                   if (isPlaying) {
                     // Switch mode live — skip DDS underlay for TrueHz masters
                     // (recording already includes the target pitch).
-                    const isTrueHzMaster = meditation.musicMode === "none";
-                    if (opt.id === "frequency" && mode === "sound" && !isTrueHzMaster) {
+                    if (opt.id === "frequency" && mode === "sound") {
                       startFrequency();
                     } else if (opt.id === "sound" && mode === "frequency") {
                       stopFrequency();
@@ -497,16 +499,20 @@ function MeditationPlayer({
 
           {/* Frequency info (shown in frequency mode) */}
           {mode === "frequency" && recommendedFreq && (
-            <div className="rounded-2xl p-4" style={{ background: 'rgba(0,212,170,0.06)', border: '1px solid rgba(0,212,170,0.15)' }}>
+            <div className="rounded-2xl p-4" style={{ background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)' }}>
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: `${recommendedFreq.color}20`, color: recommendedFreq.color }}>
+                  style={{ background: 'rgba(251,191,36,0.15)', color: '#FBBF24' }}>
                   <Radio size={14} />
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
-                      {recommendedFreq.hz}Hz — {recommendedFreq.name}
+                      {meditation.recommendedFrequencyLabel}
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1"
+                      style={{ background: 'rgba(251,191,36,0.12)', color: '#FBBF24', border: '1px solid rgba(251,191,36,0.3)', fontFamily: 'DM Sans, sans-serif' }}>
+                      felt, not heard
                     </span>
                   </div>
                   <p className="text-xs leading-relaxed" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>

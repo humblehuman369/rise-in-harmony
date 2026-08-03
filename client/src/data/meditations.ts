@@ -5,6 +5,12 @@
  * complete TrueHz-tuned music session; soundscape keys map to CDN MP3s in
  * backgroundLoops / RECORDED_NATURE_URLS. musicMode is "none" because the
  * frequency and ambience are baked into the recording.
+ *
+ * Frequency overlay (Sound + Frequency mode):
+ * All tracks now pair with a sub-audible "felt, not heard" binaural frequency
+ * that matches the track's therapeutic intent. The TrueHz master audio plays
+ * unchanged; the DDS engine adds a gentle binaural carrier pulsed at the
+ * target brainwave rate beneath the soundscape.
  */
 
 export type MeditationCategory =
@@ -45,7 +51,7 @@ export interface MeditationTrack {
   soundscape: MeditationSoundscape;
   /** Music mode — always "none" for self-contained TrueHz tracks */
   musicMode: "ambient" | "drone" | "crystal" | "none";
-  /** ID from FREQUENCIES catalog — the recommended pairing */
+  /** ID from FREQUENCIES catalog — the sub-audible binaural pairing */
   recommendedFrequencyId: string;
   /** Short label for the recommended frequency */
   recommendedFrequencyLabel: string;
@@ -73,17 +79,17 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#059669",
     soundscape: "nature-meditation-174",
     musicMode: "none",
-    recommendedFrequencyId: "174",
-    recommendedFrequencyLabel: "174Hz Foundation",
+    recommendedFrequencyId: "schumann",
+    recommendedFrequencyLabel: "Schumann 7.83Hz — Earth's Heartbeat",
     frequencyRationale:
-      "174 Hz is traditionally linked to grounding and physical ease. This session is TrueHz-tuned to that carrier so the entire bed resonates as one field.",
+      "7.83 Hz is the Schumann resonance — the Earth's own electromagnetic heartbeat. Felt as a subtle pulse beneath the nature soundscape, it deepens the sense of being held by the living world. You will not hear it; you will feel it.",
     affirmation: "I am rooted, safe, and held by the earth.",
     guidance: [
       "Sit or lie down comfortably. Soften your jaw and shoulders.",
       "Breathe in for four counts, out for six. Feel the ground support you.",
       "Let the nature textures fill your awareness — no need to analyze them.",
       "If thoughts arise, name them gently and return to the sound.",
-      "Rest in the 174 Hz field. You are already home.",
+      "Rest in the Earth's own frequency. You are already home.",
     ],
     isPremium: false,
   },
@@ -101,10 +107,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#4338CA",
     soundscape: "calm-sleep-528",
     musicMode: "none",
-    recommendedFrequencyId: "528",
-    recommendedFrequencyLabel: "528Hz Miracle Tone",
+    recommendedFrequencyId: "delta",
+    recommendedFrequencyLabel: "Delta 3Hz — Deep Sleep",
     frequencyRationale:
-      "528 Hz is known as the Miracle / Love frequency. This track is TrueHz-tuned to 528 so the whole mix carries that warm, restorative quality into sleep.",
+      "3 Hz is the Delta brainwave state — the frequency your brain naturally produces in deep, restorative sleep. This binaural beat is felt as a slow, rhythmic pulse beneath the music, gently guiding your brain toward sleep onset. Headphones recommended.",
     affirmation: "I release the day. Rest comes easily to me.",
     guidance: [
       "Dim the lights. Lie on your back or side in a comfortable position.",
@@ -129,10 +135,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#6D28D9",
     soundscape: "third-eye-activation-528",
     musicMode: "none",
-    recommendedFrequencyId: "528",
-    recommendedFrequencyLabel: "528Hz Miracle Tone",
+    recommendedFrequencyId: "theta",
+    recommendedFrequencyLabel: "Theta 6Hz — Inner Vision Gateway",
     frequencyRationale:
-      "This TrueHz session is tuned to 528 Hz — a bright, clarifying carrier that supports insight and heart-mind coherence during third-eye practice.",
+      "6 Hz is the Theta brainwave state — the threshold between waking and dreaming, where intuition, imagery, and inner knowing arise most naturally. This binaural beat is felt as a gentle, rhythmic presence beneath the music, opening the door to inner vision. Headphones recommended.",
     affirmation: "I trust my inner vision. Clarity rises naturally.",
     guidance: [
       "Sit with a tall spine. Soften the gaze or close the eyes.",
@@ -157,10 +163,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#EA580C",
     soundscape: "reiki-healing-garden-285",
     musicMode: "none",
-    recommendedFrequencyId: "285",
-    recommendedFrequencyLabel: "285Hz Quantum Cognition",
+    recommendedFrequencyId: "theta",
+    recommendedFrequencyLabel: "Theta 6Hz — Deep Healing Rest",
     frequencyRationale:
-      "285 Hz is associated with renewal and restoration. The entire garden bed is TrueHz-tuned to this carrier for a coherent healing field.",
+      "6 Hz Theta is the brainwave state associated with deep rest, cellular restoration, and the body's natural healing processes. Felt as a slow, barely perceptible pulse beneath the garden soundscape, it creates the neurological conditions for genuine restoration. Headphones recommended.",
     affirmation: "Every cell of my body knows how to heal. I allow restoration.",
     guidance: [
       "Lie down or sit supported. Invite the body to receive.",
@@ -185,10 +191,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#0284C7",
     soundscape: "deep-serenity-444",
     musicMode: "none",
-    recommendedFrequencyId: "444",
-    recommendedFrequencyLabel: "444Hz Concert Pitch",
+    recommendedFrequencyId: "alpha",
+    recommendedFrequencyLabel: "Alpha 10Hz — Relaxed Calm",
     frequencyRationale:
-      "444 Hz is a bright concert pitch used in healing music traditions. This session is TrueHz-tuned to 444 for a serene, coherent ambient field.",
+      "10 Hz is the Alpha brainwave state — calm, alert, and present. Athletes call it the zone; meditators call it presence. This binaural beat is felt as a gentle, steady rhythm beneath the music, dissolving stress without inducing drowsiness. Headphones recommended.",
     affirmation: "I am calm. Serenity moves through me with every breath.",
     guidance: [
       "Find a quiet place. Let the eyes close.",
@@ -213,10 +219,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#7C3AED",
     soundscape: "spiritual-meditation-444",
     musicMode: "none",
-    recommendedFrequencyId: "444",
-    recommendedFrequencyLabel: "444Hz Concert Pitch",
+    recommendedFrequencyId: "theta",
+    recommendedFrequencyLabel: "Theta 6Hz — Contemplative Presence",
     frequencyRationale:
-      "TrueHz-tuned to 444 Hz, this long-form bed supports sustained spiritual practice without spoken guidance — pure field and presence.",
+      "6 Hz Theta is the brainwave state of sustained meditation, contemplative prayer, and open awareness. Felt as a barely perceptible pulse beneath the music, it supports the depth of presence this session is designed for. Headphones recommended.",
     affirmation: "I am awareness itself. All arises and passes within me.",
     guidance: [
       "Settle into your meditation posture. Hands soft, spine long.",
@@ -241,10 +247,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#16A34A",
     soundscape: "deep-into-nature-60",
     musicMode: "none",
-    recommendedFrequencyId: "174",
-    recommendedFrequencyLabel: "174Hz Foundation",
+    recommendedFrequencyId: "schumann",
+    recommendedFrequencyLabel: "Schumann 7.83Hz — Earth's Heartbeat",
     frequencyRationale:
-      "174 Hz is the grounding foundation tone — the same frequency the earth's own resonance field anchors to. Pairing it with nature soundscapes deepens the sense of safety and belonging.",
+      "7.83 Hz is the Schumann resonance — the Earth's own electromagnetic pulse, generated by lightning activity in the atmosphere. Felt as a subtle rhythm beneath the forest soundscape, it creates a resonance between your nervous system and the living planet. You will not hear it; you will feel it. Headphones recommended.",
     affirmation: "I belong to the earth. The earth belongs to me.",
     guidance: [
       "Find a comfortable position. Allow your body to be fully supported.",
@@ -270,10 +276,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#6D28D9",
     soundscape: "inner-calling-60",
     musicMode: "none",
-    recommendedFrequencyId: "963",
-    recommendedFrequencyLabel: "963Hz Divine",
+    recommendedFrequencyId: "theta",
+    recommendedFrequencyLabel: "Theta 6Hz — Inner Wisdom Gateway",
     frequencyRationale:
-      "963 Hz is associated with the crown chakra and higher states of awareness. This session creates the inner stillness needed to hear what has always been calling.",
+      "6 Hz Theta is the brainwave state where the subconscious opens — where intuition, inner knowing, and authentic self-connection arise most naturally. Felt as a slow, gentle pulse beneath the music, it creates the neurological conditions for hearing what has always been calling. Headphones recommended.",
     affirmation: "I listen deeply. My inner voice is clear and true.",
     guidance: [
       "Sit or lie in a position you can hold comfortably for an hour.",
@@ -299,10 +305,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#1D4ED8",
     soundscape: "peaceful-ocean-60",
     musicMode: "none",
-    recommendedFrequencyId: "528",
-    recommendedFrequencyLabel: "528Hz Miracle Tone",
+    recommendedFrequencyId: "delta",
+    recommendedFrequencyLabel: "Delta 3Hz — Deep Rest",
     frequencyRationale:
-      "528 Hz is known as the miracle tone — associated with cellular repair and emotional healing. Layered beneath ocean waves, it amplifies the cleansing quality of the session.",
+      "3 Hz is the Delta brainwave state — the frequency of deep, dreamless sleep and profound physical restoration. Felt as a slow, barely perceptible pulse beneath the ocean waves, it mirrors the ocean's own rhythm and gently guides the nervous system toward deep rest. Headphones recommended.",
     affirmation: "Like the ocean, I am vast, fluid, and at peace.",
     guidance: [
       "Lie down if possible. Let your body become heavy and still.",
