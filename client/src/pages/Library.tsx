@@ -341,9 +341,12 @@ export default function Library() {
             <span className="w-1.5 h-1.5 rounded-full bg-[#00D4AA] animate-pulse" />
             Frequency Library
           </div>
-          <h1 className="mb-2" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2.4rem', fontWeight: 600, color: '#E8EDF5', textShadow: '0 0 40px rgba(0,212,170,0.15)' }}>
+          <h1 className="mb-1" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2.4rem', fontWeight: 600, color: '#E8EDF5', textShadow: '0 0 40px rgba(0,212,170,0.15)' }}>
             Healing Tones
           </h1>
+          <p className="mb-3 text-sm italic" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.1rem', color: 'rgba(251,191,36,0.75)', letterSpacing: '0.02em' }}>
+            The healing happens in the quiet.
+          </p>
           <div className="flex gap-4 text-sm mb-5 flex-wrap" style={{ color: '#6B7A99', fontFamily: 'DM Sans, sans-serif' }}>
             {view === "playable" ? (
               <>
@@ -521,6 +524,13 @@ export default function Library() {
                   </div>
                 ))
               )}
+            </div>
+
+            {/* Quiet tagline footer */}
+            <div className="mx-6 mb-6 py-5 text-center">
+              <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.25rem', fontStyle: 'italic', color: 'rgba(251,191,36,0.5)', letterSpacing: '0.04em' }}>
+                The healing happens in the quiet.
+              </p>
             </div>
 
             {/* Premium CTA */}
