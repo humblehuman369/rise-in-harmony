@@ -536,7 +536,7 @@ export default function Home() {
                     borderRight: 'br' in c ? (c as any).br : undefined,
                   }} />
                 ))}
-                <video controls playsInline
+                <video controls playsInline poster="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/IgMHfxddpqkmRQxH.png"
                   style={{ display: 'block', width: '100%', aspectRatio: '16/9', background: '#000' }}>
                   <source src="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/FueLTmWRwbXWxsnA.mp4" type="video/mp4" />
                 </video>

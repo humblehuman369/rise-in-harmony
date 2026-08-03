@@ -112,7 +112,7 @@ export default function SilentHealing() {
             ].map((s, i) => (
               <div key={i} style={{ position: "absolute", width: 16, height: 16, zIndex: 2, ...s }} />
             ))}
-            <video controls playsInline style={{ display: "block", width: "100%", aspectRatio: "16/9", background: "#000" }}>
+            <video controls playsInline poster="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/IgMHfxddpqkmRQxH.png" style={{ display: "block", width: "100%", aspectRatio: "16/9", background: "#000" }}>
               <source src={SILENT_HEALING_VIDEO_URL} type="video/mp4" />
             </video>
           </div>
