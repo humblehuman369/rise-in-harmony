@@ -280,7 +280,7 @@ function FrequencyCard({ freq, isPlaying, onPlay, showChakraPosition }: {
 export default function Library() {
   const { isPlaying, currentFrequency, togglePlay } = useFrequencyPlayer();
   const [view, setView] = useState<LibraryView>(initialLibraryView);
-  const [activeCategory, setActiveCategory] = useState<Category>("all");
+  const [activeCategory, setActiveCategory] = useState<Category>("solfeggio");
   const [searchQuery, setSearchQuery] = useState("");
   const [paywallFreq, setPaywallFreq] = useState<Frequency | null>(null);
 

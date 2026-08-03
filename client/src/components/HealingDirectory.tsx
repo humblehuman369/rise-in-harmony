@@ -4,7 +4,7 @@
  */
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { Search, Filter, ExternalLink, Lock } from "lucide-react";
+import { Search, Filter, ExternalLink, Lock, EarOff } from "lucide-react";
 import {
   HEALING_BENEFIT_TAGS,
   HEALING_CATEGORIES,
@@ -18,7 +18,10 @@ import {
   type HealingFrequency,
 } from "@/data/healingFrequencies";
 
-type CategoryTab = HealingCategory | "all";
+type CategoryTab = HealingCategory | "all" | "silent";
+
+/** Frequencies below 20 Hz are sub-audible — felt as pulses, not heard as tones */
+function isSilent(hz: number) { return hz < 20; }
 
 function DirectoryCard({
   freq,
@@ -73,6 +76,21 @@ function DirectoryCard({
             >
               {freq.category}
             </span>
+            {isSilent(freq.hz) && (
+              <span
+                className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-0.5"
+                style={{
+                  background: "rgba(251,191,36,0.12)",
+                  color: "#FBBF24",
+                  border: "1px solid rgba(251,191,36,0.25)",
+                  fontFamily: "DM Sans, sans-serif",
+                }}
+                title="This frequency is below the range of human hearing. It works through brainwave entrainment — felt as a subtle pulse, not heard as a tone."
+              >
+                <EarOff size={8} />
+                felt, not heard
+              </span>
+            )}
             {freq.isPremium && (
               <span
                 className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1"
@@ -133,7 +151,8 @@ export default function HealingDirectory() {
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     return sorted.filter(freq => {
-      if (activeCategory !== "all" && freq.category !== activeCategory) return false;
+      if (activeCategory === "silent") { if (!isSilent(freq.hz)) return false; }
+      else if (activeCategory !== "all" && freq.category !== activeCategory) return false;
       if (activeBenefit && !frequencyMatchesBenefit(freq, activeBenefit)) return false;
       if (!q) return true;
       const benefits = getBenefitsForFrequency(freq)
@@ -217,9 +236,38 @@ export default function HealingDirectory() {
               </button>
             );
           })}
+          <button
+            key="silent"
+            type="button"
+            onClick={() => setActiveCategory("silent")}
+            className="flex-shrink-0 px-3.5 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-1.5"
+            style={{
+              background: activeCategory === "silent" ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.04)",
+              border: `1px solid ${activeCategory === "silent" ? "rgba(251,191,36,0.5)" : "rgba(255,255,255,0.06)"}`,
+              color: activeCategory === "silent" ? "#FBBF24" : "#6B7A99",
+              fontFamily: "DM Sans, sans-serif",
+            }}
+          >
+            <EarOff size={12} />
+            Silent Healing Hz
+          </button>
         </div>
+        {activeCategory === "silent" && (
+          <div className="mt-3 p-4 rounded-xl flex gap-3"
+            style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.2)" }}>
+            <EarOff size={18} className="flex-shrink-0 mt-0.5" style={{ color: "#FBBF24" }} />
+            <div>
+              <p className="text-xs font-semibold mb-1" style={{ color: "#FBBF24", fontFamily: "DM Sans, sans-serif" }}>
+                These frequencies are below the range of human hearing (under 20 Hz)
+              </p>
+              <p className="text-xs leading-relaxed" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
+                You will not hear a tone — that is not a malfunction. These work through <strong style={{ color: "#E8EDF5" }}>brainwave entrainment</strong>: the app plays a subtle carrier wave pulsed at the target rate, which your brain synchronises with over time. Use headphones and give it 5–10 minutes to take effect.
+              </p>
+            </div>
+          </div>
+        )}
         <p className="text-xs mt-2" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>
-          {categoryInfo.description}
+          {activeCategory === "silent" ? "Sub-audible frequencies (< 20 Hz) — felt as pulses, not heard as tones" : categoryInfo.description}
         </p>
       </div>
 
