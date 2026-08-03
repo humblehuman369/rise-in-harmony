@@ -505,9 +505,9 @@ export default function Home() {
                   borderRight: 'br' in c ? (c as any).br : undefined,
                 }} />
               ))}
-              <video controls playsInline poster="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/scene2_sound_science_thumb.jpg"
+              <video controls playsInline poster="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/vlkdBtXyzoEcqNNJ.jpg"
                 style={{ display: 'block', width: '100%', aspectRatio: '16/9', background: '#000' }}>
-                <source src="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/QqkbTeRcrUGuLPVt.mp4" type="video/mp4" />
+                <source src="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/sXmwjgfQIJFCPMAp.mp4" type="video/mp4" />
               </video>
             </div>
           </div>
