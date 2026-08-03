@@ -395,7 +395,7 @@ export default function FrequencyStudio() {
     const raw = new URLSearchParams(window.location.search).get("hz");
     if (!raw) return;
     const hz = Number(raw);
-    if (!Number.isFinite(hz) || hz < 0.1 || hz > 22000) return;
+    if (!Number.isFinite(hz) || hz < 0.01 || hz > 22000) return;
     hzDeepLinkLoadedRef.current = true;
     setCustomFreq(hz);
     setCustomFreqInput(hz.toFixed(2));
