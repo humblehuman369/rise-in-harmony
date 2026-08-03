@@ -20,6 +20,7 @@ import { MEDITATIONS, MEDITATION_CATEGORIES, type MeditationTrack } from "@/data
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { useSoundStudio } from "@/hooks/useSoundStudio";
 import { useTheme } from "@/contexts/ThemeContext";
+import SilentHzBadge from "@/components/SilentHzBadge";
 
 // ─── Icon map ─────────────────────────────────────────────────────────────────
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -513,10 +514,7 @@ function MeditationPlayer({
                     <span className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
                       {meditation.recommendedFrequencyLabel}
                     </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1"
-                      style={{ background: 'rgba(251,191,36,0.12)', color: '#FBBF24', border: '1px solid rgba(251,191,36,0.3)', fontFamily: 'DM Sans, sans-serif' }}>
-                      felt, not heard
-                    </span>
+                    <SilentHzBadge size="sm" />
                   </div>
                   <p className="text-xs leading-relaxed" style={{ color: '#8FA3BF', fontFamily: 'DM Sans, sans-serif' }}>
                     {meditation.frequencyRationale}

@@ -35,6 +35,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { startLogin } from "@/const";
 import ShareCard from "@/components/ShareCard";
+import SilentHzBadge from "@/components/SilentHzBadge";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -804,22 +805,7 @@ export default function FrequencyStudio() {
           {/* Giant Hz display */}
           <div className="text-center mb-4">
             {/* Silent Healing Tone label — shown when frequency is below 20 Hz */}
-            {customFreq < 20 && (
-              <div
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl mb-3 text-xs font-bold tracking-wide"
-                style={{
-                  background: "rgba(251,191,36,0.1)",
-                  border: "1px solid rgba(251,191,36,0.35)",
-                  color: "#FBBF24",
-                  fontFamily: "DM Sans, sans-serif",
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                }}
-              >
-                <span style={{ fontSize: "10px" }}>◉</span>
-                Silent Healing Tone — Felt, Not Heard
-              </div>
-            )}
+            {customFreq < 20 && <div className="mb-3"><SilentHzBadge size="md" /></div>}
             <div className="flex items-end justify-center gap-2">
               <input
                 type="text" value={customFreqInput}
@@ -1096,21 +1082,7 @@ export default function FrequencyStudio() {
                 <span className="text-sm font-mono" style={{ color: "#00D4AA" }}>{formatTime(player.playTime)}</span>
               </>
             )}
-            {player.isPlaying && customFreq < 20 && (
-              <span
-                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                style={{
-                  background: "rgba(251,191,36,0.12)",
-                  border: "1px solid rgba(251,191,36,0.35)",
-                  color: "#FBBF24",
-                  fontFamily: "DM Sans, sans-serif",
-                  letterSpacing: "0.01em",
-                }}
-              >
-                <span style={{ fontSize: "9px" }}>◉</span>
-                Silent Healing Tone — Felt, Not Heard
-              </span>
-            )}
+            {player.isPlaying && customFreq < 20 && <SilentHzBadge size="sm" />}
             {player.playTime >= 60 && (
               <button
                 onClick={() => setShowShareCard(true)}

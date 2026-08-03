@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { Search, Filter, ExternalLink, Lock, EarOff } from "lucide-react";
+import SilentHzBadge from "@/components/SilentHzBadge";
 import {
   HEALING_BENEFIT_TAGS,
   HEALING_CATEGORIES,
@@ -76,21 +77,7 @@ function DirectoryCard({
             >
               {freq.category}
             </span>
-            {isSilent(freq.hz) && (
-              <span
-                className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-0.5"
-                style={{
-                  background: "rgba(251,191,36,0.12)",
-                  color: "#FBBF24",
-                  border: "1px solid rgba(251,191,36,0.25)",
-                  fontFamily: "DM Sans, sans-serif",
-                }}
-                title="This frequency is below the range of human hearing. It works through brainwave entrainment — felt as a subtle pulse, not heard as a tone."
-              >
-                <EarOff size={8} />
-                felt, not heard
-              </span>
-            )}
+            {isSilent(freq.hz) && <SilentHzBadge size="sm" />}
             {freq.isPremium && (
               <span
                 className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1"
