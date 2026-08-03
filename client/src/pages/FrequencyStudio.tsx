@@ -803,6 +803,23 @@ export default function FrequencyStudio() {
         <div className="p-5 rounded-2xl mb-4" style={{ background: "#11142A", border: "1px solid rgba(255,255,255,0.06)" }}>
           {/* Giant Hz display */}
           <div className="text-center mb-4">
+            {/* Silent Healing Tone label — shown when frequency is below 20 Hz */}
+            {customFreq < 20 && (
+              <div
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl mb-3 text-xs font-bold tracking-wide"
+                style={{
+                  background: "rgba(251,191,36,0.1)",
+                  border: "1px solid rgba(251,191,36,0.35)",
+                  color: "#FBBF24",
+                  fontFamily: "DM Sans, sans-serif",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <span style={{ fontSize: "10px" }}>◉</span>
+                Silent Healing Tone — Felt, Not Heard
+              </div>
+            )}
             <div className="flex items-end justify-center gap-2">
               <input
                 type="text" value={customFreqInput}
