@@ -253,18 +253,38 @@ export default function HealingDirectory() {
           </button>
         </div>
         {activeCategory === "silent" && (
-          <div className="mt-3 p-4 rounded-xl flex gap-3"
-            style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.2)" }}>
-            <EarOff size={18} className="flex-shrink-0 mt-0.5" style={{ color: "#FBBF24" }} />
-            <div>
-              <p className="text-xs font-semibold mb-1" style={{ color: "#FBBF24", fontFamily: "DM Sans, sans-serif" }}>
-                These frequencies are below the range of human hearing (under 20 Hz)
-              </p>
-              <p className="text-xs leading-relaxed" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
-                You will not hear a tone — that is not a malfunction. These work through <strong style={{ color: "#E8EDF5" }}>brainwave entrainment</strong>: the app plays a subtle carrier wave pulsed at the target rate, which your brain synchronises with over time. Use headphones and give it 5–10 minutes to take effect.
-              </p>
+          <>
+            {/* Demo video */}
+            <div className="mt-3 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(251,191,36,0.25)", background: "#000" }}>
+              <video
+                controls
+                playsInline
+                style={{ display: "block", width: "100%", aspectRatio: "16/9", background: "#000" }}
+              >
+                <source src="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/TecBKZnyxyGWsuey.mp4" type="video/mp4" />
+              </video>
             </div>
-          </div>
+            {/* Explainer banner */}
+            <div className="mt-3 p-4 rounded-xl flex gap-3"
+              style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.2)" }}>
+              <EarOff size={18} className="flex-shrink-0 mt-0.5" style={{ color: "#FBBF24" }} />
+              <div>
+                <p className="text-xs font-semibold mb-1" style={{ color: "#FBBF24", fontFamily: "DM Sans, sans-serif" }}>
+                  These frequencies are below the range of human hearing (under 20 Hz)
+                </p>
+                <p className="text-xs leading-relaxed" style={{ color: "#8FA3BF", fontFamily: "DM Sans, sans-serif" }}>
+                  You will not hear a tone — that is not a malfunction. These work through <strong style={{ color: "#E8EDF5" }}>brainwave entrainment</strong>: the app plays a subtle carrier wave pulsed at the target rate, which your brain synchronises with over time. Use headphones and give it 5–10 minutes to take effect.
+                </p>
+                <a
+                  href="/silent-healing"
+                  className="inline-flex items-center gap-1 mt-2 text-xs font-semibold transition-opacity hover:opacity-80"
+                  style={{ color: "#FBBF24", fontFamily: "DM Sans, sans-serif" }}
+                >
+                  Learn more about Silent Healing Hz →
+                </a>
+              </div>
+            </div>
+          </>
         )}
         <p className="text-xs mt-2" style={{ color: "#4A5568", fontFamily: "DM Sans, sans-serif" }}>
           {activeCategory === "silent" ? "Sub-audible frequencies (< 20 Hz) — felt as pulses, not heard as tones" : categoryInfo.description}

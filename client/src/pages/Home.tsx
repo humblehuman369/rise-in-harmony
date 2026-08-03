@@ -490,26 +490,72 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Video */}
-          <div style={{ position: 'relative', maxWidth: 720, margin: '0 auto' }}>
-            <div style={{ position: 'absolute', inset: -1, background: 'linear-gradient(135deg, rgba(0,212,170,0.25), rgba(139,92,246,0.15))', filter: 'blur(20px)', opacity: 0.5, zIndex: 0, borderRadius: 12 }} />
-            <div style={{ position: 'relative', zIndex: 1, border: '1px solid rgba(0,212,170,0.22)', boxShadow: '0 0 50px rgba(0,212,170,0.08), 0 24px 48px rgba(0,0,0,0.5)', background: '#000', borderRadius: 12, overflow: 'hidden' }}>
-              {/* Corner accents */}
-              {[{t:0,l:0,bt:'2px solid #00D4AA',bl:'2px solid #00D4AA'},{t:0,r:0,bt:'2px solid #00D4AA',br:'2px solid #00D4AA'},{b:0,l:0,bb:'2px solid #00D4AA',bl:'2px solid #00D4AA'},{b:0,r:0,bb:'2px solid #00D4AA',br:'2px solid #00D4AA'}].map((c,i) => (
-                <div key={i} style={{ position:'absolute', width:16, height:16, zIndex:2,
-                  top: 't' in c ? 0 : undefined, bottom: 'b' in c ? 0 : undefined,
-                  left: 'l' in c ? 0 : undefined, right: 'r' in c ? 0 : undefined,
-                  borderTop: 'bt' in c ? (c as any).bt : undefined,
-                  borderBottom: 'bb' in c ? (c as any).bb : undefined,
-                  borderLeft: 'bl' in c ? (c as any).bl : undefined,
-                  borderRight: 'br' in c ? (c as any).br : undefined,
-                }} />
-              ))}
-              <video controls playsInline poster="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ryPsMuvFrztMNPat.jpg"
-                style={{ display: 'block', width: '100%', aspectRatio: '16/9', background: '#000' }}>
-                <source src="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/jOZiosROKCzQdWiM.mp4" type="video/mp4" />
-              </video>
+          {/* Videos — Science + Silent Healing Hz */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+
+            {/* Video 1 — The Science of Healing Frequencies */}
+            <div>
+              <div style={{ position: 'relative', maxWidth: 720, margin: '0 auto' }}>
+                <div style={{ position: 'absolute', inset: -1, background: 'linear-gradient(135deg, rgba(0,212,170,0.25), rgba(139,92,246,0.15))', filter: 'blur(20px)', opacity: 0.5, zIndex: 0, borderRadius: 12 }} />
+                <div style={{ position: 'relative', zIndex: 1, border: '1px solid rgba(0,212,170,0.22)', boxShadow: '0 0 50px rgba(0,212,170,0.08), 0 24px 48px rgba(0,0,0,0.5)', background: '#000', borderRadius: 12, overflow: 'hidden' }}>
+                  {[{t:0,l:0,bt:'2px solid #00D4AA',bl:'2px solid #00D4AA'},{t:0,r:0,bt:'2px solid #00D4AA',br:'2px solid #00D4AA'},{b:0,l:0,bb:'2px solid #00D4AA',bl:'2px solid #00D4AA'},{b:0,r:0,bb:'2px solid #00D4AA',br:'2px solid #00D4AA'}].map((c,i) => (
+                    <div key={i} style={{ position:'absolute', width:16, height:16, zIndex:2,
+                      top: 't' in c ? 0 : undefined, bottom: 'b' in c ? 0 : undefined,
+                      left: 'l' in c ? 0 : undefined, right: 'r' in c ? 0 : undefined,
+                      borderTop: 'bt' in c ? (c as any).bt : undefined,
+                      borderBottom: 'bb' in c ? (c as any).bb : undefined,
+                      borderLeft: 'bl' in c ? (c as any).bl : undefined,
+                      borderRight: 'br' in c ? (c as any).br : undefined,
+                    }} />
+                  ))}
+                  <video controls playsInline poster="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ryPsMuvFrztMNPat.jpg"
+                    style={{ display: 'block', width: '100%', aspectRatio: '16/9', background: '#000' }}>
+                    <source src="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/jOZiosROKCzQdWiM.mp4" type="video/mp4" />
+                  </video>
+                </div>
+              </div>
             </div>
+
+            {/* Video 2 — Silent Healing Hz */}
+            <div>
+              <div style={{ textAlign: 'center', marginBottom: 12 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 11, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#FBBF24', fontFamily: 'DM Sans, sans-serif', marginBottom: 6 }}>
+                  <div style={{ width: 20, height: 1, background: '#FBBF24' }} />
+                  Silent Healing Hz
+                  <div style={{ width: 20, height: 1, background: '#FBBF24' }} />
+                </div>
+                <p style={{ fontSize: '0.85rem', color: '#8FA3BF', maxWidth: 440, margin: '0 auto', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6 }}>
+                  Some frequencies are below the range of hearing. They are felt, not heard — and they work.
+                </p>
+              </div>
+              <div style={{ position: 'relative', maxWidth: 720, margin: '0 auto' }}>
+                <div style={{ position: 'absolute', inset: -1, background: 'linear-gradient(135deg, rgba(251,191,36,0.2), rgba(139,92,246,0.1))', filter: 'blur(20px)', opacity: 0.5, zIndex: 0, borderRadius: 12 }} />
+                <div style={{ position: 'relative', zIndex: 1, border: '1px solid rgba(251,191,36,0.3)', boxShadow: '0 0 50px rgba(251,191,36,0.06), 0 24px 48px rgba(0,0,0,0.5)', background: '#000', borderRadius: 12, overflow: 'hidden' }}>
+                  {[{t:0,l:0,bt:'2px solid #FBBF24',bl:'2px solid #FBBF24'},{t:0,r:0,bt:'2px solid #FBBF24',br:'2px solid #FBBF24'},{b:0,l:0,bb:'2px solid #FBBF24',bl:'2px solid #FBBF24'},{b:0,r:0,bb:'2px solid #FBBF24',br:'2px solid #FBBF24'}].map((c,i) => (
+                    <div key={i} style={{ position:'absolute', width:16, height:16, zIndex:2,
+                      top: 't' in c ? 0 : undefined, bottom: 'b' in c ? 0 : undefined,
+                      left: 'l' in c ? 0 : undefined, right: 'r' in c ? 0 : undefined,
+                      borderTop: 'bt' in c ? (c as any).bt : undefined,
+                      borderBottom: 'bb' in c ? (c as any).bb : undefined,
+                      borderLeft: 'bl' in c ? (c as any).bl : undefined,
+                      borderRight: 'br' in c ? (c as any).br : undefined,
+                    }} />
+                  ))}
+                  <video controls playsInline
+                    style={{ display: 'block', width: '100%', aspectRatio: '16/9', background: '#000' }}>
+                    <source src="https://files.manuscdn.com/user_upload_by_module/session_file/110672315/TecBKZnyxyGWsuey.mp4" type="video/mp4" />
+                  </video>
+                </div>
+              </div>
+              <div style={{ textAlign: 'center', marginTop: 12 }}>
+                <a href="/silent-healing"
+                  style={{ fontSize: '0.8rem', color: '#FBBF24', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, textDecoration: 'none', opacity: 0.85 }}
+                >
+                  Explore Silent Healing Hz in the Library →
+                </a>
+              </div>
+            </div>
+
           </div>
 
           {/* Journey CTA below video */}
