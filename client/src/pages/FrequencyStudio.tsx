@@ -10,11 +10,12 @@
  * single-column on mobile with sticky play bar at bottom.
  */
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
 import {
   Play, Square, Star, StarOff, Plus, Minus, Clock, Activity, Upload,
   Save, Loader2, Music2, ChevronDown, ChevronUp, Headphones, Library,
   Volume2, Sliders, Wind, Flame, TreePine, CloudRain, Waves, Moon,
-  Timer, Trash2, Pause,
+  Timer, Trash2, Pause, ArrowLeft,
 } from "lucide-react";
 import FrequencyBrowser from "@/components/FrequencyBrowser";
 import type { HealingFrequency } from "@/data/healingFrequencies";
@@ -273,6 +274,11 @@ function useMusicLayer(getAudioContext: () => AudioContext | null) {
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function FrequencyStudio() {
+  const [, navigate] = useLocation();
+  // Detect when user arrived from the Library (via ?hz= deep link)
+  const fromLibrary = typeof window !== "undefined"
+    && new URLSearchParams(window.location.search).get("hz") !== null;
+
   const player = usePrecisionPlayer();
   const background = useBackgroundLayer(() => player.getAudioContext());
   const nature = useNatureLayer(() => player.getAudioContext());
@@ -746,6 +752,22 @@ export default function FrequencyStudio() {
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="mb-4">
+          {/* Back to Library button — shown when navigated from Library */}
+          {fromLibrary && (
+            <button
+              onClick={() => navigate("/library")}
+              className="flex items-center gap-1.5 mb-3 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all active:scale-95"
+              style={{
+                background: "rgba(0,212,170,0.08)",
+                border: "1px solid rgba(0,212,170,0.2)",
+                color: "#00D4AA",
+                fontFamily: "DM Sans, sans-serif",
+              }}
+            >
+              <ArrowLeft size={14} />
+              Back to Library
+            </button>
+          )}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-2"
             style={{ background: 'rgba(0,212,170,0.08)', border: '1px solid rgba(0,212,170,0.2)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
             <span className="w-1.5 h-1.5 rounded-full bg-[#00D4AA] animate-pulse" />
