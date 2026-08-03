@@ -351,10 +351,10 @@ export default function FrequencyStudio() {
   // Presets tab
   const [presetTab, setPresetTab] = useState<"solfeggio" | "lifestyle" | "mixes" | "favorites">("solfeggio");
 
-  // Accordion open/close state (all start closed)
-  const [freqOpen, setFreqOpen] = useState(false);
-  const [musicOpen, setMusicOpen] = useState(false);
-  const [natureOpen, setNatureOpen] = useState(false);
+  // Accordion open/close state (all start open so users see controls immediately)
+  const [freqOpen, setFreqOpen] = useState(true);
+  const [musicOpen, setMusicOpen] = useState(true);
+  const [natureOpen, setNatureOpen] = useState(true);
 
   // ── Deep link load ────────────────────────────────────────────────────────
   const applySavedSound = useCallback((sound: {
@@ -925,7 +925,7 @@ export default function FrequencyStudio() {
               {music.activeMusic ? (
                 <span className="text-sm font-bold" style={{ color: "#8B5CF6" }}>{Math.round(music.musicVolume * 100)}%</span>
               ) : (
-                <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: "#4A5568", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>Off</span>
+                <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ color: "#F59E0B", background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.5)" }}>OFF — select below</span>
               )}
             </div>
             <div style={{ opacity: music.activeMusic ? 1 : 0.35 }}>
@@ -943,11 +943,13 @@ export default function FrequencyStudio() {
           {musicOpen && (
             <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
               <div className="grid grid-cols-4 gap-2 mt-2">
-                {[{id:null,label:"Off",icon:"—",color:"#4A5568"},{id:"ambient",label:"Ambient",icon:"♪",color:"#00D4AA"},{id:"drone",label:"Drone",icon:"〰",color:"#8B5CF6"},{id:"crystal",label:"Crystal",icon:"◇",color:"#EC4899"}].map(mm => (
+                {[{id:null,label:"Off",icon:"—",color:"#F59E0B"},{id:"ambient",label:"Ambient",icon:"♪",color:"#00D4AA"},{id:"drone",label:"Drone",icon:"〰",color:"#8B5CF6"},{id:"crystal",label:"Crystal",icon:"◇",color:"#EC4899"}].map(mm => (
                   <button key={mm.label} onClick={() => music.selectMusic(mm.id, player.isPlaying)}
                     className="flex flex-col items-center gap-2 py-3 rounded-xl transition-all active:scale-95"
                     style={music.activeMusic === mm.id ? {
                       background: `${mm.color}20`, border: `2px solid ${mm.color}60`, color: mm.color,
+                    } : mm.id === null ? {
+                      background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.4)", color: "#F59E0B",
                     } : {
                       background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
                     }}>
@@ -971,7 +973,7 @@ export default function FrequencyStudio() {
               {nature.activeNature ? (
                 <span className="text-sm font-bold" style={{ color: "#6366F1" }}>{Math.round(nature.natureVolume * 100)}%</span>
               ) : (
-                <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: "#4A5568", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>Off</span>
+                <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ color: "#F59E0B", background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.5)" }}>OFF — select below</span>
               )}
             </div>
             <div style={{ opacity: nature.activeNature ? 1 : 0.35 }}>
@@ -989,11 +991,13 @@ export default function FrequencyStudio() {
           {natureOpen && (
             <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
               <div className="grid grid-cols-6 gap-2 mt-2">
-                {[{id:null,label:"Off",emoji:"—",color:"#4A5568"},{id:"rain",label:"Rain",emoji:"🌧️",color:"#3B82F6"},{id:"ocean",label:"Ocean",emoji:"🌊",color:"#00D4AA"},{id:"forest",label:"Forest",emoji:"🌲",color:"#22C55E"},{id:"wind",label:"Wind",emoji:"🌬️",color:"#94A3B8"},{id:"fire",label:"Fire",emoji:"🔥",color:"#F97316"}].map(ns => (
+                {[{id:null,label:"Off",emoji:"—",color:"#F59E0B"},{id:"rain",label:"Rain",emoji:"🌧️",color:"#3B82F6"},{id:"ocean",label:"Ocean",emoji:"🌊",color:"#00D4AA"},{id:"forest",label:"Forest",emoji:"🌲",color:"#22C55E"},{id:"wind",label:"Wind",emoji:"🌬️",color:"#94A3B8"},{id:"fire",label:"Fire",emoji:"🔥",color:"#F97316"}].map(ns => (
                   <button key={ns.label} onClick={() => nature.selectNature(ns.id, player.isPlaying)}
                     className="flex flex-col items-center gap-1 py-3 rounded-xl transition-all active:scale-95"
                     style={nature.activeNature === ns.id ? {
                       background: `${ns.color}20`, border: `2px solid ${ns.color}60`, color: ns.color,
+                    } : ns.id === null ? {
+                      background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.4)", color: "#F59E0B",
                     } : {
                       background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#6B7A99",
                     }}>
