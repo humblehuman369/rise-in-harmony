@@ -164,9 +164,9 @@ function MeditationPlayer({
   onClose: () => void;
 }) {
   const { isAuthenticated } = useAuth();
-  // TrueHz HQ masters are self-contained — default to Sound Only so we do not
-  // layer a second DDS sine on top of the already-tuned recording.
-  const [mode, setMode] = useState<"sound" | "frequency">("sound");
+  // Default to Sound + Frequency so new users immediately experience the
+  // sub-audible binaural/isochronic overlay without having to discover it.
+  const [mode, setMode] = useState<"sound" | "frequency">("frequency");
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   // Ambient master bed loud; optional frequency underlay quieter when enabled

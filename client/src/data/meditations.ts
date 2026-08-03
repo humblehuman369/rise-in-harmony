@@ -79,10 +79,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#059669",
     soundscape: "nature-meditation-174",
     musicMode: "none",
-    recommendedFrequencyId: "schumann",
-    recommendedFrequencyLabel: "Schumann 7.83Hz — Earth's Heartbeat",
+    recommendedFrequencyId: "alpha-isochronic",
+    recommendedFrequencyLabel: "Alpha Isochronic 10Hz — Relaxed Presence",
     frequencyRationale:
-      "7.83 Hz is the Schumann resonance — the Earth's own electromagnetic heartbeat. Felt as a subtle pulse beneath the nature soundscape, it deepens the sense of being held by the living world. You will not hear it; you will feel it.",
+      "10 Hz Alpha is the brainwave state of calm, relaxed awareness — the state you naturally enter when you step outside and breathe. Unlike binaural beats, isochronic pulses work without headphones. You will feel a gentle, rhythmic presence beneath the nature sounds. No tone, no hum — just a quiet rhythm guiding your brain into ease.",
     affirmation: "I am rooted, safe, and held by the earth.",
     guidance: [
       "Sit or lie down comfortably. Soften your jaw and shoulders.",
