@@ -1,5 +1,5 @@
 # Rise In Harmony — Apple App Store Submission (v1.2.0)
-**Version:** 1.2.0 · **buildNumber:** 51 · **Bundle ID:** `com.riseinharmony.app`  
+**Version:** 1.2.0 · **buildNumber:** 55 · **Bundle ID:** `com.riseinharmony.app`  
 **ASC App ID:** `6786561356` · **Team:** `A2Y6C3NNSY`  
 **Expo project:** `917f33c4-3b87-4f19-82ee-2c54125dae47`
 
@@ -7,9 +7,9 @@ This document is the single source of truth for App Store Connect listing copy,
 privacy answers, IAP setup, and the build/submit sequence.
 
 ### ASC status (updated 2026-08-03)
-- Previous version **1.1.0** shipped (buildNumber 50, Deep Sleep Wake alarm system)
+- Last uploaded build: **1.0.1 (54)** — Aug 3, 2026 (Silent Healing Hz + home redesign features)
 - New version **1.2.0** — Silent Healing Hz feature, home redesign, sub-audible binaural pairings
-- **Required before Submit:** new EAS production build from current `main` (buildNumber 51), then select that build in ASC and Submit for Review
+- **Required before Submit:** new EAS production build from current `main` (buildNumber 55), then select that build in ASC and Submit for Review
 
 ---
 ## Pre-Submission Checklist
@@ -17,7 +17,7 @@ Mark each item before hitting **Submit for Review**:
 
 ### Binary & config
 - [x] Bundle ID `com.riseinharmony.app` matches App Store Connect
-- [x] `app.json` version `1.2.0`, iOS `buildNumber` `51`
+- [x] `app.json` version `1.2.0`, iOS `buildNumber` `55`
 - [x] `ITSAppUsesNonExemptEncryption` = false (no export-compliance questionnaire)
 - [x] iOS deployment target 16.0+; phone-only (`supportsTablet: false`)
 - [x] Background audio mode enabled for continuous playback
@@ -26,8 +26,8 @@ Mark each item before hitting **Submit for Review**:
 - [x] Asset gate passes: `node scripts/check-mobile-assets.mjs`
 - [x] EAS project ID + owner configured
 - [x] ASC submit keys wired in `eas.json` (`AuthKey_LHBH9DWB4P.p8`)
-- [ ] **New production binary** built from current main (buildNumber 51)
-- [ ] New binary selected in ASC version 1.2.0
+- [ ] **New production binary** built from current main (buildNumber 55)
+- [ ] New binary selected in ASC version 1.2.0 (build 55)
 
 ### Legal & web
 - [x] Privacy Policy live: https://www.riseinharmony.com/privacy
@@ -263,7 +263,7 @@ eas secret:create --scope project --name EXPO_PUBLIC_POSTHOG_HOST --value "https
 cd apps/mobile
 eas build --platform ios --profile production
 ```
-`autoIncrement: true` in `eas.json` will bump buildNumber to 51 automatically.
+`autoIncrement: true` in `eas.json` will bump buildNumber to 55 automatically (last build was 54).
 
 ### 3. Submit to App Store Connect
 ```bash
@@ -271,7 +271,7 @@ eas submit --platform ios --latest --profile production
 ```
 
 ### 4. In App Store Connect
-1. Create new version 1.2.0 (or update existing if still in Prepare for Submission)  
+1. Create new version **1.2.0** in ASC (previous live/submitted version was 1.0.1 build 54)  
 2. Paste metadata from this doc  
 3. Upload screenshots (6.9" primary + iPad 13" optional)  
 4. Upload App Preview video  
