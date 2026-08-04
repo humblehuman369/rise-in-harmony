@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.riseinharmony.app",
-      "buildNumber": "55",
+      "buildNumber": "1",
       "infoPlist": {
         "CFBundleDisplayName": "Rise In Harmony",
         "UIBackgroundModes": [
@@ -73,7 +73,7 @@
         "backgroundColor": "#0A0B14"
       },
       "package": "com.riseinharmony.app",
-      "versionCode": 55,
+      "versionCode": 1,
       "permissions": [
         "android.permission.SCHEDULE_EXACT_ALARM",
         "android.permission.RECEIVE_BOOT_COMPLETED",
