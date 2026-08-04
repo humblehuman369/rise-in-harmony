@@ -1,5 +1,5 @@
 # Rise In Harmony — Apple App Store Submission (v1.2.0)
-**Version:** 1.2.0 · **buildNumber:** 55 · **Bundle ID:** `com.riseinharmony.app`  
+**Version:** 1.2.0 · **Next buildNumber:** 55 (managed by EAS remote) · **Bundle ID:** `com.riseinharmony.app`  
 **ASC App ID:** `6786561356` · **Team:** `A2Y6C3NNSY`  
 **Expo project:** `917f33c4-3b87-4f19-82ee-2c54125dae47`
 
@@ -17,7 +17,7 @@ Mark each item before hitting **Submit for Review**:
 
 ### Binary & config
 - [x] Bundle ID `com.riseinharmony.app` matches App Store Connect
-- [x] `app.json` version `1.2.0`, iOS `buildNumber` `55`
+- [x] `app.json` version `1.2.0` — **buildNumber is managed by EAS remote** (`appVersionSource: "remote"` in `eas.json`); the value in `app.json` is ignored by EAS
 - [x] `ITSAppUsesNonExemptEncryption` = false (no export-compliance questionnaire)
 - [x] iOS deployment target 16.0+; phone-only (`supportsTablet: false`)
 - [x] Background audio mode enabled for continuous playback
@@ -263,7 +263,7 @@ eas secret:create --scope project --name EXPO_PUBLIC_POSTHOG_HOST --value "https
 cd apps/mobile
 eas build --platform ios --profile production
 ```
-`autoIncrement: true` in `eas.json` will bump buildNumber to 55 automatically (last build was 54).
+`autoIncrement: true` + `appVersionSource: "remote"` in `eas.json` means **EAS manages the build counter on its servers** — the `buildNumber` field in `app.json` is ignored. Last build was **54**, so EAS will assign **55** automatically.
 
 ### 3. Submit to App Store Connect
 ```bash
@@ -305,3 +305,4 @@ Typical review: 1–3 business days.
 | Home screen redesign | ✅ NEW in 1.2.0 |
 | Premium via RevenueCat | ✅ Shipped (configure products in ASC) |
 | Offline-capable core | ✅ Shipped |
+
