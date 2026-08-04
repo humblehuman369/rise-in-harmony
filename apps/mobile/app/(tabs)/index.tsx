@@ -7,7 +7,7 @@
  * - Solfeggio frequency list
  * - Testimonial + final CTA
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import {
   Animated,
   Easing,
 } from "react-native";
+import Svg, { Circle, Line, Text as SvgText } from "react-native-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { colors, spacing, fontSizes, radii } from "@rih/ui-tokens";
@@ -37,6 +38,84 @@ function PulseDot() {
     ).start();
   }, [anim]);
   return <Animated.View style={[styles.pulseDot, { opacity: anim }]} />;
+}
+
+// ─── Analog Clock ────────────────────────────────────────────────────────────
+function AnalogClock({ size = 160 }: { size?: number }) {
+  const [time, setTime] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size / 2 - 4;
+
+  const sec = time.getSeconds();
+  const min = time.getMinutes();
+  const hr = time.getHours() % 12;
+
+  const secAngle = (sec / 60) * 2 * Math.PI - Math.PI / 2;
+  const minAngle = ((min + sec / 60) / 60) * 2 * Math.PI - Math.PI / 2;
+  const hrAngle = ((hr + min / 60) / 12) * 2 * Math.PI - Math.PI / 2;
+
+  const hand = (angle: number, length: number) => ({
+    x2: cx + length * Math.cos(angle),
+    y2: cy + length * Math.sin(angle),
+  });
+
+  const secHand = hand(secAngle, r * 0.82);
+  const minHand = hand(minAngle, r * 0.72);
+  const hrHand = hand(hrAngle, r * 0.52);
+
+  const TEAL = "#00D4AA";
+  const DIM = "rgba(0,212,170,0.35)";
+
+  return (
+    <Svg width={size} height={size}>
+      {/* Outer ring */}
+      <Circle cx={cx} cy={cy} r={r} fill="rgba(0,212,170,0.04)" stroke={TEAL} strokeWidth={1.5} strokeOpacity={0.5} />
+      {/* Inner glow ring */}
+      <Circle cx={cx} cy={cy} r={r - 8} fill="none" stroke={DIM} strokeWidth={0.5} />
+      {/* Hour markers */}
+      {[12, 3, 6, 9].map((h) => {
+        const a = ((h / 12) * 2 * Math.PI) - Math.PI / 2;
+        return (
+          <SvgText
+            key={h}
+            x={cx + (r - 16) * Math.cos(a)}
+            y={cy + (r - 16) * Math.sin(a) + 4}
+            fontSize={10}
+            fill={TEAL}
+            fillOpacity={0.7}
+            textAnchor="middle"
+          >
+            {h}
+          </SvgText>
+        );
+      })}
+      {/* Hour hand */}
+      <Line x1={cx} y1={cy} x2={hrHand.x2} y2={hrHand.y2} stroke={TEAL} strokeWidth={3} strokeLinecap="round" />
+      {/* Minute hand */}
+      <Line x1={cx} y1={cy} x2={minHand.x2} y2={minHand.y2} stroke={TEAL} strokeWidth={2} strokeLinecap="round" />
+      {/* Second hand */}
+      <Line x1={cx} y1={cy} x2={secHand.x2} y2={secHand.y2} stroke="#FF6B6B" strokeWidth={1} strokeLinecap="round" />
+      {/* Center dot */}
+      <Circle cx={cx} cy={cy} r={4} fill={TEAL} />
+      {/* Digital time */}
+      <SvgText
+        x={cx}
+        y={cy + r * 0.45}
+        fontSize={9}
+        fill={TEAL}
+        fillOpacity={0.6}
+        textAnchor="middle"
+      >
+        {String(time.getHours()).padStart(2, "0")}:{String(min).padStart(2, "0")}
+      </SvgText>
+    </Svg>
+  );
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -114,6 +193,11 @@ export default function HomeScreen() {
           <Text style={styles.heroSub}>
             Wake gently with healing frequencies. No jarring buzz — just a soft, progressive rise that aligns your body and mind.
           </Text>
+
+          {/* Analog Clock */}
+          <View style={styles.clockWrapper}>
+            <AnalogClock size={160} />
+          </View>
 
           {/* Primary CTA */}
           <TouchableOpacity style={styles.ctaPrimary} onPress={() => router.push("/(tabs)/alarm")} activeOpacity={0.85}>
@@ -320,6 +404,12 @@ const styles = StyleSheet.create({
   },
   ctaSecondaryText: { color: colors.textPrimary, fontSize: fontSizes.base, fontWeight: "600" },
   trustLine: { fontSize: 11, color: "rgba(139,163,191,0.45)", textAlign: "center" },
+  clockWrapper: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 24,
+    opacity: 0.92,
+  },
 
   // Sections
   section: {
@@ -470,3 +560,4 @@ const styles = StyleSheet.create({
   },
   ctaPremiumText: { color: "#A78BFA", fontSize: fontSizes.base, fontWeight: "600" },
 });
+
