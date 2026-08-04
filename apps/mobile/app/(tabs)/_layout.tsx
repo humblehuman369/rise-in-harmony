@@ -3,12 +3,15 @@ import { View, StyleSheet } from "react-native";
 import { colors } from "@rih/ui-tokens";
 import {
   Home,
-  Music2,
-  Waves,
-  Sliders,
+  Map,
   AlarmClock,
-  BarChart2,
+  Headphones,
+  Music2,
+  Sparkles,
+  Layers,
   BookOpen,
+  GraduationCap,
+  BarChart2,
 } from "lucide-react-native";
 
 // Tab bar icon wrapper with active highlight
@@ -40,6 +43,7 @@ export default function TabLayout() {
         tabBarShowLabel: true,
       }}
     >
+      {/* 1. Home */}
       <Tabs.Screen
         name="index"
         options={{
@@ -51,57 +55,21 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      {/* 2. Journey (7-Chakra) */}
       <Tabs.Screen
-        name="player"
+        name="journey"
         options={{
-          title: "Player",
+          title: "Journey",
           tabBarIcon: ({ focused, color }) => (
             <TabIcon focused={focused} color={color}>
-              <Music2 size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
+              <Map size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
             </TabIcon>
           ),
         }}
       />
-      {/* Precision merged into Studio — keep routable but hidden from tab bar */}
-      <Tabs.Screen name="precision" options={{ href: null }} />
-      <Tabs.Screen
-        name="meditation"
-        options={{
-          title: "Meditate",
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon focused={focused} color={color}>
-              <Waves size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
-            </TabIcon>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="studio"
-        options={{
-          title: "Studio",
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon focused={focused} color={color}>
-              <Sliders size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
-            </TabIcon>
-          ),
-        }}
-      />
-      {/* Library duplicates the Player grid; keep it routable (linked from
-          Home) but out of the tab bar so we stay at 7 tabs. */}
-      <Tabs.Screen name="library" options={{ href: null }} />
-      {/* Programs — reachable from Dashboard / Home, not a primary tab */}
-      <Tabs.Screen name="programs" options={{ href: null, title: "Programs" }} />
-      <Tabs.Screen
-        name="learn"
-        options={{
-          title: "Learn",
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon focused={focused} color={color}>
-              <BookOpen size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
-            </TabIcon>
-          ),
-        }}
-      />
+
+      {/* 3. Alarm */}
       <Tabs.Screen
         name="alarm"
         options={{
@@ -113,6 +81,86 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      {/* 4. Meditate */}
+      <Tabs.Screen
+        name="meditation"
+        options={{
+          title: "Meditate",
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon focused={focused} color={color}>
+              <Headphones size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
+            </TabIcon>
+          ),
+        }}
+      />
+
+      {/* 5. Frequency (Player) */}
+      <Tabs.Screen
+        name="player"
+        options={{
+          title: "Frequency",
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon focused={focused} color={color}>
+              <Music2 size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
+            </TabIcon>
+          ),
+        }}
+      />
+
+      {/* 6. Reiki */}
+      <Tabs.Screen
+        name="reiki"
+        options={{
+          title: "Reiki",
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon focused={focused} color={color}>
+              <Sparkles size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
+            </TabIcon>
+          ),
+        }}
+      />
+
+      {/* 7. Studio */}
+      <Tabs.Screen
+        name="studio"
+        options={{
+          title: "Studio",
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon focused={focused} color={color}>
+              <Layers size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
+            </TabIcon>
+          ),
+        }}
+      />
+
+      {/* 8. Library */}
+      <Tabs.Screen
+        name="library"
+        options={{
+          title: "Library",
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon focused={focused} color={color}>
+              <BookOpen size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
+            </TabIcon>
+          ),
+        }}
+      />
+
+      {/* 9. Learn */}
+      <Tabs.Screen
+        name="learn"
+        options={{
+          title: "Learn",
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon focused={focused} color={color}>
+              <GraduationCap size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
+            </TabIcon>
+          ),
+        }}
+      />
+
+      {/* 10. Dashboard */}
       <Tabs.Screen
         name="dashboard"
         options={{
@@ -124,6 +172,10 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      {/* Hidden routable screens — not in tab bar */}
+      <Tabs.Screen name="precision" options={{ href: null }} />
+      <Tabs.Screen name="programs" options={{ href: null, title: "Programs" }} />
     </Tabs>
   );
 }
