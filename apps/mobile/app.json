@@ -2,7 +2,7 @@
   "expo": {
     "name": "Rise In Harmony",
     "slug": "rise-in-harmony",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.riseinharmony.app",
-      "buildNumber": "50",
+      "buildNumber": "51",
       "infoPlist": {
         "CFBundleDisplayName": "Rise In Harmony",
         "UIBackgroundModes": [
@@ -73,7 +73,7 @@
         "backgroundColor": "#0A0B14"
       },
       "package": "com.riseinharmony.app",
-      "versionCode": 50,
+      "versionCode": 51,
       "permissions": [
         "android.permission.SCHEDULE_EXACT_ALARM",
         "android.permission.RECEIVE_BOOT_COMPLETED",
