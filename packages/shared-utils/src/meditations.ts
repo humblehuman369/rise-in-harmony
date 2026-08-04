@@ -22,10 +22,10 @@ export const MEDITATIONS: Meditation[] = [
     colorSecondary: "#059669",
     soundscape: "nature-meditation-174",
     musicMode: "none",
-    recommendedFrequencyId: "174",
-    recommendedFrequencyLabel: "174Hz Foundation",
+    recommendedFrequencyId: "schumann",
+    recommendedFrequencyLabel: "7.83Hz Schumann Resonance",
     frequencyRationale:
-      "174 Hz is traditionally linked to grounding and physical ease. This session is TrueHz-tuned to that carrier.",
+      "The Schumann Resonance (7.83 Hz) is Earth's own electromagnetic heartbeat — pairing it with this nature session deepens the grounding connection at a sub-audible, felt level.",
     affirmation: "I am rooted, safe, and held by the earth.",
     guidance: [
       "Sit or lie down comfortably. Soften your jaw and shoulders.",
@@ -50,10 +50,10 @@ export const MEDITATIONS: Meditation[] = [
     colorSecondary: "#4338CA",
     soundscape: "calm-sleep-528",
     musicMode: "none",
-    recommendedFrequencyId: "528",
-    recommendedFrequencyLabel: "528Hz Miracle Tone",
+    recommendedFrequencyId: "delta",
+    recommendedFrequencyLabel: "3Hz Delta Waves",
     frequencyRationale:
-      "This track is TrueHz-tuned to 528 so the whole mix carries a warm, restorative quality into sleep.",
+      "Delta (0.5–4 Hz) is the brain state of deep, dreamless sleep. A 3 Hz binaural beat gently guides your brain toward sleep onset — the perfect sub-audible companion for this wind-down session.",
     affirmation: "I release the day. Rest comes easily to me.",
     guidance: [
       "Dim the lights. Lie on your back or side in a comfortable position.",
@@ -78,10 +78,10 @@ export const MEDITATIONS: Meditation[] = [
     colorSecondary: "#6D28D9",
     soundscape: "third-eye-activation-528",
     musicMode: "none",
-    recommendedFrequencyId: "528",
-    recommendedFrequencyLabel: "528Hz Miracle Tone",
+    recommendedFrequencyId: "theta",
+    recommendedFrequencyLabel: "6Hz Theta Waves",
     frequencyRationale:
-      "TrueHz-tuned to 528 Hz — a bright, clarifying carrier that supports insight and heart-mind coherence.",
+      "Theta (4–8 Hz) is the gateway brainwave state for intuition, inner vision, and deep insight. A 6 Hz binaural beat opens the third eye at a sub-audible level — felt, not heard.",
     affirmation: "I trust my inner vision. Clarity rises naturally.",
     guidance: [
       "Sit with a tall spine. Soften the gaze or close the eyes.",
@@ -106,10 +106,10 @@ export const MEDITATIONS: Meditation[] = [
     colorSecondary: "#EA580C",
     soundscape: "reiki-healing-garden-285",
     musicMode: "none",
-    recommendedFrequencyId: "285",
-    recommendedFrequencyLabel: "285Hz Quantum Cognition",
+    recommendedFrequencyId: "theta",
+    recommendedFrequencyLabel: "6Hz Theta Waves",
     frequencyRationale:
-      "285 Hz is associated with renewal and restoration. The entire garden bed is TrueHz-tuned to this carrier.",
+      "Theta (4–8 Hz) supports deep healing rest and energetic renewal. A 6 Hz binaural beat creates the receptive inner state where Reiki energy flows most freely — sub-audible and deeply felt.",
     affirmation: "Every cell of my body knows how to heal. I allow restoration.",
     guidance: [
       "Lie down or sit supported. Invite the body to receive.",
@@ -134,10 +134,10 @@ export const MEDITATIONS: Meditation[] = [
     colorSecondary: "#0284C7",
     soundscape: "deep-serenity-444",
     musicMode: "none",
-    recommendedFrequencyId: "444",
-    recommendedFrequencyLabel: "444Hz Concert Pitch",
+    recommendedFrequencyId: "alpha",
+    recommendedFrequencyLabel: "10Hz Alpha Waves",
     frequencyRationale:
-      "444 Hz is a bright concert pitch used in healing music traditions. This session is TrueHz-tuned to 444.",
+      "Alpha (8–12 Hz) is relaxed alertness — the calm-but-present state ideal for stress release without drowsiness. A 10 Hz binaural beat supports emotional balance sub-audibly while the music carries you.",
     affirmation: "I am calm. Serenity moves through me with every breath.",
     guidance: [
       "Find a quiet place. Let the eyes close.",
@@ -162,10 +162,10 @@ export const MEDITATIONS: Meditation[] = [
     colorSecondary: "#7C3AED",
     soundscape: "spiritual-meditation-444",
     musicMode: "none",
-    recommendedFrequencyId: "444",
-    recommendedFrequencyLabel: "444Hz Concert Pitch",
+    recommendedFrequencyId: "theta",
+    recommendedFrequencyLabel: "6Hz Theta Waves",
     frequencyRationale:
-      "TrueHz-tuned to 444 Hz for sustained spiritual practice without spoken guidance.",
+      "Theta (4–8 Hz) is the contemplative brainwave state for sustained spiritual practice and open awareness. A 6 Hz binaural beat holds you in that receptive space throughout the session.",
     affirmation: "I am awareness itself. All arises and passes within me.",
     guidance: [
       "Settle into your meditation posture. Hands soft, spine long.",
@@ -190,10 +190,10 @@ export const MEDITATIONS: Meditation[] = [
     colorSecondary: "#16A34A",
     soundscape: "deep-into-nature-60",
     musicMode: "none",
-    recommendedFrequencyId: "174",
-    recommendedFrequencyLabel: "174Hz Foundation",
+    recommendedFrequencyId: "schumann",
+    recommendedFrequencyLabel: "7.83Hz Schumann Resonance",
     frequencyRationale:
-      "174 Hz is the grounding foundation tone — pairing it with nature soundscapes deepens safety and belonging.",
+      "The Schumann Resonance (7.83 Hz) is nature's own frequency — Earth's electromagnetic pulse. Pairing it with this 60-minute forest immersion creates a full-body resonance with the natural world, felt sub-audibly.",
     affirmation: "I belong to the earth. The earth belongs to me.",
     guidance: [
       "Find a comfortable position. Allow your body to be fully supported.",
@@ -219,10 +219,10 @@ export const MEDITATIONS: Meditation[] = [
     colorSecondary: "#6D28D9",
     soundscape: "inner-calling-60",
     musicMode: "none",
-    recommendedFrequencyId: "963",
-    recommendedFrequencyLabel: "963Hz Divine",
+    recommendedFrequencyId: "theta",
+    recommendedFrequencyLabel: "6Hz Theta Waves",
     frequencyRationale:
-      "963 Hz is associated with the crown chakra and higher awareness — stillness to hear what has always been calling.",
+      "Theta (4–8 Hz) opens the subconscious — where inner wisdom lives. A 6 Hz binaural beat creates the receptive inner state for deep self-listening and authentic insight, felt below the threshold of hearing.",
     affirmation: "I listen deeply. My inner voice is clear and true.",
     guidance: [
       "Sit or lie in a position you can hold comfortably for an hour.",
@@ -248,10 +248,10 @@ export const MEDITATIONS: Meditation[] = [
     colorSecondary: "#1D4ED8",
     soundscape: "peaceful-ocean-60",
     musicMode: "none",
-    recommendedFrequencyId: "528",
-    recommendedFrequencyLabel: "528Hz Miracle Tone",
+    recommendedFrequencyId: "delta",
+    recommendedFrequencyLabel: "3Hz Delta Waves",
     frequencyRationale:
-      "528 Hz is known as the miracle tone — layered beneath ocean waves it amplifies the cleansing quality of the session.",
+      "Delta (0.5–4 Hz) is the brain state of deep sleep and restoration. A 3 Hz binaural beat pairs with the ocean's natural wave rhythm to guide the nervous system toward deep rest — sub-audible and profoundly calming.",
     affirmation: "Like the ocean, I am vast, fluid, and at peace.",
     guidance: [
       "Lie down if possible. Let your body become heavy and still.",
@@ -279,3 +279,4 @@ export const MEDITATION_CATEGORIES: {
 
 /** Free (non-premium) TrueHz sessions — used by mobile paywall gates. */
 export const FREE_MEDITATIONS = MEDITATIONS.filter((m) => !m.isPremium);
+
