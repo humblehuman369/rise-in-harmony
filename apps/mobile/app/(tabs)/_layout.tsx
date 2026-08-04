@@ -1,5 +1,21 @@
-import { Tabs } from "expo-router";
-import { View, StyleSheet } from "react-native";
+/**
+ * Tab Layout — Rise In Harmony Mobile
+ *
+ * Uses a custom scrollable tab bar so all 10 tabs show full labels
+ * without truncation. Users swipe horizontally to reveal more tabs.
+ * The active tab is always visible (auto-scrolled into view).
+ */
+import { useRef, useEffect } from "react";
+import { Tabs, usePathname } from "expo-router";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Dimensions,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@rih/ui-tokens";
 import {
   Home,
@@ -13,195 +29,172 @@ import {
   GraduationCap,
   BarChart2,
 } from "lucide-react-native";
+import { useRouter } from "expo-router";
 
-// Tab bar icon wrapper with active highlight
-function TabIcon({
-  focused,
-  color,
-  children,
-}: {
-  focused: boolean;
-  color: string;
-  children?: React.ReactNode;
-}) {
+const { width: SCREEN_W } = Dimensions.get("window");
+
+// ─── Tab definitions ──────────────────────────────────────────────────────────
+const TABS = [
+  { name: "index",      label: "Home",      route: "/",               Icon: Home          },
+  { name: "journey",    label: "Journey",   route: "/journey",        Icon: Map           },
+  { name: "alarm",      label: "Alarm",     route: "/alarm",          Icon: AlarmClock    },
+  { name: "meditation", label: "Meditate",  route: "/meditation",     Icon: Headphones    },
+  { name: "player",     label: "Frequency", route: "/player",         Icon: Music2        },
+  { name: "reiki",      label: "Reiki",     route: "/reiki",          Icon: Sparkles      },
+  { name: "studio",     label: "Studio",    route: "/studio",         Icon: Layers        },
+  { name: "library",    label: "Library",   route: "/library",        Icon: BookOpen      },
+  { name: "learn",      label: "Learn",     route: "/learn",          Icon: GraduationCap },
+  { name: "dashboard",  label: "Dashboard", route: "/dashboard",      Icon: BarChart2     },
+] as const;
+
+// ─── Custom scrollable tab bar ─────────────────────────────────────────────────
+function ScrollableTabBar() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const scrollRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
+
+  // Determine active tab from current path
+  const activeIndex = TABS.findIndex((t) => {
+    if (t.name === "index") return pathname === "/";
+    return pathname.startsWith(t.route);
+  });
+
+  // Auto-scroll to keep active tab visible
+  useEffect(() => {
+    if (activeIndex < 0) return;
+    // Each tab is ~80px wide; scroll so active tab is centred
+    const TAB_W = 80;
+    const offset = Math.max(0, activeIndex * TAB_W - SCREEN_W / 2 + TAB_W / 2);
+    scrollRef.current?.scrollTo({ x: offset, animated: true });
+  }, [activeIndex]);
+
   return (
-    <View style={[styles.iconWrapper, focused && styles.iconActive]}>
-      {children}
+    <View style={[styles.tabBarContainer, { paddingBottom: insets.bottom }]}>
+      {/* Thin top border */}
+      <View style={styles.topBorder} />
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        bounces={false}
+      >
+        {TABS.map((tab, i) => {
+          const isActive = i === activeIndex;
+          const { Icon } = tab;
+          return (
+            <TouchableOpacity
+              key={tab.name}
+              style={styles.tabItem}
+              onPress={() => router.push(tab.route as any)}
+              activeOpacity={0.7}
+            >
+              {/* Active indicator dot */}
+              {isActive && <View style={styles.activeDot} />}
+
+              {/* Icon with teal background when active */}
+              <View style={[styles.iconWrap, isActive && styles.iconWrapActive]}>
+                <Icon
+                  size={20}
+                  color={isActive ? colors.teal : "#6B7A99"}
+                  strokeWidth={isActive ? 2.2 : 1.8}
+                />
+              </View>
+
+              {/* Full label — never truncated */}
+              <Text
+                style={[
+                  styles.tabLabel,
+                  isActive && styles.tabLabelActive,
+                ]}
+                numberOfLines={1}
+              >
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
 
+// ─── Layout ───────────────────────────────────────────────────────────────────
 export default function TabLayout() {
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: colors.teal,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarLabelStyle: styles.tabLabel,
-        tabBarShowLabel: true,
-      }}
+      tabBar={() => <ScrollableTabBar />}
+      screenOptions={{ headerShown: false }}
     >
-      {/* 1. Home */}
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon focused={focused} color={color}>
-              <Home size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
-            </TabIcon>
-          ),
-        }}
-      />
-
-      {/* 2. Journey (7-Chakra) */}
-      <Tabs.Screen
-        name="journey"
-        options={{
-          title: "Journey",
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon focused={focused} color={color}>
-              <Map size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
-            </TabIcon>
-          ),
-        }}
-      />
-
-      {/* 3. Alarm */}
-      <Tabs.Screen
-        name="alarm"
-        options={{
-          title: "Alarm",
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon focused={focused} color={color}>
-              <AlarmClock size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
-            </TabIcon>
-          ),
-        }}
-      />
-
-      {/* 4. Meditate */}
-      <Tabs.Screen
-        name="meditation"
-        options={{
-          title: "Meditate",
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon focused={focused} color={color}>
-              <Headphones size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
-            </TabIcon>
-          ),
-        }}
-      />
-
-      {/* 5. Frequency (Player) */}
-      <Tabs.Screen
-        name="player"
-        options={{
-          title: "Frequency",
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon focused={focused} color={color}>
-              <Music2 size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
-            </TabIcon>
-          ),
-        }}
-      />
-
-      {/* 6. Reiki */}
-      <Tabs.Screen
-        name="reiki"
-        options={{
-          title: "Reiki",
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon focused={focused} color={color}>
-              <Sparkles size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
-            </TabIcon>
-          ),
-        }}
-      />
-
-      {/* 7. Studio */}
-      <Tabs.Screen
-        name="studio"
-        options={{
-          title: "Studio",
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon focused={focused} color={color}>
-              <Layers size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
-            </TabIcon>
-          ),
-        }}
-      />
-
-      {/* 8. Library */}
-      <Tabs.Screen
-        name="library"
-        options={{
-          title: "Library",
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon focused={focused} color={color}>
-              <BookOpen size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
-            </TabIcon>
-          ),
-        }}
-      />
-
-      {/* 9. Learn */}
-      <Tabs.Screen
-        name="learn"
-        options={{
-          title: "Learn",
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon focused={focused} color={color}>
-              <GraduationCap size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
-            </TabIcon>
-          ),
-        }}
-      />
-
-      {/* 10. Dashboard */}
-      <Tabs.Screen
-        name="dashboard"
-        options={{
-          title: "Dashboard",
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon focused={focused} color={color}>
-              <BarChart2 size={20} color={color} strokeWidth={focused ? 2.2 : 1.8} />
-            </TabIcon>
-          ),
-        }}
-      />
-
-      {/* Hidden routable screens — not in tab bar */}
-      <Tabs.Screen name="precision" options={{ href: null }} />
-      <Tabs.Screen name="programs" options={{ href: null, title: "Programs" }} />
+      <Tabs.Screen name="index"      options={{ title: "Home"      }} />
+      <Tabs.Screen name="journey"    options={{ title: "Journey"   }} />
+      <Tabs.Screen name="alarm"      options={{ title: "Alarm"     }} />
+      <Tabs.Screen name="meditation" options={{ title: "Meditate"  }} />
+      <Tabs.Screen name="player"     options={{ title: "Frequency" }} />
+      <Tabs.Screen name="reiki"      options={{ title: "Reiki"     }} />
+      <Tabs.Screen name="studio"     options={{ title: "Studio"    }} />
+      <Tabs.Screen name="library"    options={{ title: "Library"   }} />
+      <Tabs.Screen name="learn"      options={{ title: "Learn"     }} />
+      <Tabs.Screen name="dashboard"  options={{ title: "Dashboard" }} />
+      {/* Hidden routable screens */}
+      <Tabs.Screen name="precision"  options={{ href: null }} />
+      <Tabs.Screen name="programs"   options={{ href: null }} />
     </Tabs>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  tabBar: {
+  tabBarContainer: {
     backgroundColor: "#0D0F1E",
-    borderTopColor: "rgba(255,255,255,0.06)",
-    borderTopWidth: 1,
-    height: 80,
-    paddingBottom: 16,
-    paddingTop: 8,
+    // No fixed height — grows with content + safe area
+  },
+  topBorder: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.07)",
+  },
+  scrollContent: {
+    paddingHorizontal: 4,
+    paddingVertical: 6,
+    alignItems: "center",
+  },
+  tabItem: {
+    width: 76,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    position: "relative",
+  },
+  activeDot: {
+    position: "absolute",
+    top: 0,
+    width: 20,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: colors.teal,
+  },
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
+  },
+  iconWrapActive: {
+    backgroundColor: "rgba(0,212,170,0.12)",
   },
   tabLabel: {
     fontSize: 11,
     fontWeight: "500",
-    letterSpacing: 0.2,
+    color: "#6B7A99",
+    textAlign: "center",
+    letterSpacing: 0.1,
   },
-  iconWrapper: {
-    width: 32,
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-  },
-  iconActive: {
-    backgroundColor: "rgba(0,212,170,0.12)",
+  tabLabelActive: {
+    color: colors.teal,
+    fontWeight: "600",
   },
 });
