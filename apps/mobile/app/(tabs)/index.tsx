@@ -27,6 +27,18 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import {
+  AlarmClock,
+  Waves,
+  Headphones,
+  Sparkles,
+  Activity,
+  Stethoscope,
+  Sunrise,
+  Brain,
+  Moon,
+  Star,
+} from "lucide-react-native";
 import Svg, {
   Circle,
   Line,
@@ -178,12 +190,12 @@ function getGreeting() {
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const APP_PILLARS = [
-  { icon: "⏰", label: "Healing Alarm",     sub: "432Hz · 528Hz · δ→θ→α",         color: "#00D4AA", route: "/(tabs)/alarm"   },
-  { icon: "〰️", label: "Frequency Studio",  sub: "1–22,000 Hz · DDS precision",    color: "#8B5CF6", route: "/(tabs)/studio"  },
-  { icon: "🎵", label: "Meditation Player", sub: "9 TrueHz tracks · up to 60 min", color: "#3B82F6", route: "/(tabs)/meditation" },
-  { icon: "✨", label: "Reiki Sessions",    sub: "5-phase · 432Hz tri-layer",      color: "#A78BFA", route: "/(tabs)/reiki"   },
-  { icon: "📊", label: "Brainwave Library", sub: "Delta · Theta · Alpha · Gamma",  color: "#F59E0B", route: "/(tabs)/library" },
-  { icon: "💊", label: "AI Prescription",   sub: "Personalized frequency session", color: "#EC4899", route: "/(tabs)/player"  },
+  { Icon: AlarmClock,   label: "Healing Alarm",     sub: "432Hz · 528Hz · δ→θ→α",         color: "#00D4AA", route: "/(tabs)/alarm"   },
+  { Icon: Waves,        label: "Frequency Studio",  sub: "1–22,000 Hz · DDS precision",    color: "#8B5CF6", route: "/(tabs)/studio"  },
+  { Icon: Headphones,   label: "Meditation Player", sub: "9 TrueHz tracks · up to 60 min", color: "#3B82F6", route: "/(tabs)/meditation" },
+  { Icon: Sparkles,     label: "Reiki Sessions",    sub: "5-phase · 432Hz tri-layer",      color: "#A78BFA", route: "/(tabs)/reiki"   },
+  { Icon: Activity,     label: "Brainwave Library", sub: "Delta · Theta · Alpha · Gamma",  color: "#F59E0B", route: "/(tabs)/library" },
+  { Icon: Stethoscope,  label: "AI Prescription",   sub: "Personalized frequency session", color: "#EC4899", route: "/(tabs)/player"  },
 ] as const;
 
 const SOLFEGGIO_PREVIEW = [
@@ -197,17 +209,17 @@ const SOLFEGGIO_PREVIEW = [
 
 const RITUALS = [
   {
-    time: "Morning", icon: "🌅", title: "Wake in resonance",
+    time: "Morning", Icon: Sunrise, title: "Wake in resonance",
     body: "Replace the jarring alarm with a 528Hz sunrise. Progressive fade-in over 5 minutes — no cortisol spike, no snooze-button dread.",
     cta: "Set Healing Alarm", route: "/(tabs)/alarm", color: "#F2C94C",
   },
   {
-    time: "Afternoon", icon: "🧠", title: "Drop into deep work",
+    time: "Afternoon", Icon: Brain, title: "Drop into deep work",
     body: "Alpha binaural beats at 10Hz create a relaxed-alert brainwave state. Layer in rain and let a 90-minute focus block fly by.",
     cta: "Open Studio", route: "/(tabs)/studio", color: "#00D4AA",
   },
   {
-    time: "Evening", icon: "🌙", title: "Unwind into sleep",
+    time: "Evening", Icon: Moon, title: "Unwind into sleep",
     body: "Delta binaural tones with an ocean layer and a sleep timer that fades everything to silence — a wind-down ritual your evenings will keep.",
     cta: "Start Meditation", route: "/(tabs)/meditation", color: "#8B5CF6",
   },
@@ -326,10 +338,10 @@ export default function HomeScreen() {
                   </View>
                 )}
                 <View style={[styles.pillarIcon, { backgroundColor: p.color + "15", borderColor: p.color + "25" }]}>
-                  <Text style={styles.pillarIconEmoji}>{p.icon}</Text>
+                  <p.Icon size={16} color={p.color} strokeWidth={1.8} />
                 </View>
                 <Text style={styles.pillarLabel}>{p.label}</Text>
-                <Text style={[styles.pillarSub, { color: p.color }]}>{p.sub}</Text>
+                <Text style={styles.pillarSub}>{p.sub}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -473,7 +485,7 @@ export default function HomeScreen() {
           {RITUALS.map((r) => (
             <View key={r.time} style={[styles.ritualCard, { borderColor: r.color + "20" }]}>
               <View style={styles.ritualHeader}>
-                <Text style={styles.ritualIcon}>{r.icon}</Text>
+                <r.Icon size={18} color={r.color} strokeWidth={1.8} />
                 <Text style={[styles.ritualTime, { color: r.color }]}>{r.time}</Text>
               </View>
               <Text style={styles.ritualTitle}>{r.title}</Text>
@@ -491,7 +503,7 @@ export default function HomeScreen() {
         <View style={[styles.section, { alignItems: "center" }]}>
           <View style={styles.starsRow}>
             {[1, 2, 3, 4, 5].map((i) => (
-              <Text key={i} style={styles.star}>★</Text>
+              <Star key={i} size={16} color="#F2C94C" fill="#F2C94C" strokeWidth={0} />
             ))}
           </View>
           <Text style={styles.testimonialQuote}>
@@ -757,9 +769,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: spacing[2],
   },
-  pillarIconEmoji: { fontSize: 16 },
+  pillarIconEmoji: { fontSize: 16 }, // kept for reference — replaced by Lucide
   pillarLabel: { fontSize: fontSizes.sm, fontWeight: "700", color: "#E8EDF5", marginBottom: 2 },
-  pillarSub: { fontSize: 10, lineHeight: 14 },
+  pillarSub: { fontSize: 10, lineHeight: 14, color: "rgba(0,212,170,0.55)" },
 
   // TrueHz strip
   truehzStrip: {
@@ -890,7 +902,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing[3],
   },
   ritualHeader: { flexDirection: "row", alignItems: "center", gap: spacing[2], marginBottom: spacing[2] },
-  ritualIcon: { fontSize: 20 },
+  ritualIcon: { fontSize: 20 }, // kept for reference — replaced by Lucide
   ritualTime: { fontSize: 10, fontWeight: "700", letterSpacing: 2, textTransform: "uppercase" },
   ritualTitle: { fontSize: fontSizes.base, fontWeight: "700", color: "#E8EDF5", marginBottom: spacing[2] },
   ritualBody: { fontSize: fontSizes.sm, color: "#8FA3BF", lineHeight: 20, marginBottom: spacing[3] },
@@ -898,7 +910,7 @@ const styles = StyleSheet.create({
 
   // Testimonial
   starsRow: { flexDirection: "row", gap: 4, marginBottom: spacing[4] },
-  star: { fontSize: 16, color: "#F2C94C" },
+  star: { fontSize: 16, color: "#F2C94C" }, // kept for reference — replaced by Lucide
   testimonialQuote: {
     fontSize: 19,
     fontStyle: "italic",
