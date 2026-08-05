@@ -36,10 +36,33 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as KeepAwake from "expo-keep-awake";
 import * as Haptics from "expo-haptics";
+import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from "expo-audio";
 import { createVoice, setMasterVolume } from "@/lib/synth";
 import type { SynthVoice } from "@/lib/synth";
-import { FREQUENCIES } from "@rih/shared-utils";
+import { FREQUENCIES, MEDITATIONS } from "@rih/shared-utils";
 import type { Alarm } from "@rih/shared-types";
+
+// ─── CDN URLs for meditation tracks (same as useMeditationPlayer.ts) ─────────
+const MEDITATION_CDN_URLS: Record<string, string> = {
+  "calm-sleep-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/IYQghxoiyPtmxTWZ.mp3",
+  "deep-serenity-444": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/XrswIdGeuQpsHQZo.mp3",
+  "nature-meditation-174": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ySLrOnBvjVJpOcpp.mp3",
+  "reiki-healing-garden-285": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/JMfdCoiZFkPyxCYD.mp3",
+  "spiritual-meditation-444": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/GtKAQCHgteBuniTF.mp3",
+  "third-eye-activation-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/fsamjpcaHNeOwiPp.mp3",
+  "deep-into-nature-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/WKmRGyioQaoQKeeJ.mp3",
+  "inner-calling-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ktyVgoowVIAMSvwT.mp3",
+  "peaceful-ocean-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/gjiHzXouliJdAAeH.mp3",
+};
+
+// ─── Bundled nature sound assets ──────────────────────────────────────────────
+const NATURE_ASSETS: Record<string, number> = {
+  "ambient-rain": require("../../assets/sounds/ambient-rain.mp3"),
+  "ambient-ocean": require("../../assets/sounds/ambient-ocean.mp3"),
+  "ambient-forest": require("../../assets/sounds/ambient-forest.mp3"),
+  "ambient-wind": require("../../assets/sounds/ambient-wind.mp3"),
+  "ambient-fire": require("../../assets/sounds/ambient-fire.mp3"),
+};
 
 // ─── Sleep profile stage fractions ────────────────────────────────────────────
 // Each value is the fraction of fadeInMinutes at which that stage boundary occurs.
@@ -77,6 +100,17 @@ interface AlarmRingingScreenProps {
   maxSnoozes?: number;
   onStop: () => void;
   onSnooze: () => void;
+}
+
+/** Determine the sound display name for the alarm */
+function getSoundDisplayName(alarm: Alarm): string {
+  if ((alarm as Record<string, unknown>).meditationLabel) {
+    return (alarm as Record<string, unknown>).meditationLabel as string;
+  }
+  if ((alarm as Record<string, unknown>).ambientLabel) {
+    return (alarm as Record<string, unknown>).ambientLabel as string;
+  }
+  return `${alarm.frequencyHz}Hz — ${alarm.frequencyName ?? "Healing Frequency"}`;
 }
 
 type MissionType = "breathing" | "gratitude";
@@ -209,9 +243,16 @@ export default function AlarmRingingScreen({
   onSnooze,
 }: AlarmRingingScreenProps) {
   const voiceRef = useRef<SynthVoice | null>(null);
+  const audioPlayerRef = useRef<AudioPlayer | null>(null);
   const fadeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hapticTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedRef = useRef(false);
+
+  // Determine sound type from alarm
+  const alarmExt = alarm as Record<string, unknown>;
+  const soundType: string = (alarmExt.soundType as string) ?? "frequency";
+  const ambientId: string | null = (alarmExt.ambientId as string) ?? null;
+  const meditationId: string | null = (alarmExt.meditationId as string) ?? null;
 
   const [stage, setStage] = useState(0);
   const [volumePct, setVolumePct] = useState(0);
@@ -247,17 +288,39 @@ export default function AlarmRingingScreen({
     const stage2Ms = fracs[1] * fadeMs;
     const stage3Ms = fracs[2] * fadeMs;
 
-    // Find frequency — default to 432Hz
-    const freq = FREQUENCIES.find(f => f.hz === alarm.frequencyHz) ?? FREQUENCIES.find(f => f.hz === 432) ?? FREQUENCIES[0];
+    // Configure audio mode for background + silent mode playback
+    setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: true,
+      interruptionMode: "doNotMix",
+      interruptionModeAndroid: "doNotMix",
+    }).catch(() => {});
 
-    // Start the DDS voice at whisper volume
-    const voice = createVoice({
-      hz: freq.hz,
-      waveform: "sine",
-      volume: STAGE_VOLUMES[0],
-    });
-    voice.start(2.0); // 2-second fade-in to avoid jarring start
-    voiceRef.current = voice;
+    if (soundType === "ambient" && ambientId && NATURE_ASSETS[ambientId]) {
+      // Play bundled nature sound via expo-audio
+      const player = createAudioPlayer(NATURE_ASSETS[ambientId]);
+      player.loop = true;
+      player.volume = STAGE_VOLUMES[0];
+      player.play();
+      audioPlayerRef.current = player;
+    } else if (soundType === "meditation" && meditationId && MEDITATION_CDN_URLS[meditationId]) {
+      // Play CDN meditation track via expo-audio
+      const player = createAudioPlayer({ uri: MEDITATION_CDN_URLS[meditationId] });
+      player.loop = true;
+      player.volume = STAGE_VOLUMES[0];
+      player.play();
+      audioPlayerRef.current = player;
+    } else {
+      // Default: DDS frequency synthesis
+      const freq = FREQUENCIES.find(f => f.hz === alarm.frequencyHz) ?? FREQUENCIES.find(f => f.hz === 432) ?? FREQUENCIES[0];
+      const voice = createVoice({
+        hz: freq.hz,
+        waveform: "sine",
+        volume: STAGE_VOLUMES[0],
+      });
+      voice.start(2.0); // 2-second fade-in to avoid jarring start
+      voiceRef.current = voice;
+    }
 
     const startedAt = Date.now();
 
@@ -305,7 +368,13 @@ export default function AlarmRingingScreen({
 
       level = Math.max(0.02, Math.min(1.0, level));
       setVolumePct(Math.round(level * 100));
-      voiceRef.current?.setVolume(level, 0.4);
+
+      // Apply volume to whichever player is active
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.volume = level;
+      } else {
+        voiceRef.current?.setVolume(level, 0.4);
+      }
     }, 500);
 
     // Persistent stage haptic loop — vibrate every 30s in persistent stage
@@ -321,6 +390,10 @@ export default function AlarmRingingScreen({
       if (hapticTimerRef.current) clearInterval(hapticTimerRef.current);
       voiceRef.current?.stop(0.5);
       voiceRef.current = null;
+      if (audioPlayerRef.current) {
+        try { audioPlayerRef.current.pause(); } catch { /* ignore */ }
+        audioPlayerRef.current = null;
+      }
       KeepAwake.deactivateKeepAwake().catch(() => {});
       Vibration.cancel();
     };
@@ -344,6 +417,7 @@ export default function AlarmRingingScreen({
   const STAGE_COLORS = ["#4A5568", TEAL, TEAL, AMBER];
   const stageColor = STAGE_COLORS[stage];
   const snoozesLeft = maxSnoozes - snoozeCount;
+  const soundDisplayName = getSoundDisplayName(alarm);
 
   return (
     <View style={styles.container}>
@@ -418,9 +492,9 @@ export default function AlarmRingingScreen({
           {/* Label */}
           <Text style={styles.alarmLabel}>{alarm.label ?? "Healing Alarm"}</Text>
 
-          {/* Frequency */}
+          {/* Sound name */}
           <Text style={[styles.alarmFreq, { color: stageColor }]}>
-            {alarm.frequencyHz}Hz — {alarm.frequencyName ?? "Healing Frequency"}
+            {soundDisplayName}
           </Text>
 
           {/* Stage status */}

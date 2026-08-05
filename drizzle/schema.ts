@@ -103,12 +103,18 @@ export const alarms = mysqlTable("alarms", {
   /** wake = morning alarm; wind_down = evening bedtime ritual */
   kind: mysqlEnum("kind", ["wake", "wind_down"]).default("wake").notNull(),
   // Sound config
-  soundType: mysqlEnum("soundType", ["frequency", "studio_mix"])
+  soundType: mysqlEnum("soundType", ["frequency", "studio_mix", "ambient", "meditation"])
     .default("frequency")
     .notNull(),
   frequencyHz: float("frequencyHz"),
   frequencyName: varchar("frequencyName", { length: 128 }),
   studioMixName: varchar("studioMixName", { length: 128 }),
+  /** ID of a BACKGROUND_LOOPS entry (e.g. "ambient-rain", "calm-sleep-528") */
+  ambientId: varchar("ambientId", { length: 128 }),
+  ambientLabel: varchar("ambientLabel", { length: 128 }),
+  /** ID of a meditation track (e.g. "calm-sleep-528", "deep-into-nature-60") */
+  meditationId: varchar("meditationId", { length: 128 }),
+  meditationLabel: varchar("meditationLabel", { length: 128 }),
   // Wake / wind-down sequence
   wakeSequence: varchar("wakeSequence", { length: 64 }).default("gentle"),
   fadeInMinutes: int("fadeInMinutes").default(5).notNull(),

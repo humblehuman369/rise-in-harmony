@@ -19,6 +19,7 @@ import { serveStatic, setupVite } from "./vite";
 import { getDb } from "../db";
 import { pingPool } from "../lib/dbPool";
 import { log } from "../lib/logger";
+import { runMigrations } from "../lib/runMigrations";
 import { sql } from "drizzle-orm";
 import { startConvertWorker } from "../lib/convert/worker";
 import { isConvertEnabled } from "../lib/convert/limits";
@@ -56,6 +57,12 @@ function resolveListenPort(preferredPort: number): Promise<number> {
 
 async function startServer() {
   assertCriticalEnv();
+
+  // Run pending DB migrations before accepting traffic
+  if (process.env.DATABASE_URL) {
+    const db = await getDb();
+    await runMigrations(db);
+  }
 
   const app = express();
   const server = createServer(app);

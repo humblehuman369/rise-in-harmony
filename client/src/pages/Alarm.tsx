@@ -9,11 +9,12 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Plus, AlarmClock, Trash2, Edit3, Bell, BellOff, Waves, Sunrise, Zap,
   Lock, BellRing, ShieldCheck, Layers, Smartphone, Music2, Wind, Play,
-  Square, Check, Moon,
+  Square, Check, Moon, BookOpen,
 } from "lucide-react";
 import Layout from "@/components/Layout";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
 import { BACKGROUND_LOOPS, getLibraryLoopUrl } from "@/data/backgroundLoops";
+import { MEDITATIONS } from "@rih/shared-utils";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useAlarmNotifications } from "@/hooks/useAlarmNotifications";
@@ -46,6 +47,12 @@ function buildRingingSound(alarm: Alarm): RingingSound {
         },
       };
     }
+  }
+  if (alarm.soundType === "ambient" && alarm.ambientId) {
+    return { type: "ambient", ambientId: alarm.ambientId, ambientLabel: alarm.ambientLabel };
+  }
+  if (alarm.soundType === "meditation" && alarm.meditationId) {
+    return { type: "meditation", meditationId: alarm.meditationId, meditationLabel: alarm.meditationLabel };
   }
   const freq = FREQUENCIES.find(f => f.id === alarm.frequencyId) ?? FREQUENCIES.find(f => f.id === "432hz") ?? FREQUENCIES[0];
   return { type: "frequency", frequencyId: freq.id };
@@ -93,13 +100,15 @@ interface Alarm {
   enabled: boolean;
   fadeInMinutes: number;
   sleepProfile?: SleepProfile;
-  soundType?: "frequency" | "user_sound" | "studio_mix";
+  soundType?: "frequency" | "user_sound" | "studio_mix" | "ambient" | "meditation";
   studioMixId?: string;
   studioMixName?: string;
   userSoundId?: number;
   userSoundName?: string;
   ambientId?: string;
   ambientLabel?: string;
+  meditationId?: string;
+  meditationLabel?: string;
 }
 
 const ALARMS_STORAGE_KEY = "rih_alarms_v1";
@@ -714,9 +723,13 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit, nextFireTime }: {
                   <span className="text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: 'rgba(139,92,246,0.12)', color: '#8B5CF6', fontFamily: 'DM Sans, sans-serif', border: '1px solid rgba(139,92,246,0.2)' }}>
                     <Layers size={8} />{alarm.studioMixName || 'Studio Mix'}
                   </span>
+                ) : alarm.meditationId ? (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B', fontFamily: 'DM Sans, sans-serif', border: '1px solid rgba(245,158,11,0.2)' }}>
+                    <BookOpen size={8} />{alarm.meditationLabel || 'Meditation'}
+                  </span>
                 ) : alarm.ambientId ? (
                   <span className="text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: 'rgba(59,130,246,0.12)', color: '#3B82F6', fontFamily: 'DM Sans, sans-serif', border: '1px solid rgba(59,130,246,0.2)' }}>
-                    <Music2 size={8} />{alarm.ambientLabel || 'Ambient'}
+                    <Wind size={8} />{alarm.ambientLabel || 'Nature Sound'}
                   </span>
                 ) : freq && (
                   <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: `${freq.color}10`, color: freq.color, fontFamily: 'DM Sans, sans-serif', border: `1px solid ${freq.color}20` }}>
@@ -742,7 +755,7 @@ function AlarmCard({ alarm, onToggle, onDelete, onEdit, nextFireTime }: {
 }
 
 // ─── Alarm editor sheet ───────────────────────────────────────────────────────
-type SoundTab = "frequency" | "studio" | "ambient";
+type SoundTab = "frequency" | "studio" | "ambient" | "meditation";
 
 interface AlarmEditorSheetProps {
   onClose: () => void;
@@ -780,10 +793,14 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
   const [fadeIn, setFadeIn] = useState(editingAlarm?.fadeInMinutes ?? 5);
   const [sleepProfile, setSleepProfile] = useState<SleepProfile>(editingAlarm?.sleepProfile ?? "normal");
   const [soundMode, setSoundMode] = useState<SoundTab>(
-    editingAlarm?.studioMixId ? "studio" : editingAlarm?.ambientId ? "ambient" : "frequency"
+    editingAlarm?.studioMixId ? "studio"
+    : editingAlarm?.meditationId ? "meditation"
+    : editingAlarm?.ambientId ? "ambient"
+    : "frequency"
   );
   const [selectedMixId, setSelectedMixId] = useState<string | null>(editingAlarm?.studioMixId ?? null);
   const [selectedAmbientId, setSelectedAmbientId] = useState<string | null>(editingAlarm?.ambientId ?? null);
+  const [selectedMeditationId, setSelectedMeditationId] = useState<string | null>(editingAlarm?.meditationId ?? null);
   const [freqCategory, setFreqCategory] = useState<"solfeggio" | "binaural" | "recorded">("solfeggio");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -836,7 +853,10 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
       onSave({ ...base, soundType: "studio_mix", studioMixId: selectedMixId, studioMixName: mix?.name });
     } else if (soundMode === "ambient" && selectedAmbientId) {
       const ambient = BACKGROUND_LOOPS.find(l => l.id === selectedAmbientId);
-      onSave({ ...base, ambientId: selectedAmbientId, ambientLabel: ambient?.label });
+      onSave({ ...base, soundType: "ambient", ambientId: selectedAmbientId, ambientLabel: ambient?.label });
+    } else if (soundMode === "meditation" && selectedMeditationId) {
+      const med = MEDITATIONS.find(m => m.id === selectedMeditationId);
+      onSave({ ...base, soundType: "meditation", meditationId: selectedMeditationId, meditationLabel: med?.title });
     } else {
       onSave({ ...base, soundType: "frequency" });
     }
@@ -961,7 +981,8 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
             <div className="flex gap-1.5 mb-3">
               {([
                 { mode: "frequency" as const, label: "Frequencies", icon: Waves, activeColor: '#00D4AA', activeBg: 'rgba(0,212,170,0.12)', activeBorder: 'rgba(0,212,170,0.3)' },
-                { mode: "ambient" as const, label: "Ambients", icon: Wind, activeColor: '#3B82F6', activeBg: 'rgba(59,130,246,0.12)', activeBorder: 'rgba(59,130,246,0.3)' },
+                { mode: "ambient" as const, label: "Nature", icon: Wind, activeColor: '#3B82F6', activeBg: 'rgba(59,130,246,0.12)', activeBorder: 'rgba(59,130,246,0.3)' },
+                { mode: "meditation" as const, label: "Meditate", icon: BookOpen, activeColor: '#F59E0B', activeBg: 'rgba(245,158,11,0.12)', activeBorder: 'rgba(245,158,11,0.3)' },
                 { mode: "studio" as const, label: "My Mixes", icon: Layers, activeColor: '#8B5CF6', activeBg: 'rgba(139,92,246,0.12)', activeBorder: 'rgba(139,92,246,0.3)' },
               ]).map(tab => (
                 <button key={tab.mode} onClick={() => setSoundMode(tab.mode)}
@@ -1071,6 +1092,37 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
               </div>
             )}
 
+            {soundMode === "meditation" && (
+              <div className="space-y-2">
+                <p className="text-[10px] mb-2" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
+                  Wake to a full TrueHz meditation track — plays from the beginning and loops until you dismiss.
+                </p>
+                {MEDITATIONS.map(med => {
+                  const previewKey = `med:${med.id}`;
+                  const isPreviewing = previewId === previewKey;
+                  const medUrl = getLibraryLoopUrl(med.id);
+                  return (
+                    <button key={med.id} onClick={() => setSelectedMeditationId(med.id)}
+                      className="w-full p-3 rounded-xl text-left flex items-center gap-3 transition-all duration-200 relative"
+                      style={{
+                        background: selectedMeditationId === med.id ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.02)',
+                        border: `1px solid ${selectedMeditationId === med.id ? 'rgba(245,158,11,0.35)' : 'rgba(255,255,255,0.04)'}`,
+                      }}>
+                      <button onClick={(e) => togglePreview(previewKey, medUrl, e)}
+                        className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: isPreviewing ? '#F59E0B' : 'rgba(245,158,11,0.12)', border: `1px solid ${isPreviewing ? '#F59E0B' : 'rgba(245,158,11,0.2)'}` }}>
+                        {isPreviewing ? <Square size={7} fill="#0A0B14" style={{ color: '#0A0B14' }} /> : <Play size={7} fill="#F59E0B" style={{ color: '#F59E0B' }} />}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>{med.title}</div>
+                        <div className="text-xs" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>{med.subtitle}</div>
+                      </div>
+                      {selectedMeditationId === med.id && <Check size={14} style={{ color: '#F59E0B', flexShrink: 0 }} />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             {soundMode === "studio" && (
               savedMixes.length > 0 ? (
                 <div className="space-y-2">
@@ -1239,6 +1291,10 @@ export default function Alarm() {
         fadeInMinutes: a.fadeInMinutes,
         soundType: a.soundType as Alarm['soundType'],
         studioMixName: a.studioMixName ?? undefined,
+        ambientId: (a as Record<string, unknown>).ambientId as string | undefined,
+        ambientLabel: (a as Record<string, unknown>).ambientLabel as string | undefined,
+        meditationId: (a as Record<string, unknown>).meditationId as string | undefined,
+        meditationLabel: (a as Record<string, unknown>).meditationLabel as string | undefined,
       }));
     }
     return localAlarms;
@@ -1421,9 +1477,13 @@ export default function Alarm() {
       const freq = FREQUENCIES.find(f => f.id === alarm.frequencyId);
       createAlarmMutation.mutate({
         label: alarm.label, hour: parseInt(h), minute: parseInt(m),
-        days: alarm.days, soundType: alarm.soundType === 'studio_mix' ? 'studio_mix' : 'frequency',
+        days: alarm.days,
+        soundType: (alarm.soundType === 'studio_mix' ? 'studio_mix' : alarm.soundType === 'ambient' ? 'ambient' : alarm.soundType === 'meditation' ? 'meditation' : 'frequency') as 'frequency' | 'studio_mix' | 'ambient' | 'meditation',
         frequencyHz: freq?.hz, frequencyName: freq?.name,
-        studioMixName: alarm.studioMixName, wakeSequence: alarm.sequenceId,
+        studioMixName: alarm.studioMixName,
+        ambientId: alarm.ambientId, ambientLabel: alarm.ambientLabel,
+        meditationId: alarm.meditationId, meditationLabel: alarm.meditationLabel,
+        wakeSequence: alarm.sequenceId,
         fadeInMinutes: alarm.fadeInMinutes,
       });
     } else {
@@ -1444,9 +1504,13 @@ export default function Alarm() {
       updateAlarmMutation.mutate({
         id: numericId, label: updated.label,
         hour: parseInt(h), minute: parseInt(m),
-        days: updated.days, soundType: updated.soundType === 'studio_mix' ? 'studio_mix' : 'frequency',
+        days: updated.days,
+        soundType: (updated.soundType === 'studio_mix' ? 'studio_mix' : updated.soundType === 'ambient' ? 'ambient' : updated.soundType === 'meditation' ? 'meditation' : 'frequency') as 'frequency' | 'studio_mix' | 'ambient' | 'meditation',
         frequencyHz: freq?.hz, frequencyName: freq?.name,
-        studioMixName: updated.studioMixName, wakeSequence: updated.sequenceId,
+        studioMixName: updated.studioMixName,
+        ambientId: updated.ambientId, ambientLabel: updated.ambientLabel,
+        meditationId: updated.meditationId, meditationLabel: updated.meditationLabel,
+        wakeSequence: updated.sequenceId,
         fadeInMinutes: updated.fadeInMinutes, isEnabled: updated.enabled,
       });
     } else {
@@ -1700,6 +1764,10 @@ export default function Alarm() {
         const freq = FREQUENCIES.find(f => f.id === (isGentleReentry ? GROUNDING_FREQ_ID : firingAlarm.frequencyId));
         const soundName = isGentleReentry
           ? `174Hz — Gentle Re-entry`
+          : firingAlarm.meditationLabel
+          ? firingAlarm.meditationLabel
+          : firingAlarm.ambientLabel
+          ? firingAlarm.ambientLabel
           : (firingAlarm.studioMixName ?? freq?.name ?? 'Healing Frequency');
         const snoozeCount = snoozeCountRef.current[firingAlarm.id] ?? 0;
         const snoozeLabel = isGentleReentry

@@ -15,6 +15,8 @@ const FREE_PER_KIND_LIMIT = 1;
 
 const kindSchema = z.enum(["wake", "wind_down"]).default("wake");
 
+const soundTypeSchema = z.enum(["frequency", "studio_mix", "ambient", "meditation"]).default("frequency");
+
 export const alarmsRouter = router({
   list: protectedProcedure
     .input(z.object({ kind: z.enum(["wake", "wind_down"]).optional() }).optional())
@@ -33,10 +35,14 @@ export const alarmsRouter = router({
         minute: z.number().min(0).max(59),
         days: z.array(z.number().min(0).max(6)),
         kind: kindSchema,
-        soundType: z.enum(["frequency", "studio_mix"]).default("frequency"),
+        soundType: soundTypeSchema,
         frequencyHz: z.number().optional(),
         frequencyName: z.string().optional(),
         studioMixName: z.string().optional(),
+        ambientId: z.string().max(128).optional(),
+        ambientLabel: z.string().max(128).optional(),
+        meditationId: z.string().max(128).optional(),
+        meditationLabel: z.string().max(128).optional(),
         wakeSequence: z.string().optional(),
         fadeInMinutes: z.number().min(1).max(30).default(5),
       })
@@ -68,6 +74,10 @@ export const alarmsRouter = router({
         frequencyHz: input.frequencyHz,
         frequencyName: input.frequencyName,
         studioMixName: input.studioMixName,
+        ambientId: input.ambientId,
+        ambientLabel: input.ambientLabel,
+        meditationId: input.meditationId,
+        meditationLabel: input.meditationLabel,
         wakeSequence: input.wakeSequence ?? (kind === "wind_down" ? "sleep" : "gentle"),
         fadeInMinutes: input.fadeInMinutes,
         isEnabled: true,
@@ -91,10 +101,14 @@ export const alarmsRouter = router({
         minute: z.number().min(0).max(59),
         days: z.array(z.number().min(0).max(6)),
         kind: z.enum(["wake", "wind_down"]).optional(),
-        soundType: z.enum(["frequency", "studio_mix"]).default("frequency"),
+        soundType: soundTypeSchema,
         frequencyHz: z.number().optional(),
         frequencyName: z.string().optional(),
         studioMixName: z.string().optional(),
+        ambientId: z.string().max(128).optional(),
+        ambientLabel: z.string().max(128).optional(),
+        meditationId: z.string().max(128).optional(),
+        meditationLabel: z.string().max(128).optional(),
         wakeSequence: z.string().optional(),
         fadeInMinutes: z.number().min(1).max(30).default(5),
         isEnabled: z.boolean().optional(),
@@ -112,6 +126,10 @@ export const alarmsRouter = router({
         frequencyHz: fields.frequencyHz,
         frequencyName: fields.frequencyName,
         studioMixName: fields.studioMixName,
+        ambientId: fields.ambientId,
+        ambientLabel: fields.ambientLabel,
+        meditationId: fields.meditationId,
+        meditationLabel: fields.meditationLabel,
         wakeSequence: fields.wakeSequence ?? "gentle",
         fadeInMinutes: fields.fadeInMinutes,
         ...(fields.isEnabled !== undefined ? { isEnabled: fields.isEnabled } : {}),

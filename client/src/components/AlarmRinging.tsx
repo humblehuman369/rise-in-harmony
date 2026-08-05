@@ -25,11 +25,18 @@ import { FREQUENCIES, useFrequencyPlayer, type Frequency } from "@/hooks/useFreq
 import { usePrecisionPlayer, type PrecisionSession } from "@/hooks/usePrecisionPlayer";
 import { useBackgroundLayer } from "@/hooks/useBackgroundLayer";
 import { useSoundStudio, type NatureSound, type MusicMode } from "@/hooks/useSoundStudio";
+import { getLibraryLoopUrl } from "@/data/backgroundLoops";
 import type { BackgroundType } from "@/data/backgroundLoops";
 
 export interface RingingSound {
-  type: "frequency" | "user_sound" | "studio_mix";
+  type: "frequency" | "user_sound" | "studio_mix" | "ambient" | "meditation";
   frequencyId?: string;
+  /** For type="ambient": BACKGROUND_LOOPS id (e.g. "ambient-rain") */
+  ambientId?: string;
+  ambientLabel?: string;
+  /** For type="meditation": meditation track id (e.g. "calm-sleep-528") */
+  meditationId?: string;
+  meditationLabel?: string;
   userSound?: {
     name: string;
     freqL: number;
@@ -451,7 +458,15 @@ export default function AlarmRinging({
 
     const start = async () => {
       const e = enginesRef.current;
-      if (sound.type === "frequency" || !sound.type) {
+      if (sound.type === "ambient" && sound.ambientId) {
+        // Play the ambient/nature loop via the background layer
+        const url = getLibraryLoopUrl(sound.ambientId);
+        await e.background.startBackground("library", sound.ambientId, 0.02);
+        void url; // url resolved internally by startBackground
+      } else if (sound.type === "meditation" && sound.meditationId) {
+        // Play the meditation track via the background layer (CDN URL)
+        await e.background.startBackground("library", sound.meditationId, 0.02);
+      } else if (sound.type === "frequency" || !sound.type) {
         const freq: Frequency = FREQUENCIES.find(f => f.id === sound.frequencyId) ?? FALLBACK_FREQ;
         e.freqPlayer.setVolume(0.02);
         await e.freqPlayer.playFrequency(freq);
@@ -533,7 +548,10 @@ export default function AlarmRinging({
         }
       } catch { /* ignore */ }
 
-      if (sound.type === "frequency" || !sound.type) {
+      if (sound.type === "ambient" || sound.type === "meditation") {
+        // Ambient and meditation tracks are played through the background layer
+        e.background.setBackgroundVolume(level);
+      } else if (sound.type === "frequency" || !sound.type) {
         e.freqPlayer.setVolume(level);
       } else if (sound.type === "user_sound") {
         e.precision.setVolume(level * (sound.userSound?.toneVolume ?? 0.7));
