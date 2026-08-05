@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import DateTimePicker, {
@@ -32,6 +32,7 @@ import {
   requestAlarmPermissions,
 } from "@/hooks/useAlarmNotifications";
 import type { Alarm, AlarmDayOfWeek } from "@rih/shared-types";
+import AlarmRingingScreen from "@/components/AlarmRingingScreen";
 
 const ALARMS_STORAGE_KEY = "rih_alarms";
 
@@ -181,7 +182,47 @@ export default function AlarmScreen() {
   const [newSequenceId, setNewSequenceId] = useState<WakeSequenceId>("none");
   const [sleepProfile, setSleepProfile] = useState<SleepProfile>("normal");
 
-  useAlarmNotifications();
+  // ── Alarm ringing state ─────────────────────────────────────────────────
+  const [firingAlarm, setFiringAlarm] = useState<Alarm | null>(null);
+  const snoozeCountRef = useRef<Record<number, number>>({});
+  const snoozeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const MAX_SNOOZES = 2;
+  const SNOOZE_MINUTES = 5;
+
+  const handleAlarmFired = useCallback((alarm: Alarm) => {
+    snoozeCountRef.current[alarm.id] = snoozeCountRef.current[alarm.id] ?? 0;
+    setFiringAlarm(alarm);
+  }, []);
+
+  const handleStop = useCallback(() => {
+    if (snoozeTimerRef.current) {
+      clearTimeout(snoozeTimerRef.current);
+      snoozeTimerRef.current = null;
+    }
+    if (firingAlarm) delete snoozeCountRef.current[firingAlarm.id];
+    setFiringAlarm(null);
+  }, [firingAlarm]);
+
+  const handleSnooze = useCallback(() => {
+    if (!firingAlarm) return;
+    const id = firingAlarm.id;
+    const alarm = firingAlarm;
+    const count = (snoozeCountRef.current[id] ?? 0) + 1;
+    snoozeCountRef.current[id] = count;
+    setFiringAlarm(null);
+    if (snoozeTimerRef.current) clearTimeout(snoozeTimerRef.current);
+    snoozeTimerRef.current = setTimeout(() => {
+      snoozeTimerRef.current = null;
+      // On 3rd snooze, switch to grounding 174Hz
+      if (count >= MAX_SNOOZES) {
+        setFiringAlarm({ ...alarm, frequencyHz: 174, frequencyName: "Foundation" });
+      } else {
+        setFiringAlarm(alarm);
+      }
+    }, SNOOZE_MINUTES * 60 * 1000);
+  }, [firingAlarm]);
+
+  useAlarmNotifications(handleAlarmFired);
 
   useEffect(() => {
     loadAlarms().then(setAlarms);
@@ -294,6 +335,7 @@ export default function AlarmScreen() {
   const selectedSequence = WAKE_SEQUENCES.find((s) => s.id === newSequenceId) ?? WAKE_SEQUENCES[0];
 
   return (
+    <>
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -616,6 +658,19 @@ export default function AlarmScreen() {
         <Text style={styles.hint}>Long-press an alarm to delete it.</Text>
       </ScrollView>
     </SafeAreaView>
+
+    {/* Full-screen alarm ringing overlay — shown when alarm fires */}
+    {firingAlarm && (
+      <AlarmRingingScreen
+        alarm={firingAlarm}
+        sleepProfile={sleepProfile}
+        snoozeCount={snoozeCountRef.current[firingAlarm.id] ?? 0}
+        maxSnoozes={MAX_SNOOZES}
+        onStop={handleStop}
+        onSnooze={handleSnooze}
+      />
+    )}
+    </>
   );
 }
 

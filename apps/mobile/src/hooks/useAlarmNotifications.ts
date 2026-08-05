@@ -129,10 +129,12 @@ export async function cancelAllAlarms(): Promise<void> {
 export function useAlarmNotifications(
   onAlarmFired?: (alarm: Alarm) => void
 ) {
-  const listenerRef = useRef<Notifications.EventSubscription | null>(null);
+  const receivedListenerRef = useRef<Notifications.EventSubscription | null>(null);
+  const responseListenerRef = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
-    listenerRef.current = Notifications.addNotificationReceivedListener(
+    // Fires when a notification is received while the app is in the FOREGROUND
+    receivedListenerRef.current = Notifications.addNotificationReceivedListener(
       (notification) => {
         const alarm = notification.request.content.data?.alarm as
           | Alarm
@@ -147,8 +149,26 @@ export function useAlarmNotifications(
       }
     );
 
+    // Fires when the user TAPS the notification (app in background or killed)
+    // This brings the app to the foreground and launches the ringing screen
+    responseListenerRef.current = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const alarm = response.notification.request.content.data?.alarm as
+          | Alarm
+          | undefined;
+        if (alarm) {
+          trackAlarmFired({
+            frequency_hz: alarm.frequencyHz,
+            time_of_day: alarm.time,
+          });
+          onAlarmFired?.(alarm);
+        }
+      }
+    );
+
     return () => {
-      listenerRef.current?.remove();
+      receivedListenerRef.current?.remove();
+      responseListenerRef.current?.remove();
     };
   }, [onAlarmFired]);
 

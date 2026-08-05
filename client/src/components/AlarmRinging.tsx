@@ -1,7 +1,15 @@
 /**
  * AlarmRinging — Enhanced full-screen wake experience
  *
- * New features:
+ * FIXES (Aug 2026):
+ *   - Stage timing now relative to fadeInMinutes so Persistent stage always fires
+ *   - Volume escalation runs indefinitely (no totalMs cutoff) — alarm stays loud until dismissed
+ *   - Wake Lock API prevents screen/tab from sleeping while alarm is active
+ *   - STAGE_VOLUMES[3] raised to 1.0 — maximum volume reached at Persistent stage
+ *   - Persistent stage pulses at 1.0 to ensure alarm cannot be missed
+ *   - Audio context resumed on each tick to recover from browser suspension
+ *
+ * Original features:
  *   - 4-stage progressive volume escalation (Whisper → Rise → Full → Persistent)
  *   - Sleep Profile: Light / Normal / Heavy / Very Heavy (controls stage timing)
  *   - Sunrise simulation: screen brightness + amber→white colour temperature shift
@@ -62,16 +70,20 @@ interface AlarmRingingProps {
   missionEnabled?: boolean;
 }
 
-// ─── Stage timing per sleep profile (minutes for each stage boundary) ──────────
-const STAGE_TIMINGS: Record<SleepProfile, [number, number, number]> = {
-  light:     [1.5, 3,   5  ],  // Whisper ends, Rise ends, Full ends → Persistent
-  normal:    [2,   5,   8  ],
-  heavy:     [1,   3,   6  ],  // Compressed early stages, longer Persistent
-  very_heavy:[0.5, 2,   4  ],  // Almost no Whisper, quick escalation
+// ─── Stage timing: fractions of fadeInMinutes for each stage boundary ─────────
+// e.g. for normal profile: stage1 ends at 20% of fadeIn, stage2 at 50%, stage3 at 80%
+// After stage3, Persistent runs indefinitely at full volume until dismissed.
+const STAGE_FRACTIONS: Record<SleepProfile, [number, number, number]> = {
+  light:     [0.25, 0.55, 0.80],  // gentler escalation
+  normal:    [0.20, 0.50, 0.80],  // standard
+  heavy:     [0.12, 0.35, 0.65],  // faster escalation — heavy sleepers need it sooner
+  very_heavy:[0.08, 0.25, 0.50],  // very fast — almost no whisper, quick to full
 };
 
 // ─── Stage volume targets ────────────────────────────────────────────────────
-const STAGE_VOLUMES = [0.05, 0.22, 0.60, 0.88, 1.0] as const;
+// Stage 0 (Whisper): 5%→22%, Stage 1 (Rise): 22%→65%, Stage 2 (Full): 65%→100%
+// Stage 3 (Persistent): stays at 100% — alarm will NOT stop until dismissed
+const STAGE_VOLUMES = [0.05, 0.22, 0.65, 1.0, 1.0] as const;
 
 // ─── Alarm Mission types ─────────────────────────────────────────────────────
 type MissionType = "breathing" | "gratitude" | "frequency_tap";
@@ -392,16 +404,50 @@ export default function AlarmRinging({
   const STAGE_LABELS = ["Whispering…", "Rising gently…", "Full resonance", "Wake up — it's time ✦"];
   const STAGE_COLORS = ["#4A5568", "#00D4AA", "#00D4AA", "#F59E0B"];
 
+  // ── Wake Lock: prevent screen/tab from sleeping while alarm is active ─────
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  useEffect(() => {
+    // Request Wake Lock to keep the screen on during alarm
+    if ("wakeLock" in navigator) {
+      navigator.wakeLock.request("screen").then(lock => {
+        wakeLockRef.current = lock;
+      }).catch(() => {
+        // Wake Lock denied (e.g. battery saver) — alarm still plays, just screen may dim
+      });
+    }
+    return () => {
+      // Release Wake Lock when alarm is dismissed
+      wakeLockRef.current?.release().catch(() => {});
+      wakeLockRef.current = null;
+    };
+  }, []);
+
+  // Re-acquire Wake Lock if it is released (e.g. tab visibility change)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && "wakeLock" in navigator) {
+        navigator.wakeLock.request("screen").then(lock => {
+          wakeLockRef.current = lock;
+        }).catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
   // ── Audio start + escalation engine ──────────────────────────────────────
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
 
-    const timings = STAGE_TIMINGS[sleepProfile]; // [stage1End, stage2End, stage3End] in minutes
-    const totalMs = Math.max(fadeInMinutes, 0.5) * 60 * 1000;
-    const stage1Ms = timings[0] * 60 * 1000;
-    const stage2Ms = timings[1] * 60 * 1000;
-    const stage3Ms = timings[2] * 60 * 1000;
+    // Stage boundaries in ms, computed as fractions of fadeInMinutes
+    // Minimum fadeIn of 1 minute ensures stages are meaningful
+    const fadeMs = Math.max(fadeInMinutes, 1) * 60 * 1000;
+    const fractions = STAGE_FRACTIONS[sleepProfile];
+    const stage1Ms = fractions[0] * fadeMs;
+    const stage2Ms = fractions[1] * fadeMs;
+    const stage3Ms = fractions[2] * fadeMs;
+    // After stage3Ms, Persistent stage runs indefinitely until dismissed
 
     const start = async () => {
       const e = enginesRef.current;
@@ -437,15 +483,14 @@ export default function AlarmRinging({
     };
     void start();
 
-    const stepMs = 1000;
+    const stepMs = 500; // tick every 500ms for smoother volume ramps
     const startedAt = Date.now();
 
     const fadeTimer = setInterval(() => {
       const elapsed = Date.now() - startedAt;
-      const t = elapsed / totalMs;
 
-      // Determine current stage
-      let currentStage = 3; // Persistent
+      // Determine current stage — Persistent (stage 3) runs indefinitely
+      let currentStage = 3; // Persistent — default once past stage3Ms
       if (elapsed < stage1Ms) currentStage = 0;
       else if (elapsed < stage2Ms) currentStage = 1;
       else if (elapsed < stage3Ms) currentStage = 2;
@@ -464,24 +509,37 @@ export default function AlarmRinging({
         const stageT = (elapsed - stage2Ms) / (stage3Ms - stage2Ms);
         level = STAGE_VOLUMES[2] + (STAGE_VOLUMES[3] - STAGE_VOLUMES[2]) * Math.min(1, stageT);
       } else {
-        // Persistent: slowly ramp to 1.0 over remaining time
-        const persistStart = stage3Ms;
-        const persistT = Math.min(1, (elapsed - persistStart) / (totalMs - persistStart + 1));
-        level = STAGE_VOLUMES[3] + (STAGE_VOLUMES[4] - STAGE_VOLUMES[3]) * persistT;
+        // Persistent: hold at maximum volume (1.0) indefinitely
+        // Add a subtle 2-second pulse between 0.92 and 1.0 to prevent audio normalisation
+        const pulseT = (elapsed / 2000) % 1;
+        level = 0.92 + 0.08 * Math.abs(Math.sin(pulseT * Math.PI));
       }
 
       level = Math.max(0.02, Math.min(1.0, level));
       setVolumePct(Math.round(level * 100));
-      setSunriseProgress(Math.min(1, t * 1.2)); // sunrise slightly ahead of volume
+
+      // Sunrise progress: complete by end of stage2 (Full stage)
+      const sunriseT = Math.min(1, elapsed / Math.max(stage3Ms, 1));
+      setSunriseProgress(sunriseT);
 
       const e = enginesRef.current;
+
+      // Resume audio context if it was suspended (browser may suspend on tab hide)
+      // This is a best-effort recovery — the DDS engine will continue from where it left off
+      try {
+        const ctx = (e.freqPlayer as unknown as { _ctx?: AudioContext })._ctx;
+        if (ctx && ctx.state === "suspended") {
+          void ctx.resume();
+        }
+      } catch { /* ignore */ }
+
       if (sound.type === "frequency" || !sound.type) {
         e.freqPlayer.setVolume(level);
       } else if (sound.type === "user_sound") {
         e.precision.setVolume(level * (sound.userSound?.toneVolume ?? 0.7));
         e.background.setBackgroundVolume(level * (sound.userSound?.backgroundVolume ?? 0.35));
       } else if (sound.type === "studio_mix") {
-        e.studio.setLayerVolume("master", level * 0.9);
+        e.studio.setLayerVolume("master", level);
       }
     }, stepMs);
 
@@ -491,27 +549,24 @@ export default function AlarmRinging({
       // Phase boundaries: delta for first 40%, theta for next 35%, alpha for final 25%
       sweepTimer = setInterval(() => {
         const elapsed = Date.now() - startedAt;
-        const t = elapsed / totalMs;
+        const t = Math.min(1, elapsed / fadeMs);
         let beatHz: number;
         let phase: "delta" | "theta" | "alpha";
         if (t < 0.4) {
-          // Delta: 3Hz, slowly rising to 4Hz
           beatHz = 3 + t / 0.4;
           phase = "delta";
         } else if (t < 0.75) {
-          // Theta: 5Hz rising to 7Hz
           const tT = (t - 0.4) / 0.35;
           beatHz = 5 + tT * 2;
           phase = "theta";
         } else {
-          // Alpha: 8Hz rising to 10Hz
           const tA = (t - 0.75) / 0.25;
           beatHz = 8 + tA * 2;
           phase = "alpha";
         }
         setBrainwavePhase(phase);
         enginesRef.current.freqPlayer.sweepBeat?.(CARRIER_HZ, beatHz);
-      }, 5000); // update every 5 seconds for smooth sweep
+      }, 5000);
     }
 
     return () => {
@@ -527,10 +582,9 @@ export default function AlarmRinging({
   }, []);
 
   // ── Sunrise colour temperature interpolation ──────────────────────────────
-  // amber (2700K equivalent) → neutral white (6000K equivalent)
-  const sunriseR = Math.round(10 + sunriseProgress * 8);   // 10 → 18
-  const sunriseG = Math.round(10 + sunriseProgress * 11);  // 10 → 21
-  const sunriseB = Math.round(20 + sunriseProgress * 0);   // stays 20
+  const sunriseR = Math.round(10 + sunriseProgress * 8);
+  const sunriseG = Math.round(10 + sunriseProgress * 11);
+  const sunriseB = Math.round(20 + sunriseProgress * 0);
   const ambientGlow = `rgba(${sunriseR * 8}, ${sunriseG * 6}, ${sunriseB * 3}, ${0.08 + sunriseProgress * 0.12})`;
   const ringColor = stage >= 3 ? "#F59E0B" : "#00D4AA";
 
@@ -712,7 +766,7 @@ export default function AlarmRinging({
           </div>
           <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
             <div
-              className="h-full rounded-full transition-all duration-700"
+              className="h-full rounded-full transition-all duration-500"
               style={{
                 width: `${volumePct}%`,
                 background: `linear-gradient(to right, #00D4AA, ${STAGE_COLORS[stage]})`,
