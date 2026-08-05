@@ -12,6 +12,7 @@ import {
   StyleSheet,
   Alert,
   Platform,
+  Vibration,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -23,6 +24,29 @@ import DateTimePicker, {
 } from "@react-native-community/datetimepicker";
 import { colors, fontSizes, spacing, radii, shadows } from "@rih/ui-tokens";
 import { FREQUENCIES } from "@rih/shared-utils";
+import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from "expo-audio";
+import { createVoice } from "@/lib/synth";
+import type { SynthVoice } from "@/lib/synth";
+
+// CDN URLs for meditation tracks used in test preview
+const MEDITATION_CDN_URLS: Record<string, string> = {
+  "calm-sleep-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/IYQghxoiyPtmxTWZ.mp3",
+  "deep-serenity-444": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/XrswIdGeuQpsHQZo.mp3",
+  "nature-meditation-174": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ySLrOnBvjVJpOcpp.mp3",
+  "reiki-healing-garden-285": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/JMfdCoiZFkPyxCYD.mp3",
+  "spiritual-meditation-444": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/GtKAQCHgteBuniTF.mp3",
+  "third-eye-activation-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/fsamjpcaHNeOwiPp.mp3",
+  "deep-into-nature-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/WKmRGyioQaoQKeeJ.mp3",
+  "inner-calling-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ktyVgoowVIAMSvwT.mp3",
+  "peaceful-ocean-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/gjiHzXouliJdAAeH.mp3",
+};
+const NATURE_ASSETS: Record<string, number> = {
+  "ambient-rain": require("../../assets/sounds/ambient-rain.mp3"),
+  "ambient-ocean": require("../../assets/sounds/ambient-ocean.mp3"),
+  "ambient-forest": require("../../assets/sounds/ambient-forest.mp3"),
+  "ambient-wind": require("../../assets/sounds/ambient-wind.mp3"),
+  "ambient-fire": require("../../assets/sounds/ambient-fire.mp3"),
+};
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import {
   useAlarmNotifications,
@@ -181,6 +205,60 @@ export default function AlarmScreen() {
   const [newFadeMin, setNewFadeMin] = useState(5);
   const [newSequenceId, setNewSequenceId] = useState<WakeSequenceId>("none");
   const [sleepProfile, setSleepProfile] = useState<SleepProfile>("normal");
+
+  // ── Test Sound state ────────────────────────────────────────────────────────────
+  const [isTesting, setIsTesting] = useState(false);
+  const [testCountdown, setTestCountdown] = useState(0);
+  const testAudioPlayerRef = useRef<AudioPlayer | null>(null);
+  const testVoiceRef = useRef<SynthVoice | null>(null);
+  const testTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const testCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopTest = useCallback(() => {
+    if (testTimerRef.current) { clearTimeout(testTimerRef.current); testTimerRef.current = null; }
+    if (testCountdownRef.current) { clearInterval(testCountdownRef.current); testCountdownRef.current = null; }
+    if (testAudioPlayerRef.current) {
+      try { testAudioPlayerRef.current.pause(); } catch { /* ignore */ }
+      testAudioPlayerRef.current = null;
+    }
+    if (testVoiceRef.current) { testVoiceRef.current.stop(0.3); testVoiceRef.current = null; }
+    Vibration.cancel();
+    setIsTesting(false);
+    setTestCountdown(0);
+  }, []);
+
+  const startTest = useCallback(async () => {
+    if (isTesting) { stopTest(); return; }
+    const TEST_DURATION = 10;
+    setIsTesting(true);
+    setTestCountdown(TEST_DURATION);
+    Vibration.vibrate(100); // brief confirmation haptic
+
+    await setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: false,
+      interruptionMode: "doNotMix",
+      interruptionModeAndroid: "doNotMix",
+    }).catch(() => {});
+
+    // Determine what to play based on selected frequency
+    const freq = FREQUENCIES.find(f => f.id === newFreqId) ?? DEFAULT_FREQUENCY;
+    // Play DDS frequency tone
+    const voice = createVoice({ hz: freq.hz, waveform: "sine", volume: 0.85 });
+    voice.start(0.5);
+    testVoiceRef.current = voice;
+
+    testCountdownRef.current = setInterval(() => {
+      setTestCountdown(prev => {
+        if (prev <= 1) { stopTest(); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    testTimerRef.current = setTimeout(stopTest, TEST_DURATION * 1000);
+  }, [isTesting, newFreqId, stopTest]);
+
+  // Clean up on unmount
+  useEffect(() => () => stopTest(), [stopTest]);
 
   // ── Alarm ringing state ─────────────────────────────────────────────────
   const [firingAlarm, setFiringAlarm] = useState<Alarm | null>(null);
@@ -604,6 +682,28 @@ export default function AlarmScreen() {
               </Text>
             </View>
 
+            {/* Test Sound button */}
+            <TouchableOpacity
+              style={[
+                styles.testSoundBtn,
+                isTesting && styles.testSoundBtnActive,
+              ]}
+              onPress={startTest}
+              activeOpacity={0.85}
+            >
+              <Text style={[
+                styles.testSoundBtnText,
+                isTesting && { color: '#EF4444' },
+              ]}>
+                {isTesting ? `⏹ Stop Preview (${testCountdown}s)` : '🔊 Test Sound (10s)'}
+              </Text>
+            </TouchableOpacity>
+            {isTesting && (
+              <Text style={styles.testSoundHint}>
+                Playing your selected alarm sound at full volume
+              </Text>
+            )}
+
             <TouchableOpacity
               style={styles.saveBtn}
               onPress={createAlarm}
@@ -872,6 +972,32 @@ const styles = StyleSheet.create({
   },
   previewFreq: { fontSize: fontSizes.base, fontWeight: "600", marginTop: 4 },
   previewDays: { fontSize: fontSizes.sm, color: colors.textMuted, marginTop: 2 },
+  testSoundBtn: {
+    marginTop: spacing[3],
+    backgroundColor: 'rgba(0,212,170,0.06)',
+    borderRadius: radii.full,
+    paddingVertical: spacing[3],
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: 'rgba(0,212,170,0.25)',
+  },
+  testSoundBtnActive: {
+    backgroundColor: 'rgba(239,68,68,0.06)',
+    borderColor: 'rgba(239,68,68,0.25)',
+  },
+  testSoundBtnText: {
+    color: colors.teal,
+    fontSize: fontSizes.sm,
+    fontWeight: "600",
+    letterSpacing: 0.2,
+  },
+  testSoundHint: {
+    textAlign: 'center',
+    color: colors.textMuted,
+    fontSize: fontSizes.xs,
+    marginTop: spacing[1],
+    marginBottom: spacing[1],
+  },
   saveBtn: {
     marginTop: spacing[4],
     backgroundColor: colors.teal,

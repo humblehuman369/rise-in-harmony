@@ -9,7 +9,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Plus, AlarmClock, Trash2, Edit3, Bell, BellOff, Waves, Sunrise, Zap,
   Lock, BellRing, ShieldCheck, Layers, Smartphone, Music2, Wind, Play,
-  Square, Check, Moon, BookOpen,
+  Square, Check, Moon, BookOpen, Volume2, VolumeX,
 } from "lucide-react";
 import Layout from "@/components/Layout";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
@@ -810,6 +810,71 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
     if (previewAudioRef.current) { previewAudioRef.current.pause(); previewAudioRef.current.src = ""; previewAudioRef.current = null; }
     setPreviewId(null);
   }, []);
+
+  // ── Test Sound ──────────────────────────────────────────────────────────────
+  const [isTesting, setIsTesting] = useState(false);
+  const [testCountdown, setTestCountdown] = useState(0);
+  const testAudioRef = useRef<HTMLAudioElement | null>(null);
+  const testDdsRef = useRef<{ stop: () => void } | null>(null);
+  const testTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const testCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopTest = useCallback(() => {
+    if (testTimerRef.current) { clearTimeout(testTimerRef.current); testTimerRef.current = null; }
+    if (testCountdownRef.current) { clearInterval(testCountdownRef.current); testCountdownRef.current = null; }
+    if (testAudioRef.current) { testAudioRef.current.pause(); testAudioRef.current.src = ""; testAudioRef.current = null; }
+    if (testDdsRef.current) { testDdsRef.current.stop(); testDdsRef.current = null; }
+    setIsTesting(false);
+    setTestCountdown(0);
+  }, []);
+
+  const startTest = useCallback(async () => {
+    if (isTesting) { stopTest(); return; }
+    stopPreview();
+    const TEST_DURATION = 10;
+    setIsTesting(true);
+    setTestCountdown(TEST_DURATION);
+
+    if (soundMode === "ambient" && selectedAmbientId) {
+      const url = getLibraryLoopUrl(selectedAmbientId);
+      const audio = new Audio(url);
+      audio.loop = true; audio.volume = 0.85;
+      testAudioRef.current = audio;
+      audio.play().catch(() => stopTest());
+    } else if (soundMode === "meditation" && selectedMeditationId) {
+      const url = getLibraryLoopUrl(selectedMeditationId);
+      const audio = new Audio(url);
+      audio.loop = true; audio.volume = 0.85;
+      testAudioRef.current = audio;
+      audio.play().catch(() => stopTest());
+    } else {
+      // Play DDS frequency via AudioContext (uses the same DDS engine as the real alarm)
+      try {
+        const freq = FREQUENCIES.find(f => f.id === selectedFreq) ?? FREQUENCIES.find(f => f.id === "432hz") ?? FREQUENCIES[0];
+        const ctx = new AudioContext();
+        await ctx.audioWorklet.addModule('/dds-processor.js');
+        const node = new AudioWorkletNode(ctx, 'dds-processor');
+        node.parameters.get('freqL')!.value = freq.hz;
+        node.parameters.get('freqR')!.value = freq.hz;
+        node.parameters.get('amplitude')!.value = 0.85;
+        node.parameters.get('waveform')!.value = 0; // sine
+        node.parameters.get('mode')!.value = 0; // mono
+        node.connect(ctx.destination);
+        testDdsRef.current = { stop: () => { node.disconnect(); ctx.close().catch(() => {}); } };
+      } catch { stopTest(); return; }
+    }
+
+    testCountdownRef.current = setInterval(() => {
+      setTestCountdown(prev => {
+        if (prev <= 1) { stopTest(); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    testTimerRef.current = setTimeout(stopTest, TEST_DURATION * 1000);
+  }, [isTesting, soundMode, selectedAmbientId, selectedMeditationId, selectedFreq, stopTest, stopPreview]);
+
+  // Clean up test on unmount
+  useEffect(() => stopTest, [stopTest]);
   const togglePreview = useCallback((id: string, url: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (previewId === id) { stopPreview(); return; }
@@ -1222,6 +1287,31 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Test Sound button */}
+          <div className="mb-4">
+            <button
+              onClick={startTest}
+              className="w-full py-3.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-95"
+              style={{
+                background: isTesting ? 'rgba(239,68,68,0.08)' : 'rgba(0,212,170,0.06)',
+                border: `1px solid ${isTesting ? 'rgba(239,68,68,0.25)' : 'rgba(0,212,170,0.2)'}`,
+                color: isTesting ? '#EF4444' : '#00D4AA',
+                fontFamily: 'DM Sans, sans-serif',
+              }}
+            >
+              {isTesting ? (
+                <><VolumeX size={15} /> Stop Preview ({testCountdown}s)</>
+              ) : (
+                <><Volume2 size={15} /> Test Sound (10s)</>
+              )}
+            </button>
+            {isTesting && (
+              <p className="text-center text-[10px] mt-1.5" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
+                Playing your selected alarm sound at full volume
+              </p>
+            )}
           </div>
 
           {/* Save button */}
