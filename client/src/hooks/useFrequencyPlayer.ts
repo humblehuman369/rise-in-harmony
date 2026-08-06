@@ -259,7 +259,7 @@ const FADE_TC = 0.3; // seconds time-constant for smooth amplitude transitions
 let sharedCtx: AudioContext | null = null;
 let workletReady: Promise<void> | null = null;
 
-async function getSharedContext(): Promise<AudioContext> {
+export async function getSharedContext(): Promise<AudioContext> {
   if (!sharedCtx || sharedCtx.state === "closed") {
     sharedCtx = new (
       window.AudioContext ||

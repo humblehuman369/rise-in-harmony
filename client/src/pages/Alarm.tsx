@@ -12,7 +12,7 @@ import {
   Square, Check, Moon, BookOpen, Volume2, VolumeX,
 } from "lucide-react";
 import Layout from "@/components/Layout";
-import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
+import { FREQUENCIES, getSharedContext } from "@/hooks/useFrequencyPlayer";
 import { BACKGROUND_LOOPS, getLibraryLoopUrl } from "@/data/backgroundLoops";
 import { MEDITATIONS } from "@rih/shared-utils";
 import { Switch } from "@/components/ui/switch";
@@ -903,8 +903,11 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
         if (testAudioRef.current.volume >= 0.85) clearInterval(fadeIn);
       }, 100);
     } else {
-      // Play DDS frequency via AudioContext at full volume immediately
-      // For the Gentle Morning sequence, play the 528Hz peak (the "Rise" tone)
+      // Play DDS frequency via AudioContext at full volume immediately.
+      // Reuse the shared AudioContext (same one as useFrequencyPlayer) to avoid
+      // browser autoplay policy blocks — the shared context is already unlocked
+      // from any prior user interaction with the frequency player.
+      // For the Gentle Morning sequence, play the 528Hz peak (the "Rise" tone).
       try {
         const seqFreqHz = selectedSeq === "gentle" ? 528
           : selectedSeq === "deep-sleep-wake" ? 10  // alpha
@@ -912,8 +915,8 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
         const freq = seqFreqHz
           ? (FREQUENCIES.find(f => f.hz === seqFreqHz) ?? FREQUENCIES.find(f => f.id === selectedFreq) ?? FREQUENCIES[0])
           : (FREQUENCIES.find(f => f.id === selectedFreq) ?? FREQUENCIES[0]);
-        const ctx = new AudioContext();
-        await ctx.audioWorklet.addModule('/dds-processor.js');
+        // Use the shared context — already has worklet loaded, already resumed
+        const ctx = await getSharedContext();
         const node = new AudioWorkletNode(ctx, 'dds-processor');
         node.parameters.get('freqL')!.value = freq.hz;
         node.parameters.get('freqR')!.value = freq.hz;
@@ -922,7 +925,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
         node.parameters.get('waveform')!.value = 0; // sine
         node.parameters.get('mode')!.value = 0; // mono
         node.connect(ctx.destination);
-        testDdsRef.current = { stop: () => { node.disconnect(); ctx.close().catch(() => {}); } };
+        testDdsRef.current = { stop: () => { node.disconnect(); } };
       } catch { stopTest(); return; }
     }
     testCountdownRef.current = setInterval(() => {
@@ -1111,7 +1114,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                 { mode: "meditation" as const, label: "Meditate", icon: BookOpen, activeColor: '#F59E0B', activeBg: 'rgba(245,158,11,0.12)', activeBorder: 'rgba(245,158,11,0.3)' },
                 { mode: "studio" as const, label: "My Mixes", icon: Layers, activeColor: '#8B5CF6', activeBg: 'rgba(139,92,246,0.12)', activeBorder: 'rgba(139,92,246,0.3)' },
               ]).map(tab => (
-                <button key={tab.mode} onClick={() => setSoundMode(tab.mode)}
+                <button key={tab.mode} onClick={() => { stopTest(); setSoundMode(tab.mode); }}
                   className="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200"
                   style={{
                     background: soundMode === tab.mode ? tab.activeBg : 'rgba(255,255,255,0.03)',
