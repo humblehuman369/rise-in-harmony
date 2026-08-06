@@ -213,12 +213,11 @@ export default function AlarmScreen() {
 
         // Play the selected sound at full volume immediately (no whisper stage)
     if (soundTab === "sounds") {
-      // TrueHz HQ track — stream from CDN, skip 30s into track
+      // TrueHz HQ track — stream from CDN
       const url = MEDITATION_CDN_URLS[selectedSoundId];
       if (url) {
         const player = createAudioPlayer({ uri: url });
         player.volume = 0.85;
-        player.currentTime = 30; // skip any quiet intro
         player.play();
         testAudioPlayerRef.current = player;
       }
