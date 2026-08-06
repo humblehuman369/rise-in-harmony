@@ -48,12 +48,12 @@ const MEDITATION_CDN_URLS: Record<string, string> = {
   "alarm-birds-good-morning-444": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/jNDSkiXhLpIfeRsc.mp3",
   "alarm-acoustic-inspiration-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/EtaamAWZVGQVUlNS.mp3",
   "alarm-rise-in-relaxation-432": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/PsKhiBxYIrKyrOao.mp3",
-  "alarm-harmony-alarm-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/WAXqKZrYHugDBMjn.mp3",
-  "alarm-relaxing-wakeup-417": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/VHdzmxIWQRnZtCEP.mp3",
-  "alarm-high-energy-inspiration-639": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/MwxDEJViTKqbRRHv.mp3",
-  "alarm-morning-sunrise-639": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/xTCycRPYtYQFCFAC.mp3",
-  "alarm-blissful-harmony-396": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/mDCFcehtWayrdDTy.mp3",
-  "alarm-beautiful-sunshine-444": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/JGLrdDmbeTyLYvZU.mp3",
+  "alarm-harmony-alarm-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ehKnkgqKIVtYTMIK.mp3",
+  "alarm-relaxing-wakeup-417": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/JboGdwWxkqAXXCGB.mp3",
+  "alarm-high-energy-inspiration-639": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/XaQSFIqwcAdYXdKY.mp3",
+  "alarm-morning-sunrise-639": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/JPNwuluEFJFDzbaR.mp3",
+  "alarm-blissful-harmony-396": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/QRgGTFwLuJzEQUyT.mp3",
+  "alarm-beautiful-sunshine-444": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/BuoDcjBgDfeZUaIc.mp3",
   "alarm-rise-with-clarity-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/PVuBTziwJCdleKop.mp3",
 };
 
