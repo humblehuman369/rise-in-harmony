@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { startLogin } from "@/const";
+import { startLogin, startSignup } from "@/const";
 import { useTheme } from "@/contexts/ThemeContext";
 
 type Tier = "monthly" | "annual" | "lifetime";
@@ -216,7 +216,7 @@ export default function Join() {
       return;
     }
     if (!user) {
-      startLogin(tier);
+      startSignup(tier); // take new users to signup; tier resumes after registration
       return;
     }
     if (!billingConfig.data?.enabled) {

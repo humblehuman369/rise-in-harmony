@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { startLogin } from "@/const";
+import { startLogin, startSignup } from "@/const";
 import { trackUpgradeTapped } from "@/hooks/useAnalytics";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -87,7 +87,7 @@ export default function PremiumPaywall({
     trackUpgradeTapped(tier === "annual" ? "yearly" : tier);
 
     if (!user) {
-      startLogin(tier); // store tier so checkout resumes after sign-in
+      startSignup(tier); // take new users to signup; tier resumes after registration
       return;
     }
     if (!billingConfig.data?.enabled) {

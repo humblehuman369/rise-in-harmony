@@ -19,7 +19,7 @@ import Layout from "@/components/Layout";
 import BioluminescentBackground from "@/components/BioluminescentBackground";
 import PricingSection from "@/components/PricingSection";
 import { FREQUENCIES } from "@/hooks/useFrequencyPlayer";
-import { startLogin } from "@/const";
+import { startLogin, startSignup } from "@/const";
 import { useTheme } from "@/contexts/ThemeContext";
 
 // ── Live bioluminescent analog clock (hero) ───────────────────────────────────
@@ -716,7 +716,7 @@ export default function Home() {
             </button>
             {isGuest ? (
               <button
-                onClick={() => startLogin()}
+                onClick={() => startSignup()}
                 className="flex items-center justify-center gap-2 px-10 py-4 text-base font-semibold rounded-full transition-all duration-200"
                 style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.30)', color: '#A78BFA', fontFamily: 'DM Sans, sans-serif' }}
               >

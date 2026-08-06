@@ -8,15 +8,12 @@ export const PENDING_CHECKOUT_KEY = "__rih_pending_checkout";
 //
 // Pass `pendingTier` when the user clicked a subscribe button before signing in
 // — it will be stored in sessionStorage and automatically resumed after login.
-export const startLogin = (pendingTier?: string) => {
+// Internal helper — builds the OAuth URL and navigates.
+const _startOAuth = (type: "signIn" | "signUp", pendingTier?: string) => {
   const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL;
   const appId = import.meta.env.VITE_APP_ID;
   const redirectUri = `${window.location.origin}/api/oauth/callback`;
   const nonce = crypto.randomUUID();
-  // Store the CSRF nonce in sessionStorage. sessionStorage persists across
-  // same-origin navigations (including the OAuth redirect back from manus.im)
-  // and is far more reliable than SameSite=None cookies, which are blocked by
-  // many browsers on cross-site top-level redirects.
   try {
     sessionStorage.setItem('__oauth_nonce', nonce);
     if (pendingTier) {
@@ -30,9 +27,18 @@ export const startLogin = (pendingTier?: string) => {
   url.searchParams.set("appId", appId);
   url.searchParams.set("redirectUri", redirectUri);
   url.searchParams.set("state", state);
-  url.searchParams.set("type", "signIn");
+  url.searchParams.set("type", type);
   window.location.href = url.toString();
 };
+
+// Start the Manus OAuth sign-IN flow (existing users).
+// Call from event handlers: onClick={() => startLogin()}
+export const startLogin = (pendingTier?: string) => _startOAuth("signIn", pendingTier);
+
+// Start the Manus OAuth sign-UP flow (new users subscribing).
+// Use this on all subscribe/join buttons so new users land on the registration
+// page rather than the sign-in page. Pending tier is resumed after signup.
+export const startSignup = (pendingTier?: string) => _startOAuth("signUp", pendingTier);
 
 // Legacy helper kept for any remaining href usages — generates a URL without
 // CSRF protection. Prefer startLogin() for all new sign-in triggers.
