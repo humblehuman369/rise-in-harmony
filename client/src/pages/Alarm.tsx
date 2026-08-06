@@ -137,21 +137,28 @@ const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 // Removed: Cave, Night, Sleep Preparation, Anxiety Reset, Deep Focus, all meditation
 // track duplicates (Reiki 432Hz, Calm Sleep 528Hz, etc.), Ambient Bed, Drone Bed.
 const ALARM_NATURE_IDS = new Set([
-  // ── Rise Sounds — purpose-built wake alarm soundscapes (top of list) ─────────────────────────────────────────────
-  "alarm-forest-dawn",    // Forest Dawn — birdsong building from silence to full chorus
-  "alarm-morning-shore",  // Morning Shore — ocean waves building to bright morning energy
-  "alarm-sacred-bell-rise", // Sacred Bell Rise — Tibetan/crystal bowls building ceremonially
+  // ── TrueHz HQ Alarm Sounds — purpose-built wake tracks (top of list) ─────────────────────────────────────────────
+  "alarm-birds-good-morning-444",
+  "alarm-acoustic-inspiration-528",
+  "alarm-rise-in-relaxation-432",
+  "alarm-harmony-alarm-528",
+  "alarm-relaxing-wakeup-417",
+  "alarm-high-energy-inspiration-639",
+  "alarm-morning-sunrise-639",
+  "alarm-blissful-harmony-396",
+  "alarm-beautiful-sunshine-444",
+  "alarm-rise-with-clarity-528",
   // ── General nature sounds ──────────────────────────────────────────────────────────────
-  "ambient-forest",   // Birdsong is the natural dawn signal
-  "ambient-ocean",    // Rhythmic, energising
-  "ambient-rain",     // Refreshing, activating
-  "ambient-river",    // Flowing water, uplifting
-  "ambient-wind",     // Neutral, not sleep-inducing
-  "ambient-fire",     // Cosy warmth
-  "ambient-bowl",     // Singing bowl — gentle riser option
-  "morning-breath",   // Explicitly designed for morning
-  "chakra-dawn",      // Dawn-themed, activating
-  "music-crystal",    // Crystal bowls — activating at alarm volume
+  "ambient-forest",
+  "ambient-ocean",
+  "ambient-rain",
+  "ambient-river",
+  "ambient-wind",
+  "ambient-fire",
+  "ambient-bowl",
+  "morning-breath",
+  "chakra-dawn",
+  "music-crystal",
 ]);
 
 // ── Alarm-appropriate meditation tracks ──────────────────────────────────────────────────────────────
@@ -841,8 +848,8 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
     : "meditation" // new alarm defaults to Rise Sounds tab (Forest Dawn pre-selected)
   );
   const [selectedMixId, setSelectedMixId] = useState<string | null>(editingAlarm?.studioMixId ?? null);
-  // Default ambient: Forest Dawn — purpose-built wake soundscape, starts quiet and builds
-  const [selectedAmbientId, setSelectedAmbientId] = useState<string | null>(editingAlarm?.ambientId ?? "alarm-forest-dawn");
+  // Default ambient: Birds Good Morning 444Hz — first TrueHz HQ alarm track
+  const [selectedAmbientId, setSelectedAmbientId] = useState<string | null>(editingAlarm?.ambientId ?? "alarm-birds-good-morning-444");
   const [selectedMeditationId, setSelectedMeditationId] = useState<string | null>(editingAlarm?.meditationId ?? null);
   const [freqCategory, setFreqCategory] = useState<"solfeggio" | "binaural" | "recorded">("solfeggio");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -914,12 +921,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
       // from any prior user interaction with the frequency player.
       // For the Gentle Morning sequence, play the 528Hz peak (the "Rise" tone).
       try {
-        const seqFreqHz = selectedSeq === "gentle" ? 528
-          : selectedSeq === "deep-sleep-wake" ? 10  // alpha
-          : null;
-        const freq = seqFreqHz
-          ? (FREQUENCIES.find(f => f.hz === seqFreqHz) ?? FREQUENCIES.find(f => f.id === selectedFreq) ?? FREQUENCIES[0])
-          : (FREQUENCIES.find(f => f.id === selectedFreq) ?? FREQUENCIES[0]);
+        const freq = FREQUENCIES.find(f => f.id === selectedFreq) ?? FREQUENCIES[0];
         // Use the shared context — already has worklet loaded, already resumed
         const ctx = await getSharedContext();
         const node = new AudioWorkletNode(ctx, 'dds-processor');
@@ -940,7 +942,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
       });
     }, 1000);
     testTimerRef.current = setTimeout(stopTest, TEST_DURATION * 1000);
-  }, [isTesting, soundMode, selectedAmbientId, selectedMeditationId, selectedFreq, selectedSeq, stopTest, stopPreview]);
+  }, [isTesting, soundMode, selectedAmbientId, selectedMeditationId, selectedFreq, stopTest, stopPreview]);
 
   // Clean up test on unmount
   useEffect(() => stopTest, [stopTest]);
@@ -1116,7 +1118,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
               {([
                 { mode: "frequency" as const, label: "Frequencies", icon: Waves, activeColor: '#00D4AA', activeBg: 'rgba(0,212,170,0.12)', activeBorder: 'rgba(0,212,170,0.3)' },
                 { mode: "ambient" as const, label: "Nature", icon: Wind, activeColor: '#3B82F6', activeBg: 'rgba(59,130,246,0.12)', activeBorder: 'rgba(59,130,246,0.3)' },
-                { mode: "meditation" as const, label: "Rise Sounds", icon: BookOpen, activeColor: '#F59E0B', activeBg: 'rgba(245,158,11,0.12)', activeBorder: 'rgba(245,158,11,0.3)' },
+                { mode: "meditation" as const, label: "Sounds", icon: BookOpen, activeColor: '#F59E0B', activeBg: 'rgba(245,158,11,0.12)', activeBorder: 'rgba(245,158,11,0.3)' },
                 { mode: "studio" as const, label: "My Mixes", icon: Layers, activeColor: '#8B5CF6', activeBg: 'rgba(139,92,246,0.12)', activeBorder: 'rgba(139,92,246,0.3)' },
               ]).map(tab => (
                 <button key={tab.mode} onClick={() => { stopTest(); setSoundMode(tab.mode); }}
@@ -1229,18 +1231,17 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
             {soundMode === "meditation" && (
               <div className="space-y-2">
                 <p className="text-[10px] mb-2" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
-                  Purpose-built wake soundscapes — each one starts quietly and builds in energy to gently bring you from sleep to full presence.
+                  TrueHz HQ healing frequency tracks — purpose-built for a positive, energising wake-up.
                 </p>
-                {/* Rise Sounds — new purpose-built alarm tracks */}
+                {/* TrueHz HQ Alarm Sounds */}
                 {BACKGROUND_LOOPS.filter(l => l.id.startsWith('alarm-')).map(track => {
-                  const previewKey = `rise:${track.id}`;
+                  const previewKey = `alarm:${track.id}`;
                   const isPreviewing = previewId === previewKey;
                   const trackUrl = getLibraryLoopUrl(track.id);
-                  const RISE_SUBTITLES: Record<string, string> = {
-                    'alarm-forest-dawn': 'Birdsong builds from silence to full dawn chorus',
-                    'alarm-morning-shore': 'Ocean waves rise to bright morning energy',
-                    'alarm-sacred-bell-rise': 'Tibetan & crystal bowls build ceremonially',
-                  };
+                  // Extract Hz from id for subtitle
+                  const hzMatch = track.id.match(/(\d+)$/);
+                  const hz = hzMatch ? hzMatch[1] : '';
+                  const subtitle = hz ? `TrueHz · ${hz}Hz Healing Frequency` : 'TrueHz HQ';
                   return (
                     <button key={track.id} onClick={() => { setSelectedAmbientId(track.id); setSoundMode('ambient'); }}
                       className="w-full p-3 rounded-xl text-left flex items-center gap-3 transition-all duration-200 relative"
@@ -1255,7 +1256,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                       </button>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>{track.label}</div>
-                        <div className="text-xs" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>{RISE_SUBTITLES[track.id] ?? ''}</div>
+                        <div className="text-xs" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>{subtitle}</div>
                       </div>
                       {selectedAmbientId === track.id && <Check size={14} style={{ color: '#F59E0B', flexShrink: 0 }} />}
                     </button>
@@ -1293,31 +1294,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
             )}
           </div>
 
-          {/* Wake Sequence */}
-          <div className="mb-5">
-            <label className="block text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>Wake Sequence</label>
-            <div className="space-y-2">
-              {WAKE_SEQUENCES.map(seq => (
-                <button key={seq.id}
-                  onClick={() => { if (seq.isPremium) { toast("✦ Premium sequence — upgrade to unlock"); return; } setSelectedSeq(seq.id); }}
-                  className="w-full p-3 rounded-xl text-left flex items-center gap-3 transition-all duration-200"
-                  style={{
-                    background: selectedSeq === seq.id ? `${seq.color}10` : 'rgba(255,255,255,0.02)',
-                    border: `1px solid ${selectedSeq === seq.id ? seq.color + '25' : 'rgba(255,255,255,0.04)'}`,
-                    opacity: seq.isPremium ? 0.65 : 1,
-                  }}>
-                  <seq.icon size={14} style={{ color: seq.color, flexShrink: 0 }} />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold flex items-center gap-1.5" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
-                      {seq.name}{seq.isPremium && <Lock size={10} style={{ color: '#8B5CF6' }} />}
-                    </div>
-                    <div className="text-xs truncate" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>{seq.description}</div>
-                  </div>
-                  {selectedSeq === seq.id && !seq.isPremium && <Check size={13} style={{ color: '#00D4AA', flexShrink: 0 }} />}
-                </button>
-              ))}
-            </div>
-          </div>
+
 
           {/* Fade-in */}
           <div className="mb-6">

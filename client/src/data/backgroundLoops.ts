@@ -34,11 +34,17 @@ export const BACKGROUND_LOOPS: BackgroundLoop[] = [
   { id: "music-ambient", label: "Ambient Bed", category: "music" },
   { id: "music-drone", label: "Drone Bed", category: "music" },
   { id: "music-crystal", label: "Crystal Bed", category: "music" },
-  // ── Rise Sounds — purpose-built wake alarm soundscapes ─────────────────────────────────────────────
-  // Generated specifically for the alarm — start quiet, build to full energy
-  { id: "alarm-forest-dawn", label: "Forest Dawn", category: "nature" },
-  { id: "alarm-morning-shore", label: "Morning Shore", category: "nature" },
-  { id: "alarm-sacred-bell-rise", label: "Sacred Bell Rise", category: "nature" },
+  // ── TrueHz HQ Alarm Sounds — purpose-built wake tracks ─────────────────────────────────────────────
+  { id: "alarm-birds-good-morning-444", label: "Birds Good Morning · 444Hz", category: "nature" },
+  { id: "alarm-acoustic-inspiration-528", label: "Acoustic Inspiration · 528Hz", category: "nature" },
+  { id: "alarm-rise-in-relaxation-432", label: "Rise in Relaxation · 432Hz", category: "nature" },
+  { id: "alarm-harmony-alarm-528", label: "Harmony Alarm · 528Hz", category: "nature" },
+  { id: "alarm-relaxing-wakeup-417", label: "Relaxing Wake Up · 417Hz", category: "nature" },
+  { id: "alarm-high-energy-inspiration-639", label: "High Energy Inspiration · 639Hz", category: "nature" },
+  { id: "alarm-morning-sunrise-639", label: "Morning Sunrise · 639Hz", category: "nature" },
+  { id: "alarm-blissful-harmony-396", label: "Blissful Harmony · 396Hz", category: "nature" },
+  { id: "alarm-beautiful-sunshine-444", label: "Beautiful Sunshine · 444Hz", category: "nature" },
+  { id: "alarm-rise-with-clarity-528", label: "Rise with Clarity · 528Hz", category: "nature" },
 ];
 
 const LOOP_LABELS = Object.fromEntries(
@@ -88,10 +94,17 @@ const LIBRARY_LOOP_URLS: Record<string, string> = {
   "music-ambient": "/audio/music-ambient.mp3",
   "music-crystal": "/audio/music-crystal.mp3",
   "music-drone": "/audio/music-drone.mp3",
-  // ── Rise Sounds — purpose-built wake alarm soundscapes (Manus CDN, permanent) ─────────────────────────────────────────────
-  "alarm-forest-dawn": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/JMgCynfrIUiflQrn.mp3",
-  "alarm-morning-shore": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/HLofNARsMeiGEBSS.mp3",
-  "alarm-sacred-bell-rise": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/UPqMxmvKRVxVnBia.mp3",
+  // ── TrueHz HQ Alarm Sounds (Manus CDN, permanent) ──────────────────────────────────────────────────────────────
+  "alarm-birds-good-morning-444": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/jNDSkiXhLpIfeRsc.mp3",
+  "alarm-acoustic-inspiration-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/EtaamAWZVGQVUlNS.mp3",
+  "alarm-rise-in-relaxation-432": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/PsKhiBxYIrKyrOao.mp3",
+  "alarm-harmony-alarm-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/WAXqKZrYHugDBMjn.mp3",
+  "alarm-relaxing-wakeup-417": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/VHdzmxIWQRnZtCEP.mp3",
+  "alarm-high-energy-inspiration-639": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/MwxDEJViTKqbRRHv.mp3",
+  "alarm-morning-sunrise-639": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/xTCycRPYtYQFCFAC.mp3",
+  "alarm-blissful-harmony-396": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/mDCFcehtWayrdDTy.mp3",
+  "alarm-beautiful-sunshine-444": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/JGLrdDmbeTyLYvZU.mp3",
+  "alarm-rise-with-clarity-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/PVuBTziwJCdleKop.mp3",
 };
 
 export function getLibraryLoopUrl(loopId: string): string {
