@@ -52,9 +52,13 @@ export async function runMigrations(
 
       const sql = readFileSync(join(MIGRATIONS_DIR, file), "utf8");
 
-      // Split on statement boundaries (-- breakpoints or semicolons)
-      // Each statement is executed separately to handle multi-statement files
-      const statements = sql
+      // Strip drizzle-kit statement-breakpoint markers before parsing.
+      // These markers (-->  statement-breakpoint) are drizzle-kit specific
+      // and cause MySQL syntax errors if passed through as-is.
+      const cleanedSql = sql.replace(/--> *statement-breakpoint/g, "");
+      // Split on statement boundaries (semicolons) and strip SQL comments.
+      // Each statement is executed separately to handle multi-statement files.
+      const statements = cleanedSql
         .split(/;[\s\n]*(?=(?:[^']*'[^']*')*[^']*$)/)
         .map(s => s.replace(/--[^\n]*/g, "").trim())
         .filter(s => s.length > 0);
@@ -70,7 +74,9 @@ export async function runMigrations(
             msg.includes("Duplicate column name") ||
             msg.includes("already exists") ||
             msg.includes("Can't DROP") ||
-            msg.includes("check that column/key exists")
+            msg.includes("check that column/key exists") ||
+            msg.includes("Duplicate entry") ||
+            msg.includes("Duplicate key name")
           ) {
             log.warn(`[migrations] ${tag}: skipping already-applied statement`);
             continue;
