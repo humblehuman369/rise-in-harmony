@@ -869,31 +869,55 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
   const startTest = useCallback(async () => {
     if (isTesting) { stopTest(); return; }
     stopPreview();
-    const TEST_DURATION = 10;
+    const TEST_DURATION = 15; // 15s so user hears a meaningful preview
     setIsTesting(true);
     setTestCountdown(TEST_DURATION);
 
     if (soundMode === "ambient" && selectedAmbientId) {
       const url = getLibraryLoopUrl(selectedAmbientId);
       const audio = new Audio(url);
-      audio.loop = true; audio.volume = 0.85;
+      audio.loop = true;
+      audio.volume = 0;
+      // Skip 30s into the track to avoid any silent intro
+      audio.currentTime = 30;
       testAudioRef.current = audio;
       audio.play().catch(() => stopTest());
+      // Fade in quickly to full volume over 1s
+      const fadeIn = setInterval(() => {
+        if (!testAudioRef.current) { clearInterval(fadeIn); return; }
+        testAudioRef.current.volume = Math.min(0.85, testAudioRef.current.volume + 0.085);
+        if (testAudioRef.current.volume >= 0.85) clearInterval(fadeIn);
+      }, 100);
     } else if (soundMode === "meditation" && selectedMeditationId) {
       const url = getLibraryLoopUrl(selectedMeditationId);
       const audio = new Audio(url);
-      audio.loop = true; audio.volume = 0.85;
+      audio.loop = true;
+      audio.volume = 0;
+      // Skip 60s into the track to get past any silent or intro section
+      audio.currentTime = 60;
       testAudioRef.current = audio;
       audio.play().catch(() => stopTest());
+      const fadeIn = setInterval(() => {
+        if (!testAudioRef.current) { clearInterval(fadeIn); return; }
+        testAudioRef.current.volume = Math.min(0.85, testAudioRef.current.volume + 0.085);
+        if (testAudioRef.current.volume >= 0.85) clearInterval(fadeIn);
+      }, 100);
     } else {
-      // Play DDS frequency via AudioContext (uses the same DDS engine as the real alarm)
+      // Play DDS frequency via AudioContext at full volume immediately
+      // For the Gentle Morning sequence, play the 528Hz peak (the "Rise" tone)
       try {
-        const freq = FREQUENCIES.find(f => f.id === selectedFreq) ?? FREQUENCIES.find(f => f.id === "432hz") ?? FREQUENCIES[0];
+        const seqFreqHz = selectedSeq === "gentle" ? 528
+          : selectedSeq === "deep-sleep-wake" ? 10  // alpha
+          : null;
+        const freq = seqFreqHz
+          ? (FREQUENCIES.find(f => f.hz === seqFreqHz) ?? FREQUENCIES.find(f => f.id === selectedFreq) ?? FREQUENCIES[0])
+          : (FREQUENCIES.find(f => f.id === selectedFreq) ?? FREQUENCIES[0]);
         const ctx = new AudioContext();
         await ctx.audioWorklet.addModule('/dds-processor.js');
         const node = new AudioWorkletNode(ctx, 'dds-processor');
         node.parameters.get('freqL')!.value = freq.hz;
         node.parameters.get('freqR')!.value = freq.hz;
+        // Start at full volume immediately — no whisper stage in test preview
         node.parameters.get('amplitude')!.value = 0.85;
         node.parameters.get('waveform')!.value = 0; // sine
         node.parameters.get('mode')!.value = 0; // mono
@@ -901,7 +925,6 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
         testDdsRef.current = { stop: () => { node.disconnect(); ctx.close().catch(() => {}); } };
       } catch { stopTest(); return; }
     }
-
     testCountdownRef.current = setInterval(() => {
       setTestCountdown(prev => {
         if (prev <= 1) { stopTest(); return 0; }
@@ -909,7 +932,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
       });
     }, 1000);
     testTimerRef.current = setTimeout(stopTest, TEST_DURATION * 1000);
-  }, [isTesting, soundMode, selectedAmbientId, selectedMeditationId, selectedFreq, stopTest, stopPreview]);
+  }, [isTesting, soundMode, selectedAmbientId, selectedMeditationId, selectedFreq, selectedSeq, stopTest, stopPreview]);
 
   // Clean up test on unmount
   useEffect(() => stopTest, [stopTest]);
@@ -1342,7 +1365,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
               {isTesting ? (
                 <><VolumeX size={15} /> Stop Preview ({testCountdown}s)</>
               ) : (
-                <><Volume2 size={15} /> Test Sound (10s)</>
+                <><Volume2 size={15} /> Test Sound (15s)</>
               )}
             </button>
             {isTesting && (

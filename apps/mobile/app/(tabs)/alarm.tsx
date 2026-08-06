@@ -230,7 +230,7 @@ export default function AlarmScreen() {
 
   const startTest = useCallback(async () => {
     if (isTesting) { stopTest(); return; }
-    const TEST_DURATION = 10;
+    const TEST_DURATION = 15; // 15s so user hears a meaningful preview
     setIsTesting(true);
     setTestCountdown(TEST_DURATION);
     Vibration.vibrate(100); // brief confirmation haptic
@@ -242,11 +242,18 @@ export default function AlarmScreen() {
       interruptionModeAndroid: "doNotMix",
     }).catch(() => {});
 
-    // Determine what to play based on selected frequency
-    const freq = FREQUENCIES.find(f => f.id === newFreqId) ?? DEFAULT_FREQUENCY;
-    // Play DDS frequency tone
-    const voice = createVoice({ hz: freq.hz, waveform: "sine", volume: 0.85 });
-    voice.start(0.5);
+    // For wake sequences, play the peak/destination frequency at full volume.
+    // Gentle Morning peaks at 528 Hz; Deep Sleep Wake peaks at 10 Hz (alpha).
+    // This skips the whisper stage so the user immediately hears the alarm sound.
+    let testHz = FREQUENCIES.find(f => f.id === newFreqId)?.hz ?? DEFAULT_FREQUENCY.hz;
+    if (newSequenceId === "gentle-morning") testHz = 528;
+    else if (newSequenceId === "deep-sleep-wake") testHz = 10;
+    else if (newSequenceId === "chakra-awakening") testHz = 528; // Crown chakra peak
+
+    const testFreq = FREQUENCIES.find(f => f.hz === testHz) ?? DEFAULT_FREQUENCY;
+    // Start at full volume immediately — no whisper stage in test preview
+    const voice = createVoice({ hz: testFreq.hz, waveform: "sine", volume: 0.85 });
+    voice.start(0.3); // very short 0.3s fade-in so it doesn't click
     testVoiceRef.current = voice;
 
     testCountdownRef.current = setInterval(() => {
@@ -256,7 +263,7 @@ export default function AlarmScreen() {
       });
     }, 1000);
     testTimerRef.current = setTimeout(stopTest, TEST_DURATION * 1000);
-  }, [isTesting, newFreqId, stopTest]);
+  }, [isTesting, newFreqId, newSequenceId, stopTest]);
 
   // Clean up on unmount
   useEffect(() => () => stopTest(), [stopTest]);
@@ -696,7 +703,7 @@ export default function AlarmScreen() {
                 styles.testSoundBtnText,
                 isTesting && { color: '#EF4444' },
               ]}>
-                {isTesting ? `⏹ Stop Preview (${testCountdown}s)` : '🔊 Test Sound (10s)'}
+                {isTesting ? `⏹ Stop Preview (${testCountdown}s)` : '🔊 Test Sound (15s)'}
               </Text>
             </TouchableOpacity>
             {isTesting && (
