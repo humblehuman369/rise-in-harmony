@@ -171,6 +171,7 @@ async function scheduleRepeatAlarm(alarm: Alarm): Promise<string[]> {
 const DAYS: AlarmDayOfWeek[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 // Only solfeggio tones have bundled notification sounds (alarm_<hz>.wav).
 const ALARM_FREQUENCIES = FREQUENCIES.filter((f) => f.category === "solfeggio");
+// Optimal default: 528 Hz (Miracle Tone) — bright, uplifting, ideal for morning activation
 const DEFAULT_FREQUENCY = FREQUENCIES.find((f) => f.id === "528") ?? FREQUENCIES[0];
 
 let _nextId = Date.now();
@@ -201,9 +202,9 @@ export default function AlarmScreen() {
   const newMinute = newTime.getMinutes();
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
   const [newDays, setNewDays] = useState<AlarmDayOfWeek[]>(["Mon", "Tue", "Wed", "Thu", "Fri"]);
-  const [newFreqId, setNewFreqId] = useState(DEFAULT_FREQUENCY.id);
-  const [newFadeMin, setNewFadeMin] = useState(5);
-  const [newSequenceId, setNewSequenceId] = useState<WakeSequenceId>("none");
+  const [newFreqId, setNewFreqId] = useState(DEFAULT_FREQUENCY.id); // 528 Hz
+  const [newFadeMin, setNewFadeMin] = useState(6); // Normal profile: 6-min gentle fade
+  const [newSequenceId, setNewSequenceId] = useState<WakeSequenceId>("gentle-morning"); // 432→528 Hz sequence
   const [sleepProfile, setSleepProfile] = useState<SleepProfile>("normal");
 
   // ── Test Sound state ────────────────────────────────────────────────────────────

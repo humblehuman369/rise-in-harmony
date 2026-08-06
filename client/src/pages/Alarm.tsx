@@ -133,8 +133,8 @@ const WAKE_SEQUENCES = [
 const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 const DEFAULT_ALARMS: Alarm[] = [
-  { id: "1", time: "06:30", label: "Morning Harmony", frequencyId: "432", sequenceId: "gentle", days: [1, 2, 3, 4, 5], enabled: true, fadeInMinutes: 5 },
-  { id: "2", time: "07:00", label: "Weekend Rise", frequencyId: "528", sequenceId: "gentle", days: [0, 6], enabled: false, fadeInMinutes: 3 },
+  { id: "1", time: "06:30", label: "Morning Harmony", frequencyId: "528", sequenceId: "gentle", days: [1, 2, 3, 4, 5], enabled: true, fadeInMinutes: 6 },
+  { id: "2", time: "07:00", label: "Weekend Rise", frequencyId: "528", sequenceId: "gentle", days: [0, 6], enabled: false, fadeInMinutes: 6 },
 ];
 
 // ─── iOS drum-roll time picker ────────────────────────────────────────────────
@@ -783,23 +783,28 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
   const [minute, setMinute] = useState(initM);
   const [isAM, setIsAM] = useState(!initIs12);
   const [label, setLabel] = useState(editingAlarm?.label ?? "Morning Harmony");
+  // ── Optimal defaults ──────────────────────────────────────────────────────────────
+  // 528 Hz (Miracle Tone) + Forest ambient + Gentle Morning sequence + 6-min Normal fade
   const [selectedFreq, setSelectedFreq] = useState(
     editingAlarm?.frequencyId ?? (prefill?.frequencyHz
-      ? FREQUENCIES.find(f => f.hz === prefill.frequencyHz && !f.isPremium)?.id ?? "432"
-      : "432")
+      ? FREQUENCIES.find(f => f.hz === prefill.frequencyHz && !f.isPremium)?.id ?? "528"
+      : "528")
   );
   const [selectedSeq, setSelectedSeq] = useState(editingAlarm?.sequenceId ?? "gentle");
   const [selectedDays, setSelectedDays] = useState(editingAlarm?.days ?? [1, 2, 3, 4, 5]);
-  const [fadeIn, setFadeIn] = useState(editingAlarm?.fadeInMinutes ?? 5);
+  const [fadeIn, setFadeIn] = useState(editingAlarm?.fadeInMinutes ?? 6);
   const [sleepProfile, setSleepProfile] = useState<SleepProfile>(editingAlarm?.sleepProfile ?? "normal");
+  // Default to ambient tab so Forest birdsong is immediately visible
   const [soundMode, setSoundMode] = useState<SoundTab>(
     editingAlarm?.studioMixId ? "studio"
     : editingAlarm?.meditationId ? "meditation"
     : editingAlarm?.ambientId ? "ambient"
-    : "frequency"
+    : editingAlarm ? "frequency" // existing alarm with no ambient = frequency
+    : "ambient" // new alarm defaults to Nature tab (Forest pre-selected)
   );
   const [selectedMixId, setSelectedMixId] = useState<string | null>(editingAlarm?.studioMixId ?? null);
-  const [selectedAmbientId, setSelectedAmbientId] = useState<string | null>(editingAlarm?.ambientId ?? null);
+  // Default ambient: Forest birdsong — the most natural and effective wake-up soundscape
+  const [selectedAmbientId, setSelectedAmbientId] = useState<string | null>(editingAlarm?.ambientId ?? "ambient-forest");
   const [selectedMeditationId, setSelectedMeditationId] = useState<string | null>(editingAlarm?.meditationId ?? null);
   const [freqCategory, setFreqCategory] = useState<"solfeggio" | "binaural" | "recorded">("solfeggio");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
