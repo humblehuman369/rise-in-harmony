@@ -195,8 +195,8 @@ export default function AlarmScreen() {
   const router = useRouter();
   const { isPremium: userIsPremium } = usePremiumStatus();
   const [alarms, setAlarms] = useState<Alarm[]>([]);
-  const [creating, setCreating] = useState(false);
-
+    const [creating, setCreating] = useState(false);
+  const [editingAlarm, setEditingAlarm] = useState<Alarm | null>(null);
   // New alarm form state
   const [newTime, setNewTime] = useState(() => {
     const d = new Date();
@@ -368,7 +368,57 @@ export default function AlarmScreen() {
       setAlarms(updated);
       setCreating(false);
     }
-  }, [newHour, newMinute, newDays, newFreqId, newFadeMin, newSequenceId]);
+    }, [newHour, newMinute, newDays, newFreqId, newFadeMin, newSequenceId]);
+
+  // ── Edit existing alarm ──────────────────────────────────────────────────────
+  const openEditAlarm = useCallback((alarm: Alarm) => {
+    // Pre-fill all form fields from the existing alarm
+    const d = new Date();
+    d.setHours(alarm.hour, alarm.minute, 0, 0);
+    setNewTime(d);
+    setNewDays(alarm.days as AlarmDayOfWeek[]);
+    const matchedFreq = FREQUENCIES.find(f => f.hz === alarm.frequencyHz);
+    setNewFreqId(matchedFreq?.id ?? DEFAULT_FREQUENCY.id);
+    setNewFadeMin(alarm.fadeInMinutes ?? 6);
+    // Detect sleep profile from fadeInMinutes
+    const profile = SLEEP_PROFILES.find(p => p.fadeMin === alarm.fadeInMinutes) ?? SLEEP_PROFILES[1];
+    setSleepProfile(profile.id);
+    setEditingAlarm(alarm);
+    setCreating(true);
+    stopTest();
+  }, [stopTest]);
+
+  const updateAlarm = useCallback(async () => {
+    if (!editingAlarm) return;
+    const freq = FREQUENCIES.find((f) => f.id === newFreqId) ?? DEFAULT_FREQUENCY;
+    const updatedAlarm: Alarm = {
+      ...editingAlarm,
+      hour: newHour,
+      minute: newMinute,
+      days: newDays,
+      frequencyHz: freq.hz,
+      frequencyName: freq.name,
+      fadeInMinutes: newFadeMin,
+      time: `${newHour.toString().padStart(2, "00")}:${newMinute.toString().padStart(2, "00")}`,
+    };
+    // Cancel old notifications for this alarm then reschedule
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    for (const notif of scheduled) {
+      const data = notif.content.data as { alarm?: Alarm };
+      if (data?.alarm?.id === updatedAlarm.id) {
+        await Notifications.cancelScheduledNotificationAsync(notif.identifier);
+      }
+    }
+    const ids = await scheduleRepeatAlarm(updatedAlarm);
+    if (ids.length > 0) {
+      const stored = await loadAlarms();
+      const updated = stored.map(a => a.id === updatedAlarm.id ? updatedAlarm : a);
+      await saveAlarms(updated);
+      setAlarms(updated);
+    }
+    setCreating(false);
+    setEditingAlarm(null);
+  }, [editingAlarm, newHour, newMinute, newDays, newFreqId, newFadeMin]);
 
   const toggleAlarm = useCallback(async (alarm: Alarm) => {
     if (alarm.isActive) {
@@ -437,7 +487,7 @@ export default function AlarmScreen() {
           <Text style={styles.title}>Healing Alarm</Text>
           <TouchableOpacity
             style={styles.addBtn}
-            onPress={() => setCreating((v) => !v)}
+            onPress={() => { setCreating((v) => !v); setEditingAlarm(null); stopTest(); }}
             activeOpacity={0.8}
           >
             <Text style={styles.addBtnText}>{creating ? "Cancel" : "+ New"}</Text>
@@ -447,6 +497,10 @@ export default function AlarmScreen() {
         {/* Create form */}
         {creating && (
           <View style={styles.form}>
+            {/* Form header */}
+            <Text style={[styles.sectionLabel, { fontSize: 13, color: '#00D4AA', marginBottom: 12, letterSpacing: 1 }]}>
+              {editingAlarm ? '✎  EDIT ALARM' : '⊕  NEW ALARM'}
+            </Text>
             {/* Time picker */}
             <Text style={styles.sectionLabel}>Wake Time</Text>
             {Platform.OS === "ios" ? (
@@ -719,10 +773,10 @@ export default function AlarmScreen() {
 
             <TouchableOpacity
               style={styles.saveBtn}
-              onPress={createAlarm}
+              onPress={editingAlarm ? updateAlarm : createAlarm}
               activeOpacity={0.85}
             >
-              <Text style={styles.saveBtnText}>Set Healing Alarm</Text>
+              <Text style={styles.saveBtnText}>{editingAlarm ? "Update Alarm" : "Set Healing Alarm"}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -740,9 +794,13 @@ export default function AlarmScreen() {
           alarms.map((alarm) => (
             <TouchableOpacity
               key={alarm.id}
-              style={styles.alarmCard}
+              style={[
+                styles.alarmCard,
+                editingAlarm?.id === alarm.id && { borderColor: 'rgba(0,212,170,0.5)', borderWidth: 1.5 },
+              ]}
+              onPress={() => openEditAlarm(alarm)}
               onLongPress={() => deleteAlarm(alarm)}
-              activeOpacity={0.9}
+              activeOpacity={0.85}
             >
               <View style={styles.alarmLeft}>
                 <Text style={styles.alarmTime}>
@@ -768,7 +826,7 @@ export default function AlarmScreen() {
           ))
         )}
 
-        <Text style={styles.hint}>Long-press an alarm to delete it.</Text>
+        <Text style={styles.hint}>Tap an alarm to edit · Long-press to delete</Text>
       </ScrollView>
     </SafeAreaView>
 
