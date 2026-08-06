@@ -43,15 +43,16 @@ import { FREQUENCIES, MEDITATIONS } from "@rih/shared-utils";
 import type { Alarm } from "@rih/shared-types";
 
 // ─── CDN URLs for meditation tracks (same as useMeditationPlayer.ts) ─────────
+// Only wake-appropriate meditation tracks are allowed in the alarm.
+// Removed: calm-sleep-528 (sleep-inducing), deep-serenity-444 (calming/30min),
+// spiritual-meditation-444 (stillness practice), inner-calling-60 (inward journey),
+// reiki-healing-garden-285 (restorative), third-eye-activation-528 (inward).
 const MEDITATION_CDN_URLS: Record<string, string> = {
-  "calm-sleep-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/IYQghxoiyPtmxTWZ.mp3",
-  "deep-serenity-444": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/XrswIdGeuQpsHQZo.mp3",
+  // 174 Hz grounding + nature sounds — earthy and activating
   "nature-meditation-174": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ySLrOnBvjVJpOcpp.mp3",
-  "reiki-healing-garden-285": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/JMfdCoiZFkPyxCYD.mp3",
-  "spiritual-meditation-444": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/GtKAQCHgteBuniTF.mp3",
-  "third-eye-activation-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/fsamjpcaHNeOwiPp.mp3",
+  // 60-min forest immersion — nature sounds are inherently activating
   "deep-into-nature-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/WKmRGyioQaoQKeeJ.mp3",
-  "inner-calling-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ktyVgoowVIAMSvwT.mp3",
+  // 60-min ocean — ocean is a natural wake sound
   "peaceful-ocean-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/gjiHzXouliJdAAeH.mp3",
 };
 

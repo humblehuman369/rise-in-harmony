@@ -28,16 +28,12 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from "expo-aud
 import { createVoice } from "@/lib/synth";
 import type { SynthVoice } from "@/lib/synth";
 
-// CDN URLs for meditation tracks used in test preview
+// CDN URLs for wake-appropriate meditation tracks only (used in test preview + alarm playback).
+// Sleep-inducing tracks removed: calm-sleep, deep-serenity, spiritual-meditation,
+// inner-calling, reiki-healing-garden, third-eye-activation.
 const MEDITATION_CDN_URLS: Record<string, string> = {
-  "calm-sleep-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/IYQghxoiyPtmxTWZ.mp3",
-  "deep-serenity-444": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/XrswIdGeuQpsHQZo.mp3",
   "nature-meditation-174": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ySLrOnBvjVJpOcpp.mp3",
-  "reiki-healing-garden-285": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/JMfdCoiZFkPyxCYD.mp3",
-  "spiritual-meditation-444": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/GtKAQCHgteBuniTF.mp3",
-  "third-eye-activation-528": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/fsamjpcaHNeOwiPp.mp3",
   "deep-into-nature-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/WKmRGyioQaoQKeeJ.mp3",
-  "inner-calling-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ktyVgoowVIAMSvwT.mp3",
   "peaceful-ocean-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/gjiHzXouliJdAAeH.mp3",
 };
 const NATURE_ASSETS: Record<string, number> = {
@@ -170,7 +166,11 @@ async function scheduleRepeatAlarm(alarm: Alarm): Promise<string[]> {
 
 const DAYS: AlarmDayOfWeek[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 // Only solfeggio tones have bundled notification sounds (alarm_<hz>.wav).
-const ALARM_FREQUENCIES = FREQUENCIES.filter((f) => f.category === "solfeggio");
+// Binaural delta/theta waves are excluded — they are sleep-inducing, not wake-appropriate.
+const ALARM_EXCLUDED_FREQ_IDS = new Set(["delta", "theta"]);
+const ALARM_FREQUENCIES = FREQUENCIES.filter(
+  (f) => f.category === "solfeggio" && !ALARM_EXCLUDED_FREQ_IDS.has(f.id)
+);
 // Optimal default: 528 Hz (Miracle Tone) — bright, uplifting, ideal for morning activation
 const DEFAULT_FREQUENCY = FREQUENCIES.find((f) => f.id === "528") ?? FREQUENCIES[0];
 

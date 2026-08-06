@@ -132,6 +132,39 @@ const WAKE_SEQUENCES = [
 
 const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
+// ── Alarm-appropriate nature sounds ──────────────────────────────────────────────────────────────
+// Only sounds that are activating/uplifting for morning waking.
+// Removed: Cave, Night, Sleep Preparation, Anxiety Reset, Deep Focus, all meditation
+// track duplicates (Reiki 432Hz, Calm Sleep 528Hz, etc.), Ambient Bed, Drone Bed.
+const ALARM_NATURE_IDS = new Set([
+  "ambient-forest",   // Best default — birdsong is the natural dawn signal
+  "ambient-ocean",    // Rhythmic, energising
+  "ambient-rain",     // Refreshing, activating
+  "ambient-river",    // Flowing water, uplifting
+  "ambient-wind",     // Neutral, not sleep-inducing
+  "ambient-fire",     // Cosy warmth — borderline but kept
+  "ambient-bowl",     // Singing bowl — gentle riser option
+  "morning-breath",   // Explicitly designed for morning
+  "chakra-dawn",      // Dawn-themed, activating
+  "music-crystal",    // Crystal bowls — activating at alarm volume
+]);
+
+// ── Alarm-appropriate meditation tracks ──────────────────────────────────────────────────────────────
+// Removed: Calm Sleep (sleep-inducing), Deep Serenity (30-min calming),
+// Spiritual Meditation (stillness practice), Inner Calling (60-min inward journey),
+// Reiki Healing Garden (restorative/deepens rest), Third Eye Activation (inward).
+// Kept: tracks with nature sounds or grounding energy appropriate for waking.
+const ALARM_MEDITATION_IDS = new Set([
+  "nature-meditation-174",  // 174 Hz grounding + nature — earthy and activating
+  "deep-into-nature-60",    // 60-min forest immersion — nature sounds are activating
+  "peaceful-ocean-60",      // 60-min ocean — ocean is a natural wake sound
+]);
+
+// ── Alarm-appropriate frequencies ──────────────────────────────────────────────────────────────
+// Removed: Delta Waves (deep sleep brainwave — worst possible alarm frequency),
+// Theta Waves (hypnagogic/dream state — will keep user in sleep).
+const ALARM_EXCLUDED_FREQ_IDS = new Set(["delta", "theta"]);
+
 const DEFAULT_ALARMS: Alarm[] = [
   { id: "1", time: "06:30", label: "Morning Harmony", frequencyId: "528", sequenceId: "gentle", days: [1, 2, 3, 4, 5], enabled: true, fadeInMinutes: 6 },
   { id: "2", time: "07:00", label: "Weekend Rise", frequencyId: "528", sequenceId: "gentle", days: [0, 6], enabled: false, fadeInMinutes: 6 },
@@ -1085,7 +1118,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
                   ))}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {FREQUENCIES.filter(f => f.category === freqCategory).map(f => {
+                  {FREQUENCIES.filter(f => f.category === freqCategory && !ALARM_EXCLUDED_FREQ_IDS.has(f.id)).map(f => {
                     const previewKey = `freq:${f.id}`;
                     const isPreviewing = previewId === previewKey;
                     const previewUrl = f.audioUrl ?? getLibraryLoopUrl(`binaural-${f.hz}`);
@@ -1126,7 +1159,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
             {soundMode === "ambient" && (
               <div className="space-y-3">
                 {(['nature', 'music'] as const).map(cat => {
-                  const loops = BACKGROUND_LOOPS.filter(l => l.category === cat);
+                  const loops = BACKGROUND_LOOPS.filter(l => l.category === cat && ALARM_NATURE_IDS.has(l.id));
                   const catColor = cat === 'nature' ? '#00D4AA' : '#F2C94C';
                   return (
                     <div key={cat}>
@@ -1165,9 +1198,9 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
             {soundMode === "meditation" && (
               <div className="space-y-2">
                 <p className="text-[10px] mb-2" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
-                  Wake to a full TrueHz meditation track — plays from the beginning and loops until you dismiss.
+                  Wake to a nature-based TrueHz track — grounding and activating sounds only. Sleep and stillness tracks are available in the Meditation section.
                 </p>
-                {MEDITATIONS.map(med => {
+                {MEDITATIONS.filter(med => ALARM_MEDITATION_IDS.has(med.id)).map(med => {
                   const previewKey = `med:${med.id}`;
                   const isPreviewing = previewId === previewKey;
                   const medUrl = getLibraryLoopUrl(med.id);
