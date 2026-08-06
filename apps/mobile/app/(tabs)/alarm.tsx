@@ -61,9 +61,8 @@ import AlarmRingingScreen from "@/components/AlarmRingingScreen";
 
 const ALARMS_STORAGE_KEY = "rih_alarms";
 
-// ─── Wake Sequence types ────────────────────────────────────────────────────
-
-type WakeSequenceId = "none" | "gentle-morning" | "deep-sleep-wake" | "chakra-awakening";
+// ─── Sound tab type (matches web) ───────────────────────────────────────────
+type SoundTab = "sounds" | "nature" | "frequency";
 type SleepProfile = "light" | "normal" | "heavy" | "very-heavy";
 
 const SLEEP_PROFILES: Array<{ id: SleepProfile; label: string; fadeMin: number; color: string }> = [
@@ -73,63 +72,25 @@ const SLEEP_PROFILES: Array<{ id: SleepProfile; label: string; fadeMin: number; 
   { id: "very-heavy", label: "Very Heavy", fadeMin: 3, color: "#EF4444" },
 ];
 
-interface WakeSequence {
-  id: WakeSequenceId;
-  label: string;
-  description: string;
-  isPremium: boolean;
-  color: string;
-  steps: Array<{ hz: number; name: string; durationMin: number }>;
-}
-
-const WAKE_SEQUENCES: WakeSequence[] = [
-  {
-    id: "none",
-    label: "Single Frequency",
-    description: "Wake to one chosen frequency",
-    isPremium: false,
-    color: colors.textMuted,
-    steps: [],
-  },
-  {
-    id: "gentle-morning",
-    label: "Gentle Morning",
-    description: "432 Hz → 528 Hz progressive fade-in",
-    isPremium: false,
-    color: "#00D4AA",
-    steps: [
-      { hz: 432, name: "Natural Harmony", durationMin: 3 },
-      { hz: 528, name: "Miracle Tone", durationMin: 2 },
-    ],
-  },
-  {
-    id: "deep-sleep-wake",
-    label: "Deep Sleep Wake",
-    description: "δ Delta → θ Theta → α Alpha — brainwave sweep",
-    isPremium: false,
-    color: "#A78BFA",
-    steps: [
-      { hz: 3, name: "Delta — Deep Sleep", durationMin: 2 },
-      { hz: 6, name: "Theta — Hypnagogic", durationMin: 2 },
-      { hz: 10, name: "Alpha — Wakefulness", durationMin: 1 },
-    ],
-  },
-  {
-    id: "chakra-awakening",
-    label: "Chakra Awakening",
-    description: "Root → Crown — 7-chakra morning progression",
-    isPremium: true,
-    color: "#8B5CF6",
-    steps: [
-      { hz: 396, name: "Root", durationMin: 1 },
-      { hz: 417, name: "Sacral", durationMin: 1 },
-      { hz: 528, name: "Solar Plexus", durationMin: 1 },
-      { hz: 639, name: "Heart", durationMin: 1 },
-      { hz: 741, name: "Throat", durationMin: 1 },
-      { hz: 852, name: "Third Eye", durationMin: 1 },
-      { hz: 963, name: "Crown", durationMin: 1 },
-    ],
-  },
+// ─── TrueHz HQ Alarm Sound labels (matches web backgroundLoops) ────────────────────────────
+const ALARM_SOUNDS: Array<{ id: string; label: string; hz: number }> = [
+  { id: "alarm-birds-good-morning-444", label: "Birds Good Morning", hz: 444 },
+  { id: "alarm-acoustic-inspiration-528", label: "Acoustic Inspiration", hz: 528 },
+  { id: "alarm-rise-in-relaxation-432", label: "Rise in Relaxation", hz: 432 },
+  { id: "alarm-harmony-alarm-528", label: "Harmony Alarm", hz: 528 },
+  { id: "alarm-relaxing-wakeup-417", label: "Relaxing Wake Up", hz: 417 },
+  { id: "alarm-high-energy-inspiration-639", label: "High Energy Inspiration", hz: 639 },
+  { id: "alarm-morning-sunrise-639", label: "Morning Sunrise", hz: 639 },
+  { id: "alarm-blissful-harmony-396", label: "Blissful Harmony", hz: 396 },
+  { id: "alarm-beautiful-sunshine-444", label: "Beautiful Sunshine", hz: 444 },
+  { id: "alarm-rise-with-clarity-528", label: "Rise with Clarity", hz: 528 },
+];
+const NATURE_SOUNDS: Array<{ id: string; label: string }> = [
+  { id: "ambient-forest", label: "Forest" },
+  { id: "ambient-ocean", label: "Ocean" },
+  { id: "ambient-rain", label: "Rain" },
+  { id: "ambient-wind", label: "Wind" },
+  { id: "ambient-fire", label: "Fire" },
 ];
 
 // ─── Storage helpers ─────────────────────────────────────────────────────────
@@ -209,7 +170,10 @@ export default function AlarmScreen() {
   const [newDays, setNewDays] = useState<AlarmDayOfWeek[]>(["Mon", "Tue", "Wed", "Thu", "Fri"]);
   const [newFreqId, setNewFreqId] = useState(DEFAULT_FREQUENCY.id); // 528 Hz
   const [newFadeMin, setNewFadeMin] = useState(6); // Normal profile: 6-min gentle fade
-  const [newSequenceId, setNewSequenceId] = useState<WakeSequenceId>("gentle-morning"); // 432→528 Hz sequence
+  // Sound tab state (matches web: Sounds / Nature / Frequency)
+  const [soundTab, setSoundTab] = useState<SoundTab>("sounds");
+  const [selectedSoundId, setSelectedSoundId] = useState(ALARM_SOUNDS[0].id); // Birds Good Morning 444Hz
+  const [selectedNatureId, setSelectedNatureId] = useState("ambient-forest");
   const [sleepProfile, setSleepProfile] = useState<SleepProfile>("normal");
 
   // ── Test Sound state ────────────────────────────────────────────────────────────
@@ -247,19 +211,33 @@ export default function AlarmScreen() {
       interruptionModeAndroid: "doNotMix",
     }).catch(() => {});
 
-    // For wake sequences, play the peak/destination frequency at full volume.
-    // Gentle Morning peaks at 528 Hz; Deep Sleep Wake peaks at 10 Hz (alpha).
-    // This skips the whisper stage so the user immediately hears the alarm sound.
-    let testHz = FREQUENCIES.find(f => f.id === newFreqId)?.hz ?? DEFAULT_FREQUENCY.hz;
-    if (newSequenceId === "gentle-morning") testHz = 528;
-    else if (newSequenceId === "deep-sleep-wake") testHz = 10;
-    else if (newSequenceId === "chakra-awakening") testHz = 528; // Crown chakra peak
-
-    const testFreq = FREQUENCIES.find(f => f.hz === testHz) ?? DEFAULT_FREQUENCY;
-    // Start at full volume immediately — no whisper stage in test preview
-    const voice = createVoice({ hz: testFreq.hz, waveform: "sine", volume: 0.85 });
-    voice.start(0.3); // very short 0.3s fade-in so it doesn't click
-    testVoiceRef.current = voice;
+        // Play the selected sound at full volume immediately (no whisper stage)
+    if (soundTab === "sounds") {
+      // TrueHz HQ track — stream from CDN, skip 30s into track
+      const url = MEDITATION_CDN_URLS[selectedSoundId];
+      if (url) {
+        const player = createAudioPlayer({ uri: url });
+        player.volume = 0.85;
+        player.currentTime = 30; // skip any quiet intro
+        player.play();
+        testAudioPlayerRef.current = player;
+      }
+    } else if (soundTab === "nature") {
+      // Bundled nature sound
+      const asset = NATURE_ASSETS[selectedNatureId];
+      if (asset) {
+        const player = createAudioPlayer(asset);
+        player.volume = 0.85;
+        player.play();
+        testAudioPlayerRef.current = player;
+      }
+    } else {
+      // DDS frequency synthesis
+      const testFreq = FREQUENCIES.find(f => f.id === newFreqId) ?? DEFAULT_FREQUENCY;
+      const voice = createVoice({ hz: testFreq.hz, waveform: "sine", volume: 0.85 });
+      voice.start(0.3);
+      testVoiceRef.current = voice;
+    }
 
     testCountdownRef.current = setInterval(() => {
       setTestCountdown(prev => {
@@ -268,7 +246,7 @@ export default function AlarmScreen() {
       });
     }, 1000);
     testTimerRef.current = setTimeout(stopTest, TEST_DURATION * 1000);
-  }, [isTesting, newFreqId, newSequenceId, stopTest]);
+  }, [isTesting, soundTab, selectedSoundId, selectedNatureId, newFreqId, stopTest]);
 
   // Clean up on unmount
   useEffect(() => () => stopTest(), [stopTest]);
@@ -339,13 +317,23 @@ export default function AlarmScreen() {
       );
       return;
     }
-    const freq = FREQUENCIES.find((f) => f.id === newFreqId) ?? DEFAULT_FREQUENCY;
-    const sequence = WAKE_SEQUENCES.find((s) => s.id === newSequenceId);
-    const label =
-      newSequenceId !== "none" && sequence
-        ? `${sequence.label} Wake Sequence`
-        : `${freq.hz}Hz Healing Alarm`;
-
+        const freq = FREQUENCIES.find((f) => f.id === newFreqId) ?? DEFAULT_FREQUENCY;
+    // Build label and sound fields based on active tab
+    let label = `${freq.hz}Hz Healing Alarm`;
+    let ambientId: string | undefined;
+    let meditationId: string | undefined;
+    let soundType: string = "frequency";
+    if (soundTab === "sounds") {
+      const sound = ALARM_SOUNDS.find(s => s.id === selectedSoundId);
+      label = sound ? `${sound.label} · ${sound.hz}Hz` : label;
+      meditationId = selectedSoundId;
+      soundType = "meditation";
+    } else if (soundTab === "nature") {
+      const nat = NATURE_SOUNDS.find(n => n.id === selectedNatureId);
+      label = nat ? `${nat.label} Wake` : label;
+      ambientId = selectedNatureId;
+      soundType = "ambient";
+    }
     const alarm: Alarm = {
       id: generateId(),
       userId: 0,
@@ -355,11 +343,13 @@ export default function AlarmScreen() {
       days: newDays,
       frequencyHz: freq.hz,
       frequencyName: freq.name,
-      studioMixName: newSequenceId !== "none" ? newSequenceId : null,
+      studioMixName: null,
       fadeInMinutes: newFadeMin,
       isActive: true,
       time: `${newHour.toString().padStart(2, "0")}:${newMinute.toString().padStart(2, "0")}`,
       createdAt: new Date().toISOString(),
+      ...(ambientId ? { ambientId, soundType } : {}),
+      ...(meditationId ? { meditationId, soundType } : {}),
     };
     const ids = await scheduleRepeatAlarm(alarm);
     if (ids.length > 0) {
@@ -368,7 +358,7 @@ export default function AlarmScreen() {
       setAlarms(updated);
       setCreating(false);
     }
-    }, [newHour, newMinute, newDays, newFreqId, newFadeMin, newSequenceId]);
+    }, [newHour, newMinute, newDays, newFreqId, newFadeMin, soundTab, selectedSoundId, selectedNatureId]);
 
   // ── Edit existing alarm ──────────────────────────────────────────────────────
   const openEditAlarm = useCallback((alarm: Alarm) => {
@@ -380,6 +370,16 @@ export default function AlarmScreen() {
     const matchedFreq = FREQUENCIES.find(f => f.hz === alarm.frequencyHz);
     setNewFreqId(matchedFreq?.id ?? DEFAULT_FREQUENCY.id);
     setNewFadeMin(alarm.fadeInMinutes ?? 6);
+    // Restore sound tab
+    if ((alarm as any).meditationId) {
+      setSoundTab("sounds");
+      setSelectedSoundId((alarm as any).meditationId);
+    } else if ((alarm as any).ambientId) {
+      setSoundTab("nature");
+      setSelectedNatureId((alarm as any).ambientId);
+    } else {
+      setSoundTab("frequency");
+    }
     // Detect sleep profile from fadeInMinutes
     const profile = SLEEP_PROFILES.find(p => p.fadeMin === alarm.fadeInMinutes) ?? SLEEP_PROFILES[1];
     setSleepProfile(profile.id);
@@ -391,6 +391,14 @@ export default function AlarmScreen() {
   const updateAlarm = useCallback(async () => {
     if (!editingAlarm) return;
     const freq = FREQUENCIES.find((f) => f.id === newFreqId) ?? DEFAULT_FREQUENCY;
+    let soundFields: Record<string, string> = {};
+    if (soundTab === "sounds") {
+      soundFields = { meditationId: selectedSoundId, soundType: "meditation" };
+    } else if (soundTab === "nature") {
+      soundFields = { ambientId: selectedNatureId, soundType: "ambient" };
+    } else {
+      soundFields = { soundType: "frequency" };
+    }
     const updatedAlarm: Alarm = {
       ...editingAlarm,
       hour: newHour,
@@ -399,7 +407,8 @@ export default function AlarmScreen() {
       frequencyHz: freq.hz,
       frequencyName: freq.name,
       fadeInMinutes: newFadeMin,
-      time: `${newHour.toString().padStart(2, "00")}:${newMinute.toString().padStart(2, "00")}`,
+      time: `${newHour.toString().padStart(2, "0")}:${newMinute.toString().padStart(2, "0")}`,
+      ...soundFields,
     };
     // Cancel old notifications for this alarm then reschedule
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
@@ -418,7 +427,7 @@ export default function AlarmScreen() {
     }
     setCreating(false);
     setEditingAlarm(null);
-  }, [editingAlarm, newHour, newMinute, newDays, newFreqId, newFadeMin]);
+  }, [editingAlarm, newHour, newMinute, newDays, newFreqId, newFadeMin, soundTab, selectedSoundId, selectedNatureId]);
 
   const toggleAlarm = useCallback(async (alarm: Alarm) => {
     if (alarm.isActive) {
@@ -473,7 +482,6 @@ export default function AlarmScreen() {
   }, []);
 
   const selectedFreq = FREQUENCIES.find((f) => f.id === newFreqId) ?? DEFAULT_FREQUENCY;
-  const selectedSequence = WAKE_SEQUENCES.find((s) => s.id === newSequenceId) ?? WAKE_SEQUENCES[0];
 
   return (
     <>
@@ -562,59 +570,96 @@ export default function AlarmScreen() {
               ))}
             </View>
 
-            {/* ── Wake Sequence selector (Sprint 2 — R-04) ─────────────── */}
-            <Text style={styles.sectionLabel}>Wake Sequence</Text>
-            <View style={styles.sequenceGrid}>
-              {WAKE_SEQUENCES.map((seq) => {
-                const locked = seq.isPremium && !userIsPremium;
-                const isActive = newSequenceId === seq.id;
-                return (
+            {/* ── Sound Picker Tabs (Sounds / Nature / Frequency) ─────────────────── */}
+            <Text style={styles.sectionLabel}>Wake Sound</Text>
+            {/* Tab bar */}
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 10 }}>
+              {([
+                { id: 'sounds' as SoundTab, label: 'Sounds', color: '#F59E0B' },
+                { id: 'nature' as SoundTab, label: 'Nature', color: '#3B82F6' },
+                { id: 'frequency' as SoundTab, label: 'Frequency', color: '#00D4AA' },
+              ] as Array<{ id: SoundTab; label: string; color: string }>).map(tab => (
+                <TouchableOpacity
+                  key={tab.id}
+                  style={[
+                    styles.freqChip,
+                    { flex: 1, alignItems: 'center', paddingVertical: 8 },
+                    soundTab === tab.id && { backgroundColor: tab.color + '22', borderColor: tab.color + '60' },
+                  ]}
+                  onPress={() => { setSoundTab(tab.id); stopTest(); }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.freqChipHz, soundTab === tab.id && { color: tab.color }]}>{tab.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Sounds tab — 10 TrueHz HQ tracks */}
+            {soundTab === 'sounds' && (
+              <View style={{ gap: 6, marginBottom: 8 }}>
+                {ALARM_SOUNDS.map(sound => (
                   <TouchableOpacity
-                    key={seq.id}
+                    key={sound.id}
                     style={[
                       styles.sequenceCard,
-                      isActive && {
-                        borderColor: seq.color + "80",
-                        backgroundColor: seq.color + "12",
-                      },
+                      selectedSoundId === sound.id && { borderColor: '#F59E0B80', backgroundColor: '#F59E0B12' },
                     ]}
-                    onPress={() =>
-                      locked ? router.push("/paywall") : setNewSequenceId(seq.id)
-                    }
+                    onPress={() => setSelectedSoundId(sound.id)}
                     activeOpacity={0.8}
                   >
-                    <View style={styles.sequenceCardHeader}>
-                      <Text style={[styles.sequenceLabel, isActive && { color: seq.color }]}>
-                        {locked ? "🔒 " : ""}{seq.label}
-                      </Text>
-                      {seq.isPremium && !locked && (
-                        <View style={[styles.premiumBadge, { backgroundColor: seq.color + "25" }]}>
-                          <Text style={[styles.premiumBadgeText, { color: seq.color }]}>PRO</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.sequenceDesc}>{seq.description}</Text>
-                    {seq.steps.length > 0 && (
-                      <View style={styles.sequenceSteps}>
-                        {seq.steps.map((step, i) => (
-                          <View key={i} style={styles.sequenceStep}>
-                            <View
-                              style={[
-                                styles.sequenceStepDot,
-                                { backgroundColor: seq.color },
-                              ]}
-                            />
-                            <Text style={styles.sequenceStepText}>
-                              {step.hz}Hz · {step.name}
-                            </Text>
-                          </View>
-                        ))}
-                      </View>
-                    )}
+                    <Text style={[styles.sequenceLabel, selectedSoundId === sound.id && { color: '#F59E0B' }]}>
+                      {sound.label}
+                    </Text>
+                    <Text style={styles.sequenceDesc}>TrueHz · {sound.hz}Hz Healing Frequency</Text>
                   </TouchableOpacity>
-                );
-              })}
-            </View>
+                ))}
+              </View>
+            )}
+
+            {/* Nature tab — bundled nature sounds */}
+            {soundTab === 'nature' && (
+              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                {NATURE_SOUNDS.map(nat => (
+                  <TouchableOpacity
+                    key={nat.id}
+                    style={[
+                      styles.freqChip,
+                      selectedNatureId === nat.id && { backgroundColor: '#3B82F622', borderColor: '#3B82F660' },
+                    ]}
+                    onPress={() => setSelectedNatureId(nat.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.freqChipHz, selectedNatureId === nat.id && { color: '#3B82F6' }]}>{nat.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {/* Frequency tab — DDS solfeggio tones */}
+            {soundTab === 'frequency' && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={[styles.freqScroll, { marginBottom: 8 }]}
+              >
+                {ALARM_FREQUENCIES.map((f) => {
+                  const locked = f.isPremium && !userIsPremium;
+                  return (
+                    <TouchableOpacity
+                      key={f.id}
+                      style={[
+                        styles.freqChip,
+                        newFreqId === f.id && { backgroundColor: f.color + '25', borderColor: f.color + '60' },
+                      ]}
+                      onPress={() => locked ? router.push('/paywall') : setNewFreqId(f.id)}
+                    >
+                      <Text style={[styles.freqChipHz, { color: f.color }]}>{locked ? '🔒 ' : ''}{f.hz}Hz</Text>
+                      <Text style={styles.freqChipName}>{f.name}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
 
             {/* ── Sleep Profile selector ──────────────────────────────── */}
             <Text style={styles.sectionLabel}>Sleep Profile</Text>
@@ -626,129 +671,52 @@ export default function AlarmScreen() {
                     key={profile.id}
                     style={[
                       styles.freqChip,
-                      isActive && {
-                        backgroundColor: profile.color + '25',
-                        borderColor: profile.color + '60',
-                      },
+                      isActive && { backgroundColor: profile.color + '25', borderColor: profile.color + '60' },
                     ]}
                     onPress={() => { setSleepProfile(profile.id); setNewFadeMin(profile.fadeMin); }}
                     activeOpacity={0.8}
                   >
-                    <Text style={[
-                      styles.freqChipHz,
-                      isActive && { color: profile.color },
-                    ]}>
-                      {profile.label}
-                    </Text>
+                    <Text style={[styles.freqChipHz, isActive && { color: profile.color }]}>{profile.label}</Text>
                     <Text style={styles.freqChipName}>{profile.fadeMin}m fade</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            {/* Frequency selector — shown only when no sequence is selected */}
-            {newSequenceId === "none" && (
-              <>
-                <Text style={styles.sectionLabel}>Healing Frequency</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.freqScroll}
-                >
-                  {ALARM_FREQUENCIES.map((f) => {
-                    const locked = f.isPremium && !userIsPremium;
-                    return (
-                      <TouchableOpacity
-                        key={f.id}
-                        style={[
-                          styles.freqChip,
-                          newFreqId === f.id && {
-                            backgroundColor: f.color + "25",
-                            borderColor: f.color + "60",
-                          },
-                        ]}
-                        onPress={() =>
-                          locked ? router.push("/paywall") : setNewFreqId(f.id)
-                        }
-                      >
-                        <Text style={[styles.freqChipHz, { color: f.color }]}>
-                          {locked ? "🔒 " : ""}
-                          {f.hz}Hz
-                        </Text>
-                        <Text style={styles.freqChipName}>{f.name}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </>
-            )}
-
             {/* Fade-in */}
-            <Text style={styles.sectionLabel}>
-              Fade-in: {newFadeMin} min
-            </Text>
+            <Text style={styles.sectionLabel}>Fade-in: {newFadeMin} min</Text>
             <View style={styles.fadeRow}>
               {[1, 3, 5, 7, 10].map((m) => (
                 <TouchableOpacity
                   key={m}
-                  style={[
-                    styles.fadeChip,
-                    newFadeMin === m && styles.fadeChipActive,
-                  ]}
+                  style={[styles.fadeChip, newFadeMin === m && styles.fadeChipActive]}
                   onPress={() => setNewFadeMin(m)}
                 >
-                  <Text
-                    style={[
-                      styles.fadeChipText,
-                      newFadeMin === m && styles.fadeChipTextActive,
-                    ]}
-                  >
-                    {m}m
-                  </Text>
+                  <Text style={[styles.fadeChipText, newFadeMin === m && styles.fadeChipTextActive]}>{m}m</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            {/* Preview + Save */}
-            <View
-              style={[
-                styles.previewCard,
-                {
-                  borderColor:
-                    newSequenceId !== "none"
-                      ? selectedSequence.color + "40"
-                      : selectedFreq.color + "40",
-                },
-              ]}
-            >
-              <Text style={styles.previewTime}>
-                {formatTime(newHour, newMinute)}
-              </Text>
-              {newSequenceId !== "none" ? (
-                <>
-                  <Text
-                    style={[styles.previewFreq, { color: selectedSequence.color }]}
-                  >
-                    {selectedSequence.label}
-                  </Text>
-                  <Text style={styles.previewDays}>
-                    {selectedSequence.steps.length} frequencies · {selectedSequence.steps.reduce((a, s) => a + s.durationMin, 0)} min
-                  </Text>
-                </>
+            {/* Preview card */}
+            <View style={[styles.previewCard, { borderColor: selectedFreq.color + '40' }]}>
+              <Text style={styles.previewTime}>{formatTime(newHour, newMinute)}</Text>
+              {soundTab === 'sounds' ? (
+                <Text style={[styles.previewFreq, { color: '#F59E0B' }]}>
+                  {ALARM_SOUNDS.find(s => s.id === selectedSoundId)?.label ?? selectedSoundId}
+                </Text>
+              ) : soundTab === 'nature' ? (
+                <Text style={[styles.previewFreq, { color: '#3B82F6' }]}>
+                  {NATURE_SOUNDS.find(n => n.id === selectedNatureId)?.label ?? selectedNatureId}
+                </Text>
               ) : (
                 <Text style={[styles.previewFreq, { color: selectedFreq.color }]}>
                   {selectedFreq.hz}Hz · {selectedFreq.name}
                 </Text>
               )}
               <Text style={styles.previewDays}>
-                {newDays.length === 7
-                  ? "Every day"
-                  : newDays.length === 0
-                  ? "Once"
-                  : newDays.join(", ")}
+                {newDays.length === 7 ? 'Every day' : newDays.length === 0 ? 'Once' : newDays.join(', ')}
               </Text>
             </View>
-
             {/* Test Sound button */}
             <TouchableOpacity
               style={[
