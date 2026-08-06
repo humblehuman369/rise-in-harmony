@@ -197,6 +197,10 @@ async function startServer() {
     max: ENV.isProduction ? 300 : 2000,
     standardHeaders: true,
     legacyHeaders: false,
+    // Suppress the X-Forwarded-For validation error on Railway/reverse-proxy
+    // deployments. trust proxy is already set above; this just silences the
+    // redundant express-rate-limit v8 check.
+    validate: { xForwardedForHeader: false },
     message: { error: "Too many requests, please try again later." },
     skip: req => {
       const url = req.originalUrl || req.url || "";
@@ -211,6 +215,7 @@ async function startServer() {
     max: ENV.isProduction ? 60 : 500,
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
     message: { error: "Too many auth attempts, please try again later." },
   });
   app.use("/api/auth/", authLimiter);
@@ -222,6 +227,7 @@ async function startServer() {
     max: ENV.isProduction ? 30 : 200,
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
     message: { error: "Upload limit exceeded, please try again later." },
   });
   app.use("/api/sounds/upload", uploadLimiter);
@@ -231,6 +237,7 @@ async function startServer() {
     max: ENV.isProduction ? 20 : 200,
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
     message: { error: "Convert upload limit exceeded, please try again later." },
   });
   app.use("/api/convert/upload", convertUploadLimiter);
