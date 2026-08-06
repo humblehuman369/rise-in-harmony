@@ -137,12 +137,17 @@ const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 // Removed: Cave, Night, Sleep Preparation, Anxiety Reset, Deep Focus, all meditation
 // track duplicates (Reiki 432Hz, Calm Sleep 528Hz, etc.), Ambient Bed, Drone Bed.
 const ALARM_NATURE_IDS = new Set([
-  "ambient-forest",   // Best default — birdsong is the natural dawn signal
+  // ── Rise Sounds — purpose-built wake alarm soundscapes (top of list) ─────────────────────────────────────────────
+  "alarm-forest-dawn",    // Forest Dawn — birdsong building from silence to full chorus
+  "alarm-morning-shore",  // Morning Shore — ocean waves building to bright morning energy
+  "alarm-sacred-bell-rise", // Sacred Bell Rise — Tibetan/crystal bowls building ceremonially
+  // ── General nature sounds ──────────────────────────────────────────────────────────────
+  "ambient-forest",   // Birdsong is the natural dawn signal
   "ambient-ocean",    // Rhythmic, energising
   "ambient-rain",     // Refreshing, activating
   "ambient-river",    // Flowing water, uplifting
   "ambient-wind",     // Neutral, not sleep-inducing
-  "ambient-fire",     // Cosy warmth — borderline but kept
+  "ambient-fire",     // Cosy warmth
   "ambient-bowl",     // Singing bowl — gentle riser option
   "morning-breath",   // Explicitly designed for morning
   "chakra-dawn",      // Dawn-themed, activating
@@ -827,17 +832,17 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
   const [selectedDays, setSelectedDays] = useState(editingAlarm?.days ?? [1, 2, 3, 4, 5]);
   const [fadeIn, setFadeIn] = useState(editingAlarm?.fadeInMinutes ?? 6);
   const [sleepProfile, setSleepProfile] = useState<SleepProfile>(editingAlarm?.sleepProfile ?? "normal");
-  // Default to ambient tab so Forest birdsong is immediately visible
+  // Default to Rise Sounds tab for new alarms so the purpose-built wake tracks are immediately visible
   const [soundMode, setSoundMode] = useState<SoundTab>(
     editingAlarm?.studioMixId ? "studio"
     : editingAlarm?.meditationId ? "meditation"
     : editingAlarm?.ambientId ? "ambient"
     : editingAlarm ? "frequency" // existing alarm with no ambient = frequency
-    : "ambient" // new alarm defaults to Nature tab (Forest pre-selected)
+    : "meditation" // new alarm defaults to Rise Sounds tab (Forest Dawn pre-selected)
   );
   const [selectedMixId, setSelectedMixId] = useState<string | null>(editingAlarm?.studioMixId ?? null);
-  // Default ambient: Forest birdsong — the most natural and effective wake-up soundscape
-  const [selectedAmbientId, setSelectedAmbientId] = useState<string | null>(editingAlarm?.ambientId ?? "ambient-forest");
+  // Default ambient: Forest Dawn — purpose-built wake soundscape, starts quiet and builds
+  const [selectedAmbientId, setSelectedAmbientId] = useState<string | null>(editingAlarm?.ambientId ?? "alarm-forest-dawn");
   const [selectedMeditationId, setSelectedMeditationId] = useState<string | null>(editingAlarm?.meditationId ?? null);
   const [freqCategory, setFreqCategory] = useState<"solfeggio" | "binaural" | "recorded">("solfeggio");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1111,7 +1116,7 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
               {([
                 { mode: "frequency" as const, label: "Frequencies", icon: Waves, activeColor: '#00D4AA', activeBg: 'rgba(0,212,170,0.12)', activeBorder: 'rgba(0,212,170,0.3)' },
                 { mode: "ambient" as const, label: "Nature", icon: Wind, activeColor: '#3B82F6', activeBg: 'rgba(59,130,246,0.12)', activeBorder: 'rgba(59,130,246,0.3)' },
-                { mode: "meditation" as const, label: "Meditate", icon: BookOpen, activeColor: '#F59E0B', activeBg: 'rgba(245,158,11,0.12)', activeBorder: 'rgba(245,158,11,0.3)' },
+                { mode: "meditation" as const, label: "Rise Sounds", icon: BookOpen, activeColor: '#F59E0B', activeBg: 'rgba(245,158,11,0.12)', activeBorder: 'rgba(245,158,11,0.3)' },
                 { mode: "studio" as const, label: "My Mixes", icon: Layers, activeColor: '#8B5CF6', activeBg: 'rgba(139,92,246,0.12)', activeBorder: 'rgba(139,92,246,0.3)' },
               ]).map(tab => (
                 <button key={tab.mode} onClick={() => { stopTest(); setSoundMode(tab.mode); }}
@@ -1224,29 +1229,35 @@ function AlarmEditorSheet({ onClose, onSave, onDelete, editingAlarm, prefill, is
             {soundMode === "meditation" && (
               <div className="space-y-2">
                 <p className="text-[10px] mb-2" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>
-                  Wake to a nature-based TrueHz track — grounding and activating sounds only. Sleep and stillness tracks are available in the Meditation section.
+                  Purpose-built wake soundscapes — each one starts quietly and builds in energy to gently bring you from sleep to full presence.
                 </p>
-                {MEDITATIONS.filter(med => ALARM_MEDITATION_IDS.has(med.id)).map(med => {
-                  const previewKey = `med:${med.id}`;
+                {/* Rise Sounds — new purpose-built alarm tracks */}
+                {BACKGROUND_LOOPS.filter(l => l.id.startsWith('alarm-')).map(track => {
+                  const previewKey = `rise:${track.id}`;
                   const isPreviewing = previewId === previewKey;
-                  const medUrl = getLibraryLoopUrl(med.id);
+                  const trackUrl = getLibraryLoopUrl(track.id);
+                  const RISE_SUBTITLES: Record<string, string> = {
+                    'alarm-forest-dawn': 'Birdsong builds from silence to full dawn chorus',
+                    'alarm-morning-shore': 'Ocean waves rise to bright morning energy',
+                    'alarm-sacred-bell-rise': 'Tibetan & crystal bowls build ceremonially',
+                  };
                   return (
-                    <button key={med.id} onClick={() => setSelectedMeditationId(med.id)}
+                    <button key={track.id} onClick={() => { setSelectedAmbientId(track.id); setSoundMode('ambient'); }}
                       className="w-full p-3 rounded-xl text-left flex items-center gap-3 transition-all duration-200 relative"
                       style={{
-                        background: selectedMeditationId === med.id ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.02)',
-                        border: `1px solid ${selectedMeditationId === med.id ? 'rgba(245,158,11,0.35)' : 'rgba(255,255,255,0.04)'}`,
+                        background: selectedAmbientId === track.id ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.02)',
+                        border: `1px solid ${selectedAmbientId === track.id ? 'rgba(245,158,11,0.35)' : 'rgba(255,255,255,0.04)'}`,
                       }}>
-                      <button onClick={(e) => togglePreview(previewKey, medUrl, e)}
+                      <button onClick={(e) => togglePreview(previewKey, trackUrl, e)}
                         className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
                         style={{ background: isPreviewing ? '#F59E0B' : 'rgba(245,158,11,0.12)', border: `1px solid ${isPreviewing ? '#F59E0B' : 'rgba(245,158,11,0.2)'}` }}>
                         {isPreviewing ? <Square size={7} fill="#0A0B14" style={{ color: '#0A0B14' }} /> : <Play size={7} fill="#F59E0B" style={{ color: '#F59E0B' }} />}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>{med.title}</div>
-                        <div className="text-xs" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>{med.subtitle}</div>
+                        <div className="text-sm font-semibold" style={{ color: '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>{track.label}</div>
+                        <div className="text-xs" style={{ color: '#4A5568', fontFamily: 'DM Sans, sans-serif' }}>{RISE_SUBTITLES[track.id] ?? ''}</div>
                       </div>
-                      {selectedMeditationId === med.id && <Check size={14} style={{ color: '#F59E0B', flexShrink: 0 }} />}
+                      {selectedAmbientId === track.id && <Check size={14} style={{ color: '#F59E0B', flexShrink: 0 }} />}
                     </button>
                   );
                 })}

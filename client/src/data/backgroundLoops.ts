@@ -34,6 +34,11 @@ export const BACKGROUND_LOOPS: BackgroundLoop[] = [
   { id: "music-ambient", label: "Ambient Bed", category: "music" },
   { id: "music-drone", label: "Drone Bed", category: "music" },
   { id: "music-crystal", label: "Crystal Bed", category: "music" },
+  // ── Rise Sounds — purpose-built wake alarm soundscapes ─────────────────────────────────────────────
+  // Generated specifically for the alarm — start quiet, build to full energy
+  { id: "alarm-forest-dawn", label: "Forest Dawn", category: "nature" },
+  { id: "alarm-morning-shore", label: "Morning Shore", category: "nature" },
+  { id: "alarm-sacred-bell-rise", label: "Sacred Bell Rise", category: "nature" },
 ];
 
 const LOOP_LABELS = Object.fromEntries(
@@ -83,6 +88,10 @@ const LIBRARY_LOOP_URLS: Record<string, string> = {
   "music-ambient": "/audio/music-ambient.mp3",
   "music-crystal": "/audio/music-crystal.mp3",
   "music-drone": "/audio/music-drone.mp3",
+  // ── Rise Sounds — purpose-built wake alarm soundscapes (Manus CDN, permanent) ─────────────────────────────────────────────
+  "alarm-forest-dawn": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/JMgCynfrIUiflQrn.mp3",
+  "alarm-morning-shore": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/HLofNARsMeiGEBSS.mp3",
+  "alarm-sacred-bell-rise": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/UPqMxmvKRVxVnBia.mp3",
 };
 
 export function getLibraryLoopUrl(loopId: string): string {

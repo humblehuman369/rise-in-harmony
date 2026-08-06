@@ -28,10 +28,13 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from "expo-aud
 import { createVoice } from "@/lib/synth";
 import type { SynthVoice } from "@/lib/synth";
 
-// CDN URLs for wake-appropriate meditation tracks only (used in test preview + alarm playback).
-// Sleep-inducing tracks removed: calm-sleep, deep-serenity, spiritual-meditation,
-// inner-calling, reiki-healing-garden, third-eye-activation.
+// CDN URLs for Rise Sounds (purpose-built wake alarm soundscapes) + legacy wake-appropriate tracks.
 const MEDITATION_CDN_URLS: Record<string, string> = {
+  // ── Rise Sounds — purpose-built wake alarm soundscapes ─────────────────────────────────────────────
+  "alarm-forest-dawn": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/JMgCynfrIUiflQrn.mp3",
+  "alarm-morning-shore": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/HLofNARsMeiGEBSS.mp3",
+  "alarm-sacred-bell-rise": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/UPqMxmvKRVxVnBia.mp3",
+  // ── Legacy wake-appropriate tracks ──────────────────────────────────────────────────────────────
   "nature-meditation-174": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ySLrOnBvjVJpOcpp.mp3",
   "deep-into-nature-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/WKmRGyioQaoQKeeJ.mp3",
   "peaceful-ocean-60": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/gjiHzXouliJdAAeH.mp3",
