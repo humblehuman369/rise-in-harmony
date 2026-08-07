@@ -119,6 +119,12 @@ function MeditationCard({
               style={{ color: isLight ? '#1A1D2E' : '#E8EDF5', fontFamily: 'DM Sans, sans-serif' }}>
               {meditation.title}
             </h3>
+            {meditation.masterHz && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                style={{ background: 'rgba(0,212,170,0.15)', color: '#00D4AA', fontFamily: 'DM Sans, sans-serif' }}>
+                {meditation.masterHz}Hz
+              </span>
+            )}
             {meditation.isPremium && (
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
                 style={{ background: 'rgba(139,92,246,0.2)', color: '#8B5CF6' }}>
@@ -254,15 +260,17 @@ function MeditationPlayer({
     });
     workletNodeRef.current = worklet;
 
-    // Isochronic presets store the pulse rate in `hz` (e.g. 10Hz Alpha) and
-    // pulse a comfortable audible carrier; binaural presets store the carrier
-    // in `hz` with the beat in `binauralOffset` (mirrors useFrequencyPlayer).
-    const isIso = recommendedFreq.isIsochronic === true;
+    // Silent harmonic frequencies (id starts with 'silent-') are pure sub-audible
+    // mono sine waves — felt as vibration, not heard. No carrier, no binaural offset.
+    // Binaural presets use carrier hz + binauralOffset for the beat frequency.
+    // Isochronic presets pulse an audible carrier at the stored hz rate.
+    const isSilent = recommendedFreq.id.startsWith('silent-');
+    const isIso = !isSilent && recommendedFreq.isIsochronic === true;
     const freqL = isIso ? 200 : recommendedFreq.hz;
-    const freqR = recommendedFreq.binauralOffset !== undefined
+    const freqR = (!isSilent && recommendedFreq.binauralOffset !== undefined)
       ? recommendedFreq.hz + recommendedFreq.binauralOffset
       : freqL;
-    const playMode = recommendedFreq.binauralOffset !== undefined ? 'binaural' : 'mono';
+    const playMode = (!isSilent && recommendedFreq.binauralOffset !== undefined) ? 'binaural' : 'mono';
 
     worklet.port.postMessage({ type: 'setFreq', freqL, freqR });
     worklet.port.postMessage({ type: 'setWaveform', waveform: 'sine' });

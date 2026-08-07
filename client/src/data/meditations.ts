@@ -7,10 +7,9 @@
  * frequency and ambience are baked into the recording.
  *
  * Frequency overlay (Sound + Frequency mode):
- * All tracks now pair with a sub-audible "felt, not heard" binaural frequency
- * that matches the track's therapeutic intent. The TrueHz master audio plays
- * unchanged; the DDS engine adds a gentle binaural carrier pulsed at the
- * target brainwave rate beneath the soundscape.
+ * All tracks now pair with a sub-audible "silent harmonic" — a pure sine wave
+ * at a frequency that is a true mathematical subharmonic of the track's master Hz.
+ * These are felt as vibration, not heard as sound. No carrier, no binaural beat.
  */
 
 export type MeditationCategory =
@@ -37,6 +36,8 @@ export interface MeditationTrack {
   id: string;
   title: string;
   subtitle: string;
+  /** Master frequency of the TrueHz recording in Hz (e.g. 174, 285, 444, 528) */
+  masterHz?: number;
   category: MeditationCategory;
   durationMinutes: number;
   description: string;
@@ -51,7 +52,7 @@ export interface MeditationTrack {
   soundscape: MeditationSoundscape;
   /** Music mode — always "none" for self-contained TrueHz tracks */
   musicMode: "ambient" | "drone" | "crystal" | "none";
-  /** ID from FREQUENCIES catalog — the sub-audible binaural pairing */
+  /** ID from FREQUENCIES catalog — the sub-audible silent harmonic pairing */
   recommendedFrequencyId: string;
   /** Short label for the recommended frequency */
   recommendedFrequencyLabel: string;
@@ -69,6 +70,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     id: "nature-meditation-174",
     title: "Nature Meditation",
     subtitle: "Ground in the living world",
+    masterHz: 174,
     category: "healing",
     durationMinutes: 10,
     description:
@@ -79,17 +81,17 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#059669",
     soundscape: "nature-meditation-174",
     musicMode: "none",
-    recommendedFrequencyId: "alpha-isochronic",
-    recommendedFrequencyLabel: "Alpha Isochronic 10Hz — Relaxed Presence",
+    recommendedFrequencyId: "silent-6hz",
+    recommendedFrequencyLabel: "6Hz Silent Harmonic",
     frequencyRationale:
-      "10 Hz Alpha is the brainwave state of calm, relaxed awareness — the state you naturally enter when you step outside and breathe. Unlike binaural beats, isochronic pulses work without headphones. You will feel a gentle, rhythmic presence beneath the nature sounds. No tone, no hum — just a quiet rhythm guiding your brain into ease.",
+      "6 Hz is a true subharmonic of 174 Hz (174 ÷ 29 = 6.0 exactly) — a silent sine wave felt as gentle vibration, not heard as sound. It deepens the grounding field of this session at a cellular level.",
     affirmation: "I am rooted, safe, and held by the earth.",
     guidance: [
       "Sit or lie down comfortably. Soften your jaw and shoulders.",
       "Breathe in for four counts, out for six. Feel the ground support you.",
       "Let the nature textures fill your awareness — no need to analyze them.",
       "If thoughts arise, name them gently and return to the sound.",
-      "Rest in the Earth's own frequency. You are already home.",
+      "Rest in the 174 Hz field. You are already home.",
     ],
     isPremium: false,
   },
@@ -97,6 +99,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     id: "calm-sleep-528",
     title: "Calm Sleep",
     subtitle: "Drift into restful ease",
+    masterHz: 528,
     category: "sleep",
     durationMinutes: 10,
     description:
@@ -107,10 +110,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#4338CA",
     soundscape: "calm-sleep-528",
     musicMode: "none",
-    recommendedFrequencyId: "delta",
-    recommendedFrequencyLabel: "Delta 3Hz — Deep Sleep",
+    recommendedFrequencyId: "silent-3hz",
+    recommendedFrequencyLabel: "3Hz Silent Harmonic",
     frequencyRationale:
-      "3 Hz is the Delta brainwave state — the frequency your brain naturally produces in deep, restorative sleep. This binaural beat is felt as a slow, rhythmic pulse beneath the music, gently guiding your brain toward sleep onset. Headphones recommended.",
+      "3 Hz is a true subharmonic of 528 Hz (528 ÷ 176 = 3.0 exactly) — a silent sine wave felt as the deepest delta vibration. It guides the nervous system toward dreamless rest without any audible tone.",
     affirmation: "I release the day. Rest comes easily to me.",
     guidance: [
       "Dim the lights. Lie on your back or side in a comfortable position.",
@@ -125,6 +128,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     id: "third-eye-activation-528",
     title: "Third Eye Activation",
     subtitle: "Open inner vision",
+    masterHz: 528,
     category: "spiritual",
     durationMinutes: 17,
     description:
@@ -135,10 +139,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#6D28D9",
     soundscape: "third-eye-activation-528",
     musicMode: "none",
-    recommendedFrequencyId: "theta",
-    recommendedFrequencyLabel: "Theta 6Hz — Inner Vision Gateway",
+    recommendedFrequencyId: "silent-6hz",
+    recommendedFrequencyLabel: "6Hz Silent Harmonic",
     frequencyRationale:
-      "6 Hz is the Theta brainwave state — the threshold between waking and dreaming, where intuition, imagery, and inner knowing arise most naturally. This binaural beat is felt as a gentle, rhythmic presence beneath the music, opening the door to inner vision. Headphones recommended.",
+      "6 Hz is a true subharmonic of 528 Hz (528 ÷ 88 = 6.0 exactly) — a silent sine wave that resonates in perfect harmony with the 528 Hz master. Felt as a subtle theta vibration, not heard as sound.",
     affirmation: "I trust my inner vision. Clarity rises naturally.",
     guidance: [
       "Sit with a tall spine. Soften the gaze or close the eyes.",
@@ -153,6 +157,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     id: "reiki-healing-garden-285",
     title: "Reiki Healing Garden",
     subtitle: "30 minutes of restorative flow",
+    masterHz: 285,
     category: "healing",
     durationMinutes: 30,
     description:
@@ -163,10 +168,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#EA580C",
     soundscape: "reiki-healing-garden-285",
     musicMode: "none",
-    recommendedFrequencyId: "theta",
-    recommendedFrequencyLabel: "Theta 6Hz — Deep Healing Rest",
+    recommendedFrequencyId: "silent-5hz",
+    recommendedFrequencyLabel: "5Hz Silent Harmonic",
     frequencyRationale:
-      "6 Hz Theta is the brainwave state associated with deep rest, cellular restoration, and the body's natural healing processes. Felt as a slow, barely perceptible pulse beneath the garden soundscape, it creates the neurological conditions for genuine restoration. Headphones recommended.",
+      "5 Hz is a true subharmonic of 285 Hz (285 ÷ 57 = 5.0 exactly) — a silent sine wave that vibrates in perfect resonance with the 285 Hz healing field. Felt as a gentle theta pulse, not heard as sound.",
     affirmation: "Every cell of my body knows how to heal. I allow restoration.",
     guidance: [
       "Lie down or sit supported. Invite the body to receive.",
@@ -181,6 +186,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     id: "deep-serenity-444",
     title: "Deep Serenity",
     subtitle: "30-minute still waters",
+    masterHz: 444,
     category: "stress",
     durationMinutes: 30,
     description:
@@ -191,10 +197,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#0284C7",
     soundscape: "deep-serenity-444",
     musicMode: "none",
-    recommendedFrequencyId: "alpha",
-    recommendedFrequencyLabel: "Alpha 10Hz — Relaxed Calm",
+    recommendedFrequencyId: "silent-4hz",
+    recommendedFrequencyLabel: "4Hz Silent Harmonic",
     frequencyRationale:
-      "10 Hz is the Alpha brainwave state — calm, alert, and present. Athletes call it the zone; meditators call it presence. This binaural beat is felt as a gentle, steady rhythm beneath the music, dissolving stress without inducing drowsiness. Headphones recommended.",
+      "4 Hz is a true subharmonic of 444 Hz (444 ÷ 111 = 4.0 exactly) — a silent sine wave that resonates in perfect harmony with the 444 Hz serenity field. Felt as a deep theta vibration beneath the music, not heard.",
     affirmation: "I am calm. Serenity moves through me with every breath.",
     guidance: [
       "Find a quiet place. Let the eyes close.",
@@ -209,6 +215,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     id: "spiritual-meditation-444",
     title: "Spiritual Meditation",
     subtitle: "30-minute open awareness",
+    masterHz: 444,
     category: "spiritual",
     durationMinutes: 30,
     description:
@@ -219,10 +226,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#7C3AED",
     soundscape: "spiritual-meditation-444",
     musicMode: "none",
-    recommendedFrequencyId: "theta",
-    recommendedFrequencyLabel: "Theta 6Hz — Contemplative Presence",
+    recommendedFrequencyId: "silent-6hz",
+    recommendedFrequencyLabel: "6Hz Silent Harmonic",
     frequencyRationale:
-      "6 Hz Theta is the brainwave state of sustained meditation, contemplative prayer, and open awareness. Felt as a barely perceptible pulse beneath the music, it supports the depth of presence this session is designed for. Headphones recommended.",
+      "6 Hz is a true subharmonic of 444 Hz (444 ÷ 74 = 6.0 exactly) — a silent sine wave that resonates in perfect harmony with the 444 Hz spiritual field. Felt as open theta awareness, not heard as sound.",
     affirmation: "I am awareness itself. All arises and passes within me.",
     guidance: [
       "Settle into your meditation posture. Hands soft, spine long.",
@@ -237,6 +244,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     id: "deep-into-nature-60",
     title: "Deep Into Nature",
     subtitle: "60-minute forest immersion",
+    masterHz: 174,
     category: "healing",
     durationMinutes: 60,
     description:
@@ -247,10 +255,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#16A34A",
     soundscape: "deep-into-nature-60",
     musicMode: "none",
-    recommendedFrequencyId: "schumann",
-    recommendedFrequencyLabel: "Schumann 7.83Hz — Earth's Heartbeat",
+    recommendedFrequencyId: "silent-6hz",
+    recommendedFrequencyLabel: "6Hz Silent Harmonic",
     frequencyRationale:
-      "7.83 Hz is the Schumann resonance — the Earth's own electromagnetic pulse, generated by lightning activity in the atmosphere. Felt as a subtle rhythm beneath the forest soundscape, it creates a resonance between your nervous system and the living planet. You will not hear it; you will feel it. Headphones recommended.",
+      "6 Hz is a true subharmonic of 174 Hz (174 ÷ 29 = 6.0 exactly) — a silent sine wave that resonates in perfect harmony with the 174 Hz earth field. Felt as a deep grounding vibration throughout the forest immersion.",
     affirmation: "I belong to the earth. The earth belongs to me.",
     guidance: [
       "Find a comfortable position. Allow your body to be fully supported.",
@@ -266,6 +274,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     id: "inner-calling-60",
     title: "Inner Calling",
     subtitle: "60-minute deep inner journey",
+    masterHz: 528,
     category: "spiritual",
     durationMinutes: 60,
     description:
@@ -276,10 +285,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#6D28D9",
     soundscape: "inner-calling-60",
     musicMode: "none",
-    recommendedFrequencyId: "theta",
-    recommendedFrequencyLabel: "Theta 6Hz — Inner Wisdom Gateway",
+    recommendedFrequencyId: "silent-6hz",
+    recommendedFrequencyLabel: "6Hz Silent Harmonic",
     frequencyRationale:
-      "6 Hz Theta is the brainwave state where the subconscious opens — where intuition, inner knowing, and authentic self-connection arise most naturally. Felt as a slow, gentle pulse beneath the music, it creates the neurological conditions for hearing what has always been calling. Headphones recommended.",
+      "6 Hz is a true subharmonic of 528 Hz (528 ÷ 88 = 6.0 exactly) — a silent sine wave that resonates in perfect harmony with the 528 Hz inner calling field. Felt as a deep theta vibration beneath the music, not heard.",
     affirmation: "I listen deeply. My inner voice is clear and true.",
     guidance: [
       "Sit or lie in a position you can hold comfortably for an hour.",
@@ -295,6 +304,7 @@ export const MEDITATIONS: MeditationTrack[] = [
     id: "peaceful-ocean-60",
     title: "Peaceful Ocean",
     subtitle: "60-minute ocean meditation",
+    masterHz: 528,
     category: "stress",
     durationMinutes: 60,
     description:
@@ -305,10 +315,10 @@ export const MEDITATIONS: MeditationTrack[] = [
     colorSecondary: "#1D4ED8",
     soundscape: "peaceful-ocean-60",
     musicMode: "none",
-    recommendedFrequencyId: "delta",
-    recommendedFrequencyLabel: "Delta 3Hz — Deep Rest",
+    recommendedFrequencyId: "silent-3hz",
+    recommendedFrequencyLabel: "3Hz Silent Harmonic",
     frequencyRationale:
-      "3 Hz is the Delta brainwave state — the frequency of deep, dreamless sleep and profound physical restoration. Felt as a slow, barely perceptible pulse beneath the ocean waves, it mirrors the ocean's own rhythm and gently guides the nervous system toward deep rest. Headphones recommended.",
+      "3 Hz is a true subharmonic of 528 Hz (528 ÷ 176 = 3.0 exactly) — a silent sine wave that resonates in perfect harmony with the 528 Hz ocean field. It mirrors the ocean's own deep rhythm, felt as vibration, not heard.",
     affirmation: "Like the ocean, I am vast, fluid, and at peace.",
     guidance: [
       "Lie down if possible. Let your body become heavy and still.",

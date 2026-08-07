@@ -172,6 +172,8 @@ export interface Meditation {
   color: string;
   /** Secondary color for gradients */
   colorSecondary: string;
+  /** Master frequency of the TrueHz recording in Hz (e.g. 174, 285, 444, 528) */
+  masterHz?: number;
   /** Nature soundscape to layer underneath */
   soundscape: NatureSoundscape;
   /** Music mode to layer underneath (not yet supported on mobile) */

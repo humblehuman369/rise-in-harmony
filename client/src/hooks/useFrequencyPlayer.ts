@@ -220,6 +220,49 @@ export const FREQUENCIES: Frequency[] = [
     color: "#22C55E",
     isPremium: true,
   },
+  // ─── Silent Harmonic Frequencies ─────────────────────────────────────────────
+  // Pure sub-audible sine waves (3–6 Hz) — felt as vibration, not heard as sound.
+  // Each is a true mathematical subharmonic of a TrueHz master frequency.
+  {
+    id: "silent-3hz",
+    name: "3Hz Silent Harmonic",
+    hz: 3,
+    category: "binaural" as const,
+    description: "3Hz Silent Harmonic — subharmonic of 528Hz (528 ÷ 176 = 3.0)",
+    benefit: "Deep delta resonance felt as vibration, not heard. Perfect harmony with 528Hz masters.",
+    color: "#6366F1",
+    isPremium: false,
+  },
+  {
+    id: "silent-4hz",
+    name: "4Hz Silent Harmonic",
+    hz: 4,
+    category: "binaural" as const,
+    description: "4Hz Silent Harmonic — subharmonic of 444Hz (444 ÷ 111 = 4.0)",
+    benefit: "Deep theta resonance felt as vibration, not heard. Perfect harmony with 444Hz masters.",
+    color: "#0EA5E9",
+    isPremium: false,
+  },
+  {
+    id: "silent-5hz",
+    name: "5Hz Silent Harmonic",
+    hz: 5,
+    category: "binaural" as const,
+    description: "5Hz Silent Harmonic — subharmonic of 285Hz (285 ÷ 57 = 5.0)",
+    benefit: "Theta resonance felt as vibration, not heard. Perfect harmony with 285Hz masters.",
+    color: "#F97316",
+    isPremium: false,
+  },
+  {
+    id: "silent-6hz",
+    name: "6Hz Silent Harmonic",
+    hz: 6,
+    category: "binaural" as const,
+    description: "6Hz Silent Harmonic — subharmonic of 174Hz and 528Hz (174 ÷ 29 = 6.0, 528 ÷ 88 = 6.0)",
+    benefit: "Theta resonance felt as vibration, not heard. Perfect harmony with 174Hz and 528Hz masters.",
+    color: "#10B981",
+    isPremium: false,
+  },
   // Recorded Schumann binaural sessions (Sinta Positivo — All Hertz Frequencies)
   // Pre-mixed studio recordings: Solfeggio carrier + 7.83Hz Schumann binaural beat.
   ...([
