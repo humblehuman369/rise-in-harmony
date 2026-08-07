@@ -134,6 +134,13 @@ export default function MeditationScreen() {
                       {item.durationMinutes} min
                     </Text>
                   </View>
+                  {item.masterHz != null && (
+                    <View style={[styles.hzBadge, { backgroundColor: item.color + "20", borderColor: item.color + "50" }]}>
+                      <Text style={[styles.hzBadgeText, { color: item.color }]}>
+                        {item.masterHz} Hz
+                      </Text>
+                    </View>
+                  )}
                   <Text
                     style={[styles.freqLabel, { color: item.color }]}
                     numberOfLines={1}
@@ -249,6 +256,13 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
   },
   durationText: { fontSize: 10, color: colors.textSecondary },
+  hzBadge: {
+    paddingHorizontal: spacing[2],
+    paddingVertical: 1,
+    borderRadius: radii.full,
+    borderWidth: 1,
+  },
+  hzBadgeText: { fontSize: 10, fontWeight: "700" },
   freqLabel: { flexShrink: 1, fontSize: 10, fontWeight: "600" },
   lock: { fontSize: fontSizes.base },
   play: { fontSize: fontSizes.sm, fontWeight: "700" },

@@ -228,6 +228,45 @@ export const FREQUENCIES: Frequency[] = [
     isPremium: true,
     category: "binaural",
   },
+  // Silent Harmonic frequencies — pure mono sine waves at subharmonic frequencies
+  // of the TrueHz meditation masters. Felt as vibration, not heard as sound.
+  // These are synthesized as standard solfeggio (pure mono sine) at very low Hz.
+  {
+    id: "silent-3hz",
+    hz: 3,
+    name: "3Hz Silent Harmonic",
+    benefit: "Deep delta vibration — felt, not heard. Subharmonic of 528Hz.",
+    color: "#6366F1",
+    isPremium: true,
+    category: "solfeggio",
+  },
+  {
+    id: "silent-4hz",
+    hz: 4,
+    name: "4Hz Silent Harmonic",
+    benefit: "Deep theta vibration — felt, not heard. Subharmonic of 444Hz.",
+    color: "#8B5CF6",
+    isPremium: true,
+    category: "solfeggio",
+  },
+  {
+    id: "silent-5hz",
+    hz: 5,
+    name: "5Hz Silent Harmonic",
+    benefit: "Theta vibration — felt, not heard. Subharmonic of 285Hz.",
+    color: "#EC4899",
+    isPremium: true,
+    category: "solfeggio",
+  },
+  {
+    id: "silent-6hz",
+    hz: 6,
+    name: "6Hz Silent Harmonic",
+    benefit: "Theta vibration — felt, not heard. Subharmonic of 174Hz, 444Hz, and 528Hz.",
+    color: "#22C55E",
+    isPremium: true,
+    category: "solfeggio",
+  },
   // Recorded Schumann binaural sessions (Sinta Positivo — All Hertz Frequencies)
   // Pre-mixed studio recordings: Solfeggio carrier + 7.83Hz Schumann binaural
   // beat. Served from static /audio/ on the web host; not synthesized.
