@@ -10,6 +10,7 @@ import type { Express, Request, Response } from "express";
 import { createHash, timingSafeEqual } from "crypto";
 import { sdk } from "./sdk";
 import { processReEngagementBatch } from "../lib/reEngagement";
+import { fireAlarmsNow } from "../routers/push";
 import {
   ensureMonthlyStreakFreeze,
   expireOldConvertJobs,
@@ -154,6 +155,31 @@ export function registerScheduledRoutes(app: Express) {
       res.json({ ok: true, freezesRefreshed, sent, skipped, candidates: candidates.length });
     } catch (err) {
       log.error("Scheduled weekly-insights failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "handler failed",
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  /**
+   * Fire due alarms via Web Push — runs every minute.
+   * Sends push notifications to sleeping devices at alarm time.
+   * Suggested cron: `* * * * *` (every minute) via Manus Heartbeat.
+   */
+  app.post("/api/scheduled/fire-alarms", async (req: Request, res: Response) => {
+    try {
+      const ok = await authorizeCron(req);
+      if (!ok) {
+        res.status(403).json({ error: "cron-only" });
+        return;
+      }
+      const result = await fireAlarmsNow();
+      res.json({ ok: true, ...result });
+    } catch (err) {
+      log.error("Scheduled fire-alarms failed", {
         error: err instanceof Error ? err.message : String(err),
       });
       res.status(500).json({

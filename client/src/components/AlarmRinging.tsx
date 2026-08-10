@@ -88,9 +88,11 @@ const STAGE_FRACTIONS: Record<SleepProfile, [number, number, number]> = {
 };
 
 // ─── Stage volume targets ────────────────────────────────────────────────────
-// Stage 0 (Whisper): 5%→22%, Stage 1 (Rise): 22%→65%, Stage 2 (Full): 65%→100%
+// Stage 0 (Whisper): 25%→45%, Stage 1 (Rise): 45%→75%, Stage 2 (Full): 75%→100%
 // Stage 3 (Persistent): stays at 100% — alarm will NOT stop until dismissed
-const STAGE_VOLUMES = [0.05, 0.22, 0.65, 1.0, 1.0] as const;
+// NOTE: Starting at 25% (not 2%) so the alarm is audible immediately when it fires.
+// The old 2% start was inaudible and caused users to miss the alarm entirely.
+const STAGE_VOLUMES = [0.25, 0.45, 0.75, 1.0, 1.0] as const;
 
 // ─── Alarm Mission types ─────────────────────────────────────────────────────
 type MissionType = "breathing" | "gratitude" | "frequency_tap";
@@ -458,17 +460,19 @@ export default function AlarmRinging({
 
     const start = async () => {
       const e = enginesRef.current;
+      // Start at STAGE_VOLUMES[0] (25%) so the alarm is immediately audible
+      const startVol = STAGE_VOLUMES[0];
       if (sound.type === "ambient" && sound.ambientId) {
         // Play the ambient/nature loop via the background layer
         const url = getLibraryLoopUrl(sound.ambientId);
-        await e.background.startBackground("library", sound.ambientId, 0.02);
+        await e.background.startBackground("library", sound.ambientId, startVol);
         void url; // url resolved internally by startBackground
       } else if (sound.type === "meditation" && sound.meditationId) {
         // Play the meditation track via the background layer (CDN URL)
-        await e.background.startBackground("library", sound.meditationId, 0.02);
+        await e.background.startBackground("library", sound.meditationId, startVol);
       } else if (sound.type === "frequency" || !sound.type) {
         const freq: Frequency = FREQUENCIES.find(f => f.id === sound.frequencyId) ?? FALLBACK_FREQ;
-        e.freqPlayer.setVolume(0.02);
+        e.freqPlayer.setVolume(startVol);
         await e.freqPlayer.playFrequency(freq);
       } else if (sound.type === "user_sound" && sound.userSound) {
         const s = sound.userSound;
@@ -481,9 +485,9 @@ export default function AlarmRinging({
           ...(s.isoRate != null ? { isoRate: s.isoRate } : {}),
           ...(s.isoDuty != null ? { isoDuty: s.isoDuty } : {}),
         };
-        e.precision.setVolume(0.02);
+        e.precision.setVolume(startVol);
         await e.precision.play(session);
-        await e.background.startBackground(s.backgroundType as BackgroundType, s.backgroundKey, 0.02);
+        await e.background.startBackground(s.backgroundType as BackgroundType, s.backgroundKey, startVol);
       } else if (sound.type === "studio_mix" && sound.studioMix) {
         const m = sound.studioMix;
         e.studio.setFrequency(m.frequencyHz);
@@ -492,7 +496,7 @@ export default function AlarmRinging({
         e.studio.setLayerVolume("frequency", m.frequencyVolume);
         e.studio.setLayerVolume("music", m.musicVolume);
         e.studio.setLayerVolume("nature", m.natureVolume);
-        e.studio.setLayerVolume("master", 0.02);
+        e.studio.setLayerVolume("master", startVol);
         e.studio.play();
       }
     };
@@ -530,7 +534,7 @@ export default function AlarmRinging({
         level = 0.92 + 0.08 * Math.abs(Math.sin(pulseT * Math.PI));
       }
 
-      level = Math.max(0.02, Math.min(1.0, level));
+      level = Math.max(STAGE_VOLUMES[0], Math.min(1.0, level));
       setVolumePct(Math.round(level * 100));
 
       // Sunrise progress: complete by end of stage2 (Full stage)

@@ -305,3 +305,24 @@ export const convertJobs = mysqlTable("convert_jobs", {
 
 export type ConvertJob = typeof convertJobs.$inferSelect;
 export type InsertConvertJob = typeof convertJobs.$inferInsert;
+
+// ─── Push Subscriptions (Web Push alarm delivery) ────────────────────────────
+// Stores per-device VAPID push subscriptions so the server can wake a sleeping
+// phone at alarm time even when the browser tab is closed.
+// See migration: 0013_push_subscriptions.sql
+
+export const pushSubscriptions = mysqlTable("push_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  endpoint: text("endpoint").notNull(),
+  p256dh: varchar("p256dh", { length: 512 }).notNull(),
+  auth: varchar("auth", { length: 256 }).notNull(),
+  userAgent: varchar("userAgent", { length: 512 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;

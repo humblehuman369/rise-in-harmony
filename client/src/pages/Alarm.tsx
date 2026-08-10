@@ -18,6 +18,7 @@ import { MEDITATIONS } from "@rih/shared-utils";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useAlarmNotifications } from "@/hooks/useAlarmNotifications";
+import { useAlarmPush } from "@/hooks/useAlarmPush";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { trackPaywallTriggered } from "@/hooks/useAnalytics";
@@ -1457,6 +1458,7 @@ export default function Alarm() {
   const [showAlarmPaywall, setShowAlarmPaywall] = useState(false);
   const { requestPermission, scheduleNotification, cancelNotification, getNextFireTime, isGranted, isSupported } = useAlarmNotifications();
   const mobilePlatform = detectMobilePlatform();
+
   const subStatus = trpc.subscription.status.useQuery(undefined, { enabled: isAuthenticated });
   const isPremium = subStatus.data?.isPremium ?? false;
   const [prefill, setPrefill] = useState<AlarmPrefill | null>(null);
@@ -1590,6 +1592,34 @@ export default function Alarm() {
       }
     });
   }, [alarms, scheduleNotification, cancelNotification, handleAlarmFire]);
+
+  // ── Web Push: fires alarm even when screen is off ──────────────────────────
+  const handlePushAlarmFire = useCallback((alarmId: number | null) => {
+    if (alarmId === null) return;
+    const alarm = alarms.find(a => a.id === String(alarmId));
+    if (!alarm) return;
+    snoozeCountRef.current[String(alarmId)] = 0;
+    setIsGentleReentry(false);
+    setFiringAlarm(alarm);
+  }, [alarms]);
+
+  const handlePushAlarmSnooze = useCallback((alarmId: number | null) => {
+    if (alarmId === null) return;
+    const alarm = alarms.find(a => a.id === String(alarmId));
+    if (!alarm) return;
+    snoozeCountRef.current[String(alarmId)] = (snoozeCountRef.current[String(alarmId)] ?? 0) + 1;
+    setFiringAlarm(null);
+    clearSnoozeTimer();
+    snoozeTimerRef.current = setTimeout(() => {
+      snoozeTimerRef.current = null;
+      setFiringAlarm(alarm);
+    }, SNOOZE_MINUTES * 60 * 1000);
+  }, [alarms, clearSnoozeTimer]);
+
+  const { isSubscribed: isPushSubscribed, subscribe: subscribePush, isSupported: isPushSupported } = useAlarmPush({
+    onAlarmFire: handlePushAlarmFire,
+    onAlarmSnooze: handlePushAlarmSnooze,
+  });
 
   const toggleAlarm = (id: string) => {
     const alarm = alarms.find(a => a.id === id);
@@ -1852,7 +1882,40 @@ export default function Alarm() {
             </div>
           )}
 
-          {mobilePlatform === null && isSupported && !isGranted && (
+          {/* Push notification banner — most important: enables alarm on sleeping phone */}
+          {mobilePlatform === null && isPushSupported && isAuthenticated && !isPushSubscribed && (
+            <div className="p-4 rounded-2xl" style={{ background: 'linear-gradient(135deg, rgba(0,212,170,0.08), rgba(0,212,170,0.04))', border: '1px solid rgba(0,212,170,0.2)' }}>
+              <div className="flex items-start gap-3">
+                <BellRing size={16} style={{ color: '#00D4AA', flexShrink: 0, marginTop: '1px' }} />
+                <div className="flex-1">
+                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.8rem', fontWeight: 600, color: '#00D4AA', marginBottom: '0.35rem' }}>Enable Alarm Delivery — Screen Off</div>
+                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.7rem', color: 'rgba(139,163,191,0.7)', lineHeight: 1.6, marginBottom: '0.75rem' }}>
+                    Without this, your alarm <strong style={{ color: '#E8EDF5' }}>will not fire</strong> when your phone screen is off. Enable push delivery so the server wakes your device at alarm time — even with the app closed.
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const ok = await subscribePush();
+                      if (!ok && !isGranted) requestPermission();
+                    }}
+                    className="btn-teal px-4 py-2 text-xs font-semibold flex items-center gap-1.5"
+                  >
+                    <Bell size={12} /> Enable Alarm Delivery
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {mobilePlatform === null && isPushSubscribed && (
+            <div className="p-3 rounded-2xl flex items-center gap-2.5" style={{ background: 'rgba(0,212,170,0.04)', border: '1px solid rgba(0,212,170,0.1)' }}>
+              <ShieldCheck size={13} style={{ color: '#00D4AA', flexShrink: 0 }} />
+              <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.7rem', color: 'rgba(139,163,191,0.6)' }}>
+                Push delivery active — alarm will fire even when your screen is off.
+              </span>
+            </div>
+          )}
+
+          {mobilePlatform === null && !isPushSupported && isSupported && !isGranted && (
             <div className="p-4 rounded-2xl" style={{ background: 'rgba(0,212,170,0.04)', border: '1px solid rgba(0,212,170,0.1)' }}>
               <div className="flex items-start gap-3">
                 <BellRing size={16} style={{ color: '#00D4AA', flexShrink: 0, marginTop: '1px' }} />
@@ -1866,23 +1929,6 @@ export default function Alarm() {
               </div>
             </div>
           )}
-
-          {mobilePlatform === null && isGranted && (
-            <div className="p-3 rounded-2xl flex items-center gap-2.5" style={{ background: 'rgba(0,212,170,0.04)', border: '1px solid rgba(0,212,170,0.08)' }}>
-              <ShieldCheck size={13} style={{ color: '#00D4AA', flexShrink: 0 }} />
-              <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.7rem', color: 'rgba(139,163,191,0.5)' }}>Browser notifications active — alarms will fire even when the app is minimized.</span>
-            </div>
-          )}
-
-          <div className="p-4 rounded-2xl" style={{ background: 'rgba(242,201,76,0.04)', border: '1px solid rgba(242,201,76,0.1)' }}>
-            <div className="flex items-start gap-3">
-              <AlarmClock size={16} style={{ color: '#F2C94C', flexShrink: 0, marginTop: '1px' }} />
-              <div>
-                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.8rem', fontWeight: 600, color: '#F2C94C', marginBottom: '0.35rem' }}>Native App Alarms</div>
-                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.7rem', color: 'rgba(139,163,191,0.5)', lineHeight: 1.5 }}>The mobile app schedules alarms through the system notification service for exact delivery, even with the screen locked. Web alarms use browser notifications and require this tab to stay open.</div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Bottom padding for nav */}
