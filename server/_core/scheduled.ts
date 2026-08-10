@@ -182,13 +182,16 @@ export function registerScheduledRoutes(app: Express) {
       log.error("Scheduled fire-alarms failed", {
         error: err instanceof Error ? err.message : String(err),
       });
-      res.status(500).json({
+            res.status(500).json({
         error: err instanceof Error ? err.message : "handler failed",
+        stack: err instanceof Error ? err.stack?.slice(0, 800) : undefined,
+        cause: err instanceof Error && (err as NodeJS.ErrnoException).cause
+          ? String((err as NodeJS.ErrnoException).cause)
+          : undefined,
         timestamp: new Date().toISOString(),
       });
     }
   });
-
   /**
    * Expire TrueHz Convert library rows past retention TTL.
    * Suggested: daily. Does not delete S3 objects yet (Phase 3 lifecycle).
