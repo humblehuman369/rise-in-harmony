@@ -1467,6 +1467,7 @@ export default function Alarm() {
   const snoozeCountRef = useRef<Record<string, number>>({});
   const snoozeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isGentleReentry, setIsGentleReentry] = useState(false);
+  const [showPushPrompt, setShowPushPrompt] = useState(false);
 
   const [, setCountdownTick] = useState(0);
   useEffect(() => {
@@ -1644,6 +1645,11 @@ export default function Alarm() {
   };
 
   const saveAlarm = (alarm: Alarm) => {
+    // After saving, prompt for push delivery if not yet subscribed
+    // Do this before the mutation so the prompt appears immediately
+    if (isPushSupported && isAuthenticated && !isPushSubscribed) {
+      setShowPushPrompt(true);
+    }
     if (isAuthenticated) {
       const [h, m] = alarm.time.split(':');
       const freq = FREQUENCIES.find(f => f.id === alarm.frequencyId);
@@ -1945,6 +1951,52 @@ export default function Alarm() {
 
       {showAlarmPaywall && (
         <PremiumPaywall triggerFrequencyName="Unlimited alarms are a Premium feature" onClose={() => setShowAlarmPaywall(false)} />
+      )}
+
+      {/* Push delivery prompt — shown automatically after saving first alarm */}
+      {showPushPrompt && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center pb-6 px-4" style={{ background: 'rgba(0,0,0,0.7)' }}
+          onClick={() => setShowPushPrompt(false)}>
+          <div
+            className="w-full max-w-sm rounded-3xl p-6"
+            style={{ background: '#0F1120', border: '1px solid rgba(0,212,170,0.25)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(0,212,170,0.12)', border: '1px solid rgba(0,212,170,0.25)' }}>
+                <BellRing size={26} style={{ color: '#00D4AA' }} />
+              </div>
+            </div>
+            {/* Heading */}
+            <div className="text-center mb-2" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.4rem', fontWeight: 600, color: '#E8EDF5' }}>
+              Make Sure Your Alarm Fires
+            </div>
+            {/* Body */}
+            <div className="text-center mb-5" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.82rem', color: 'rgba(139,163,191,0.75)', lineHeight: 1.6 }}>
+              Your alarm is set. Without push delivery enabled, it <strong style={{ color: '#E8EDF5' }}>will not fire</strong> when your screen is off or the app is closed.
+              <br /><br />
+              Tap below to allow notifications — this is a one-time step.
+            </div>
+            {/* CTA */}
+            <button
+              className="btn-teal w-full py-3.5 text-sm font-semibold flex items-center justify-center gap-2 mb-3"
+              onClick={async () => {
+                await subscribePush();
+                setShowPushPrompt(false);
+              }}
+            >
+              <Bell size={15} /> Enable Alarm Delivery
+            </button>
+            <button
+              className="w-full py-2 text-xs text-center"
+              style={{ color: 'rgba(139,163,191,0.4)', fontFamily: 'DM Sans, sans-serif' }}
+              onClick={() => setShowPushPrompt(false)}
+            >
+              Not now — I understand my alarm may not fire
+            </button>
+          </div>
+        </div>
       )}
 
       {firingAlarm && (() => {
