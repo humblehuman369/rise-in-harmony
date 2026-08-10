@@ -58,6 +58,7 @@ import {
   ensureAlarmChannel,
 } from "@/hooks/useAlarmNotifications";
 import { useMissedAlarms } from "@/hooks/useMissedAlarms";
+import type { AudioPlayer } from "expo-audio";
 import type { Alarm, AlarmDayOfWeek } from "@rih/shared-types";
 import AlarmRingingScreen from "@/components/AlarmRingingScreen";
 
@@ -256,11 +257,19 @@ export default function AlarmScreen() {
   const [firingAlarm, setFiringAlarm] = useState<Alarm | null>(null);
   const snoozeCountRef = useRef<Record<number, number>>({});
   const snoozeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Holds the fallback AudioPlayer started by useMissedAlarms (Layer 2b).
+  // Stopped when AlarmRingingScreen mounts (it starts its own audio engine).
+  const fallbackPlayerRef = useRef<AudioPlayer | null>(null);
   const MAX_SNOOZES = 2;
   const SNOOZE_MINUTES = 5;
 
   const handleAlarmFired = useCallback((alarm: Alarm) => {
     snoozeCountRef.current[alarm.id] = snoozeCountRef.current[alarm.id] ?? 0;
+    // Stop fallback audio — AlarmRingingScreen will start its own audio engine
+    if (fallbackPlayerRef.current) {
+      try { fallbackPlayerRef.current.pause(); } catch { /* ignore */ }
+      fallbackPlayerRef.current = null;
+    }
     setFiringAlarm(alarm);
   }, []);
 
@@ -295,7 +304,14 @@ export default function AlarmScreen() {
   useAlarmNotifications(handleAlarmFired);
 
   // Layer 2: detect alarms missed while app was killed or phone was in deep sleep
-  useMissedAlarms(alarms, handleAlarmFired);
+  // Layer 2b: if no audio is playing when the missed alarm is detected, play a
+  // bundled fallback tone immediately (FCM + notification both failed scenario)
+  useMissedAlarms(alarms, handleAlarmFired, {
+    isAudioPlaying: firingAlarm !== null,
+    onFallbackAudioStarted: (player) => {
+      fallbackPlayerRef.current = player;
+    },
+  });
 
   useEffect(() => {
     // Layer 1: ensure the Android HIGH_IMPORTANCE alarm channel exists

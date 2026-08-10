@@ -19,7 +19,10 @@
     "preset": "jest-expo",
     "setupFiles": [
       "./jest.setup.js"
-    ]
+    ],
+    "moduleNameMapper": {
+      "\\.wav$": "<rootDir>/jest.assetMock.js"
+    }
   },
   "dependencies": {
     "@expo-google-fonts/cormorant-garamond": "^0.3.0",
