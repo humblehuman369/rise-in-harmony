@@ -114,7 +114,9 @@ export async function fireAlarmsNow(): Promise<{ fired: number; errors: number }
   const currentMinute = now.getMinutes();
   const currentDay = now.getDay(); // 0=Sun … 6=Sat
 
-  // Find all enabled alarms matching current hour:minute
+  // Find all enabled alarms matching current hour:minute.
+  // Only select columns that are guaranteed to exist in all DB versions
+  // (avoids 'Unknown column' errors if a migration was partially applied).
   const dueAlarms = await db
     .select({
       alarmId: alarms.id,
@@ -124,8 +126,6 @@ export async function fireAlarmsNow(): Promise<{ fired: number; errors: number }
       soundType: alarms.soundType,
       frequencyHz: alarms.frequencyHz,
       frequencyName: alarms.frequencyName,
-      ambientId: alarms.ambientId,
-      meditationId: alarms.meditationId,
       wakeSequence: alarms.wakeSequence,
     })
     .from(alarms)
@@ -155,8 +155,8 @@ export async function fireAlarmsNow(): Promise<{ fired: number; errors: number }
 
     // Build notification payload
     const soundLabel =
-      alarm.soundType === "ambient" ? (alarm.ambientId ?? "Nature Sound")
-      : alarm.soundType === "meditation" ? (alarm.meditationId ?? "Meditation")
+      alarm.soundType === "ambient" ? "Nature Sound"
+      : alarm.soundType === "meditation" ? "Meditation"
       : `${alarm.frequencyHz ?? 432}Hz ${alarm.frequencyName ?? ""}`.trim();
 
     const payload = JSON.stringify({
@@ -167,8 +167,6 @@ export async function fireAlarmsNow(): Promise<{ fired: number; errors: number }
       sound: {
         type: alarm.soundType,
         frequencyHz: alarm.frequencyHz,
-        ambientId: alarm.ambientId,
-        meditationId: alarm.meditationId,
       },
     });
 
