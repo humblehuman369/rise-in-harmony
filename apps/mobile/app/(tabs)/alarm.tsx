@@ -55,7 +55,9 @@ import {
   cancelAlarm,
   cancelAllAlarms,
   requestAlarmPermissions,
+  ensureAlarmChannel,
 } from "@/hooks/useAlarmNotifications";
+import { useMissedAlarms } from "@/hooks/useMissedAlarms";
 import type { Alarm, AlarmDayOfWeek } from "@rih/shared-types";
 import AlarmRingingScreen from "@/components/AlarmRingingScreen";
 
@@ -292,7 +294,13 @@ export default function AlarmScreen() {
 
   useAlarmNotifications(handleAlarmFired);
 
+  // Layer 2: detect alarms missed while app was killed or phone was in deep sleep
+  useMissedAlarms(alarms, handleAlarmFired);
+
   useEffect(() => {
+    // Layer 1: ensure the Android HIGH_IMPORTANCE alarm channel exists
+    // This is idempotent — safe to call on every mount
+    void ensureAlarmChannel();
     loadAlarms().then(setAlarms);
   }, []);
 

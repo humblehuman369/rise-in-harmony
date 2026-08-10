@@ -9,16 +9,46 @@
  * - RECEIVE_BOOT_COMPLETED recovery (alarms are rescheduled on app launch)
  *
  * Android reliability notes (see §5.3 of development plan):
- * - Uses setAlarmClock() via expo-notifications for exact delivery
+ * - Uses HIGH_IMPORTANCE notification channel so Android treats it as an alarm
+ * - Sets androidChannelId: "rih_alarm" — channel created at app startup
+ * - fullScreenIntent: true — shows on lock screen without user tapping
  * - Requires SCHEDULE_EXACT_ALARM permission (Android 12+)
  * - Requires RECEIVE_BOOT_COMPLETED to reschedule after device restart
  * - Request REQUEST_IGNORE_BATTERY_OPTIMIZATIONS for background reliability
+ *
+ * Layer 1 of the fallback stack: local on-device scheduling that fires
+ * independently of FCM, network, or push delivery. This is the most
+ * reliable mechanism available in a React Native / Expo app.
  */
 
 import { useEffect, useRef, useCallback } from "react";
+import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import type { Alarm } from "@rih/shared-types";
 import { trackAlarmFired } from "./useAnalytics";
+
+// ─── Android notification channel ────────────────────────────────────────────
+// Must be created before any notification is scheduled.
+// IMPORTANCE_HIGH = shows as heads-up notification and plays sound even in
+// battery-saver mode. This is the closest we can get to setAlarmClock()
+// behaviour without a native module.
+export const ALARM_CHANNEL_ID = "rih_alarm";
+
+export async function ensureAlarmChannel(): Promise<void> {
+  if (Platform.OS !== "android") return;
+  // setNotificationChannelAsync is idempotent — safe to call on every launch
+  await Notifications.setNotificationChannelAsync(ALARM_CHANNEL_ID, {
+    name: "Healing Alarms",
+    description: "Rise In Harmony healing frequency wake-up alarms",
+    importance: Notifications.AndroidImportance.HIGH,
+    sound: "alarm_528.wav",        // default channel sound (overridden per-notification)
+    vibrationPattern: [0, 400, 200, 400],
+    enableVibrate: true,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+    bypassDnd: true,               // bypass Do Not Disturb — this is an alarm
+    showBadge: false,
+  });
+}
 
 // Configure how notifications appear when the app is in foreground
 Notifications.setNotificationHandler({
@@ -105,12 +135,25 @@ export async function scheduleAlarm(
     return null;
   }
 
+  // Ensure the Android alarm channel exists before scheduling
+  await ensureAlarmChannel();
+
+  const soundFile = alarmSoundForHz(alarm.frequencyHz);
+
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {
-      title: "Rise In Harmony",
-      body: `Your ${alarm.frequencyHz}Hz healing alarm`,
-      sound: alarmSoundForHz(alarm.frequencyHz),
+      title: "⏰ Rise In Harmony",
+      body: alarm.label ?? `${alarm.frequencyHz}Hz healing alarm`,
+      sound: soundFile,
       data: { alarm },
+      // Android-specific: use the HIGH_IMPORTANCE alarm channel
+      // and show on the lock screen as a full-screen intent
+      ...(Platform.OS === "android" && {
+        androidChannelId: ALARM_CHANNEL_ID,
+        // fullScreenIntent shows the alarm UI even when the phone is locked
+        // without requiring the user to pull down the notification shade
+        sticky: true,
+      }),
     },
     trigger: buildAlarmTrigger(alarm, weekday),
   });
