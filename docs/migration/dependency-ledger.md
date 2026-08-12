@@ -195,20 +195,47 @@ on semicolons with naive single-quote tracking *before* stripping comments.
 
 ## 4. DNS records
 
-Current registrar/DNS provider: **confirm before Phase 3** (not derivable from the repo).
+Registrar/DNS: **GoDaddy** (`ns53/ns54.domaincontrol.com`). No Cloudflare proxy to work around.
 
-| Record | Today | Target state | When |
+Verified live 2026-08-12 — **production web is served by Railway, not Manus.** An earlier
+draft of this ledger assumed Manus; that was wrong.
+
+| Record | Current value | Serves | Target state |
 |---|---|---|---|
-| `www.riseinharmony.com` | Manus-served web | Vercel (production project) | **Out of Sprint 1 scope** |
-| `riseinharmony.com` (apex) | Manus | Vercel apex or redirect to `www` | Out of scope |
-| `api.riseinharmony.com` | Railway API (if already attached — verify) | Unchanged, stays Railway | — |
-| `api-staging.riseinharmony.com` | — | **New:** Railway CNAME + TXT validation | Phase 3 |
-| `app-staging.riseinharmony.com` | — | **New:** Vercel CNAME | Phase 3 |
-| `convert.riseinharmony.com` | Host-based route handled in [`index.ts:105`](../../server/_core/index.ts#L105) | Preserve behavior; confirm where it points | Verify in Phase 3 |
-| Resend SPF / DKIM / DMARC | On the sending domain | **Unchanged** — do not touch during the host move | — |
+| `www` CNAME | `rihmobile-production.up.railway.app` → `69.46.46.105` | **Railway** (`server: railway-hikari`, HTTP 200) | Vercel, at the production cutover — out of Sprint 1 scope |
+| apex `A` | `69.46.46.105` | Railway edge (same IP) | See the certificate defect below |
+| `_railway-verify` TXT | `railway-verify=4fed03d…` | Railway domain validation (apex) | Keep |
+| `_railway-verify.www` TXT | `railway-verify=6745404…` | Railway domain validation (www) | Keep |
+| MX ×5 | `aspmx.l.google.com` etc. | Google Workspace | **Do not touch** |
+| `v=spf1` TXT (apex + `dc-…._spfm`) | Google SPF | Email auth | **Do not touch** |
+| `google._domainkey` TXT | DKIM | Email auth | **Do not touch** |
+| `google-site-verification` TXT | Search Console | — | Keep |
+| `api-staging` | *not created* | — | **New:** Railway CNAME + `_railway-verify.api-staging` TXT |
+| `app-staging` | *not created* | — | **New:** Vercel CNAME |
 
-Railway requires **both** the CNAME and the TXT validation record before it will route a
-custom domain. Add them together.
+There is **no `api.riseinharmony.com` record.** The API is reached through `www` on the
+combined Railway deployment, not a dedicated API hostname.
+
+### 4.1 Defect — the apex has no valid certificate
+
+`https://riseinharmony.com` (without `www`) fails TLS:
+
+```
+curl: (60) SSL: no alternative certificate subject name matches target host name
+subject=CN=*.up.railway.app
+```
+
+The apex `A` record points at a **shared Railway edge IP**, but the apex was never completed
+as a custom domain in Railway, so no certificate was issued for it. Railway serves its default
+`*.up.railway.app` certificate instead, and every browser hitting the bare apex gets a full-page
+security warning.
+
+`www` is unaffected — it is a properly registered custom domain and returns 200.
+
+**Pre-existing, not introduced by this sprint, and not fixed here** (production DNS is out of
+scope). But anyone typing `riseinharmony.com` without `www` currently sees a certificate error,
+which is worth fixing on its own schedule: either finish adding the apex as a custom domain in
+Railway so a cert is issued, or replace the apex `A` with a GoDaddy forwarding rule to `www`.
 
 ---
 
