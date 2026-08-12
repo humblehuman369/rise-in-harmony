@@ -132,3 +132,12 @@ apps/mobile/assets/sounds/*.wav
 # working files out of git.
 client/public/meditations/*.mp3
 references/audio/processed/meditations/
+
+# Phase 0 Manus CDN media export — MP3 masters stay out of git;
+# media-export/manifest.json IS committed as the checksum record.
+media-export/*
+!media-export/manifest.json
+
+# Vercel CLI link metadata (projectId/orgId) — not secret, but not source
+.vercel
+.env*

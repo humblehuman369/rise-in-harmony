@@ -1,0 +1,141 @@
+{
+  "generatedAt": "2026-08-12T06:13:16.970Z",
+  "note": "Phase 0 Manus CDN export. Audio files are gitignored; this manifest is the checked-in record.",
+  "catalogSources": [
+    "client/src/data/backgroundLoops.ts",
+    "apps/mobile/src/hooks/useMeditationPlayer.ts"
+  ],
+  "totalBytes": 449390932,
+  "count": 10,
+  "media": [
+    {
+      "slug": "calm-sleep-528",
+      "file": "calm-sleep-528.mp3",
+      "sourceUrl": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/IYQghxoiyPtmxTWZ.mp3",
+      "sha256": "0205cd9e652d44eea7a5e483ac2b0018adb4b5b90b44c0b8240b7743e64ba1be",
+      "bytes": 11642298,
+      "contentType": "audio/mpeg",
+      "downloadedAt": "2026-08-12T06:12:18.036Z",
+      "referencedBy": [
+        "client/src/data/backgroundLoops.ts",
+        "apps/mobile/src/hooks/useMeditationPlayer.ts"
+      ]
+    },
+    {
+      "slug": "deep-into-nature-60",
+      "file": "deep-into-nature-60.mp3",
+      "sourceUrl": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/WKmRGyioQaoQKeeJ.mp3",
+      "sha256": "5eef5e67cdaf4448ae81085b5f771a2dcaaca71c709bb090fa956bd4ba614139",
+      "bytes": 86409547,
+      "contentType": "audio/mpeg",
+      "downloadedAt": "2026-08-12T06:12:28.673Z",
+      "referencedBy": [
+        "client/src/data/backgroundLoops.ts",
+        "apps/mobile/src/hooks/useMeditationPlayer.ts"
+      ]
+    },
+    {
+      "slug": "deep-serenity-444",
+      "file": "deep-serenity-444.mp3",
+      "sourceUrl": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/XrswIdGeuQpsHQZo.mp3",
+      "sha256": "2a3cd6acbfcda285db5f040f2afd687cc0c55a47adb04b1207efc0b3b30d9fcd",
+      "bytes": 36082983,
+      "contentType": "audio/mpeg",
+      "downloadedAt": "2026-08-12T06:12:33.894Z",
+      "referencedBy": [
+        "client/src/data/backgroundLoops.ts",
+        "apps/mobile/src/hooks/useMeditationPlayer.ts"
+      ]
+    },
+    {
+      "slug": "inner-calling-60",
+      "file": "inner-calling-60.mp3",
+      "sourceUrl": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ktyVgoowVIAMSvwT.mp3",
+      "sha256": "45920220ced20107a26bb0231c7330cec7be0a4c3c026f6a754e4a62d8fe9851",
+      "bytes": 86410023,
+      "contentType": "audio/mpeg",
+      "downloadedAt": "2026-08-12T06:12:45.204Z",
+      "referencedBy": [
+        "client/src/data/backgroundLoops.ts",
+        "apps/mobile/src/hooks/useMeditationPlayer.ts"
+      ]
+    },
+    {
+      "slug": "nature-meditation-174",
+      "file": "nature-meditation-174.mp3",
+      "sourceUrl": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/ySLrOnBvjVJpOcpp.mp3",
+      "sha256": "814c50504f0dfb7f173c07d0d8def7ce950becc272e4959ccc28ac84bacb7b68",
+      "bytes": 11801645,
+      "contentType": "audio/mpeg",
+      "downloadedAt": "2026-08-12T06:12:47.730Z",
+      "referencedBy": [
+        "client/src/data/backgroundLoops.ts",
+        "apps/mobile/src/hooks/useMeditationPlayer.ts"
+      ]
+    },
+    {
+      "slug": "peaceful-ocean-60",
+      "file": "peaceful-ocean-60.mp3",
+      "sourceUrl": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/gjiHzXouliJdAAeH.mp3",
+      "sha256": "07c6dd1b857fa6331b6f006d51335500c1dcf96cf07b45bd96637506c3aa7a64",
+      "bytes": 86409547,
+      "contentType": "audio/mpeg",
+      "downloadedAt": "2026-08-12T06:12:58.835Z",
+      "referencedBy": [
+        "client/src/data/backgroundLoops.ts",
+        "apps/mobile/src/hooks/useMeditationPlayer.ts"
+      ]
+    },
+    {
+      "slug": "reiki-432",
+      "file": "reiki-432.mp3",
+      "sourceUrl": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/EyknnrbApNwsjQOZ.mp3",
+      "sha256": "002daa0e22788bcfdf939e04d74466363a581da0c3ed1acbaa5a6b7a98469d18",
+      "bytes": 37785122,
+      "contentType": "audio/mpeg",
+      "downloadedAt": "2026-08-12T06:13:04.222Z",
+      "referencedBy": [
+        "client/src/data/backgroundLoops.ts"
+      ]
+    },
+    {
+      "slug": "reiki-healing-garden-285",
+      "file": "reiki-healing-garden-285.mp3",
+      "sourceUrl": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/JMfdCoiZFkPyxCYD.mp3",
+      "sha256": "98e137a3d4fbc64a596b1469cd39693a8123a2d22a20671179fcb37c07674ccc",
+      "bytes": 36152992,
+      "contentType": "audio/mpeg",
+      "downloadedAt": "2026-08-12T06:13:09.106Z",
+      "referencedBy": [
+        "client/src/data/backgroundLoops.ts",
+        "apps/mobile/src/hooks/useMeditationPlayer.ts"
+      ]
+    },
+    {
+      "slug": "spiritual-meditation-444",
+      "file": "spiritual-meditation-444.mp3",
+      "sourceUrl": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/GtKAQCHgteBuniTF.mp3",
+      "sha256": "c37e93626583b40ec410e8bcec0324443c323af7a578988fc9f5cd283fddbb8a",
+      "bytes": 36283081,
+      "contentType": "audio/mpeg",
+      "downloadedAt": "2026-08-12T06:13:13.876Z",
+      "referencedBy": [
+        "client/src/data/backgroundLoops.ts",
+        "apps/mobile/src/hooks/useMeditationPlayer.ts"
+      ]
+    },
+    {
+      "slug": "third-eye-activation-528",
+      "file": "third-eye-activation-528.mp3",
+      "sourceUrl": "https://files.manuscdn.com/user_upload_by_module/session_file/110672315/fsamjpcaHNeOwiPp.mp3",
+      "sha256": "84ba86e4426500b0bfaa762861ef042881430c472f34a76b2f1e4d653bd68c4b",
+      "bytes": 20413694,
+      "contentType": "audio/mpeg",
+      "downloadedAt": "2026-08-12T06:13:16.970Z",
+      "referencedBy": [
+        "client/src/data/backgroundLoops.ts",
+        "apps/mobile/src/hooks/useMeditationPlayer.ts"
+      ]
+    }
+  ]
+}

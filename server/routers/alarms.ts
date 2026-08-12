@@ -15,6 +15,32 @@ const FREE_PER_KIND_LIMIT = 1;
 
 const kindSchema = z.enum(["wake", "wind_down"]).default("wake");
 
+/**
+ * Device IANA time zone, e.g. "America/New_York", sent by the client as
+ * `Intl.DateTimeFormat().resolvedOptions().timeZone`.
+ *
+ * Validated here rather than trusted: the alarm dispatcher schedules against
+ * this string, and an unrecognized zone would make it skip the alarm entirely
+ * instead of firing at the wrong hour. Rejecting at write time keeps bad values
+ * out of the table.
+ */
+const timezoneSchema = z
+  .string()
+  .min(1)
+  .max(64)
+  .refine(
+    value => {
+      try {
+        new Intl.DateTimeFormat("en-US", { timeZone: value });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: "Invalid IANA time zone" }
+  )
+  .optional();
+
 const soundTypeSchema = z.enum(["frequency", "studio_mix", "ambient", "meditation"]).default("frequency");
 
 export const alarmsRouter = router({
@@ -34,6 +60,7 @@ export const alarmsRouter = router({
         hour: z.number().min(0).max(23),
         minute: z.number().min(0).max(59),
         days: z.array(z.number().min(0).max(6)),
+        timezone: timezoneSchema,
         kind: kindSchema,
         soundType: soundTypeSchema,
         frequencyHz: z.number().optional(),
@@ -69,6 +96,7 @@ export const alarmsRouter = router({
         hour: input.hour,
         minute: input.minute,
         days: input.days,
+        timezone: input.timezone,
         kind,
         soundType: input.soundType,
         frequencyHz: input.frequencyHz,
@@ -100,6 +128,7 @@ export const alarmsRouter = router({
         hour: z.number().min(0).max(23),
         minute: z.number().min(0).max(59),
         days: z.array(z.number().min(0).max(6)),
+        timezone: timezoneSchema,
         kind: z.enum(["wake", "wind_down"]).optional(),
         soundType: soundTypeSchema,
         frequencyHz: z.number().optional(),
@@ -121,6 +150,9 @@ export const alarmsRouter = router({
         hour: fields.hour,
         minute: fields.minute,
         days: fields.days as number[],
+        // Only overwrite when the client sent one, so an older client updating
+        // an alarm cannot blank out a timezone a newer client already recorded.
+        ...(fields.timezone ? { timezone: fields.timezone } : {}),
         ...(fields.kind ? { kind: fields.kind } : {}),
         soundType: fields.soundType,
         frequencyHz: fields.frequencyHz,

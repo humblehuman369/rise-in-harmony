@@ -17,46 +17,33 @@
 import { describe, expect, it } from "vitest";
 import { BACKGROUND_LOOPS, getLibraryLoopUrl } from "../client/src/data/backgroundLoops";
 import { MEDITATIONS } from "../client/src/data/meditations";
-import { MEDITATIONS as SHARED_MEDITATIONS } from "../packages/shared-utils/src/meditations";
 
 const CASES = [
   {
     key: "deep-focus",
     label: "Deep Focus",
     meditationId: "focused-attention",
-    title: "Deep Focus Meditation",
-    webFrequencyId: "alpha-isochronic",
-    sharedFrequencyId: "alpha",
   },
   {
     key: "anxiety-reset",
     label: "Anxiety Reset",
     meditationId: "4-7-8-breath",
-    title: "4-7-8 Anxiety Reset",
-    webFrequencyId: "417",
-    sharedFrequencyId: "417",
   },
   {
     key: "chakra-dawn",
     label: "Chakra Dawn",
     meditationId: "chakra-morning",
-    title: "7-Chakra Morning Activation",
-    webFrequencyId: "528",
-    sharedFrequencyId: "528",
   },
   {
     key: "morning-breath",
     label: "Morning Breath",
     meditationId: "morning-breath",
-    title: "Morning Breath Awakening",
-    webFrequencyId: "432",
-    sharedFrequencyId: "432",
   },
 ] as const;
 
 const RECORDED_KEYS = ["sleep-preparation", ...CASES.map(c => c.key)];
 
-describe.each(CASES)("$key recorded soundscape", ({ key, label, meditationId, title, webFrequencyId, sharedFrequencyId }) => {
+describe.each(CASES)("$key recorded soundscape", ({ key, label }) => {
   it("is registered in the background loop catalog", () => {
     const entry = BACKGROUND_LOOPS.find(l => l.id === key);
     expect(entry).toBeDefined();
@@ -64,32 +51,28 @@ describe.each(CASES)("$key recorded soundscape", ({ key, label, meditationId, ti
     expect(entry?.label).toBe(label);
   });
 
-  it("resolves to a manus-storage MP3 URL", () => {
-    const url = getLibraryLoopUrl(key);
-    expect(url).toMatch(new RegExp(`^\\/manus-storage\\/${key}_[0-9a-f]+\\.mp3$`));
+  // These were served from signed /manus-storage/* S3 paths, which 403 on new
+  // Manus projects. The catalog was deliberately moved to static /audio/*
+  // (see client/src/data/backgroundLoops.ts); this assertion had not followed.
+  it("resolves to a static /audio MP3 URL", () => {
+    expect(getLibraryLoopUrl(key)).toBe(`/audio/${key}.mp3`);
   });
 
-  it("is set as the meditation soundscape (web client)", () => {
-    const med = MEDITATIONS.find(m => m.id === meditationId);
-    expect(med).toBeDefined();
-    expect(med?.title).toBe(title);
-    expect(med?.soundscape).toBe(key);
-    expect(med?.recommendedFrequencyId).toBe(webFrequencyId);
-  });
-
-  it("is set as the meditation soundscape (shared catalog)", () => {
-    const med = SHARED_MEDITATIONS.find(m => m.id === meditationId);
-    expect(med).toBeDefined();
-    expect(med?.soundscape).toBe(key);
-    expect(med?.recommendedFrequencyId).toBe(sharedFrequencyId);
-  });
+  // The meditations these soundscapes were attached to (focused-attention,
+  // 4-7-8-breath, chakra-morning, morning-breath) were removed in b7da014,
+  // "replace catalog with 6 TrueHz HQ sessions". Both catalogs now hold the
+  // TrueHz set instead, so the per-meditation assignment assertions that used
+  // to live here described a catalog that no longer exists. The soundscape
+  // recordings themselves are still shipped and are still covered above.
 });
 
 describe("recorded soundscape catalog integrity", () => {
-  it("assigns each recorded key to exactly one web meditation", () => {
+  it("never assigns a recorded key to more than one web meditation", () => {
+    // Zero holders is expected for the keys orphaned by the b7da014 catalog
+    // replacement; two or more would mean a recording is double-booked.
     for (const key of RECORDED_KEYS) {
       const holders = MEDITATIONS.filter(m => m.soundscape === key);
-      expect(holders.length).toBe(1);
+      expect(holders.length).toBeLessThanOrEqual(1);
     }
   });
 

@@ -1,6 +1,8 @@
 import {
   boolean,
+  datetime,
   float,
+  index,
   int,
   json,
   mysqlEnum,
@@ -99,6 +101,13 @@ export const alarms = mysqlTable("alarms", {
   hour: int("hour").notNull(), // 0–23
   minute: int("minute").notNull(), // 0–59
   days: json("days").notNull(), // number[] — 0=Sun … 6=Sat
+  /**
+   * IANA zone captured from the device at save time (e.g. "America/New_York").
+   * NULL on rows created before the alarm dispatcher existed; those fall back to
+   * ALARM_DEFAULT_TIMEZONE. The dispatcher logs a NULL count at startup so the
+   * backfill can be watched.
+   */
+  timezone: varchar("timezone", { length: 64 }),
   isEnabled: boolean("isEnabled").default(true).notNull(),
   /** wake = morning alarm; wind_down = evening bedtime ritual */
   kind: mysqlEnum("kind", ["wake", "wind_down"]).default("wake").notNull(),
@@ -326,3 +335,118 @@ export const pushSubscriptions = mysqlTable("push_subscriptions", {
 
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
+
+// ─── Alarm dispatcher ─────────────────────────────────────────────────────────
+//
+// Every point-in-time column below is DATETIME, not TIMESTAMP, and always holds
+// UTC. MySQL TIMESTAMP tops out in 2038 and is silently converted using the
+// *session* time zone, so the same row reads back differently depending on which
+// connection reads it. Alarm correctness depends on these instants being stable,
+// so the dispatcher formats and parses them as UTC itself — see
+// server/alarm-dispatcher/utc.ts. createdAt/updatedAt stay TIMESTAMP so their
+// server-side DEFAULT/ON UPDATE behavior matches the rest of this schema.
+//
+// `push_subscriptions` already exists (migration 0013) and is reused as-is.
+
+/**
+ * One row per alarm occurrence — the durable record that a given alarm was due
+ * at a given local wall-clock slot. The unique (alarmId, scheduledLocalKey)
+ * turns a repeated scan into a no-op and makes a repeated DST fall-back minute
+ * fire exactly once.
+ */
+export const alarmDeliveryAttempts = mysqlTable(
+  "alarm_delivery_attempts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    alarmId: int("alarmId")
+      .notNull()
+      .references(() => alarms.id, { onDelete: "cascade" }),
+    userId: int("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Canonical due instant, UTC. */
+    scheduledForUtc: datetime("scheduledForUtc").notNull(),
+    /** "<timezone>:YYYY-MM-DDTHH:mm" — the local slot this occurrence belongs to. */
+    scheduledLocalKey: varchar("scheduledLocalKey", { length: 191 }).notNull(),
+    status: mysqlEnum("status", ["pending", "sent", "terminal_failed", "cancelled"])
+      .default("pending")
+      .notNull(),
+    attemptCount: int("attemptCount").default(0).notNull(),
+    completedAt: datetime("completedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [
+    unique("uq_alarm_delivery_attempt_occurrence").on(t.alarmId, t.scheduledLocalKey),
+    index("idx_alarm_delivery_attempt_status_due").on(t.status, t.scheduledForUtc),
+  ],
+);
+
+/**
+ * One row per (occurrence, push subscription) — the unit of delivery, claim,
+ * lease and retry. Kept separate from the occurrence so a user with three
+ * devices gets one canonical intent and three auditable sends.
+ */
+export const alarmDeliveryTargets = mysqlTable(
+  "alarm_delivery_targets",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    deliveryAttemptId: int("deliveryAttemptId")
+      .notNull()
+      .references(() => alarmDeliveryAttempts.id, { onDelete: "cascade" }),
+    /** Nullable so delivery history survives cleanup of an expired subscription. */
+    pushSubscriptionId: int("pushSubscriptionId").references(() => pushSubscriptions.id, {
+      onDelete: "set null",
+    }),
+    status: mysqlEnum("status", [
+      "pending",
+      "claimed",
+      "sending",
+      "sent",
+      "retryable_failed",
+      "terminal_failed",
+      "cancelled",
+    ])
+      .default("pending")
+      .notNull(),
+    attemptCount: int("attemptCount").default(0).notNull(),
+    nextAttemptAt: datetime("nextAttemptAt"),
+    claimedBy: varchar("claimedBy", { length: 191 }),
+    leaseExpiresAt: datetime("leaseExpiresAt"),
+    providerStatus: int("providerStatus"),
+    providerMessageId: varchar("providerMessageId", { length: 512 }),
+    lastErrorCode: varchar("lastErrorCode", { length: 128 }),
+    lastErrorMessage: varchar("lastErrorMessage", { length: 2000 }),
+    sentAt: datetime("sentAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [
+    unique("uq_alarm_delivery_target").on(t.deliveryAttemptId, t.pushSubscriptionId),
+    index("idx_alarm_delivery_target_claimable").on(t.status, t.nextAttemptAt, t.leaseExpiresAt),
+  ],
+);
+
+/** Advisory lease so only one dispatcher instance scans per tick. */
+export const dispatcherLeases = mysqlTable("dispatcher_leases", {
+  name: varchar("name", { length: 64 }).primaryKey(),
+  holderId: varchar("holderId", { length: 191 }).notNull(),
+  leaseExpiresAt: datetime("leaseExpiresAt").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/** Liveness signal; alert when lastSuccessAt falls behind two dispatch intervals. */
+export const dispatcherHeartbeats = mysqlTable("dispatcher_heartbeats", {
+  serviceName: varchar("serviceName", { length: 64 }).primaryKey(),
+  instanceId: varchar("instanceId", { length: 191 }).notNull(),
+  releaseSha: varchar("releaseSha", { length: 64 }),
+  lastStartedAt: datetime("lastStartedAt"),
+  lastSuccessAt: datetime("lastSuccessAt"),
+  lastErrorAt: datetime("lastErrorAt"),
+  lastErrorSummary: varchar("lastErrorSummary", { length: 2000 }),
+  summaryJson: json("summaryJson"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AlarmDeliveryAttempt = typeof alarmDeliveryAttempts.$inferSelect;
+export type AlarmDeliveryTarget = typeof alarmDeliveryTargets.$inferSelect;

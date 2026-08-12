@@ -10,7 +10,6 @@ import type { Express, Request, Response } from "express";
 import { createHash, timingSafeEqual } from "crypto";
 import { sdk } from "./sdk";
 import { processReEngagementBatch } from "../lib/reEngagement";
-import { fireAlarmsNow } from "../routers/push";
 import {
   ensureMonthlyStreakFreeze,
   expireOldConvertJobs,
@@ -169,6 +168,19 @@ export function registerScheduledRoutes(app: Express) {
    * Sends push notifications to sleeping devices at alarm time.
    * Suggested cron: `* * * * *` (every minute) via Manus Heartbeat.
    */
+  /**
+   * Break-glass alarm dispatch.
+   *
+   * Alarm delivery is owned by the `rih-alarm-dispatcher` Railway service, which
+   * runs a bounded 30-60s loop. This route stays alive so an operator can force a
+   * single cycle if that worker is down. It is NOT a scheduler — nothing should
+   * call it on a timer, and there is deliberately no setInterval in the API.
+   *
+   * It runs the same `runDispatchCycle()` as the worker, so there is one delivery
+   * path: leader lease, unique occurrence key and retry policy all still apply.
+   * Firing it while the worker is healthy is safe — the worker holds the lease and
+   * this returns skippedBecauseLeaderBusy.
+   */
   app.post("/api/scheduled/fire-alarms", async (req: Request, res: Response) => {
     try {
       const ok = await authorizeCron(req);
@@ -176,8 +188,43 @@ export function registerScheduledRoutes(app: Express) {
         res.status(403).json({ error: "cron-only" });
         return;
       }
-      const result = await fireAlarmsNow();
-      res.json({ ok: true, ...result });
+      if (!process.env.DATABASE_URL) {
+        res.status(503).json({ error: "database not configured" });
+        return;
+      }
+
+      // Imported lazily so the API process does not construct a push gateway or
+      // parse dispatcher config unless this route is actually used.
+      const [
+        { loadDispatcherConfig },
+        { runDispatchCycle },
+        { AlarmDispatchRepository },
+        { WebPushGateway },
+        { getMysqlPool },
+      ] = await Promise.all([
+        import("../alarm-dispatcher/config"),
+        import("../alarm-dispatcher/dispatch-cycle"),
+        import("../alarm-dispatcher/repository"),
+        import("../alarm-dispatcher/web-push-gateway"),
+        import("../lib/dbPool"),
+      ]);
+
+      const config = loadDispatcherConfig();
+      const pool = getMysqlPool(process.env.DATABASE_URL);
+      const summary = await runDispatchCycle({
+        now: () => new Date(),
+        repo: new AlarmDispatchRepository(pool),
+        push: new WebPushGateway(config),
+        config,
+        log,
+        releaseSha: process.env.RELEASE_SHA,
+      });
+
+      log.info("Break-glass alarm dispatch cycle ran", {
+        ...summary,
+        shadowMode: config.shadowMode,
+      });
+      res.json({ ok: true, shadowMode: config.shadowMode, ...summary });
     } catch (err) {
       log.error("Scheduled fire-alarms failed", {
         error: err instanceof Error ? err.message : String(err),
