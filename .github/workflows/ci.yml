@@ -1,11 +1,16 @@
 name: CI
 
-# Typecheck + unit tests for the web/server monorepo root and the mobile app.
-# Verification only — deploys stay deliberate (web via Manus, mobile via EAS).
+# Typecheck + unit tests + deployment-artifact builds for the web/server monorepo
+# root and the mobile app.
+#
+# A PR must not merge if any deployable artifact fails to build, so build:web
+# (Vercel), build:api (Railway rih-api), and build:alarm-dispatcher (Railway
+# rih-alarm-dispatcher) are all gates here. Building is verification only —
+# deploys stay deliberate and are owned by the platform Git integrations.
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
   pull_request:
 
 concurrency:
@@ -14,9 +19,9 @@ concurrency:
 
 jobs:
   web-server:
-    name: Web + server (typecheck, vitest)
+    name: Web + server (typecheck, vitest, builds)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4 # version comes from packageManager in package.json
@@ -27,9 +32,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Typecheck
-        run: npm run check
+        run: pnpm check
       - name: Server unit tests
         run: npx vitest run --root . server/
+      - name: Build web client (Vercel artifact)
+        run: pnpm build:web
+      - name: Build API (Railway rih-api artifact)
+        run: pnpm build:api
+      - name: Build alarm dispatcher (Railway rih-alarm-dispatcher artifact)
+        run: pnpm build:alarm-dispatcher
+      - name: Assert build artifacts exist
+        run: |
+          test -f dist/public/index.html      || { echo "::error::missing dist/public/index.html"; exit 1; }
+          test -f dist/index.js               || { echo "::error::missing dist/index.js"; exit 1; }
+          test -f dist/alarm-dispatcher.js    || { echo "::error::missing dist/alarm-dispatcher.js"; exit 1; }
+      - name: Assert web bundle carries no Manus runtime or server secret
+        run: node scripts/check-web-bundle.mjs
 
   mobile:
     name: Mobile app (typecheck, jest, assets)

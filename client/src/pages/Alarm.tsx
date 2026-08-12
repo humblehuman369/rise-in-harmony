@@ -14,7 +14,7 @@ import {
 import Layout from "@/components/Layout";
 import { FREQUENCIES, getSharedContext } from "@/hooks/useFrequencyPlayer";
 import { BACKGROUND_LOOPS, getLibraryLoopUrl } from "@/data/backgroundLoops";
-import { MEDITATIONS } from "@rih/shared-utils";
+import { MEDITATIONS, getDeviceTimeZone } from "@rih/shared-utils";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useAlarmNotifications } from "@/hooks/useAlarmNotifications";
@@ -1655,7 +1655,9 @@ export default function Alarm() {
       const freq = FREQUENCIES.find(f => f.id === alarm.frequencyId);
       createAlarmMutation.mutate({
         label: alarm.label, hour: parseInt(h), minute: parseInt(m),
-        days: alarm.days,
+        // Recorded so the alarm-dispatcher worker fires on the user's wall clock
+        // rather than the server's. Omitted when the browser cannot report one.
+        days: alarm.days, timezone: getDeviceTimeZone() ?? undefined,
         soundType: (alarm.soundType === 'studio_mix' ? 'studio_mix' : alarm.soundType === 'ambient' ? 'ambient' : alarm.soundType === 'meditation' ? 'meditation' : 'frequency') as 'frequency' | 'studio_mix' | 'ambient' | 'meditation',
         frequencyHz: freq?.hz, frequencyName: freq?.name,
         studioMixName: alarm.studioMixName,
@@ -1682,7 +1684,8 @@ export default function Alarm() {
       updateAlarmMutation.mutate({
         id: numericId, label: updated.label,
         hour: parseInt(h), minute: parseInt(m),
-        days: updated.days,
+        // Re-saving an alarm also backfills the timezone on a legacy row.
+        days: updated.days, timezone: getDeviceTimeZone() ?? undefined,
         soundType: (updated.soundType === 'studio_mix' ? 'studio_mix' : updated.soundType === 'ambient' ? 'ambient' : updated.soundType === 'meditation' ? 'meditation' : 'frequency') as 'frequency' | 'studio_mix' | 'ambient' | 'meditation',
         frequencyHz: freq?.hz, frequencyName: freq?.name,
         studioMixName: updated.studioMixName,

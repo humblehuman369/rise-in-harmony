@@ -114,7 +114,9 @@ export default function BioluminescentBackground({ variant = "teal", density = "
     }));
 
     function drawParticles(t: number) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // ctx.canvas is the same element as `canvas` but is non-nullable, so this
+      // does not depend on the null-guard above narrowing into this closure.
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       for (const p of particles) {
         p.y -= p.speed;
         p.x += p.drift + Math.sin(t * 0.0005 + p.y * 0.01) * 0.2;

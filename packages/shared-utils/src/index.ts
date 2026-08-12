@@ -304,6 +304,22 @@ export const FREE_FREQUENCIES = FREQUENCIES.filter((f) => !f.isPremium);
 
 // ─── Streak Calculation ───────────────────────────────────────────────────────
 
+/**
+ * The device's IANA time zone, e.g. "America/New_York".
+ *
+ * Recorded on every alarm save so the alarm-dispatcher worker can schedule
+ * against the user's wall clock instead of the Railway container's. Returns
+ * null when the runtime cannot report a zone, in which case the server leaves
+ * the column NULL and the dispatcher falls back to ALARM_DEFAULT_TIMEZONE.
+ */
+export function getDeviceTimeZone(): string | null {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
 /** Format a Date as YYYY-MM-DD in the given IANA timezone (default UTC). */
 export function formatDayKey(date: Date, timeZone = "UTC"): string {
   try {
