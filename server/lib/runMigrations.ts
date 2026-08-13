@@ -28,6 +28,64 @@ const MIGRATIONS_TABLE = "__drizzle_migrations";
  *
  * Probe the realistic layouts instead and return the first that exists.
  */
+/**
+ * MySQL errors meaning "this object is already in the desired state".
+ *
+ * Matching on codes rather than text because drizzle wraps driver errors: its
+ * `message` is only `Failed query: <sql>\nparams:`, with the real MySQL error on
+ * `cause`. A message-only check therefore never matched, and the runner aborted
+ * on the first already-applied statement instead of skipping it.
+ */
+const IDEMPOTENT_ERROR_CODES = new Set([
+  "ER_TABLE_EXISTS_ERROR", // 1050 table already exists
+  "ER_DUP_FIELDNAME", // 1060 duplicate column name
+  "ER_DUP_KEYNAME", // 1061 duplicate key name
+  "ER_DUP_ENTRY", // 1062 duplicate entry for key
+  "ER_CANT_DROP_FIELD_OR_KEY", // 1091 can't DROP; check that it exists
+  "ER_FK_DUP_NAME", // 1826 duplicate foreign key constraint name
+]);
+
+const IDEMPOTENT_ERROR_TEXT = [
+  "already exists",
+  "Duplicate column name",
+  "Duplicate key name",
+  "Duplicate entry",
+  "Duplicate foreign key",
+  "Can't DROP",
+  "check that column/key exists",
+];
+
+/** Walk the cause chain — drizzle nests the driver error one or more levels down. */
+function errorChain(err: unknown): unknown[] {
+  const chain: unknown[] = [];
+  let current = err;
+  for (let depth = 0; current != null && depth < 5; depth++) {
+    chain.push(current);
+    current = (current as { cause?: unknown }).cause;
+  }
+  return chain;
+}
+
+/** True when the statement failed only because it had already been applied. */
+function isAlreadyAppliedError(err: unknown): boolean {
+  return errorChain(err).some(link => {
+    const code = (link as { code?: string }).code;
+    if (code && IDEMPOTENT_ERROR_CODES.has(code)) return true;
+    const message = link instanceof Error ? link.message : String(link ?? "");
+    return IDEMPOTENT_ERROR_TEXT.some(needle => message.includes(needle));
+  });
+}
+
+/** Deepest driver message, for logging a failure that is genuinely fatal. */
+function rootCauseMessage(err: unknown): string {
+  const chain = errorChain(err);
+  const deepest = chain[chain.length - 1];
+  return deepest instanceof Error ? deepest.message : String(deepest ?? err);
+}
+
+/** Exported for tests only — these are internal helpers, not part of the API. */
+export const __testing = { isAlreadyAppliedError, rootCauseMessage };
+
 function resolveMigrationsDir(): string | null {
   const candidates = [
     join(process.cwd(), "drizzle"), // container: WORKDIR /app, migrations at /app/drizzle
@@ -100,20 +158,16 @@ export async function runMigrations(
         try {
           await db.execute(stmt);
         } catch (err) {
-          // Ignore "column already exists" and "duplicate column" errors
-          // so re-running migrations on an already-migrated DB is safe
-          const msg = err instanceof Error ? err.message : String(err);
-          if (
-            msg.includes("Duplicate column name") ||
-            msg.includes("already exists") ||
-            msg.includes("Can't DROP") ||
-            msg.includes("check that column/key exists") ||
-            msg.includes("Duplicate entry") ||
-            msg.includes("Duplicate key name")
-          ) {
+          // Re-running a migration on an already-migrated database is expected:
+          // this project has schema that predates the tracking table entirely.
+          if (isAlreadyAppliedError(err)) {
             log.warn(`[migrations] ${tag}: skipping already-applied statement`);
             continue;
           }
+          log.error(`[migrations] ${tag}: statement failed`, {
+            error: rootCauseMessage(err),
+            statement: stmt.slice(0, 200),
+          });
           throw err;
         }
       }
@@ -135,7 +189,7 @@ export async function runMigrations(
     }
   } catch (err) {
     log.warn("[migrations] Migration runner failed — continuing startup", {
-      error: err instanceof Error ? err.message : String(err),
+      error: rootCauseMessage(err),
     });
     // Non-fatal: server still starts, but new columns may be missing
   }
