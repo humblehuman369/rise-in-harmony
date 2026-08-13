@@ -210,6 +210,13 @@ Any `timestamp` there means the wrong migration ran — stop and investigate.
 7. Do **not** use Railway Cron. Cron cannot run more often than every five
    minutes and expects the task to exit; this is an always-on worker.
 
+> **Do not put `deploy.startCommand` in `railway.json`.** That file applies to every service
+> built from this repository, so a single start command overrides the `CMD` of whichever
+> Dockerfile each service uses. It previously pinned `node dist/index.js`, which made
+> `rih-alarm-dispatcher` build the worker image and then crash with
+> `Cannot find module '/app/dist/index.js'`. Both Dockerfiles declare the correct `CMD`
+> already, so the start command is left unset and each service starts itself.
+
 ### 6.1 Dispatcher variables — least privilege
 
 This service gets a **much smaller** set than the API. Do not copy the API's
