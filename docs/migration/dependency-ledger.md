@@ -275,10 +275,12 @@ These cannot be resolved from the repository.
    **`mysqldump` is not installed on this machine** — install it first: `brew install mysql-client`
    then `echo 'export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"' >> ~/.zshrc`.
 4. **Stripe dashboard:** create the test-mode webhook endpoint for staging.
-5. ~~**VAPID keypairs**~~ — **done 2026-08-12.** Two distinct keypairs generated and validated
-   against `web-push` and the dispatcher config loader. Written to `~/rih-secrets/vapid-staging.env`
-   and `~/rih-secrets/vapid-production.env` (mode 600, outside the repo, never in git).
-   Move them into your password manager, then seal the private keys in Railway.
+5. ~~**VAPID keypairs**~~ — **done 2026-08-12, with one correction.** Two distinct keypairs
+   generated and validated against `web-push` and the dispatcher config loader, written to
+   `~/rih-secrets/` (mode 600, outside the repo, never in git). The **staging** pair is in use.
+   The **production** pair is NOT and must not be: `@rih/mobile` already has a live VAPID
+   keypair, and rotating it would silently stop alarms on every already-subscribed device.
+   See [production-cutover.md §4](./production-cutover.md).
 6. **PostHog:** create a staging project, or accept mixed events.
 7. ~~**`VITE_FRONTEND_FORGE_API_KEY`**~~ — **resolved, no action.** See §1.4: dead code, never
    shipped, variable unset. Nothing to revoke.
