@@ -141,3 +141,6 @@ media-export/*
 # Vercel CLI link metadata (projectId/orgId) — not secret, but not source
 .vercel
 .env*
+
+# Railway CLI link metadata
+.railway

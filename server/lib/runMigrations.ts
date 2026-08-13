@@ -8,21 +8,52 @@
  * This avoids the need for drizzle-kit at runtime and works with the
  * existing Railway Dockerfile (no extra CLI tools needed).
  */
-import { readFileSync, readdirSync } from "fs";
+import { existsSync, readFileSync, readdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { log } from "./logger";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// Migrations live at /drizzle/*.sql relative to the repo root
-const MIGRATIONS_DIR = join(__dirname, "../../drizzle");
 const MIGRATIONS_TABLE = "__drizzle_migrations";
+
+/**
+ * Locate the checked-in migrations directory.
+ *
+ * A fixed `../../drizzle` only works under tsx in development, where this file
+ * sits at `server/lib/`. The production image runs the esbuild bundle at
+ * `/app/dist/index.js`, so the same relative path resolved to `/drizzle` — which
+ * does not exist — and every production migration silently no-opped because the
+ * caller treats a runner failure as non-fatal.
+ *
+ * Probe the realistic layouts instead and return the first that exists.
+ */
+function resolveMigrationsDir(): string | null {
+  const candidates = [
+    join(process.cwd(), "drizzle"), // container: WORKDIR /app, migrations at /app/drizzle
+    join(__dirname, "../../drizzle"), // dev under tsx: server/lib/../../drizzle
+    join(__dirname, "../drizzle"), // bundled at /app/dist/index.js
+    join(__dirname, "drizzle"),
+  ];
+  return candidates.find(existsSync) ?? null;
+}
 
 export async function runMigrations(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   db: any
 ): Promise<void> {
   if (!db) return;
+
+  const MIGRATIONS_DIR = resolveMigrationsDir();
+  if (!MIGRATIONS_DIR) {
+    // Loud on purpose: this used to fail silently, so the schema could drift
+    // arbitrarily far from the checked-in migrations without any signal.
+    log.error("[migrations] Could not locate the drizzle/ directory — NO MIGRATIONS APPLIED", {
+      cwd: process.cwd(),
+      moduleDir: __dirname,
+    });
+    return;
+  }
+  log.info("[migrations] Using migrations directory", { dir: MIGRATIONS_DIR });
 
   try {
     // Ensure the migrations tracking table exists
