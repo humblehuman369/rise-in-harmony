@@ -56,7 +56,14 @@ If shadow mode shows the dispatcher computing the wrong occurrences, **stop**. T
 
 ---
 
-## 2. Production database backup — the highest-risk item in this document
+## 2. Production database backup
+
+> **Scale check, measured 2026-08-13:** the production `users` table holds
+> **2 rows**, one of them a paying customer. The steps below are still correct
+> practice — an unrecoverable mistake would still cost a real person their
+> account and subscription — but the blast radius is two users, not a customer
+> base. Calibrate the effort accordingly: take the backup, keep it, and do not
+> spend a week building a rehearsal environment.
 
 Migrations have **never run in production**. `runMigrations` resolved `/drizzle`
 instead of `/app/drizzle` in the bundled build, threw `ENOENT`, and the caller
@@ -81,11 +88,10 @@ Required before the merge:
 
 - [ ] Full logical backup per [scripts/backup-db.md](../../scripts/backup-db.md)
       (`brew install mysql-client` first — it is not installed)
-- [ ] **Restore that dump into a scratch database and run the API against it**,
-      so the migration run is observed somewhere disposable first
-- [ ] Record which of the 19 migrations report `Applied` vs `skipping
-      already-applied` in the scratch run — that is the expected production shape
 - [ ] Keep the dump until production has been stable for a week
+- [ ] Optional, and cheap given the size: restore the dump into a scratch
+      database and let the API migrate it, to see the run before it happens for
+      real. Worth doing precisely because a 2-row database restores in seconds.
 
 Do not treat a green deploy as proof. The runner is still non-fatal on failure;
 check the logs for `[migrations] Applied N migration(s)`.

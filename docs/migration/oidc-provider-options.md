@@ -76,30 +76,42 @@ Google as the same Google account with the same verified email. The re-match is
 then an email join, not a credential migration — considerably easier than a
 generic "migrate your users" story implies.
 
-### What to verify before deciding
+### Measured, 2026-08-13 — production
 
-The whole plan depends on one number, which only production can answer:
+The whole plan depended on one number. It has been read (read-only, aggregates
+only):
 
-```sql
-SELECT COUNT(*) AS total,
-       SUM(email IS NULL OR email = '') AS no_email
-FROM users;
-
-SELECT loginMethod, COUNT(*) FROM users GROUP BY loginMethod ORDER BY 2 DESC;
+```
+users total       2
+with email        2
+NO email          0
+loginMethod       email 1 · google 1
+paying users      1   (0 without email)
 ```
 
-`server/_core/oauth.ts` stores `email` on every login and `upsertUser` refreshes
-it, so coverage should be good — but it is a nullable column and must be counted,
-not assumed.
+**Two users.** Both have a usable email. Nobody is unmatchable.
 
-- **`no_email` near zero** → the email join works. Choose on developer
-  experience, Expo support and price.
-- **`no_email` material** → those users cannot be auto-matched and would create
-  new accounts, losing subscription linkage. That is when heavier migration
-  tooling earns its cost, and it changes the recommendation below.
+This collapses the migration problem. There is no orphaned cohort, no
+account-linking edge case, no need for lazy or trickle migration, and no risk of
+a paying customer losing subscription linkage through a failed re-match. If the
+automated path ever misbehaved, two accounts can be reconciled by hand in
+minutes.
 
-The `loginMethod` breakdown tells you which upstream providers to enable so
-returning users land on the same identity.
+It also means the `users.openId` re-match — described above as "the migration's
+hard part" — **is not hard here**. That framing was written before the row count
+was known and is accurate in general; it is disproportionate for this database.
+
+One detail still worth carrying: `loginMethod` shows **one `email` and one
+`google`**, so Manus brokered email/password as well as Google. A provider
+configured for Google and Apple only would leave the email/password user without
+their original route. With n=1 that is a conversation, not a migration plan.
+
+Re-run before deciding if significant time passes:
+
+```sql
+SELECT COUNT(*) AS total, SUM(email IS NULL OR email = '') AS no_email FROM users;
+SELECT loginMethod, COUNT(*) FROM users GROUP BY loginMethod ORDER BY 2 DESC;
+```
 
 ---
 
@@ -142,49 +154,43 @@ returning users land on the same identity.
 
 ## Recommendation
 
-> **Revised 2026-08-13.** An earlier draft recommended Auth0 mainly for its
-> lazy-migration path. That reasoning does not survive contact with the code:
-> there are no passwords to migrate (§B), so the feature that justified the
-> choice solves a problem this project does not have. Recorded here rather than
-> quietly edited, because the original reasoning was cited in planning.
+> **Revised twice.** The first draft recommended Auth0 for its lazy-migration
+> path — reasoning that does not survive contact with the code, since there are
+> no passwords to migrate. The second revision branched on the count of users
+> without an email. That count has now been measured: **two users, both with
+> email**. Both revisions are recorded rather than overwritten, because the
+> earlier reasoning was cited during planning.
 
-Decide against two things — the Apple requirement (§A) and the `no_email` count
-(§ What to verify) — not against a feature matrix.
+**Pick on Apple/Expo support, developer experience and price. Migration
+complexity is not a factor at this size.**
 
-**If `no_email` is near zero — the expected case: Clerk.**
+**Clerk** is the straightforward choice: first-class Expo support (which
+Guideline 4.8 makes non-negotiable), Google and Apple as configuration rather
+than integration work, and a free tier that comfortably covers two users.
 
-- First-class Expo/React Native support, which the Apple requirement makes
-  non-negotiable
-- Google and Apple are configuration, not integration work
-- Re-match is an email join, so no migration tooling is needed
-- At this user count the price difference against Auth0 is noise
+**Auth0** is equally defensible. Its advantage here is not migration tooling —
+that advantage evaporated with the row count — but breadth if you expect to need
+enterprise connections or fine-grained Actions later.
 
-**If `no_email` is material: Auth0.**
+**Still not recommended: rolling your own on Google.** Guideline 4.8 makes Apple
+mandatory, so you would own two providers, token refresh and session revocation.
+That trade does not improve with a small user base; it just means less to lose
+when it breaks.
 
-Orphaned users need deliberate handling — account-linking rules, a support path
-for "I lost my subscription", possibly a manual reconciliation pass. Auth0's
-Actions and account-linking are genuinely better for that, and it is worth paying
-for when subscription linkage is at stake.
+**Still not recommended: self-hosting.** Running an IdP for two users is not a
+serious proposal.
 
-**Not recommended: rolling your own on top of Google.**
+### What this changes about sequencing
 
-Cheapest until Guideline 4.8 makes Apple Sign-In mandatory, at which point you
-own two providers, token refresh and session revocation — during a migration that
-is already moving DNS, hosting and the alarm pipeline.
+Identity replacement was ranked the riskiest item in the migration on the
+assumption of a real user base. With two users and one paying customer, the
+practical risk is **one person's access and subscription**, which is worth being
+careful about but is not a reason to defer for months.
 
-**Not recommended: self-hosting Keycloak or Ory.**
-
-Running an IdP to save per-MAU fees is a poor trade at this scale, and it is the
-option most likely to become an incident mid-migration.
-
-### Sequencing
-
-Identity is the riskiest item in the entire migration: getting it wrong costs
-users access to paid accounts. Do it **after** the production cutover has been
-stable for a while — see [production-cutover.md](./production-cutover.md) §9.
-
-Run the SQL above now, though. It is a read-only query, it is the input to the
-decision, and knowing the answer early costs nothing.
+It is still sensible to do it after the production cutover — fewer moving parts
+at once — but it can be scheduled on convenience rather than treated as a
+high-stakes operation. Notify the affected user, migrate, confirm they can sign
+in and that their subscription still resolves.
 
 ---
 
