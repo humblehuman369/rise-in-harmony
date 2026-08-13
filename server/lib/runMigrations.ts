@@ -11,6 +11,7 @@
 import { existsSync, readFileSync, readdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { sql } from "drizzle-orm";
 import { log } from "./logger";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -81,12 +82,13 @@ export async function runMigrations(
       const tag = file.replace(/\.sql$/, "");
       if (applied.has(tag)) continue;
 
-      const sql = readFileSync(join(MIGRATIONS_DIR, file), "utf8");
+      // Named fileSql, not sql — `sql` is drizzle's tagged template, imported above.
+      const fileSql = readFileSync(join(MIGRATIONS_DIR, file), "utf8");
 
       // Strip drizzle-kit statement-breakpoint markers before parsing.
       // These markers (-->  statement-breakpoint) are drizzle-kit specific
       // and cause MySQL syntax errors if passed through as-is.
-      const cleanedSql = sql.replace(/--> *statement-breakpoint/g, "");
+      const cleanedSql = fileSql.replace(/--> *statement-breakpoint/g, "");
       // Split on statement boundaries (semicolons) and strip SQL comments.
       // Each statement is executed separately to handle multi-statement files.
       const statements = cleanedSql
@@ -116,9 +118,11 @@ export async function runMigrations(
         }
       }
 
+      // Drizzle's execute() takes a single SQL value, not (text, params) — a
+      // second array argument is ignored, leaving the ? placeholder unbound and
+      // the insert failing. Use the tagged template so `tag` is bound properly.
       await db.execute(
-        `INSERT IGNORE INTO \`${MIGRATIONS_TABLE}\` (tag) VALUES (?)`,
-        [tag]
+        sql`INSERT IGNORE INTO __drizzle_migrations (tag) VALUES (${tag})`
       );
       log.info(`[migrations] Applied: ${tag}`);
       applied_count++;
