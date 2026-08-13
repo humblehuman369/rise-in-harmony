@@ -74,3 +74,101 @@ jobs:
         run: npm run typecheck
       - name: Unit tests
         run: npm test
+
+  # ── Vercel promotion ────────────────────────────────────────────────────────
+  #
+  # Vercel's `link.productionBranch` is stuck on `main` for
+  # rise-in-harmony-staging: changing it in the dashboard does not persist, and
+  # it is not settable from the CLI or the REST API (PATCH /v9/projects rejects
+  # both `productionBranch` and `link`). Pushes to `staging` therefore build as
+  # PREVIEW, and app-staging.riseinharmony.com keeps serving whichever build was
+  # promoted last by hand.
+  #
+  # This job closes that gap: once the gates above are green, it finds the Vercel
+  # deployment for this exact commit and promotes it to production.
+  #
+  # Delete this job if the dashboard setting ever starts sticking. Check with:
+  #   curl -H "Authorization: Bearer $VERCEL_TOKEN" \
+  #     "https://api.vercel.com/v9/projects/rise-in-harmony-staging?teamId=<team>" \
+  #     | jq -r '.link.productionBranch'
+  promote-staging:
+    name: Promote staging deployment to production
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Only after every gate passes, and only for real pushes to staging. Never on
+    # pull_request: a fork PR must not be able to publish to the staging domain.
+    needs: [web-server, mobile]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_PROJECT: rise-in-harmony-staging
+      VERCEL_SCOPE: rise-in-harmony
+      DOMAIN: https://app-staging.riseinharmony.com
+    steps:
+      - name: Check for token
+        id: guard
+        run: |
+          if [ -z "${VERCEL_TOKEN}" ]; then
+            echo "::warning::VERCEL_TOKEN not set — skipping promotion; app-staging keeps the previous build."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Vercel CLI
+        if: steps.guard.outputs.skip == 'false'
+        run: npm install -g vercel@latest
+
+      - name: Wait for the Vercel build of this commit
+        if: steps.guard.outputs.skip == 'false'
+        id: find
+        run: |
+          set -euo pipefail
+          # Vercel builds in parallel with CI and can lag it on a cache miss.
+          for attempt in $(seq 1 60); do
+            vercel ls "$VERCEL_PROJECT" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" --json > /tmp/d.json 2>/dev/null || echo '[]' > /tmp/d.json
+            state=$(jq -r --arg sha "$GITHUB_SHA" '(if type=="array" then . else .deployments end) | map(select(.meta.githubCommitSha == $sha)) | (.[0].state // "NONE")' /tmp/d.json)
+            url=$(jq -r --arg sha "$GITHUB_SHA" '(if type=="array" then . else .deployments end) | map(select(.meta.githubCommitSha == $sha)) | (.[0].url // "")' /tmp/d.json)
+            echo "attempt ${attempt}/60: state=${state}"
+            if [ "$state" = "READY" ]; then
+              case "$url" in https://*) ;; *) url="https://${url}" ;; esac
+              echo "url=${url}" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if [ "$state" = "ERROR" ] || [ "$state" = "CANCELED" ]; then
+              echo "::error::Vercel build for ${GITHUB_SHA} ended as ${state} — not promoting."
+              exit 1
+            fi
+            sleep 20
+          done
+          echo "::error::No READY Vercel deployment for ${GITHUB_SHA} after 20 minutes."
+          exit 1
+
+      - name: Promote to production
+        if: steps.guard.outputs.skip == 'false'
+        run: |
+          set -euo pipefail
+          vercel promote "${{ steps.find.outputs.url }}" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" --yes
+          echo "Promoted ${{ steps.find.outputs.url }}"
+
+      - name: Verify the live domain serves this build
+        if: steps.guard.outputs.skip == 'false'
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 20); do
+            if curl -fsS "$DOMAIN" | grep -q 'id="root"'; then
+              echo "SPA shell served."
+              for path in /alarm /studio /gift; do
+                code=$(curl -s -o /dev/null -w '%{http_code}' "${DOMAIN}${path}")
+                if [ "$code" != "200" ]; then
+                  echo "::error::${path} returned ${code} — SPA rewrite is broken."
+                  exit 1
+                fi
+                echo "  ${path} -> ${code}"
+              done
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::${DOMAIN} is not serving the SPA shell after promotion."
+          exit 1

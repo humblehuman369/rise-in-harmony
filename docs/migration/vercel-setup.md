@@ -85,15 +85,39 @@ build the dispatcher, and no longer loads any Manus runtime plugin.
 
 This is the part most likely to cause a surprise.
 
-### 2.1 Production Branch
+### 2.1 Production Branch — broken, automated around
 
-**Settings → Git → Production Branch: `staging`.**
+**Settings → Environments → Production → Branch Tracking → `staging`.**
 
 Counter-intuitive but correct: this project's "production" deployment is the
 staging site. It must never build from `main`.
 
-Not settable from the CLI or `vercel.json` — it is a project setting. The
-dropdown only lists branches that exist on the remote, so push `staging` first.
+> ⚠️ **This setting does not persist on this project.** Changing it in the
+> dashboard appears to succeed, but the API still reports the old value:
+>
+> ```
+> GET /v9/projects/rise-in-harmony-staging  →  link.productionBranch = "main"
+> ```
+>
+> It is also not settable any other way — `vercel project update` has no such
+> flag, `vercel git connect` has no branch option, and `PATCH /v9/projects`
+> rejects both `productionBranch` and `link` as unknown properties.
+>
+> **Consequence:** every push to `staging` builds as a PREVIEW deployment, so
+> `app-staging.riseinharmony.com` keeps serving whichever build was promoted
+> last, not the newest commit.
+>
+> **Workaround in place:** the `promote-staging` job in
+> [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) promotes the
+> deployment for each `staging` commit to production once the build and test
+> gates pass. It needs a `VERCEL_TOKEN` repository secret; without one it logs a
+> warning and skips rather than failing the run.
+>
+> To promote by hand instead:
+> `vercel promote <deployment-url> --scope rise-in-harmony --yes`
+>
+> Retry the dashboard setting periodically. If it ever sticks — verify with the
+> API call above — delete the `promote-staging` job, since it becomes redundant.
 
 ### 2.2 Ignored Build Step
 
