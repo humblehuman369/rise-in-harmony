@@ -37,6 +37,72 @@ make sure it is set everywhere before removing the SDK.
 
 ---
 
+## Two constraints that narrow the field before any vendor comparison
+
+### A. Sign in with Apple is effectively mandatory
+
+App Store Review Guideline **4.8** requires an app that offers third-party or
+social sign-in (Google, Facebook, etc.) to also offer an equivalent
+privacy-preserving option. In practice that means **Sign in with Apple**.
+
+This applies here: `apps/mobile/app/login.tsx` is a real sign-in screen and
+v1.2.0 is in review. So the requirement is not "support Google" — it is
+**support Google *and* Apple**, inside Expo.
+
+That filter matters more than pricing:
+
+- It rules out building a direct Google OAuth flow with no broker. That looks
+  cheapest until you own Apple Sign-In, token refresh, and session revocation
+  yourself.
+- It makes Expo/React Native support a hard requirement of the vendor choice,
+  not a nice-to-have. Web-first SDKs with a thin RN wrapper tend to be where the
+  time goes.
+- Apple's flow can return `email` only on **first** authorization, and users may
+  choose a private relay address. Both interact badly with an email-based
+  re-match — see below.
+
+### B. There are no passwords to migrate
+
+Every user authenticates through brokered OAuth via Manus. There are no local
+password hashes.
+
+This is worth stating plainly because it **changes the vendor calculus**: the
+lazy/trickle migration features that providers advertise most heavily exist to
+avoid forcing password resets. That is not a problem this project has.
+
+What matters instead is whether the *upstream* identity is preserved. If a user
+signed in through Manus → Google, they will return through `<new provider>` →
+Google as the same Google account with the same verified email. The re-match is
+then an email join, not a credential migration — considerably easier than a
+generic "migrate your users" story implies.
+
+### What to verify before deciding
+
+The whole plan depends on one number, which only production can answer:
+
+```sql
+SELECT COUNT(*) AS total,
+       SUM(email IS NULL OR email = '') AS no_email
+FROM users;
+
+SELECT loginMethod, COUNT(*) FROM users GROUP BY loginMethod ORDER BY 2 DESC;
+```
+
+`server/_core/oauth.ts` stores `email` on every login and `upsertUser` refreshes
+it, so coverage should be good — but it is a nullable column and must be counted,
+not assumed.
+
+- **`no_email` near zero** → the email join works. Choose on developer
+  experience, Expo support and price.
+- **`no_email` material** → those users cannot be auto-matched and would create
+  new accounts, losing subscription linkage. That is when heavier migration
+  tooling earns its cost, and it changes the recommendation below.
+
+The `loginMethod` breakdown tells you which upstream providers to enable so
+returning users land on the same identity.
+
+---
+
 ## The three realistic options
 
 ### 1. Auth0 / Okta CIC
@@ -76,20 +142,49 @@ make sure it is set everywhere before removing the SDK.
 
 ## Recommendation
 
-Given this is a small team shipping a consumer app on a deadline, and that the
-genuinely risky part is the `users.openId` re-match rather than the login UI:
+> **Revised 2026-08-13.** An earlier draft recommended Auth0 mainly for its
+> lazy-migration path. That reasoning does not survive contact with the code:
+> there are no passwords to migrate (§B), so the feature that justified the
+> choice solves a problem this project does not have. Recorded here rather than
+> quietly edited, because the original reasoning was cited in planning.
 
-**Auth0** is the safest choice — its lazy-migration path directly addresses the
-one thing most likely to go wrong, and it removes an entire operational burden
-at a stage where that matters more than the per-MAU line item.
+Decide against two things — the Apple requirement (§A) and the `no_email` count
+(§ What to verify) — not against a feature matrix.
 
-**Clerk** is the reasonable alternative if you would rather trade some
-flexibility for speed and a nicer integration.
+**If `no_email` is near zero — the expected case: Clerk.**
 
-**Self-hosting is hard to justify here.** Running an IdP to save per-MAU fees is
-a poor trade while the user base is small, and it is the option most likely to
-turn into an incident during a migration that is already moving several other
-things at once.
+- First-class Expo/React Native support, which the Apple requirement makes
+  non-negotiable
+- Google and Apple are configuration, not integration work
+- Re-match is an email join, so no migration tooling is needed
+- At this user count the price difference against Auth0 is noise
+
+**If `no_email` is material: Auth0.**
+
+Orphaned users need deliberate handling — account-linking rules, a support path
+for "I lost my subscription", possibly a manual reconciliation pass. Auth0's
+Actions and account-linking are genuinely better for that, and it is worth paying
+for when subscription linkage is at stake.
+
+**Not recommended: rolling your own on top of Google.**
+
+Cheapest until Guideline 4.8 makes Apple Sign-In mandatory, at which point you
+own two providers, token refresh and session revocation — during a migration that
+is already moving DNS, hosting and the alarm pipeline.
+
+**Not recommended: self-hosting Keycloak or Ory.**
+
+Running an IdP to save per-MAU fees is a poor trade at this scale, and it is the
+option most likely to become an incident mid-migration.
+
+### Sequencing
+
+Identity is the riskiest item in the entire migration: getting it wrong costs
+users access to paid accounts. Do it **after** the production cutover has been
+stable for a while — see [production-cutover.md](./production-cutover.md) §9.
+
+Run the SQL above now, though. It is a read-only query, it is the input to the
+decision, and knowing the answer early costs nothing.
 
 ---
 
@@ -98,7 +193,27 @@ things at once.
 - Public config (`VITE_AUTH_ISSUER`, `VITE_AUTH_CLIENT_ID`,
   `VITE_AUTH_REDIRECT_URI`, `VITE_AUTH_AUDIENCE`) is safe in Vercel.
   **Client secrets go to Railway only** — never a `VITE_*` or `EXPO_PUBLIC_*`
-  variable.
+  variable. Those prefixes are compile-time inlined, so a secret placed there is
+  published to every browser.
+- **Enable Apple alongside Google from day one** (§A). Retrofitting it after an
+  App Store rejection means a second identity migration for users who already
+  moved once.
+- **Handle Apple's private relay addresses explicitly.** Apple returns `email`
+  only on first authorization, and the user may substitute a
+  `@privaterelay.appleid.com` address. Persist it on first sign-in — you will not
+  get a second chance — and do not assume it matches the address a user has on
+  file from Google.
+- **Separate tenants, not one tenant with two applications.** Connections,
+  branding and rules are tenant-level and would otherwise leak between staging
+  and production.
+- **Mind the environment naming.** In the `rise-in-harmony-staging` Vercel
+  project, the *Production* environment is the staging site, so **both** its
+  environments take the staging tenant. Only the future production project takes
+  the production tenant.
+- **Allow-list preview callbacks.** Vercel preview URLs are per-deployment, so
+  either register a wildcard for the non-production tenant or accept that sign-in
+  only works on the stable domains. This is the same class of problem that makes
+  Manus sign-in unreliable on `app-staging` today.
 - Use **separate tenants/applications** for staging and production.
 - Do the migration behind a feature flag so a partially converted sign-in path
   cannot reach users mid-flight.
