@@ -5,6 +5,20 @@
   "outputDirectory": "dist/public",
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "has": [{ "type": "host", "value": "app-staging\\.riseinharmony\\.com" }],
+      "destination": "https://api-staging.riseinharmony.com/api/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "has": [{ "type": "host", "value": ".*\\.vercel\\.app" }],
+      "destination": "https://api-staging.riseinharmony.com/api/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://api.riseinharmony.com/api/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
