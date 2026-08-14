@@ -5,18 +5,18 @@
   "outputDirectory": "dist/public",
   "rewrites": [
     {
-      "source": "/api/:path*",
+      "source": "/api/(.*)",
       "has": [{ "type": "host", "value": "app-staging\\.riseinharmony\\.com" }],
-      "destination": "https://api-staging.riseinharmony.com/api/:path*"
+      "destination": "https://api-staging.riseinharmony.com/api/$1"
     },
     {
-      "source": "/api/:path*",
-      "has": [{ "type": "host", "value": ".*\\.vercel\\.app" }],
-      "destination": "https://api-staging.riseinharmony.com/api/:path*"
+      "source": "/api/(.*)",
+      "has": [{ "type": "host", "value": "(.*)\\.vercel\\.app" }],
+      "destination": "https://api-staging.riseinharmony.com/api/$1"
     },
     {
-      "source": "/api/:path*",
-      "destination": "https://api.riseinharmony.com/api/:path*"
+      "source": "/api/(.*)",
+      "destination": "https://api.riseinharmony.com/api/$1"
     },
     {
       "source": "/(.*)",
